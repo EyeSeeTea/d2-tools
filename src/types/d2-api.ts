@@ -1,1 +1,1 @@
-export * from "@eyeseetea/d2-api/2.36";
+export * from "@eyeseetea/d2-api/2.33";
