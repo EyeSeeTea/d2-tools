@@ -1,0 +1,488 @@
+{
+  "lastUpdated": "2022-01-19T06:52:28.525",
+  "id": "CwYH69MX8iE",
+  "href": "http://localhost:8080/api/dataSets/CwYH69MX8iE",
+  "created": "2020-08-28T09:24:00.340",
+  "name": "2019-2020 Locally Adaptable BSF Actual",
+  "code": "PZdj5ZYGZpX_ACTUAL",
+  "validCompleteOnly": false,
+  "publicAccess": "--------",
+  "skipOffline": false,
+  "compulsoryFieldsCompleteOnly": false,
+  "formType": "SECTION",
+  "sharing": {
+    "owner": "AJ1Ackhni7o",
+    "external": false,
+    "users": {
+      "TzkYHcMuOA5": {
+        "access": "rwrw----",
+        "id": "TzkYHcMuOA5"
+      }
+    },
+    "userGroups": {
+      "CqMZCNVJup4": {
+        "access": "rwrw----",
+        "id": "CqMZCNVJup4"
+      },
+      "mKKNXzeIAJs": {
+        "access": "rwrw----",
+        "id": "mKKNXzeIAJs"
+      },
+      "ywuI2WspUUG": {
+        "access": "rwrw----",
+        "id": "ywuI2WspUUG"
+      }
+    },
+    "public": "--------"
+  },
+  "displayFormName": "2019-2020 Locally Adaptable BSF Actual",
+  "version": 11,
+  "timelyDays": 0,
+  "favorite": false,
+  "dimensionItemType": "REPORTING_RATE",
+  "dataElementDecoration": true,
+  "displayName": "2019-2020 Locally Adaptable BSF Actual",
+  "notifyCompletingUser": false,
+  "noValueRequiresComment": false,
+  "externalAccess": false,
+  "fieldCombinationRequired": false,
+  "periodOffset": 0,
+  "renderHorizontally": false,
+  "renderAsTabs": true,
+  "dimensionItem": "CwYH69MX8iE",
+  "mobile": false,
+  "openPeriodsAfterCoEndDate": 0,
+  "periodType": "Monthly",
+  "openFuturePeriods": 1,
+  "expiryDays": 11,
+  "categoryCombo": {
+    "id": "qAgB0mD1wC6"
+  },
+  "lastUpdatedBy": {
+    "displayName": "Jayroselyn Amancio",
+    "name": "Jayroselyn Amancio",
+    "id": "AJ1Ackhni7o",
+    "username": "jamancio"
+  },
+  "workflow": {
+    "id": "CCy0oNyvlV1"
+  },
+  "access": {
+    "read": true,
+    "update": true,
+    "externalize": true,
+    "delete": true,
+    "write": true,
+    "manage": true,
+    "data": {
+      "read": true,
+      "write": true
+    }
+  },
+  "createdBy": {
+    "displayName": "Jayroselyn Amancio",
+    "name": "Jayroselyn Amancio",
+    "id": "AJ1Ackhni7o",
+    "username": "jamancio"
+  },
+  "user": {
+    "displayName": "Jayroselyn Amancio",
+    "name": "Jayroselyn Amancio",
+    "id": "AJ1Ackhni7o",
+    "username": "jamancio"
+  },
+  "dataSetElements": [
+    {
+      "categoryCombo": {
+        "id": "S0GIshZAqgK"
+      },
+      "dataElement": {
+        "id": "K4AHO1xVumZ"
+      },
+      "dataSet": {
+        "id": "CwYH69MX8iE"
+      }
+    },
+    {
+      "categoryCombo": {
+        "id": "S0GIshZAqgK"
+      },
+      "dataElement": {
+        "id": "uE6ZPpbPz66"
+      },
+      "dataSet": {
+        "id": "CwYH69MX8iE"
+      }
+    },
+    {
+      "categoryCombo": {
+        "id": "S0GIshZAqgK"
+      },
+      "dataElement": {
+        "id": "meUNtJr7X5M"
+      },
+      "dataSet": {
+        "id": "CwYH69MX8iE"
+      }
+    },
+    {
+      "categoryCombo": {
+        "id": "S0GIshZAqgK"
+      },
+      "dataElement": {
+        "id": "qMbhETg3rBr"
+      },
+      "dataSet": {
+        "id": "CwYH69MX8iE"
+      }
+    },
+    {
+      "categoryCombo": {
+        "id": "S0GIshZAqgK"
+      },
+      "dataElement": {
+        "id": "aYqgDFCymFU"
+      },
+      "dataSet": {
+        "id": "CwYH69MX8iE"
+      }
+    },
+    {
+      "categoryCombo": {
+        "id": "bjDvmb4bfuf"
+      },
+      "dataElement": {
+        "id": "Ws48eBlsPVy"
+      },
+      "dataSet": {
+        "id": "CwYH69MX8iE"
+      }
+    },
+    {
+      "categoryCombo": {
+        "id": "S0GIshZAqgK"
+      },
+      "dataElement": {
+        "id": "SuayUhAd7I9"
+      },
+      "dataSet": {
+        "id": "CwYH69MX8iE"
+      }
+    },
+    {
+      "categoryCombo": {
+        "id": "S0GIshZAqgK"
+      },
+      "dataElement": {
+        "id": "OoGKOEoiEmz"
+      },
+      "dataSet": {
+        "id": "CwYH69MX8iE"
+      }
+    },
+    {
+      "categoryCombo": {
+        "id": "bjDvmb4bfuf"
+      },
+      "dataElement": {
+        "id": "yukjouczkUZ"
+      },
+      "dataSet": {
+        "id": "CwYH69MX8iE"
+      }
+    },
+    {
+      "categoryCombo": {
+        "id": "bjDvmb4bfuf"
+      },
+      "dataElement": {
+        "id": "e6grCpK5iSl"
+      },
+      "dataSet": {
+        "id": "CwYH69MX8iE"
+      }
+    }
+  ],
+  "translations": [],
+  "dataInputPeriods": [
+    {
+      "closingDate": "2019-10-10T00:00:00.000",
+      "openingDate": "2019-07-01T00:00:00.000",
+      "period": {
+        "id": "201909"
+      }
+    },
+    {
+      "closingDate": "2019-12-10T00:00:00.000",
+      "openingDate": "2019-07-01T00:00:00.000",
+      "period": {
+        "id": "201911"
+      }
+    },
+    {
+      "closingDate": "2020-05-10T00:00:00.000",
+      "openingDate": "2019-07-01T00:00:00.000",
+      "period": {
+        "id": "202004"
+      }
+    },
+    {
+      "closingDate": "2020-07-10T00:00:00.000",
+      "openingDate": "2019-07-01T00:00:00.000",
+      "period": {
+        "id": "202006"
+      }
+    },
+    {
+      "closingDate": "2020-04-10T00:00:00.000",
+      "openingDate": "2019-07-01T00:00:00.000",
+      "period": {
+        "id": "202003"
+      }
+    },
+    {
+      "closingDate": "2020-01-10T00:00:00.000",
+      "openingDate": "2019-07-01T00:00:00.000",
+      "period": {
+        "id": "201912"
+      }
+    },
+    {
+      "closingDate": "2019-08-10T00:00:00.000",
+      "openingDate": "2019-07-01T00:00:00.000",
+      "period": {
+        "id": "201907"
+      }
+    },
+    {
+      "closingDate": "2020-02-10T00:00:00.000",
+      "openingDate": "2019-07-01T00:00:00.000",
+      "period": {
+        "id": "202001"
+      }
+    },
+    {
+      "closingDate": "2020-06-10T00:00:00.000",
+      "openingDate": "2019-07-01T00:00:00.000",
+      "period": {
+        "id": "202005"
+      }
+    },
+    {
+      "closingDate": "2019-11-10T00:00:00.000",
+      "openingDate": "2019-07-01T00:00:00.000",
+      "period": {
+        "id": "201910"
+      }
+    },
+    {
+      "closingDate": "2019-09-10T00:00:00.000",
+      "openingDate": "2019-07-01T00:00:00.000",
+      "period": {
+        "id": "201908"
+      }
+    },
+    {
+      "closingDate": "2020-03-10T00:00:00.000",
+      "openingDate": "2019-07-01T00:00:00.000",
+      "period": {
+        "id": "202002"
+      }
+    }
+  ],
+  "interpretations": [],
+  "userGroupAccesses": [
+    {
+      "access": "rwrw----",
+      "userGroupUid": "ywuI2WspUUG",
+      "displayName": "System Admin",
+      "id": "ywuI2WspUUG"
+    },
+    {
+      "access": "rwrw----",
+      "userGroupUid": "mKKNXzeIAJs",
+      "displayName": "Data Management Admin",
+      "id": "mKKNXzeIAJs"
+    },
+    {
+      "access": "rwrw----",
+      "userGroupUid": "CqMZCNVJup4",
+      "displayName": "Country Admin Philippines",
+      "id": "CqMZCNVJup4"
+    }
+  ],
+  "attributeValues": [
+    {
+      "value": "true",
+      "attribute": {
+        "id": "mgCKcJuP5n0"
+      }
+    },
+    {
+      "value": "PZdj5ZYGZpX",
+      "attribute": {
+        "id": "qgSqj6sBF7j"
+      }
+    }
+  ],
+  "indicators": [],
+  "sections": [
+    {
+      "code": "SECTOR_WASH_CwYH69MX8iE",
+      "created": "2022-01-19T06:52:31.235",
+      "lastUpdated": "2022-03-17T08:14:54.939",
+      "name": "WASH",
+      "id": "iIGn7QLupTe",
+      "description": "my description",
+      "disableDataElementAutoGroup": false,
+      "sortOrder": 1,
+      "showRowTotals": true,
+      "showColumnTotals": false,
+      "lastUpdatedBy": {
+        "code": "admin",
+        "displayName": "admin admin",
+        "name": "admin admin",
+        "id": "M5zQapPyTZI",
+        "username": "admin"
+      },
+      "dataSet": {
+        "id": "CwYH69MX8iE"
+      },
+      "greyedFields": [
+        {
+          "lastUpdated": "2022-03-17T08:47:18.183",
+          "id": "meUNtJr7X5M.TTuWvYR55qQ",
+          "created": "2022-03-17T08:47:18.183",
+          "name": "# of people trained as hygiene educators (TOT, hygiene committees, etc.) New, Female",
+          "shortName": "[P030702] - # of people trained as hygiene New, Female",
+          "aggregationType": "SUM",
+          "displayName": "# of people trained as hygiene educators (TOT, hygiene committees, etc.) New, Female",
+          "displayShortName": "[P030702] - # of people trained as hygiene New, Female",
+          "externalAccess": false,
+          "periodOffset": 0,
+          "dimensionItem": "meUNtJr7X5M.TTuWvYR55qQ",
+          "sharing": {
+            "external": false,
+            "users": {},
+            "userGroups": {}
+          },
+          "displayFormName": "# of people trained as hygiene educators (TOT, hygiene committees, etc.) New, Female",
+          "favorite": false,
+          "dimensionItemType": "DATA_ELEMENT_OPERAND",
+          "access": {
+            "read": true,
+            "update": true,
+            "externalize": true,
+            "delete": true,
+            "write": true,
+            "manage": true
+          },
+          "categoryOptionCombo": {
+            "id": "TTuWvYR55qQ"
+          },
+          "dataElement": {
+            "id": "meUNtJr7X5M"
+          },
+          "favorites": [],
+          "translations": [],
+          "userGroupAccesses": [],
+          "attributeValues": [],
+          "userAccesses": [],
+          "legendSets": []
+        },
+        {
+          "lastUpdated": "2022-03-17T08:47:18.183",
+          "id": "uE6ZPpbPz66.TTuWvYR55qQ",
+          "created": "2022-03-17T08:47:18.183",
+          "name": "# of people with access to handwashing stations constructed New, Female",
+          "shortName": "[P030008] - # of people with access to han New, Female",
+          "aggregationType": "SUM",
+          "displayName": "# of people with access to handwashing stations constructed New, Female",
+          "displayShortName": "[P030008] - # of people with access to han New, Female",
+          "externalAccess": false,
+          "periodOffset": 0,
+          "dimensionItem": "uE6ZPpbPz66.TTuWvYR55qQ",
+          "sharing": {
+            "external": false,
+            "users": {},
+            "userGroups": {}
+          },
+          "displayFormName": "# of people with access to handwashing stations constructed New, Female",
+          "favorite": false,
+          "dimensionItemType": "DATA_ELEMENT_OPERAND",
+          "access": {
+            "read": true,
+            "update": true,
+            "externalize": true,
+            "delete": true,
+            "write": true,
+            "manage": true
+          },
+          "categoryOptionCombo": {
+            "id": "TTuWvYR55qQ"
+          },
+          "dataElement": {
+            "id": "uE6ZPpbPz66"
+          },
+          "favorites": [],
+          "translations": [],
+          "userGroupAccesses": [],
+          "attributeValues": [],
+          "userAccesses": [],
+          "legendSets": []
+        }
+      ],
+      "attributeValues": [],
+      "indicators": [],
+      "translations": [],
+      "dataElements": [
+        {
+          "id": "yukjouczkUZ"
+        },
+        {
+          "id": "e6grCpK5iSl"
+        },
+        {
+          "id": "Ws48eBlsPVy"
+        },
+        {
+          "id": "uE6ZPpbPz66"
+        },
+        {
+          "id": "aYqgDFCymFU"
+        },
+        {
+          "id": "SuayUhAd7I9"
+        },
+        {
+          "id": "qMbhETg3rBr"
+        },
+        {
+          "id": "meUNtJr7X5M"
+        },
+        {
+          "id": "K4AHO1xVumZ"
+        },
+        {
+          "id": "OoGKOEoiEmz"
+        }
+      ]
+    }
+  ],
+  "userAccesses": [
+    {
+      "access": "rwrw----",
+      "displayName": "Grace Harmon",
+      "id": "TzkYHcMuOA5",
+      "userUid": "TzkYHcMuOA5"
+    }
+  ],
+  "legendSets": [],
+  "favorites": [],
+  "compulsoryDataElementOperands": [],
+  "organisationUnits": [
+    {
+      "id": "PZdj5ZYGZpX"
+    }
+  ]
+}
