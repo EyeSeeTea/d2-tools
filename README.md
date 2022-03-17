@@ -1,8 +1,8 @@
 ## Setup
 
 ```console
-host:~$ yarn install
-host:~$ yarn build
+shell~$ yarn install
+shell~$ yarn build
 ```
 
 ## Datasets
@@ -10,7 +10,7 @@ host:~$ yarn build
 Compare two data sets:
 
 ```console
-host:~$ node dist/index.js datasets compare --dhis2-url 'http://USER:PASSWORD@localhost:8080' DiMntK7qKZQ-Z3tlf5sqWiK
+shell~$ node dist/index.js datasets compare --dhis2-url 'http://USER:PASSWORD@localshell8080' DiMntK7qKZQ-Z3tlf5sqWiK
 DiMntK7qKZQ - Z3tlf5sqWiK: non-equal
  {
 -  expiryDays: 1
@@ -18,10 +18,10 @@ DiMntK7qKZQ - Z3tlf5sqWiK: non-equal
  }
 ```
 
-Show the schema fields used on the `compare` command:
+Show the schema fields used on the `datasets compare` command:
 
 ```console
-host:~$ node dist/index.js datasets show-schema
+shell~$ node dist/index.js datasets show-schema
 {
     "validCompleteOnly": true,
     "dataElementDecoration": true,
@@ -29,11 +29,11 @@ host:~$ node dist/index.js datasets show-schema
 }
 ```
 
-Compare the data sets, ignoring some of the properties:
+Compare two data sets, ignoring some of the properties:
 
 ```console
-host:~$ node dist/index.js datasets compare \
-    --dhis2-url 'http://USER:PASSWORD@localhost:8080' \
+shell~$ node dist/index.js datasets compare \
+    --dhis2-url 'http://USER:PASSWORD@localshell8080' \
     --ignore-properties="expiryDays,sections" \
     DiMntK7qKZQ-Z3tlf5sqWiK
 DiMntK7qKZQ - Z3tlf5sqWiK: equal
