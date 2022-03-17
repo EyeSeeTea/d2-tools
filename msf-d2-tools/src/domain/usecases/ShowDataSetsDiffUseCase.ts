@@ -1,23 +1,36 @@
+import { CompareResult } from "domain/entities/CompareResult";
 import { DataSetsRepository } from "domain/repositories/DataSetsRepository";
+import { Id } from "types/d2-api";
 
 export class ShowDataSetsDiffUseCase {
     constructor(private dataSetsRepository: DataSetsRepository) {}
 
-    async execute(options: { dataSetIdsPairs: string[] }) {
-        for (const pair of options.dataSetIdsPairs) {
-            const [id1, id2] = pair.split("-");
-            if (!id1 || !id2) throw new Error(`Invalid pair: ${pair} (expected ID1-ID2)`);
+    async execute(options: {
+        dataSetIdsPairs: Array<[Id, Id]>;
+        ignoreProperties: string[] | undefined;
+    }): Promise<CompareResult[]> {
+        if (options.ignoreProperties)
+            console.debug(`Ignored properties: ${options.ignoreProperties.join(", ")}`);
 
-            const result = await this.dataSetsRepository.compare(id1, id2);
-            const base = `${id1} <-> ${id2}`;
+        const results: CompareResult[] = [];
+
+        for (const pair of options.dataSetIdsPairs) {
+            const [id1, id2] = pair;
+            const result = await this.dataSetsRepository.compare(id1, id2, options);
+            const idsText = `${id1} - ${id2}:`;
 
             switch (result.type) {
                 case "equal":
-                    console.log(`${base} Equal`);
+                    console.info(`${idsText} equal`);
                     break;
                 case "non-equal":
-                    console.log(`${base} Non equal:\n` + result.diff);
+                    console.info(`${idsText} non-equal\n` + result.diff);
+                    break;
             }
+
+            results.push(result);
         }
+
+        return results;
     }
 }
