@@ -11,11 +11,15 @@ export function compareDataSetsCli() {
         name: path.basename(__filename),
         description: "Compare pairs of DHIS2 data sets",
         args: {
-            url: option({
+            url1: option({
                 type: string,
-                long: "dhis2-url",
-                short: "u",
-                description: "http://USERNAME:PASSWORD@localhost:8080",
+                long: "url",
+                description: "http://USERNAME:PASSWORD@host1:8080",
+            }),
+            url2: option({
+                type: optional(string),
+                long: "url2",
+                description: "http://USERNAME:PASSWORD@host2:8080",
             }),
             ignoreProperties: option({
                 type: optional(StringsSeparatedByCommas),
@@ -29,9 +33,12 @@ export function compareDataSetsCli() {
         },
         handler: async args => {
             if (_.isEmpty(args.dataSetIdsPairs)) throw new Error("Missing ID pairs: ID1-ID2");
-            const api = new D2Api({ baseUrl: args.url });
-            const dataSetsRepository = new DataSetsD2Repository(api);
-            const showDiff = new ShowDataSetsDiffUseCase(dataSetsRepository);
+            const api1 = new D2Api({ baseUrl: args.url1 });
+            const api2 = args.url2 ? new D2Api({ baseUrl: args.url2 }) : api1;
+            const dataSetsRepository1 = new DataSetsD2Repository(api1);
+            const dataSetsRepository2 = new DataSetsD2Repository(api2);
+
+            const showDiff = new ShowDataSetsDiffUseCase(dataSetsRepository1, dataSetsRepository2);
             const results = await showDiff.execute(args);
             const allEqual = _(results).every(result => result.type === "equal");
             const statusCode = allEqual ? 0 : 1;
