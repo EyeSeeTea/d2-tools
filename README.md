@@ -11,7 +11,7 @@ shell:~$ yarn build
 
 ```console
 shell:~$ node dist/index.js datasets compare \
-  --url 'http://USER:PASSWORD@localhost:8080' \
+  --url='http://USER:PASSWORD@localhost:8080' \
   DiMntK7qKZQ-Z3tlf5sqWiK \
   TuL8IOPzpHh-jHF49Vvup66
 
@@ -27,8 +27,8 @@ TuL8IOPzpHh - jHF49Vvup66: equal
 
 ```console
 shell:~$ node dist/index.js datasets compare \
-  --url 'http://USER:PASSWORD@host1:8080' \
-  --url2 'http://USER:PASSWORD@host2:8080' \
+  --url='http://USER:PASSWORD@host1:8080' \
+  --url2='http://USER:PASSWORD@host2:8080' \
   DiMntK7qKZQ-Z3tlf5sqWiK \
   TuL8IOPzpHh-jHF49Vvup66
 ```
@@ -48,7 +48,7 @@ shell:~$ node dist/index.js datasets show-schema
 
 ```console
 shell:~$ node dist/index.js datasets compare \
-    --dhis2-url 'http://USER:PASSWORD@localhost:8080' \
+    --url='http://USER:PASSWORD@localhost:8080' \
     --ignore-properties="expiryDays,sections" \
     DiMntK7qKZQ-Z3tlf5sqWiK
 
