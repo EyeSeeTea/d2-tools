@@ -1,14 +1,13 @@
 import _ from "lodash";
-import { command, run, string, option, restPositionals, optional, subcommands, Type } from "cmd-ts";
+import { command, string, option, restPositionals, optional, subcommands, Type } from "cmd-ts";
 import { DataSetsD2Repository } from "data/DataSetsD2Repository";
 import { ShowDataSetsDiffUseCase } from "domain/usecases/ShowDataSetsDiffUseCase";
-import path from "path";
 import { D2Api } from "types/d2-api";
 import { ShowSchemaUseCase } from "domain/usecases/ShowSchemaUseCase";
 
-export function compareDataSetsCli() {
+export function getCommand() {
     const compareCmd = command({
-        name: path.basename(__filename),
+        name: "compare",
         description: "Compare pairs of DHIS2 data sets",
         args: {
             url1: option({
@@ -29,6 +28,7 @@ export function compareDataSetsCli() {
             dataSetIdsPairs: restPositionals({
                 type: StringPairSeparatedByDash,
                 displayName: "ID1-ID2",
+                description: "Pairs of data set IDs to compare",
             }),
         },
         handler: async args => {
@@ -47,7 +47,7 @@ export function compareDataSetsCli() {
     });
 
     const showSchemaCmd = command({
-        name: path.basename(__filename),
+        name: "show-schema",
         description: "Show DHIS2 data sets schema to be used in compare command",
         args: {},
         handler: async () => {
@@ -58,18 +58,10 @@ export function compareDataSetsCli() {
         },
     });
 
-    const dataSetSubcommands = subcommands({
-        name: "DHIS2 Data set",
+    return subcommands({
+        name: "datasets",
         cmds: { compare: compareCmd, "show-schema": showSchemaCmd },
     });
-
-    const cliSubcommands = subcommands({
-        name: "DHIS2 Data set",
-        cmds: { datasets: dataSetSubcommands },
-    });
-
-    const args = process.argv.slice(2);
-    run(cliSubcommands, args);
 }
 
 type Pair = [string, string];
