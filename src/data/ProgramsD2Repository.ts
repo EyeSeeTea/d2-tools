@@ -19,6 +19,23 @@ export class ProgramsD2Repository implements ProgramsRepository {
             })
             .getData();
 
-        return { metadata: { programs }, data: {} };
+        const { instances: enrollments } = await api.tracker.enrollments
+            .get({ ouMode: "ALL", pageSize: maxPageSize, fields: { $all: true } })
+            .getData();
+
+        const { trackedEntityInstances } = await api.trackedEntityInstances
+            .getAll({ ouMode: "ALL", totalPages: true, pageSize: maxPageSize })
+            .getData();
+
+        const { events } = await api.events
+            .getAll({ totalPages: true, pageSize: maxPageSize, fields: { $all: true } })
+            .getData();
+
+        return {
+            metadata: { programs },
+            data: { events, enrollments, trackedEntityInstances },
+        };
     }
 }
+
+const maxPageSize = 1e6;
