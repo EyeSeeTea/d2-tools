@@ -1,6 +1,6 @@
 import _ from "lodash";
 import { command, string, option, restPositionals, optional, subcommands, Type } from "cmd-ts";
-import { getApiUrlOption, getD2Api } from "scripts/common";
+import { getApiUrlOption, getD2Api, log } from "scripts/common";
 
 export function getCommand() {
     const exportCmd = command({
@@ -25,7 +25,8 @@ export function getCommand() {
                     },
                 })
                 .getData();
-            console.log(programs);
+
+            log.debug(programs);
         },
     });
 
