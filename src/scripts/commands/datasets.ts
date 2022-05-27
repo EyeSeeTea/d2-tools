@@ -12,7 +12,11 @@ export function getCommand() {
         description: "Compare pairs of DHIS2 data sets",
         args: {
             url1: getApiUrlOption({ long: "url" }),
-            url2: getApiUrlOption({ long: "url2" }),
+            url2: option({
+                type: optional(string),
+                long: "url2",
+                description: "http://USERNAME:PASSWORD@HOST:PORT",
+            }),
             ignoreProperties: option({
                 type: optional(StringsSeparatedByCommas),
                 long: "ignore-properties",

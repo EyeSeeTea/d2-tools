@@ -1,0 +1,7 @@
+import { Async } from "domain/entities/Async";
+import { Id } from "domain/entities/Base";
+import { ProgramExport } from "domain/entities/ProgramExport";
+
+export interface ProgramsRepository {
+    export(options: { ids: Id[] }): Async<ProgramExport>;
+}

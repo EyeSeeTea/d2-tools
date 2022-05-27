@@ -1,6 +1,9 @@
 import _ from "lodash";
-import { command, string, option, restPositionals, optional, subcommands, Type } from "cmd-ts";
-import { getApiUrlOption, getD2Api, log } from "scripts/common";
+import { command, string, restPositionals, subcommands } from "cmd-ts";
+
+import { getApiUrlOption, getD2Api } from "scripts/common";
+import { ProgramsD2Repository } from "data/ProgramsD2Repository";
+import { ExportProgramsUseCase } from "domain/usecases/ExportProgramsUseCase";
 
 export function getCommand() {
     const exportCmd = command({
@@ -8,25 +11,17 @@ export function getCommand() {
         description: "Export program metadata and data (events, enrollments, TEIs)",
         args: {
             url: getApiUrlOption(),
+            programIds: restPositionals({
+                type: string,
+                displayName: "PROGRAM_ID",
+                description: "List of program IDs to export",
+            }),
         },
         handler: async args => {
+            if (_.isEmpty(args.programIds)) throw new Error("Missing program IDs");
             const api = getD2Api(args.url);
-
-            /*
-            const dataSetsRepository1 = new DataSetsD2Repository(api1);
-            const dataSetsRepository2 = new DataSetsD2Repository(api2);
-            const showDiff = new ShowDataSetsDiffUseCase(dataSetsRepository1, dataSetsRepository2);
-            */
-
-            const { programs } = await api.metadata
-                .get({
-                    programs: {
-                        fields: { id: true },
-                    },
-                })
-                .getData();
-
-            log.debug(programs);
+            const programsRepository = new ProgramsD2Repository(api);
+            new ExportProgramsUseCase(programsRepository).execute({ ids: args.programIds });
         },
     });
 
