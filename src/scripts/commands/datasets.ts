@@ -4,22 +4,15 @@ import { DataSetsD2Repository } from "data/DataSetsD2Repository";
 import { ShowDataSetsDiffUseCase } from "domain/usecases/ShowDataSetsDiffUseCase";
 import { D2Api } from "types/d2-api";
 import { ShowSchemaUseCase } from "domain/usecases/ShowSchemaUseCase";
+import { getApiUrlOption, getD2Api } from "scripts/common";
 
 export function getCommand() {
     const compareCmd = command({
         name: "compare",
         description: "Compare pairs of DHIS2 data sets",
         args: {
-            url1: option({
-                type: string,
-                long: "url",
-                description: "http://USERNAME:PASSWORD@host1:8080",
-            }),
-            url2: option({
-                type: optional(string),
-                long: "url2",
-                description: "http://USERNAME:PASSWORD@host2:8080",
-            }),
+            url1: getApiUrlOption({ long: "url" }),
+            url2: getApiUrlOption({ long: "url2" }),
             ignoreProperties: option({
                 type: optional(StringsSeparatedByCommas),
                 long: "ignore-properties",
@@ -33,8 +26,8 @@ export function getCommand() {
         },
         handler: async args => {
             if (_.isEmpty(args.dataSetIdsPairs)) throw new Error("Missing ID pairs: ID1-ID2");
-            const api1 = new D2Api({ baseUrl: args.url1 });
-            const api2 = args.url2 ? new D2Api({ baseUrl: args.url2 }) : api1;
+            const api1 = getD2Api(args.url1);
+            const api2 = args.url2 ? getD2Api(args.url2) : api1;
             const dataSetsRepository1 = new DataSetsD2Repository(api1);
             const dataSetsRepository2 = new DataSetsD2Repository(api2);
 
