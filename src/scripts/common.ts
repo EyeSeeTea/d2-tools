@@ -1,4 +1,4 @@
-import { option, string } from "cmd-ts";
+import { option, string, Type } from "cmd-ts";
 import { D2Api } from "types/d2-api";
 
 export function getD2Api(baseUrl: string): D2Api {
@@ -15,3 +15,19 @@ export function getApiUrlOption(options?: { long: string }) {
         description: "http://USERNAME:PASSWORD@HOST:PORT",
     });
 }
+
+export type Pair = [string, string];
+
+export const StringPairSeparatedByDash: Type<string, Pair> = {
+    async from(str) {
+        const [id1, id2] = str.split("-");
+        if (!id1 || !id2) throw new Error(`Invalid pair: ${str} (expected ID1-ID2)`);
+        return [id1, id2];
+    },
+};
+
+export const StringsSeparatedByCommas: Type<string, string[]> = {
+    async from(str) {
+        return str.split(",");
+    },
+};

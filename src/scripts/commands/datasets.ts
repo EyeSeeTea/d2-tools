@@ -1,10 +1,15 @@
 import _ from "lodash";
-import { command, string, option, restPositionals, optional, subcommands, Type } from "cmd-ts";
+import { command, string, option, restPositionals, optional, subcommands } from "cmd-ts";
 import { DataSetsD2Repository } from "data/DataSetsD2Repository";
 import { ShowDataSetsDiffUseCase } from "domain/usecases/ShowDataSetsDiffUseCase";
 import { D2Api } from "types/d2-api";
 import { ShowSchemaUseCase } from "domain/usecases/ShowSchemaUseCase";
-import { getApiUrlOption, getD2Api } from "scripts/common";
+import {
+    getApiUrlOption,
+    getD2Api,
+    StringPairSeparatedByDash,
+    StringsSeparatedByCommas,
+} from "scripts/common";
 
 export function getCommand() {
     const compareCmd = command({
@@ -60,19 +65,3 @@ export function getCommand() {
         cmds: { compare: compareCmd, "show-schema": showSchemaCmd },
     });
 }
-
-type Pair = [string, string];
-
-const StringPairSeparatedByDash: Type<string, Pair> = {
-    async from(str) {
-        const [id1, id2] = str.split("-");
-        if (!id1 || !id2) throw new Error(`Invalid pair: ${str} (expected ID1-ID2)`);
-        return [id1, id2];
-    },
-};
-
-const StringsSeparatedByCommas: Type<string, string[]> = {
-    async from(str) {
-        return str.split(",");
-    },
-};

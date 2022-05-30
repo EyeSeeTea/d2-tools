@@ -6,4 +6,8 @@ export interface ProgramExport {
 }
 
 type Program = object;
-type ProgramData = object;
+type ProgramData = {
+    events: object[];
+    enrollments: object[];
+    trackedEntities: object[];
+};
