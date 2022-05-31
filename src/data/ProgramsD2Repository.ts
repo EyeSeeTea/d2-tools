@@ -46,7 +46,7 @@ export class ProgramsD2Repository implements ProgramsRepository {
     }
 
     async postTracker(data: object): Async<TrackerResponse> {
-        // TODO: Implement in d2-api -> api.tracker
+        // TODO: Implement in d2-api -> POST api.tracker.post
         const res = await this.api.post<TrackerResponse>("/tracker", { async: false }, data).getData();
 
         if (res.status !== "OK") {
@@ -63,7 +63,7 @@ export class ProgramsD2Repository implements ProgramsRepository {
         let dataRemaining = true;
 
         while (dataRemaining) {
-            // TODO: Implement in d2-api -> api.tracker.{events,enrollments,trackedEntities}
+            // TODO: Implement in d2-api -> GET api.tracker.{events,enrollments,trackedEntities}
             const { instances } = await this.api
                 .get<{ instances: object[] }>(`/tracker/${path}`, {
                     page,

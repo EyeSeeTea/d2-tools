@@ -8,9 +8,9 @@ export class ImportProgramsUseCase {
 
     async execute(options: { inputFile: string }): Async<void> {
         const { inputFile } = options;
+        log.info(`Read: ${inputFile}`);
         const json = fs.readFileSync(inputFile, "utf8");
         const programExport = JSON.parse(json);
         await this.programsRepository.import(programExport);
-        log.info(`Written: ${inputFile}`);
     }
 }
