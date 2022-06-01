@@ -1,11 +1,8 @@
 export interface ProgramExport {
-    metadata: {
-        programs: Program[];
-    };
+    metadata: object;
     data: ProgramData;
 }
 
-type Program = object;
 type ProgramData = {
     events: object[];
     enrollments: object[];
