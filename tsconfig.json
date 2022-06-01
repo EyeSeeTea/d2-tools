@@ -4,6 +4,7 @@
         "noImplicitAny": true,
         "strictNullChecks": true,
         "noUncheckedIndexedAccess": true,
+        "target": "esnext",
         "rootDir": "src"
     },
     "extends": "./tsconfig.base.json",

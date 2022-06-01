@@ -1,3 +1,3 @@
-import { compareDataSetsCli } from "scripts/MainCli";
+import { runCli } from "scripts/cli";
 
-compareDataSetsCli();
+runCli();
