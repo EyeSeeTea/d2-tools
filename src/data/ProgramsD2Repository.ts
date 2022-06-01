@@ -72,10 +72,11 @@ export class ProgramsD2Repository implements ProgramsRepository {
 
     async getFromTracker(apiPath: string, programIds: string[]): Promise<object[]> {
         const output = [];
-        let page = 1;
-        let dataRemaining = true;
 
         for (const programId of programIds) {
+            let page = 1;
+            let dataRemaining = true;
+
             while (dataRemaining) {
                 // TODO: Implement in d2-api -> GET api.tracker.{events,enrollments,trackedEntities}
                 const { instances } = await this.api
@@ -88,9 +89,12 @@ export class ProgramsD2Repository implements ProgramsRepository {
                     })
                     .getData();
 
-                output.push(...instances);
-                page++;
-                if (instances.length === 0) dataRemaining = false;
+                if (instances.length === 0) {
+                    dataRemaining = false;
+                } else {
+                    output.push(...instances);
+                    page++;
+                }
             }
         }
 
