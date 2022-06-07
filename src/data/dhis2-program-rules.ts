@@ -1,3 +1,5 @@
+//import { rulesEngine } from "capture-core/rules/test";
+
 import { rulesEngine } from "capture-core/rules/rulesEngine";
 
 export function runProgramRules() {
@@ -63,14 +65,10 @@ export function runProgramRules() {
 
     console.log(rulesEffects);
 
-    /*
-    expect(rulesEffects).toEqual([
-        {
-            type: "ASSIGN",
-            targetDataType: "dataElement",
-            id: "oZg33kd9taw",
-            value: "21",
-        },
-    ]);
-    */
+    //{
+    //type: "ASSIGN",
+    //targetDataType: "dataElement",
+    //id: "oZg33kd9taw",
+    //value: "21",
+    //},
 }

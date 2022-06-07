@@ -24,6 +24,7 @@ module.exports = {
         extensions: [".ts", ".js"],
         plugins: [
             new TsconfigPathsPlugin({
+                extensions: [".js", ".ts"],
                 baseUrl: "./src",
             }),
         ],

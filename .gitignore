@@ -128,4 +128,4 @@ dist
 
 # App
 /bak
-/src/data/capture-core-modules/
+capture-core*
