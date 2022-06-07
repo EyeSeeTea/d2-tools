@@ -1,9 +1,7 @@
-import { rulesEngine } from "../rulesEngine";
+import { rulesEngine } from "capture-core/rules/rulesEngine";
 
-// TODO: In postinstall.json script, get capture-app/src/data/capture-core-modules at a specific commit
-
-test("TEI rules engine effects with functions and effects", () => {
-    const constants = [];
+export function runProgramRules() {
+    const constants = [{ id: "constant123", displayName: "Constant", value: 123 }];
 
     const dataElements = {
         oZg33kd9taw: { id: "oZg33kd9taw", valueType: "TEXT" },
@@ -63,6 +61,9 @@ test("TEI rules engine effects with functions and effects", () => {
         dataElements,
     });
 
+    console.log(rulesEffects);
+
+    /*
     expect(rulesEffects).toEqual([
         {
             type: "ASSIGN",
@@ -71,4 +72,5 @@ test("TEI rules engine effects with functions and effects", () => {
             value: "21",
         },
     ]);
-});
+    */
+}

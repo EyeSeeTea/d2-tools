@@ -5,24 +5,27 @@ import { getApiUrlOption, getD2Api, StringsSeparatedByCommas } from "scripts/com
 import { ProgramsD2Repository } from "data/ProgramsD2Repository";
 import { ExportProgramsUseCase } from "domain/usecases/ExportProgramsUseCase";
 import { ImportProgramsUseCase } from "domain/usecases/ImportProgramsUseCase";
+import { RunProgramRulesUseCase } from "domain/usecases/RunProgramRulesUseCase";
 
 export function getCommand() {
     return subcommands({
         name: "programs",
-        cmds: { export: exportCmd, import: importCmd },
+        cmds: { export: exportCmd, import: importCmd, "run-program-rules": runProgramRulesCmd },
     });
 }
+
+const programIdsOptions = option({
+    type: StringsSeparatedByCommas,
+    long: "ids",
+    description: "List of program ID1,ID2[,IDN] to export (comma-separated)",
+});
 
 const exportCmd = command({
     name: "export",
     description: "Export program metadata and data (events, enrollments, TEIs)",
     args: {
         url: getApiUrlOption(),
-        programIds: option({
-            type: StringsSeparatedByCommas,
-            long: "ids",
-            description: "List of program ID1,ID2[,IDN] to export (comma-separated)",
-        }),
+        programIds: programIdsOptions,
         outputFile: positional({
             type: string,
             description: "Output file (JSON)",
@@ -54,6 +57,22 @@ const importCmd = command({
         const programsRepository = new ProgramsD2Repository(api);
         new ImportProgramsUseCase(programsRepository).execute({
             inputFile: args.inputFile,
+        });
+    },
+});
+
+const runProgramRulesCmd = command({
+    name: "run-program-rules",
+    description: "Run program rules for programs",
+    args: {
+        url: getApiUrlOption(),
+        programIds: programIdsOptions,
+    },
+    handler: async args => {
+        const api = getD2Api(args.url);
+        const programsRepository = new ProgramsD2Repository(api);
+        new RunProgramRulesUseCase(programsRepository).execute({
+            ids: args.programIds,
         });
     },
 });
