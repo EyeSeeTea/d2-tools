@@ -1,5 +1,6 @@
+import { CancelableResponse } from "@eyeseetea/d2-api/repositories/CancelableResponse";
 import _ from "lodash";
-import { MetadataResponse, CancelableResponse } from "../types/d2-api";
+import { MetadataResponse } from "../types/d2-api";
 
 export function getErrorFromResponse(res: MetadataResponse): string {
     console.debug(JSON.stringify(res, null, 4));
