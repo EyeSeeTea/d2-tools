@@ -1,9 +1,13 @@
-import SimpleNodeLogger from "simple-node-logger";
+import SimpleLogger from "simple-node-logger";
 
-const log = SimpleNodeLogger.createSimpleLogger({
-    level: "all",
-    logFilePath: "mylogfile.log",
-    timestampFormat: "YYYY-MM-DD HH:mm:ss.SSS",
+const manager = new SimpleLogger();
+
+manager.createConsoleAppender({
+    writer(s: string) {
+        process.stderr.write(s + "\n");
+    },
 });
 
-export default log;
+const logger = manager.createLogger(undefined, "all");
+
+export default logger;
