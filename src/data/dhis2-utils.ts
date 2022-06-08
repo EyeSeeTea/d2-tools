@@ -18,3 +18,7 @@ export async function runMetadata(d2Response: CancelableResponse<MetadataRespons
     const res = await d2Response.getData();
     return res.status !== "OK" ? Promise.reject(getErrorFromResponse(res)) : Promise.resolve(undefined);
 }
+
+export function getData<T>(d2Response: CancelableResponse<T>): Promise<T> {
+    return d2Response.getData();
+}

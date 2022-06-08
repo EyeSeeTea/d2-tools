@@ -6,7 +6,7 @@ import { ProgramsRepository } from "domain/repositories/ProgramsRepository";
 import { D2Api } from "types/d2-api";
 import log from "utils/log";
 import { runMetadata } from "./dhis2-utils";
-import { runProgramRules } from "./dhis2-program-rules";
+import { D2ProgramRules } from "./d2-program-rules/D2ProgramRules";
 
 type MetadataRes = { date: string } & { [k: string]: Array<{ id: string }> };
 
@@ -59,8 +59,8 @@ export class ProgramsD2Repository implements ProgramsRepository {
     }
 
     async runRules(options: { ids: Id[] }): Async<void> {
-        console.log("runRules", options);
-        runProgramRules();
+        const d2ProgramRules = new D2ProgramRules(this.api);
+        return d2ProgramRules.run(options);
     }
 
     /* Private */
@@ -68,7 +68,7 @@ export class ProgramsD2Repository implements ProgramsRepository {
     private async postTracker(data: object): Async<TrackerResponse> {
         // TODO: Implement in d2-api -> POST api.tracker.post
         const res = await this.api.post<TrackerResponse>("/tracker", { async: false }, data).getData();
-        console.debug(res.status);
+        log.debug(res.status);
 
         if (res.status !== "OK") {
             console.error(JSON.stringify(res.typeReports, null, 4));
