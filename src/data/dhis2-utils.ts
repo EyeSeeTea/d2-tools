@@ -1,8 +1,8 @@
 import { HttpResponse } from "@eyeseetea/d2-api/api/common";
 import { EventsPostResponse } from "@eyeseetea/d2-api/api/events";
 import { CancelableResponse } from "@eyeseetea/d2-api/repositories/CancelableResponse";
-import { Async } from "domain/entities/Async";
 import _ from "lodash";
+import log from "utils/log";
 import { MetadataResponse } from "../types/d2-api";
 
 export function getErrorFromResponse(res: MetadataResponse): string {
@@ -26,13 +26,14 @@ export function getData<T>(d2Response: CancelableResponse<T>): Promise<T> {
     return d2Response.getData();
 }
 
-export function checkPostEventsResponse(res: HttpResponse<EventsPostResponse>): Async<void> {
+export function checkPostEventsResponse(res: HttpResponse<EventsPostResponse>): void {
     const importMessages = _(res.response.importSummaries || [])
         .map(importSummary => (importSummary.status !== "SUCCESS" ? importSummary.description : null))
         .compact()
         .value();
 
-    return res.status !== "OK"
-        ? Promise.reject([`POST /events error`, res.message, ...importMessages].join("\n") || "Unknown error")
-        : Promise.resolve(undefined);
+    if (res.status !== "OK") {
+        const msg = [`POST /events error`, res.message, ...importMessages].join("\n") || "Unknown error";
+        log.error(msg);
+    }
 }
