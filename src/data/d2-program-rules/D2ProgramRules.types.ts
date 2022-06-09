@@ -24,7 +24,7 @@ export type Id = string;
 export interface Constant {
     id: Id;
     displayName: string;
-    value: string;
+    value: number;
 }
 
 type IdMap<T> = Record<Id, T>;
@@ -93,6 +93,7 @@ export interface ProgramRuleVariable {
     id: Id;
     displayName: string;
     programRuleVariableSourceType: D2ProgramRuleVariable["programRuleVariableSourceType"];
+    valueType?: string; // Present in capture-app type, even though variable have no valueType
     programId: Id;
     dataElementId?: Id;
     trackedEntityAttributeId?: Id;
@@ -112,7 +113,7 @@ type DataElementId = Id;
 
 export type TrackedEntityAttributeValuesMap = Record<DataElementId, string>;
 
-export type ProgramRuleEvent = Record<DataElementId, string> & ProgramRuleEventObj;
+export type ProgramRuleEvent = ProgramRuleEventObj; // & Record<DataElementId, string>;
 
 export interface ProgramRuleEventObj {
     eventId: Id;
@@ -122,7 +123,7 @@ export interface ProgramRuleEventObj {
     orgUnitName: string;
     trackedEntityInstanceId?: Id | undefined;
     enrollmentId?: Id;
-    enrollmentStatus?: string;
+    enrollmentStatus?: "ACTIVE" | "COMPLETED" | "CANCELLED";
     status?: EventStatus;
     occurredAt?: StringDateTime;
     scheduledAt?: StringDateTime;
