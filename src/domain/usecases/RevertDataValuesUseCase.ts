@@ -45,9 +45,9 @@ export class RevertDataValuesUseCase {
                     return filterByDate(audit.created) && filterByUsername(audit.modifiedBy);
                 });
 
-                const auditOfLastValidChange = _(auditsForDataValue).find(audit => {
-                    return compareDateTimeIso8601(audit.created, options.date) === "LT";
-                });
+                const auditOfLastValidChange = _(auditsForDataValue)
+                    .reverse()
+                    .find(audit => compareDateTimeIso8601(audit.created, options.date) === "LT");
 
                 if (_(auditsForDataValue).isEmpty()) {
                     log.warn(`No audits found for revertable data value: ${formatDataValue(dataValue)}`);
