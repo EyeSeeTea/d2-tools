@@ -39,10 +39,18 @@ export class RevertDataValuesUseCase {
         const updates = _(dataValuesFiltered)
             .map((dataValue): Maybe<Update> => {
                 const dataValueId = getDataValueId(dataValue);
-                const auditsForDataValue = auditsByDataValueId[dataValueId] || [];
-                const audit = _(auditsForDataValue)
-                    .sortBy(audit => audit.created)
-                    .find(audit => filterByDate(audit.created) && filterByUsername(audit.modifiedBy));
+                const auditsForDataValue = _.sortBy(
+                    auditsByDataValueId[dataValueId] || [],
+                    audit => audit.created
+                );
+
+                const audit = _(auditsForDataValue).find(audit => {
+                    return filterByDate(audit.created) && filterByUsername(audit.modifiedBy);
+                });
+
+                const auditPrev = _(auditsForDataValue).find(audit => {
+                    return compareDateTimeIso8601(audit.created, options.date) === "LT";
+                });
 
                 if (_(auditsForDataValue).isEmpty()) {
                     log.warn(`No audits found for data value: ${formatDataValue(dataValue)}`);
@@ -52,8 +60,15 @@ export class RevertDataValuesUseCase {
                     const currentValue = dataValue.value;
                     const prevValue = audit.value;
                     const hasChanges = currentValue !== prevValue;
-                    const dataValueUpdated = { ...dataValue, value: prevValue };
-                    return hasChanges ? { dataValueCurrent: dataValue, dataValueUpdated, audit } : undefined;
+                    const dataValueUpdated: DataValue = {
+                        ...dataValue,
+                        value: prevValue,
+                        storedBy: auditPrev?.modifiedBy || dataValue.storedBy,
+                        lastUpdated: auditPrev?.created || dataValue.lastUpdated,
+                    };
+                    if (hasChanges) {
+                        return { dataValueCurrent: dataValue, dataValueUpdated, audit, auditPrev };
+                    }
                 }
             })
             .compact()
@@ -152,4 +167,5 @@ interface Update {
     dataValueCurrent: DataValue;
     dataValueUpdated: DataValue;
     audit: DataValueAudit;
+    auditPrev: Maybe<DataValueAudit>; // Used to override the storedBy/lastUpdated
 }
