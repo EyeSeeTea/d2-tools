@@ -12,6 +12,7 @@ export class DataValuesD2Repository implements DataValuesRepository {
             dataSet: options.dataSetIds,
             orgUnit: options.orgUnitIds,
             period: options.periods,
+            includeDeleted: true,
         });
 
         const res = await res$.getData();

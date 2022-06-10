@@ -7,7 +7,7 @@ import { compareDateTimeIso8601, DateTimeIso8601 } from "domain/entities/DateTim
 import { DataValuesRepository } from "domain/repositories/DataValuesRepository";
 import { Id } from "types/d2-api";
 import { Maybe } from "utils/ts-utils";
-import { DataValueAudit, getDataValueAuditId } from "domain/entities/DataValueAudit";
+import { DataValueAudit, getDataValueIdForAudit } from "domain/entities/DataValueAudit";
 import { DataValue, formatDataValue, getDataValueId } from "domain/entities/DataValue";
 import log from "utils/log";
 
@@ -23,7 +23,7 @@ export class RevertDataValuesUseCase {
         log.debug(`Usernames: ${options.usernames?.join(", ") || "-"}`);
         log.debug(`Date >= ${options.date}`);
 
-        const filterByUsername = (username: string) => (usernames ? usernames.includes(username) : true);
+        const filterByUsername = (username: string) => !usernames || usernames.includes(username);
         const filterByDate = (date: DateTimeIso8601) => compareDateTimeIso8601(date, options.date) !== "LT";
 
         const dataValues = await this.dataValuesRepository.get(options);
@@ -34,40 +34,40 @@ export class RevertDataValuesUseCase {
             .filter(dv => filterByUsername(dv.storedBy))
             .filter(dv => filterByDate(dv.lastUpdated));
 
-        const auditsByDataValueId = _.groupBy(dataValuesAudit, getDataValueAuditId);
+        const auditsByDataValueId = _.groupBy(dataValuesAudit, getDataValueIdForAudit);
 
         const updates = _(dataValuesFiltered)
             .map((dataValue): Maybe<Update> => {
                 const dataValueId = getDataValueId(dataValue);
-                const auditsForDataValue = _.sortBy(
-                    auditsByDataValueId[dataValueId] || [],
-                    audit => audit.created
-                );
+                const auditsForDataValue = _.sortBy(auditsByDataValueId[dataValueId], audit => audit.created);
 
-                const audit = _(auditsForDataValue).find(audit => {
+                const auditOfFirstInvalidChange = _(auditsForDataValue).find(audit => {
                     return filterByDate(audit.created) && filterByUsername(audit.modifiedBy);
                 });
 
-                const auditPrev = _(auditsForDataValue).find(audit => {
+                const auditOfLastValidChange = _(auditsForDataValue).find(audit => {
                     return compareDateTimeIso8601(audit.created, options.date) === "LT";
                 });
 
                 if (_(auditsForDataValue).isEmpty()) {
-                    log.warn(`No audits found for data value: ${formatDataValue(dataValue)}`);
-                } else if (!audit) {
-                    log.warn(`No reference audit found for data value: ${formatDataValue(dataValue)}`);
+                    log.warn(`No audits found for revertable data value: ${formatDataValue(dataValue)}`);
                 } else {
-                    const currentValue = dataValue.value;
-                    const prevValue = audit.value;
-                    const hasChanges = currentValue !== prevValue;
                     const dataValueUpdated: DataValue = {
-                        ...dataValue,
-                        value: prevValue,
-                        storedBy: auditPrev?.modifiedBy || dataValue.storedBy,
-                        lastUpdated: auditPrev?.created || dataValue.lastUpdated,
+                        ..._.omit(dataValue, ["deleted"]),
+                        value: auditOfFirstInvalidChange?.value ?? auditOfLastValidChange?.value ?? "",
+                        storedBy: auditOfLastValidChange?.modifiedBy || dataValue.storedBy,
+                        lastUpdated: auditOfLastValidChange?.created || dataValue.lastUpdated,
+                        ...(auditOfLastValidChange?.auditType === "DELETE" ? { deleted: true } : {}),
                     };
+                    const hasChanges = !_.isEqual(dataValue, dataValueUpdated);
+
                     if (hasChanges) {
-                        return { dataValueCurrent: dataValue, dataValueUpdated, audit, auditPrev };
+                        return {
+                            dataValueCurrent: dataValue,
+                            dataValueUpdated,
+                            auditOfFirstInvalidChange: auditOfFirstInvalidChange,
+                            auditOfLastValidChange: auditOfLastValidChange,
+                        };
                     }
                 }
             })
@@ -86,12 +86,14 @@ export class RevertDataValuesUseCase {
             "dataElement",
             "aoc",
             "coc",
-            "lastUpdated",
-            "storedBy",
             "value",
-            "auditValue",
-            "auditCreated",
-            "auditModifiedBy",
+            "valueNew",
+            "deleted",
+            "deletedNew",
+            "lastUpdated",
+            "lastUpdatedNew",
+            "storedBy",
+            "storedByNew",
         ] as const;
 
         type Header = typeof headers[number];
@@ -106,7 +108,7 @@ export class RevertDataValuesUseCase {
         });
 
         const records = updates.map((update): Row => {
-            const { dataValueCurrent: dv, audit } = update;
+            const { dataValueCurrent: dv, dataValueUpdated: dv2, auditOfFirstInvalidChange: audit } = update;
 
             return {
                 orgUnit: dv.orgUnit,
@@ -117,9 +119,11 @@ export class RevertDataValuesUseCase {
                 lastUpdated: "'" + dv.lastUpdated,
                 storedBy: dv.storedBy,
                 value: dv.value,
-                auditValue: audit.value,
-                auditCreated: "'" + audit.created,
-                auditModifiedBy: audit.modifiedBy,
+                valueNew: dv2.value,
+                deleted: dv.deleted ? "true" : "",
+                deletedNew: dv2.deleted ? "true" : "",
+                lastUpdatedNew: "'" + dv2.lastUpdated,
+                storedByNew: dv2.storedBy,
             };
         });
 
@@ -166,6 +170,6 @@ interface Options {
 interface Update {
     dataValueCurrent: DataValue;
     dataValueUpdated: DataValue;
-    audit: DataValueAudit;
-    auditPrev: Maybe<DataValueAudit>; // Used to override the storedBy/lastUpdated
+    auditOfFirstInvalidChange: Maybe<DataValueAudit>;
+    auditOfLastValidChange: Maybe<DataValueAudit>; // Used to override the storedBy/lastUpdated
 }

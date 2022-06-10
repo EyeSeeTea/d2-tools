@@ -12,6 +12,7 @@ export interface DataValue {
     created: DateTimeIso8601;
     lastUpdated: DateTimeIso8601;
     followup: boolean;
+    deleted?: boolean;
 }
 
 type Period = string;

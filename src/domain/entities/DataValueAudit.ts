@@ -14,7 +14,7 @@ export interface DataValueAudit {
     dataElement: Ref;
 }
 
-export function getDataValueAuditId(dataValueAudit: DataValueAudit): string {
+export function getDataValueIdForAudit(dataValueAudit: DataValueAudit): string {
     return getDataValueId(getDataValueFromAudit(dataValueAudit));
 }
 
