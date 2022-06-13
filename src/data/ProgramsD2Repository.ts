@@ -45,7 +45,9 @@ export class ProgramsD2Repository implements ProgramsRepository {
 
     async import(programExport: ProgramExport): Async<void> {
         log.info("Import metadata");
-        const _metadataRes = await runMetadata(this.api.metadata.post(programExport.metadata));
+        const _metadataRes = await runMetadata(this.api.metadata.post(programExport.metadata), {
+            description: "Programs and dependencies",
+        });
 
         log.info("Import data: enrollments, trackedEntities");
         const data1 = _.pick(programExport.data, ["enrollments", "trackedEntities"]);

@@ -1,5 +1,6 @@
 import { CancelableResponse } from "@eyeseetea/d2-api/repositories/CancelableResponse";
 import _ from "lodash";
+import log from "utils/log";
 import { MetadataResponse } from "../types/d2-api";
 
 export function getErrorFromResponse(res: MetadataResponse): string {
@@ -14,7 +15,16 @@ export function getErrorFromResponse(res: MetadataResponse): string {
         .join("\n");
 }
 
-export async function runMetadata(d2Response: CancelableResponse<MetadataResponse>): Promise<void> {
+export async function runMetadata(
+    d2Response: CancelableResponse<MetadataResponse>,
+    options = { description: "" }
+): Promise<void> {
     const res = await d2Response.getData();
-    return res.status !== "OK" ? Promise.reject(getErrorFromResponse(res)) : Promise.resolve(undefined);
+    if (res.status !== "OK") {
+        return Promise.reject(getErrorFromResponse(res));
+    } else {
+        const description = options.description || "metadata";
+        log.debug(`POST ${description}: ${res.status} ${JSON.stringify(res.stats)}`);
+        Promise.resolve(undefined);
+    }
 }
