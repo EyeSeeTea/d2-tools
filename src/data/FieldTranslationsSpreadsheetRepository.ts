@@ -10,10 +10,6 @@ import {
 import { SpreadsheetXlsxDataSource } from "domain/repositories/SpreadsheetXlsxRepository";
 import log from "utils/log";
 
-const identifierField = "name";
-
-const isoLanguageCodesByName = _.keyBy(isoLanguageCodes, code => code.name);
-
 export class FieldTranslationsSpreadsheetRepository implements FieldTranslationsRepository {
     async get<Field extends string>(
         options: GetFieldTranslationsOptions<Field>
@@ -36,8 +32,9 @@ export class FieldTranslationsSpreadsheetRepository implements FieldTranslations
                 const localeMapping: Record<string, LocaleIso839_1> = _(locales)
                     .map(locale => {
                         const isoCode = isoLanguageCodesByName[locale];
+
                         if (!isoCode) {
-                            log.warn(`Unknown locale: ${locale}`);
+                            log.warn(`Unknown locale name: ${locale}`);
                         } else {
                             return [locale, isoCode.iso639_1] as [string, LocaleIso839_1];
                         }
@@ -90,3 +87,11 @@ export class FieldTranslationsSpreadsheetRepository implements FieldTranslations
         return _.compact(fieldTranslations);
     }
 }
+
+const identifierField = "name";
+
+// Locale names can be comma-separated: split in different entries
+const isoLanguageCodesByName = _(isoLanguageCodes)
+    .flatMap(code => code.name.split(",").map(name => [name, code]))
+    .fromPairs()
+    .value();
