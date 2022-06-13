@@ -19,7 +19,7 @@ export class DataValuesD2Repository implements DataValuesRepository {
         return res.dataValues;
     }
 
-    async getAudit(options: DataValuesSelector): Async<DataValueAudit[]> {
+    async getAudits(options: DataValuesSelector): Async<DataValueAudit[]> {
         const res$ = this.api.audit.getDataValues({
             ds: options.dataSetIds,
             ou: options.orgUnitIds,
@@ -28,7 +28,6 @@ export class DataValuesD2Repository implements DataValuesRepository {
         });
 
         const res = await res$.getData();
-
         return res.objects;
     }
 }

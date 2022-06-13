@@ -5,7 +5,7 @@ import { DataValueAudit } from "domain/entities/DataValueAudit";
 
 export interface DataValuesRepository {
     get(options: DataValuesSelector): Async<DataValue[]>;
-    getAudit(options: DataValuesSelector): Async<DataValueAudit[]>;
+    getAudits(options: DataValuesSelector): Async<DataValueAudit[]>;
 }
 
 export interface DataValuesSelector {
