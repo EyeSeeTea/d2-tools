@@ -14,7 +14,10 @@ export class SpreadsheetXlsxDataSource implements SpreadsheetDataSource {
             .toPairs()
             .map(([sheetName, worksheet]): Sheet => {
                 const rows = XLSX.utils.sheet_to_json<Row<string>>(worksheet, { raw: true, skipHidden });
-                return { name: sheetName, rows };
+                return {
+                    name: sheetName,
+                    rows: rows.map(row => _.mapValues(row, cellValue => cellValue.trim())),
+                };
             })
             .value();
 

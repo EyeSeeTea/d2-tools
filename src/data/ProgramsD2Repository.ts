@@ -5,7 +5,7 @@ import { ProgramExport } from "domain/entities/ProgramExport";
 import { ProgramsRepository } from "domain/repositories/ProgramsRepository";
 import { D2Api } from "types/d2-api";
 import log from "utils/log";
-import { runMetadata } from "./dhis2-utils";
+import { promiseMap, runMetadata } from "./dhis2-utils";
 
 type MetadataRes = { date: string } & { [k: string]: Array<{ id: string }> };
 
@@ -105,14 +105,3 @@ export class ProgramsD2Repository implements ProgramsRepository {
 }
 
 type TrackerResponse = { status: string; typeReports: object[] };
-
-function promiseMap<T, S>(inputValues: T[], mapper: (value: T) => Promise<S>): Promise<S[]> {
-    const reducer = (acc$: Promise<S[]>, inputValue: T): Promise<S[]> =>
-        acc$.then((acc: S[]) =>
-            mapper(inputValue).then(result => {
-                acc.push(result);
-                return acc;
-            })
-        );
-    return inputValues.reduce(reducer, Promise.resolve([]));
-}

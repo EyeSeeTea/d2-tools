@@ -7,8 +7,6 @@ import { Translation } from "domain/entities/Translation";
 import { DataElement } from "domain/entities/DataElement";
 import log from "utils/log";
 
-const translatableField = "formName";
-
 export class TranslateDataElementsFormNameUseCase {
     constructor(
         private dataElementsRepository: DataElementsRepository,
@@ -17,7 +15,7 @@ export class TranslateDataElementsFormNameUseCase {
 
     async execute(options: { inputFile: string; post: boolean }): Async<void> {
         const fieldTranslations = await this.fieldTranslationsRepository.get({
-            translatableField,
+            translatableField: "formName",
             inputFile: options.inputFile,
             skipHeaders: ["shortName"],
         });
@@ -38,7 +36,7 @@ export class TranslateDataElementsFormNameUseCase {
                         formName: fieldTranslation.value,
                         translations: this.mergeTranslations(
                             dataElement.translations,
-                            fieldTranslation.translations.map(t => ({ ...t, property: translatableField }))
+                            fieldTranslation.translations.map(t => ({ ...t, property: "FORM_NAME" }))
                         ),
                     };
                 }
@@ -48,6 +46,7 @@ export class TranslateDataElementsFormNameUseCase {
             .value();
 
         const dataElementsWithChanges = _.differenceWith(dataElementsUpdated, dataElements, _.isEqual);
+        log.info(`Payload: ${dataElementsWithChanges.length} data elements to post`);
 
         if (options.post) {
             await this.dataElementsRepository.save(dataElementsWithChanges);
