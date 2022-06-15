@@ -14,7 +14,7 @@ export class FieldTranslationsSpreadsheetRepository implements FieldTranslations
     async get<Field extends string>(
         options: GetFieldTranslationsOptions<Field>
     ): Async<FieldTranslations<Field>[]> {
-        const { translatableField, inputFile, skipHeaders } = options;
+        const { translatableField, inputFile, skipHeaders, countryMapping } = options;
 
         const spreadsheet = await new SpreadsheetXlsxDataSource().read({
             inputFile,
@@ -67,7 +67,10 @@ export class FieldTranslationsSpreadsheetRepository implements FieldTranslations
                         .map(locale => {
                             const localeCode = localeMapping[locale];
                             const value = row[locale];
-                            return localeCode && value ? { locale: localeCode, value } : undefined;
+                            const countryCode = localeCode ? countryMapping[localeCode] : undefined;
+                            return localeCode && value
+                                ? { locale: _([localeCode, countryCode]).compact().join("_"), value }
+                                : undefined;
                         })
                         .compact()
                         .value();

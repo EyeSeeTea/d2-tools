@@ -6,3 +6,5 @@ export interface FieldTranslations<Field extends string> {
 }
 
 export type LocaleIso839_1 = string;
+
+export type CountryIso3166_1_alpha2 = string;

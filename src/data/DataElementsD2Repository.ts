@@ -16,8 +16,10 @@ export class DataElementsD2Repository implements DataElementsRepository {
     }
 
     async save(dataElements: DataElement[]): Async<void> {
-        const dataElementsToPost = await this.mergeWithExistingDataElements(dataElements);
-        const payload = { dataElements: _.compact(dataElementsToPost) };
+        const dataElementsToPost = _.compact(await this.mergeWithExistingDataElements(dataElements));
+        if (_(dataElementsToPost).isEmpty()) return;
+
+        const payload = { dataElements: dataElementsToPost };
 
         return runMetadata(this.api.metadata.post(payload, { mergeMode: "MERGE" }), {
             description: "dataElements",
