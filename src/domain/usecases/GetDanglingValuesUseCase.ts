@@ -37,7 +37,7 @@ interface DataSetData {
 interface Checks {
     disaggregation: boolean;
     orgUnit: boolean;
-    dataElementSet: boolean;
+    dataElementSet: boolean; // dataElement + categoryOptionCombo
     period: boolean;
 }
 
@@ -65,7 +65,7 @@ export class GetDanglingValuesUseCase {
             includeDeleted: false,
             children: options.includeOrgUnitChildren,
         });
-        log.debug(`Data values: ${dataValues.length}`);
+        log.debug(`Data values read from DHIS2 instance: ${dataValues.length}`);
 
         const dataSets = await this.dataSetsRepository.get();
 
@@ -119,7 +119,8 @@ export class GetDanglingValuesUseCase {
         const danglingValues = _(dataValues)
             .map((dataValue): Maybe<DanglingDataValue> => {
                 // Do a first filter by org unit to increase performance
-                const dataSetsWithMatchingOrgUnit = dataSetsByOrgUnitId[dataValue.orgUnit];
+                const dataSetsWithMatchingOrgUnit = dataSetsByOrgUnitId[dataValue.orgUnit] || [];
+
                 if (_.isEmpty(dataSetsWithMatchingOrgUnit))
                     return {
                         dataValue,
@@ -127,13 +128,13 @@ export class GetDanglingValuesUseCase {
                         errors: ["No data set assigned to this org unit"],
                     };
 
-                const isDataValueValid = _(dataSetsData).some(data =>
+                const isDataValueValid = _(dataSetsWithMatchingOrgUnit).some(data =>
                     _(getChecks(data, dataValue)).values().every()
                 );
                 if (isDataValueValid) return undefined;
 
                 // There are some invalid dataValues, calculate the validations and get the closest one
-                const validations = dataSetsData.map(data => {
+                const validations = dataSetsWithMatchingOrgUnit.map(data => {
                     const checks = getChecks(data, dataValue);
 
                     const distance = _([
@@ -159,19 +160,10 @@ export class GetDanglingValuesUseCase {
                 if (!closestValidation) {
                     throw new Error("internal error");
                 } else if (closestDistance && closestDistance > 0) {
-                    const errorsMessages: Record<keyof Checks, string> = {
-                        disaggregation:
-                            "Attribute option combo for dataset does not match dataSet categoryCombo",
-                        orgUnit: "Org unit for datasets do not match data value orgunit",
-                        dataElementSet:
-                            "Pair (dataElement, categoryOptionCombo) does not match dataElementSet",
-                        period: "Period not in dataSet dataInputPeriods",
-                    };
                     const errors = _(closestValidation.closestDataSet.checks)
-                        .pickBy()
+                        .pickBy(isCheckValid => !isCheckValid)
                         .keys()
-                        .map(x => errorsMessages[x as keyof Checks])
-                        .compact()
+                        .sort()
                         .value();
 
                     return { dataValue, dataSet: closestValidation.closestDataSet.dataSet, errors };
