@@ -1,3 +1,4 @@
+import { PartialBy } from "utils/ts-utils";
 import { Id } from "./Base";
 import { DateTimeIso8601 } from "./DateTime";
 
@@ -14,6 +15,11 @@ export interface DataValue {
     followup: boolean;
     deleted?: boolean;
 }
+
+export type DataValueToPost = PartialBy<
+    DataValue,
+    "storedBy" | "created" | "lastUpdated" | "followup" | "deleted"
+>;
 
 type Period = string;
 type Username = string;

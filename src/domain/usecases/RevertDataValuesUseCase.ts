@@ -51,7 +51,7 @@ export class RevertDataValuesUseCase {
         const filterByUsername = (username: string) => !usernames || usernames.includes(username);
         const filterByDate = (date: DateTimeIso8601) => compareDateTimeIso8601(date, options.date) !== "LT";
 
-        const dataValues = await this.dataValuesRepository.get(options);
+        const dataValues = await this.dataValuesRepository.get({ ...options, includeDeleted: true });
         const dataValuesAudit = await this.dataValuesRepository.getAudits(options);
         log.debug(`Data values: ${dataValues.length} - Audits: ${dataValuesAudit.length}`);
 

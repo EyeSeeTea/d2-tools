@@ -1,4 +1,6 @@
-export interface DataSet {
+import { NamedRef } from "./Base";
+
+export interface DataSetToCompare {
     id: Id;
     name: string;
     validCompleteOnly: boolean;
@@ -37,6 +39,28 @@ export interface DataSet {
     }>;
 }
 
+export interface DataSet {
+    id: Id;
+    name: string;
+    categoryCombo: CategoryCombo;
+    dataSetElements: Array<{
+        dataElement: DataSetDataElement;
+        categoryCombo?: CategoryCombo;
+    }>;
+    dataInputPeriods: Array<{ period: { id: string } }>;
+    organisationUnits: Ref[];
+}
+
 type Id = string;
+
+interface CategoryCombo {
+    id: Id;
+    categoryOptionCombos: Ref[];
+}
+
+export interface DataSetDataElement {
+    id: Id;
+    categoryCombo: CategoryCombo;
+}
 
 type Ref = { id: Id };
