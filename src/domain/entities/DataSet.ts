@@ -1,5 +1,3 @@
-import { NamedRef } from "./Base";
-
 export interface DataSetToCompare {
     id: Id;
     name: string;

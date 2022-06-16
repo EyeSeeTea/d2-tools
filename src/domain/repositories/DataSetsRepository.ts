@@ -1,4 +1,4 @@
-import { DataSet, DataSetDataElement, DataSetToCompare } from "domain/entities/DataSet";
+import { DataSet, DataSetToCompare } from "domain/entities/DataSet";
 import { Id } from "types/d2-api";
 
 export interface DataSetsRepository {

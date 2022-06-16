@@ -1,5 +1,4 @@
 import _ from "lodash";
-import fs from "fs";
 
 import { Path } from "domain/entities/Base";
 import { DataValuesRepository } from "domain/repositories/DataValuesRepository";
@@ -120,7 +119,6 @@ export class GetDanglingValuesUseCase {
         const danglingValues = _(dataValues)
             .map((dataValue): Maybe<DanglingDataValue> => {
                 // Do a first filter by org unit to increase performance
-                const invalidEmpty = { type: "invalid" as const, validation: { dataValue } };
                 const dataSetsWithMatchingOrgUnit = dataSetsByOrgUnitId[dataValue.orgUnit];
                 if (_.isEmpty(dataSetsWithMatchingOrgUnit))
                     return {

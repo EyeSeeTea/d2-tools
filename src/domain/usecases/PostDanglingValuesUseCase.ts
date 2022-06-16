@@ -1,10 +1,8 @@
 import _ from "lodash";
-import fs from "fs";
 
 import { Path } from "domain/entities/Base";
 import { DataValuesRepository } from "domain/repositories/DataValuesRepository";
-import { Id } from "types/d2-api";
-import { DataValue, DataValueToPost } from "domain/entities/DataValue";
+import { DataValueToPost } from "domain/entities/DataValue";
 import log from "utils/log";
 import { DanglingDataValuesRepository } from "domain/repositories/DanglingDataValuesRepository";
 
