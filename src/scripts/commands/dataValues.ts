@@ -8,6 +8,7 @@ import { GetDanglingValuesUseCase } from "domain/usecases/GetDanglingValuesUseCa
 import { DataSetsD2Repository } from "data/DataSetsD2Repository";
 import { PostDanglingValuesUseCase } from "domain/usecases/PostDanglingValuesUseCase";
 import { DanglingDataValuesCsvRepository } from "data/DanglingDataValuesCsvRepository";
+import { NotificationsEmailRepository } from "data/NotificationsEmailRepository";
 
 export function getCommand() {
     return subcommands({
@@ -114,6 +115,11 @@ const getDanglingValuesCmd = command({
             long: "limit",
             description: "Limit data values count",
         }),
+        notify: option({
+            type: optional(StringsSeparatedByCommas),
+            long: "notify-email",
+            description: "Send report to email recipients (comma-separated)",
+        }),
         outputFile: positional({
             type: string,
             displayName: "PATH_TO_CSV",
@@ -125,10 +131,13 @@ const getDanglingValuesCmd = command({
         const dataSetsRepository = new DataSetsD2Repository(api);
         const dataValuesRepository = new DataValuesD2Repository(api);
         const danglingDataValuesRepository = new DanglingDataValuesCsvRepository();
+        const notificationsRepository = new NotificationsEmailRepository();
+
         new GetDanglingValuesUseCase(
             dataSetsRepository,
             dataValuesRepository,
-            danglingDataValuesRepository
+            danglingDataValuesRepository,
+            notificationsRepository
         ).execute(args);
     },
 });

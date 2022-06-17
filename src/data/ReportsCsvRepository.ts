@@ -5,12 +5,11 @@ import { ReportsRepository } from "./ReportsRepository";
 import { Report } from "./Report";
 
 export class ReportsCsvRepository implements ReportsRepository {
-    save<Column extends string>(report: Report<Column>): Async<void> {
+    async save<Column extends string>(report: Report<Column>): Async<void> {
         const outputFile = report.name;
         const header = report.columns.map(header => ({ id: header, title: header }));
         const csvWriter = CsvWriter.createObjectCsvWriter({ path: outputFile, header });
-        csvWriter.writeRecords(report.rows);
+        await csvWriter.writeRecords(report.rows);
         log.debug(`Written report ${report.name}: ${outputFile}`);
-        return Promise.resolve(undefined);
     }
 }

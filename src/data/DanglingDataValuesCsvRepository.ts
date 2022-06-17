@@ -94,7 +94,7 @@ export class DanglingDataValuesCsvRepository implements DanglingDataValuesReposi
 
         const report: Report<Column> = { name: outputFile, columns, rows };
         const reportsRepository = new ReportsCsvRepository();
-        reportsRepository.save(report);
+        await reportsRepository.save(report);
     }
 }
 

@@ -10,6 +10,7 @@ import { DataSet } from "domain/entities/DataSet";
 import { DanglingDataValuesRepository } from "domain/repositories/DanglingDataValuesRepository";
 import { Maybe } from "utils/ts-utils";
 import { DanglingDataValue } from "domain/entities/DanglingDataValue";
+import { NotificationsRepository } from "domain/repositories/NotificationsRepository";
 
 interface Options {
     outputFile: Path;
@@ -22,7 +23,10 @@ interface Options {
     children?: boolean;
     startDate?: string;
     endDate?: string;
+    notify?: Email[];
 }
+
+type Email = string;
 
 type DataElementSetId = string; // dataElementId.cocId
 
@@ -54,7 +58,8 @@ export class GetDanglingValuesUseCase {
     constructor(
         private dataSetsRepository: DataSetsRepository,
         private dataValuesRepository: DataValuesRepository,
-        private danglingDataValuesRepository: DanglingDataValuesRepository
+        private danglingDataValuesRepository: DanglingDataValuesRepository,
+        private notificationsRepository: NotificationsRepository
     ) {}
 
     async execute(options: Options) {
@@ -180,11 +185,22 @@ export class GetDanglingValuesUseCase {
 
         log.debug(`Dangling data values: ${danglingValues.length}`);
 
-        this.danglingDataValuesRepository.save({
+        await this.danglingDataValuesRepository.save({
             dataValues: danglingValues,
             dataValuesMetadata,
             outputFile: options.outputFile,
         });
+
+        if (options.notify) {
+            log.debug(`Send report to: ${options.notify.join(", ")}`);
+
+            await this.notificationsRepository.send({
+                recipients: options.notify,
+                subject: `[platform] Dangling values report`,
+                body: "",
+                attachments: [{ type: "file", file: options.outputFile }],
+            });
+        }
     }
 
     private logOptions(options: Options) {
