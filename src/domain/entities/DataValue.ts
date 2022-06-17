@@ -1,5 +1,5 @@
 import { PartialBy } from "utils/ts-utils";
-import { Id } from "./Base";
+import { Id, NamedRef } from "./Base";
 import { DateTimeIso8601 } from "./DateTime";
 
 export interface DataValue {
@@ -53,4 +53,12 @@ export function formatDataValue(dataValue: DataValue): string {
     ];
 
     return parts.map(([name, value]) => `${name}=${value}`).join(" ");
+}
+
+type IndexedById<T> = Record<Id, T>;
+
+export interface DataValuesMetadata {
+    dataElements: IndexedById<NamedRef>;
+    categoryOptionCombos: IndexedById<NamedRef>;
+    orgUnits: IndexedById<NamedRef>;
 }

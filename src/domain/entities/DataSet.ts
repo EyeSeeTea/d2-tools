@@ -1,3 +1,5 @@
+import { Id, Ref } from "./Base";
+
 export interface DataSetToCompare {
     id: Id;
     name: string;
@@ -49,8 +51,6 @@ export interface DataSet {
     organisationUnits: Ref[];
 }
 
-type Id = string;
-
 interface CategoryCombo {
     id: Id;
     categoryOptionCombos: Ref[];
@@ -60,5 +60,3 @@ export interface DataSetDataElement {
     id: Id;
     categoryCombo: CategoryCombo;
 }
-
-type Ref = { id: Id };

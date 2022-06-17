@@ -1,9 +1,12 @@
+import _ from "lodash";
 import { DataValueAudit } from "@eyeseetea/d2-api/api/audit";
 import { Async } from "domain/entities/Async";
-import { DataValue, DataValueToPost } from "domain/entities/DataValue";
+import { DataValue, DataValuesMetadata, DataValueToPost } from "domain/entities/DataValue";
 import { DataValuesRepository, DataValuesSelector } from "domain/repositories/DataValuesRepository";
 import { D2Api } from "types/d2-api";
 import log from "utils/log";
+import { getInChunks } from "./dhis2-utils";
+import { Id, NamedRef, Ref } from "domain/entities/Base";
 
 export class DataValuesD2Repository implements DataValuesRepository {
     constructor(private api: D2Api) {}
@@ -34,6 +37,42 @@ export class DataValuesD2Repository implements DataValuesRepository {
         if (res.status !== "SUCCESS") {
             throw new Error(`Error on post: ${JSON.stringify(res, null, 4)}`);
         }
+    }
+
+    async getMetadata(options: { dataValues: DataValue[] }): Async<DataValuesMetadata> {
+        const { dataValues } = options;
+        const ids = {
+            dataElements: _.uniq(dataValues.map(dv => dv.dataElement)),
+            categoryOptionCombos: _(dataValues)
+                .flatMap(dv => [dv.categoryOptionCombo, dv.attributeOptionCombo])
+                .uniq()
+                .value(),
+            orgUnits: _.uniq(dataValues.map(dv => dv.orgUnit)),
+        };
+
+        function index<T extends Ref>(objs: T[]): Record<Id, T> {
+            return _.keyBy(objs, obj => obj.id);
+        }
+
+        return {
+            dataElements: index(await this.getPaginated("dataElements", ids.dataElements)),
+            categoryOptionCombos: index(
+                await this.getPaginated("categoryOptionCombos", ids.categoryOptionCombos)
+            ),
+            orgUnits: index(await this.getPaginated("organisationUnits", ids.orgUnits)),
+        };
+    }
+
+    private async getPaginated<Model extends "dataElements" | "categoryOptionCombos" | "organisationUnits">(
+        model: Model,
+        ids: Id[]
+    ): Promise<NamedRef[]> {
+        return getInChunks(ids, async idsGroup => {
+            const res$ = this.api.metadata.get({
+                [model]: { fields: { id: true, name: true }, filter: { id: { in: idsGroup } } },
+            });
+            return res$.getData().then(res => res[model]);
+        });
     }
 
     async getAudits(options: DataValuesSelector): Async<DataValueAudit[]> {

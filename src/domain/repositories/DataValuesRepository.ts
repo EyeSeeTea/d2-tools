@@ -1,11 +1,12 @@
 import { Async } from "domain/entities/Async";
 import { Id } from "domain/entities/Base";
-import { DataValue, DataValueToPost } from "domain/entities/DataValue";
+import { DataValue, DataValuesMetadata, DataValueToPost } from "domain/entities/DataValue";
 import { DataValueAudit } from "domain/entities/DataValueAudit";
 
 export interface DataValuesRepository {
     get(options: DataValuesSelector): Async<DataValue[]>;
     post(options: { dataValues: DataValueToPost[] }): Async<void>;
+    getMetadata(options: { dataValues: DataValue[] }): Async<DataValuesMetadata>;
     getAudits(options: DataValueAuditsSelector): Async<DataValueAudit[]>;
 }
 

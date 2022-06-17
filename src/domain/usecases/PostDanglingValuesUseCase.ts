@@ -1,4 +1,5 @@
 import _ from "lodash";
+import fs from "fs";
 
 import { Path } from "domain/entities/Base";
 import { DataValuesRepository } from "domain/repositories/DataValuesRepository";
@@ -7,7 +8,9 @@ import log from "utils/log";
 import { DanglingDataValuesRepository } from "domain/repositories/DanglingDataValuesRepository";
 
 interface Options {
+    url: string;
     inputFile: Path;
+    savePayload?: Path;
 }
 
 export class PostDanglingValuesUseCase {
@@ -24,7 +27,19 @@ export class PostDanglingValuesUseCase {
             const { dataValue } = danglingDataValue;
             return { ...dataValue, deleted: true };
         });
-        log.debug(`Post data values: ${dataValues.length}`);
-        await this.dataValuesRepository.post({ dataValues });
+        const outputFile = options.savePayload;
+
+        if (options.savePayload) {
+            const payload = { dataValues };
+            const json = JSON.stringify(payload, null, 4);
+            fs.writeFileSync(options.savePayload, json);
+            log.info(`Written payload (${dataValues.length} data values): ${outputFile}`);
+            const postUrl = `${options.url}/api/dataValueSets?force=true`;
+            const msg = `Post: curl -H 'Content-Type:application/json' -d@'${outputFile}' '${postUrl}'`;
+            log.info(msg);
+        } else {
+            log.debug(`Post data values: ${dataValues.length}`);
+            await this.dataValuesRepository.post({ dataValues });
+        }
     }
 }

@@ -143,6 +143,11 @@ const postDanglingValuesCmd = command({
             displayName: "PATH_TO_CSV",
             description: "Input file (CSV)",
         }),
+        savePayload: option({
+            type: optional(string),
+            long: "save-payload",
+            description: "Generate payload to JSON file and exit without posting it",
+        }),
     },
     handler: async args => {
         const api = getD2Api(args.url);

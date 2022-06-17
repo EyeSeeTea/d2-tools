@@ -9,6 +9,9 @@ import { DanglingDataValuesRepository } from "domain/repositories/DanglingDataVa
 import { Maybe } from "utils/ts-utils";
 import { Report, ReportRow } from "./Report";
 import { ReportsCsvRepository } from "./ReportsCsvRepository";
+import { DataValuesMetadata } from "domain/entities/DataValue";
+import { Id } from "@eyeseetea/d2-api";
+import log from "utils/log";
 
 export class DanglingDataValuesCsvRepository implements DanglingDataValuesRepository {
     async load(path: string): Async<DanglingDataValue[]> {
@@ -19,20 +22,30 @@ export class DanglingDataValuesCsvRepository implements DanglingDataValuesReposi
                 .pipe(new CsvReadableStream({ asObject: true, trim: true }))
                 .on("data", rawRow => {
                     const row = rawRow as unknown as Row;
+
+                    const selector = getMaybeObj({
+                        dataElement: idFromHumanRef(row.dataElement),
+                        orgUnit: idFromHumanRef(row.orgUnit),
+                        categoryOptionCombo: idFromHumanRef(row.categoryOptionCombo),
+                        attributeOptionCombo: idFromHumanRef(row.attributeOptionCombo),
+                    });
+
+                    if (!selector) {
+                        log.error(`Cannot get selector from row: ${JSON.stringify(rawRow)}`);
+                        return;
+                    }
+
                     const danglingDataValue: DanglingDataValue = {
                         dataValue: {
-                            dataElement: row.dataElement,
-                            orgUnit: row.orgUnit,
+                            ...selector,
                             period: row.period,
-                            categoryOptionCombo: row.categoryOptionCombo,
-                            attributeOptionCombo: row.attributeOptionCombo,
                             value: row.value,
                             storedBy: row.storedBy,
                             created: row.created,
                             lastUpdated: row.lastUpdated,
                             followup: row.followup === "true",
                         },
-                        dataSet: fromStringRef(row.closestDataSet),
+                        dataSet: fromHumanRef(row.closestDataSet),
                         errors: row.errors.split(","),
                     };
                     danglingDataValues.push(danglingDataValue);
@@ -46,26 +59,35 @@ export class DanglingDataValuesCsvRepository implements DanglingDataValuesReposi
         });
     }
 
-    async save(options: { dataValues: DanglingDataValue[]; outputFile: Path }): Async<void> {
-        const { dataValues, outputFile } = options;
+    async save(options: {
+        dataValues: DanglingDataValue[];
+        dataValuesMetadata: DataValuesMetadata;
+        outputFile: Path;
+    }): Async<void> {
+        const { dataValues, dataValuesMetadata, outputFile } = options;
 
         const rows = dataValues.map((danglingDataValue): Row => {
             const dv = danglingDataValue.dataValue;
             const dataSet = danglingDataValue.dataSet;
 
             return {
-                orgUnit: dv.orgUnit,
-                dataElement: dv.dataElement,
+                orgUnit: toRefString(dv.orgUnit, dataValuesMetadata.orgUnits),
+                dataElement: toRefString(dv.dataElement, dataValuesMetadata.dataElements),
                 period: dv.period,
-                categoryOptionCombo: dv.categoryOptionCombo,
-                attributeOptionCombo: dv.attributeOptionCombo,
-                created: formatTimestamp(dv.created),
-                lastUpdated: formatTimestamp(dv.lastUpdated),
+                categoryOptionCombo: toRefString(
+                    dv.categoryOptionCombo,
+                    dataValuesMetadata.categoryOptionCombos
+                ),
+                attributeOptionCombo: toRefString(
+                    dv.attributeOptionCombo,
+                    dataValuesMetadata.categoryOptionCombos
+                ),
+                created: dv.created,
+                lastUpdated: dv.lastUpdated,
                 storedBy: dv.storedBy,
                 followup: dv.followup.toString(),
                 value: dv.value,
-                closestDataSet: toRefString(dataSet),
-                errorsCount: danglingDataValue.errors.length.toString(),
+                closestDataSet: humanRef(dataSet),
                 errors: danglingDataValue.errors.join(", "),
             };
         });
@@ -76,18 +98,23 @@ export class DanglingDataValuesCsvRepository implements DanglingDataValuesReposi
     }
 }
 
-function formatTimestamp(ts: string) {
-    const template = "YYYY-MM-DDTHH:MM:SS";
-    return ts.slice(0, template.length);
-}
-
-function toRefString(obj: Maybe<NamedRef>): string {
+function humanRef(obj: Maybe<NamedRef>): string {
     return obj ? `${obj.name} [${obj.id}]` : "-";
 }
 
-function fromStringRef(s: string): Maybe<NamedRef> {
-    const [name = null, id = null] = s.match(/^(.*?)\s*\[(\w+)\]$/) || [];
+function toRefString(id: Id, records: Record<Id, NamedRef>): string {
+    return humanRef(records[id]);
+}
+
+function fromHumanRef(s: string): Maybe<NamedRef> {
+    const match = s.match(/^(.*?)\s*\[(\w+)\]$/);
+    if (!match) return;
+    const [name = null, id = null] = match.slice(1);
     return name && id ? { id, name } : undefined;
+}
+
+function idFromHumanRef(s: string): Maybe<Id> {
+    return fromHumanRef(s)?.id;
 }
 
 const columns = [
@@ -102,10 +129,14 @@ const columns = [
     "followup",
     "value",
     "closestDataSet",
-    "errorsCount",
     "errors",
 ] as const;
 
 type Column = typeof columns[number];
 
 type Row = ReportRow<Column>;
+
+function getMaybeObj<Key extends string, Value>(obj: Record<Key, Maybe<Value>>): Maybe<Record<Key, Value>> {
+    const allValuesPresent = _(obj).values().every();
+    return allValuesPresent ? (obj as Record<Key, Value>) : undefined;
+}

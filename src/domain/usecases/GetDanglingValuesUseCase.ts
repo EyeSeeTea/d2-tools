@@ -67,6 +67,10 @@ export class GetDanglingValuesUseCase {
         });
         log.debug(`Data values read from DHIS2 instance: ${dataValues.length}`);
 
+        log.debug(`Get metadata associated to data vales`);
+
+        const dataValuesMetadata = await this.dataValuesRepository.getMetadata({ dataValues });
+
         const dataSets = await this.dataSetsRepository.get();
 
         // Build an intermediate structure to perform faster dataValue/dataSet inclusion checks.
@@ -159,7 +163,7 @@ export class GetDanglingValuesUseCase {
 
                 if (!closestValidation) {
                     throw new Error("internal error");
-                } else if (closestDistance && closestDistance > 0) {
+                } else if (closestDistance !== undefined && closestDistance > 0) {
                     const errors = _(closestValidation.closestDataSet.checks)
                         .pickBy(isCheckValid => !isCheckValid)
                         .keys()
@@ -178,6 +182,7 @@ export class GetDanglingValuesUseCase {
 
         this.danglingDataValuesRepository.save({
             dataValues: danglingValues,
+            dataValuesMetadata,
             outputFile: options.outputFile,
         });
     }
