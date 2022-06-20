@@ -3,7 +3,7 @@ import _ from "lodash";
 import { Path } from "domain/entities/Base";
 import { DataValuesRepository } from "domain/repositories/DataValuesRepository";
 import { Id } from "types/d2-api";
-import { DataValue } from "domain/entities/DataValue";
+import { DataValue, DataValuesMetadata } from "domain/entities/DataValue";
 import log from "utils/log";
 import { DataSetsRepository } from "domain/repositories/DataSetsRepository";
 import { DataSet } from "domain/entities/DataSet";
@@ -36,15 +36,13 @@ export class GetDanglingValuesUseCase {
     ) {}
 
     async execute(options: GetDanglingValuesOptions) {
-        this.logOptions(options);
-
         log.debug(`Get data values`);
         const dataValues = await this.getDataValues(options);
         log.debug(`Data values read from DHIS2 instance: ${dataValues.length}`);
 
         log.debug(`Get metadata associated to data values`);
         const dataValuesMetadata = await this.dataValuesRepository.getMetadata({ dataValues });
-        const danglingValues = await this.getDanglingDataValues(dataValues);
+        const danglingValues = await this.getDanglingDataValues(dataValues, dataValuesMetadata);
 
         log.debug(`Dangling data values detected: ${danglingValues.length}`);
 
@@ -78,7 +76,7 @@ export class GetDanglingValuesUseCase {
         });
     }
 
-    private async getDanglingDataValues(dataValues: DataValue[]) {
+    private async getDanglingDataValues(dataValues: DataValue[], dataValuesMetadata: DataValuesMetadata) {
         const dataValuesData = await this.getDataValuesData(dataValues);
 
         log.debug(`Analyze dangling data values`);
@@ -87,7 +85,7 @@ export class GetDanglingValuesUseCase {
                 const dataSetsDataForOrgUnit = dataValuesData.dataSetsByOrgUnitId[dataValue.orgUnit] || [];
 
                 const isDataValueValid = _(dataSetsDataForOrgUnit).some(data =>
-                    _(getChecks(data, dataValue)).values().every()
+                    _(getValidationChecks(data, dataValue)).values().every()
                 );
 
                 if (_.isEmpty(dataSetsDataForOrgUnit)) {
@@ -99,22 +97,32 @@ export class GetDanglingValuesUseCase {
                 } else if (isDataValueValid) {
                     return undefined;
                 } else {
-                    return this.buildDanglingDataValue(dataValue, dataSetsDataForOrgUnit);
+                    return this.getDanglingDataValue(dataValue, dataSetsDataForOrgUnit, dataValuesMetadata);
                 }
             })
             .compact()
             .value();
     }
 
-    private buildDanglingDataValue(
+    private getDanglingDataValue(
         dataValue: DataValue,
-        dataSetsDataForOrgUnit: DataSetData[]
+        dataSetsDataForOrgUnit: DataSetData[],
+        dataValuesMetadata: DataValuesMetadata
     ): Maybe<DanglingDataValue> {
         // There were some invalid data values, infer the nearest data set
         const validations = dataSetsDataForOrgUnit.map((data): DataValueValidation => {
-            const checks = getChecks(data, dataValue);
-            const parts = [checks.disaggregation, checks.orgUnit, checks.dataElementSet, checks.period];
-            const distance = _.sum(parts.map(isValid => (isValid ? 0 : 1)));
+            const checks = getValidationChecks(data, dataValue);
+            const values = [checks.disaggregation, checks.orgUnit, checks.dataElementSet, checks.period];
+            const checksDistance = _.sum(values.map(isValid => (isValid ? 0 : 1)));
+
+            // A very simple heuristic to break the tie between data sets with the same distance:
+            // check if the attribute option combo is present in the data set name (suitable for
+            // project-monitoring-app projects).
+            const aocId = dataValue.attributeOptionCombo;
+            const aocName = dataValuesMetadata.categoryOptionCombos[aocId]?.name.toLowerCase();
+            const aocDistance = aocName && data.dataSet.name.toLowerCase().includes(aocName) ? 0 : 0.5;
+
+            const distance = checksDistance + aocDistance;
 
             return {
                 dataValue,
@@ -173,10 +181,6 @@ export class GetDanglingValuesUseCase {
 
         return { dataValues, dataSetsData, dataSetsByOrgUnitId };
     }
-
-    private logOptions(options: GetDanglingValuesOptions) {
-        log.debug(`Options: ${JSON.stringify(options, null, 4)}`);
-    }
 }
 
 type Email = string;
@@ -213,7 +217,7 @@ interface DataValueValidation {
     };
 }
 
-function getChecks(data: DataSetData, dataValue: DataValue): Checks {
+function getValidationChecks(data: DataSetData, dataValue: DataValue): Checks {
     return {
         disaggregation: data.disaggregationCocIds.has(dataValue.attributeOptionCombo),
         orgUnit: data.orgUnitIds.has(dataValue.orgUnit),
