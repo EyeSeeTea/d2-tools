@@ -22,6 +22,7 @@ export class DanglingDataValuesCsvRepository implements DanglingDataValuesReposi
                 .pipe(new CsvReadableStream({ asObject: true, trim: true }))
                 .on("data", rawRow => {
                     const row = rawRow as unknown as Row;
+                    if (!row.dataElement) return;
 
                     const selector = getMaybeObj({
                         dataElement: idFromHumanRef(row.dataElement),
@@ -109,8 +110,8 @@ function fromHumanRef(s: string): Maybe<NamedRef> {
     return name && id ? { id, name } : undefined;
 }
 
-function idFromHumanRef(s: string): Maybe<Id> {
-    return fromHumanRef(s)?.id;
+function idFromHumanRef(s: Maybe<string>): Maybe<Id> {
+    return s ? fromHumanRef(s)?.id : undefined;
 }
 
 const columns = [

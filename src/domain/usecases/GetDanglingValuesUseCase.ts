@@ -52,7 +52,7 @@ export class GetDanglingValuesUseCase {
             outputFile: options.outputFile,
         });
 
-        await this.notifyReport(options);
+        await this.notifyReport(danglingValues, options);
     }
 
     private async getDataValues(options: GetDanglingValuesOptions) {
@@ -63,15 +63,22 @@ export class GetDanglingValuesUseCase {
         });
     }
 
-    private async notifyReport(options: GetDanglingValuesOptions) {
+    private async notifyReport(danglingValues: DanglingDataValue[], options: GetDanglingValuesOptions) {
         if (!options.notify) return;
+
+        const counts = {
+            all: danglingValues.length,
+            nonZero: _(danglingValues)
+                .filter(({ dataValue: dv }) => dv.value !== "" && dv.value !== "0")
+                .size(),
+        };
 
         log.debug(`Send report to: ${options.notify.join(", ")}`);
 
         await this.notificationsRepository.send({
             recipients: options.notify,
             subject: `Dangling values report`,
-            body: "",
+            body: `Dangling values: ${counts.all} (non-zero: ${counts.nonZero})`,
             attachments: [{ type: "file", file: options.outputFile }],
         });
     }

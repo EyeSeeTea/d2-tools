@@ -127,3 +127,7 @@ dist
 *.code-workspace
 /bak
 /data
+
+/.env
+/.env.*
+!/.env.template
