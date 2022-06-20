@@ -10,9 +10,7 @@ export class NotificationsEmailRepository implements NotificationsRepository {
         const transport = nodemailer.createTransport({
             host: "localhost",
             port: 25,
-            tls: {
-                rejectUnauthorized: false,
-            },
+            tls: { rejectUnauthorized: false },
         });
 
         await transport.sendMail({

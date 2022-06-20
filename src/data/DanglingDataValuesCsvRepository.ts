@@ -1,5 +1,5 @@
-import fs from "fs";
 import _ from "lodash";
+import fs from "fs";
 import CsvReadableStream from "csv-reader";
 
 import { Async } from "domain/entities/Async";
@@ -51,6 +51,7 @@ export class DanglingDataValuesCsvRepository implements DanglingDataValuesReposi
                     danglingDataValues.push(danglingDataValue);
                 })
                 .on("error", msg => {
+                    log.error(msg.message);
                     return reject(msg);
                 })
                 .on("end", () => {
@@ -69,19 +70,14 @@ export class DanglingDataValuesCsvRepository implements DanglingDataValuesReposi
         const rows = dataValues.map((danglingDataValue): Row => {
             const dv = danglingDataValue.dataValue;
             const dataSet = danglingDataValue.dataSet;
+            const metadata = dataValuesMetadata;
 
             return {
                 orgUnit: toRefString(dv.orgUnit, dataValuesMetadata.orgUnits),
                 dataElement: toRefString(dv.dataElement, dataValuesMetadata.dataElements),
                 period: dv.period,
-                categoryOptionCombo: toRefString(
-                    dv.categoryOptionCombo,
-                    dataValuesMetadata.categoryOptionCombos
-                ),
-                attributeOptionCombo: toRefString(
-                    dv.attributeOptionCombo,
-                    dataValuesMetadata.categoryOptionCombos
-                ),
+                categoryOptionCombo: toRefString(dv.categoryOptionCombo, metadata.categoryOptionCombos),
+                attributeOptionCombo: toRefString(dv.attributeOptionCombo, metadata.categoryOptionCombos),
                 created: dv.created,
                 lastUpdated: dv.lastUpdated,
                 storedBy: dv.storedBy,
@@ -133,7 +129,6 @@ const columns = [
 ] as const;
 
 type Column = typeof columns[number];
-
 type Row = ReportRow<Column>;
 
 function getMaybeObj<Key extends string, Value>(obj: Record<Key, Maybe<Value>>): Maybe<Record<Key, Value>> {
