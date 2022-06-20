@@ -112,3 +112,5 @@ export function invertMapping<Key extends string, Value extends string>(
 ): Record<Value, Key | undefined> {
     return _.invert(mapping) as Record<Value, Key | undefined>;
 }
+
+export type PartialBy<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
