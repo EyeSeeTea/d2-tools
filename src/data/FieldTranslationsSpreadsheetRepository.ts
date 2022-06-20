@@ -2,7 +2,7 @@ import _ from "lodash";
 import isoLanguageCodes from "iso-language-codes";
 
 import { Async } from "domain/entities/Async";
-import { FieldTranslations, LocaleIso839_1 } from "domain/entities/FieldTranslations";
+import { FieldTranslations, LanguageCodeIso839_1 } from "domain/entities/FieldTranslations";
 import {
     FieldTranslationsRepository,
     GetFieldTranslationsOptions,
@@ -26,7 +26,7 @@ export class FieldTranslationsSpreadsheetRepository implements FieldTranslations
                 const locales = _.difference(headers, [identifierField, translatableField, ...skipHeaders]);
                 if (!referenceRow) return [];
 
-                const localeMapping: Record<string, LocaleIso839_1> = this.getLocaleMapping(locales);
+                const localeMapping: Record<string, LanguageCodeIso839_1> = this.getLocaleMapping(locales);
                 return this.getFieldTranslationsFromSheet<Field>(sheet, localeMapping, options);
             })
             .value();
@@ -36,7 +36,7 @@ export class FieldTranslationsSpreadsheetRepository implements FieldTranslations
 
     private getFieldTranslationsFromSheet<Field extends string>(
         sheet: Sheet<string>,
-        localeMapping: Record<string, LocaleIso839_1>,
+        localeMapping: Record<string, LanguageCodeIso839_1>,
         options: GetFieldTranslationsOptions<Field>
     ): Array<FieldTranslations<Field>> {
         const { translatableField, skipHeaders, countryMapping } = options;
@@ -90,7 +90,7 @@ export class FieldTranslationsSpreadsheetRepository implements FieldTranslations
                 if (!isoCode) {
                     log.warn(`Unknown locale name: ${locale}`);
                 } else {
-                    return [locale, isoCode.iso639_1] as [string, LocaleIso839_1];
+                    return [locale, isoCode.iso639_1] as [string, LanguageCodeIso839_1];
                 }
             })
             .compact()

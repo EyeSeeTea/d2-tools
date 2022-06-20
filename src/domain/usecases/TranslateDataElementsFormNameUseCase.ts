@@ -6,24 +6,25 @@ import { FieldTranslationsRepository } from "domain/repositories/FieldTranslatio
 import { getLocaleLanguage, Translation } from "domain/entities/Translation";
 import { DataElement } from "domain/entities/DataElement";
 import log from "utils/log";
-import { CountryIso3166_1_alpha2, LocaleIso839_1 } from "domain/entities/FieldTranslations";
+import {
+    CountryCodeIso3166_1_alpha2,
+    FieldTranslations,
+    LanguageCodeIso839_1,
+} from "domain/entities/FieldTranslations";
+import { LocalesRepository } from "domain/repositories/LocalesRepository";
+import { Locale } from "domain/entities/Locale";
 
 export class TranslateDataElementsFormNameUseCase {
     constructor(
         private dataElementsRepository: DataElementsRepository,
+        private localesRepository: LocalesRepository,
         private fieldTranslationsRepository: FieldTranslationsRepository
     ) {}
 
     async execute(options: { inputFile: string; post: boolean }): Async<void> {
-        const countryMapping: Record<LocaleIso839_1, CountryIso3166_1_alpha2> = {
-            ro: "RO",
-            th: "TH",
-            mn: "MN",
-            pl: "PL",
-        };
+        const locales = await this.localesRepository.get();
+        const countryMapping = this.getCountryMapping(locales);
 
-        // TODO: this.localesRepository.get() -> use to build countryMappingd
-        // pass to fieldTranslationsRepository
         const fieldTranslations = await this.fieldTranslationsRepository.get({
             translatableField: "formName",
             inputFile: options.inputFile,
@@ -32,6 +33,40 @@ export class TranslateDataElementsFormNameUseCase {
         });
 
         const dataElements = await this.dataElementsRepository.get();
+        const dataElementsUpdated = this.getUpdatedDataElements(dataElements, fieldTranslations);
+        const dataElementsWithChanges = _.differenceWith(dataElementsUpdated, dataElements, _.isEqual);
+        log.info(`Payload: ${dataElementsWithChanges.length} data elements to post`);
+
+        const payloadPath = "translate-dataelements.json";
+        log.info(`Payload saved: ${payloadPath}`);
+
+        const payload = { dataElements: dataElementsWithChanges };
+        const contents = JSON.stringify(payload, null, 4);
+        fs.writeFileSync(payloadPath, contents);
+
+        if (options.post) {
+            await this.dataElementsRepository.save(dataElementsWithChanges);
+        }
+    }
+
+    private getCountryMapping(locales: Locale[]): Record<LanguageCodeIso839_1, CountryCodeIso3166_1_alpha2> {
+        return (
+            _(locales)
+                .map(locale => {
+                    const [language = "", region = undefined] = locale.locale.split("_");
+                    return language && region ? [language, region] : null;
+                })
+                .compact()
+                // TODO:
+                .fromPairs()
+                .value()
+        );
+    }
+
+    private getUpdatedDataElements(
+        dataElements: DataElement[],
+        fieldTranslations: FieldTranslations<"formName">[]
+    ) {
         const dataElementsByName = _.keyBy(dataElements, de => de.name);
 
         const dataElementsUpdated = _(fieldTranslations)
@@ -56,18 +91,7 @@ export class TranslateDataElementsFormNameUseCase {
             .sortBy(de => de.id)
             .value();
 
-        const dataElementsWithChanges = _.differenceWith(dataElementsUpdated, dataElements, _.isEqual);
-        log.info(`Payload: ${dataElementsWithChanges.length} data elements to post`);
-
-        const payloadPath = "translate-dataelements.json";
-        log.info(`Payload saved: ${payloadPath}`);
-        const payload = { dataElements: dataElementsWithChanges };
-        const contents = JSON.stringify(payload, null, 4);
-        fs.writeFileSync(payloadPath, contents);
-
-        if (options.post) {
-            await this.dataElementsRepository.save(dataElementsWithChanges);
-        }
+        return dataElementsUpdated;
     }
 
     private mergeTranslations(translations1: Translation[], translations2: Translation[]): Translation[] {

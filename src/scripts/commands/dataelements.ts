@@ -5,6 +5,7 @@ import { TranslateDataElementsFormNameUseCase } from "domain/usecases/TranslateD
 import { DataElementsD2Repository } from "data/DataElementsD2Repository";
 import { FieldTranslationsSpreadsheetRepository } from "data/FieldTranslationsSpreadsheetRepository";
 import log from "utils/log";
+import { LocalesD2Repository } from "data/LocalesD2Repository";
 
 export function getCommand() {
     const translatedFormNameCmd = command({
@@ -25,10 +26,12 @@ export function getCommand() {
         handler: async args => {
             const api = getD2Api(args.url);
             const dataElementsRepository = new DataElementsD2Repository(api);
+            const localesRepository = new LocalesD2Repository(api);
             const fieldTranslationsRepository = new FieldTranslationsSpreadsheetRepository();
 
             await new TranslateDataElementsFormNameUseCase(
                 dataElementsRepository,
+                localesRepository,
                 fieldTranslationsRepository
             ).execute(args);
 
