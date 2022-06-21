@@ -1,5 +1,5 @@
 import _ from "lodash";
-import { command, string, subcommands, positional, flag } from "cmd-ts";
+import { command, string, subcommands, positional, flag, option, optional } from "cmd-ts";
 import { getApiUrlOption, getD2Api } from "scripts/common";
 import { TranslateDataElementsFormNameUseCase } from "domain/usecases/TranslateDataElementsFormNameUseCase";
 import { DataElementsD2Repository } from "data/DataElementsD2Repository";
@@ -16,6 +16,11 @@ export function getCommand() {
             post: flag({
                 long: "post",
                 description: "Post changes",
+            }),
+            savePayload: option({
+                type: optional(string),
+                long: "save-payload",
+                description: "Save JSON payload to file",
             }),
             inputFile: positional({
                 type: string,
