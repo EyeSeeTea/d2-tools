@@ -17,9 +17,11 @@ export function getErrorFromResponse(res: MetadataResponse): string {
         .join("\n");
 }
 
-export async function runMetadata(d2Response: CancelableResponse<MetadataResponse>): Promise<void> {
+export async function runMetadata(
+    d2Response: CancelableResponse<MetadataResponse>
+): Promise<MetadataResponse> {
     const res = await d2Response.getData();
-    return res.status !== "OK" ? Promise.reject(getErrorFromResponse(res)) : Promise.resolve(undefined);
+    return res.status !== "OK" ? Promise.reject(getErrorFromResponse(res)) : Promise.resolve(res);
 }
 
 export function getData<T>(d2Response: CancelableResponse<T>): Promise<T> {

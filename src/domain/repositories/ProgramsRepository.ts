@@ -5,5 +5,12 @@ import { ProgramExport } from "domain/entities/ProgramExport";
 export interface ProgramsRepository {
     export(options: { ids: Id[] }): Async<ProgramExport>;
     import(programExport: ProgramExport): Async<void>;
-    runRules(options: { ids: Id[] }): Async<void>;
+    runRules(options: RunRulesOptions): Async<void>;
+}
+
+export interface RunRulesOptions {
+    ids: Id[];
+    reportPath?: string;
+    post: boolean;
+    startDate?: string;
 }

@@ -1,5 +1,5 @@
 import _ from "lodash";
-import { command, string, subcommands, option, positional } from "cmd-ts";
+import { command, string, subcommands, option, positional, optional, flag } from "cmd-ts";
 
 import { getApiUrlOption, getD2Api, StringsSeparatedByCommas } from "scripts/common";
 import { ProgramsD2Repository } from "data/ProgramsD2Repository";
@@ -66,13 +66,26 @@ const runProgramRulesCmd = command({
     description: "Run program rules for programs",
     args: {
         url: getApiUrlOption(),
-        programIds: programIdsOptions,
+        ids: programIdsOptions,
+        startDate: option({
+            type: optional(string),
+            long: "start-date",
+            description: "Start date for events",
+        }),
+        post: flag({
+            long: "post",
+            description: "Post trackendEntities/events updated from the program rules execution",
+        }),
+        reportPath: option({
+            type: optional(string),
+            long: "save-report",
+            description: "Save CSV report with the program rules",
+        }),
     },
     handler: async args => {
         const api = getD2Api(args.url);
         const programsRepository = new ProgramsD2Repository(api);
-        new RunProgramRulesUseCase(programsRepository).execute({
-            ids: args.programIds,
-        });
+
+        new RunProgramRulesUseCase(programsRepository).execute(args);
     },
 });
