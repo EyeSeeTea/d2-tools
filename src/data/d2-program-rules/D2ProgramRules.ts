@@ -279,16 +279,16 @@ export class D2ProgramRules {
         for (const orgUnit of orgUnits) {
             await this.getPaginated(async page => {
                 log.info(
-                    `Get events for: program=${program.id}, programStage=${programStage.id}, orgUnit=${orgUnit}, startDate={startDate} endDate=${endDate}, page=${page}`
+                    `Get events: program=${program.id}, programStage=${programStage.id}, orgUnit=${orgUnit}, startDate=${startDate} endDate=${endDate}, page=${page}`
                 );
 
                 const events = await getData(
                     this.api.events.get({
                         program: program.id,
+                        programStage: programStage.id,
                         orgUnit,
                         startDate,
                         endDate,
-                        programStage: programStage.id,
                         page,
                         pageSize: 1_000,
                     })
