@@ -1,4 +1,4 @@
-import SimpleLogger from "simple-node-logger";
+import SimpleLogger, { STANDARD_LEVELS } from "simple-node-logger";
 
 const manager = new SimpleLogger();
 
@@ -8,6 +8,7 @@ manager.createConsoleAppender({
     },
 });
 
-const logger = manager.createLogger(undefined, "all");
+const logLevelFromEnv = process.env["LOG_LEVEL"] as STANDARD_LEVELS;
+const logger = manager.createLogger(undefined, logLevelFromEnv || "debug");
 
 export default logger;

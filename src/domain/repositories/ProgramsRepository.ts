@@ -9,8 +9,11 @@ export interface ProgramsRepository {
 }
 
 export interface RunRulesOptions {
-    ids: Id[];
+    programIds: Id[];
+    programRulesIds?: Id[];
+    orgUnitsIds?: Id[];
+    startDate?: string;
+    endDate?: string;
     reportPath?: string;
     post: boolean;
-    startDate?: string;
 }

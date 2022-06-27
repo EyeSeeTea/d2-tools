@@ -1,4 +1,5 @@
 import _ from "lodash";
+import path from "path";
 import * as CsvWriter from "csv-writer";
 import { systemSettingsStore } from "capture-core/metaDataMemoryStores/systemSettings/systemSettings.store";
 import { rulesEngine } from "capture-core/rules/rulesEngine";
@@ -15,16 +16,22 @@ import {
     ProgramRuleEvent as ProgramEvent,
     ProgramRuleVariable,
     RuleEffect,
+    RuleEffectAssign,
     TrackedEntityAttributesMap,
     TrackedEntityAttributeValuesMap,
 } from "./D2ProgramRules.types";
-import { checkPostEventsResponse, getData } from "data/dhis2-utils";
+import { checkPostEventsResponse, getData, getInChunks } from "data/dhis2-utils";
 import log from "utils/log";
-import { Event, EventsPostRequest } from "@eyeseetea/d2-api/api/events";
-import { Attribute, TrackedEntityInstance } from "@eyeseetea/d2-api/api/trackedEntityInstances";
+import { Event, EventsPostRequest, EventsPostResponse } from "@eyeseetea/d2-api/api/events";
+import {
+    Attribute,
+    TeiPostResponse,
+    TrackedEntityInstance,
+} from "@eyeseetea/d2-api/api/trackedEntityInstances";
 import logger from "utils/log";
 import { fromPairs, Maybe } from "utils/ts-utils";
 import { RunRulesOptions } from "domain/repositories/ProgramsRepository";
+import { HttpResponse } from "@eyeseetea/d2-api/api/common";
 
 export class D2ProgramRules {
     constructor(private api: D2Api) {
@@ -36,23 +43,40 @@ export class D2ProgramRules {
     async run(options: RunRulesOptions): Async<void> {
         const { post, reportPath } = options;
 
-        const { metadata, effects: eventEffects } = await this.getEventEffects(options);
-        const actions = this.getActions(eventEffects, metadata);
-        const eventsCurrent = eventEffects.map(eventEffect => eventEffect.event);
-        const eventsById = _.keyBy(eventsCurrent, event => event.event);
-        const eventsUpdated = this.getUpdatedEvents(actions, eventsById);
+        const metadata = await this.getMetadata(options);
+        let page = 1;
 
-        const eventsWithChanges = _.differenceWith(eventsUpdated, eventsCurrent, _.isEqual);
-        log.debug(`Events to post: ${eventsWithChanges.length}`);
-        if (post) this.postEvents(eventsWithChanges);
+        await this.getEventEffects(metadata, options, async eventEffects => {
+            const actions = this.getActions(eventEffects, metadata);
+            const eventsCurrent = eventEffects.map(eventEffect => eventEffect.event);
+            const eventsById = _.keyBy(eventsCurrent, event => event.event);
+            const eventsUpdated = this.getUpdatedEvents(actions, eventsById);
 
-        const teisCurrent = _.compact(eventEffects.map(eventEffect => eventEffect.tei));
-        const teisUpdated: TrackedEntityInstance[] = this.getUpdatedTeis(teisCurrent, actions);
-        const teisWithChanges = _.differenceWith(teisUpdated, teisCurrent, _.isEqual);
-        log.debug(`TEIs to post: ${teisWithChanges.length}`);
-        if (post) this.postTeis(teisWithChanges);
+            const eventsWithChanges = diff(eventsUpdated, eventsCurrent);
+            if (!_(eventsWithChanges).isEmpty())
+                log.info(`Events with changes to post: ${eventsWithChanges.length}`);
+            if (post) await this.postEvents(eventsWithChanges);
 
-        if (reportPath) this.saveReport(reportPath, actions);
+            const teisCurrent = _.compact(eventEffects.map(eventEffect => eventEffect.tei));
+            const teisUpdated: TrackedEntityInstance[] = this.getUpdatedTeis(teisCurrent, actions);
+            const teisWithChanges = diff(teisUpdated, teisCurrent);
+            if (!_(teisWithChanges).isEmpty())
+                log.info(`TEIs with changes to post: ${teisWithChanges.length}`);
+            if (post) await this.postTeis(teisWithChanges);
+
+            if (reportPath) await this.saveReport(reportPath, page, actions);
+            page++;
+        });
+    }
+
+    private async getMetadata(options: RunRulesOptions): Promise<Metadata> {
+        log.debug("Get metadata for programs");
+        return await getData(
+            this.api.metadata.get({
+                ...metadataQuery,
+                programs: { ...metadataQuery.programs, filter: { id: { in: options.programIds } } },
+            })
+        );
     }
 
     private getUpdatedTeis(teisCurrent: TrackedEntityInstance[], actions: UpdateAction[]) {
@@ -69,7 +93,7 @@ export class D2ProgramRules {
                 if (!tei) throw new Error(`TEI found: ${teiId}`);
 
                 return actions.reduce((accTei, action): TrackedEntityInstance => {
-                    return setTeiAttributeValue(accTei, action.attribute.id, action.value);
+                    return setTeiAttributeValue(accTei, action.teiAttribute.id, action.value);
                 }, tei);
             })
             .value();
@@ -109,19 +133,21 @@ export class D2ProgramRules {
         metadata: Metadata
     ): Maybe<UpdateAction> {
         const { program, event, tei } = eventEffect;
+
         switch (effect.type) {
             case "ASSIGN":
-                log.debug(
-                    `Effect type=${effect.type} target=${effect.targetDataType}:${effect.id} value=${effect.value}`
-                );
+                log.trace(`Effect ${effect.type} ${effect.targetDataType}:${effect.id} -> ${effect.value}`);
 
                 switch (effect.targetDataType) {
                     case "dataElement":
                         return getUpdateActionEvent(metadata, program, event, effect.id, effect.value);
                     case "trackedEntityAttribute":
-                        if (!tei) throw new Error("No TEI");
-
-                        return getUpdateActionTeiAttribute(program, tei, effect.id, effect.value);
+                        if (!tei) {
+                            log.error("No TEI to assign effect to");
+                            return undefined;
+                        } else {
+                            return getUpdateActionTeiAttribute(program, event, tei, effect);
+                        }
                     default:
                         return undefined;
                 }
@@ -129,218 +155,279 @@ export class D2ProgramRules {
                 return undefined;
         }
     }
+
     private async postEvents(events: D2EventToPost[]) {
         if (_.isEmpty(events)) return;
-        const res = await this.api.events.post(postOptions, { events }).getData();
-        log.debug(`POST events: ${res.response.status}`);
+
+        const res = await this.api.events
+            .post(postOptions, { events })
+            .getData()
+            .catch(err => err.response.data as HttpResponse<EventsPostResponse>);
+
+        log.info(`POST events: ${res.response.status}`);
         return checkPostEventsResponse(res);
     }
 
     private async postTeis(teis: TrackedEntityInstance[]) {
         if (_.isEmpty(teis)) return;
         if (postOptions.dryRun) return; // dryRun does not work on TEI, skip POST altogether
+
         const res = await this.api.trackedEntityInstances
             .post(postOptions, { trackedEntityInstances: teis })
-            .getData();
-        log.debug(`POST teis: ${res.response.status}`);
+            .getData()
+            .catch(err => err.response.data as HttpResponse<TeiPostResponse>);
+
+        log.info(`POST TEIs: ${res.response.status}`);
+
+        if (res.response.status !== "SUCCESS")
+            log.error(JSON.stringify(res.response.importSummaries, null, 4));
     }
 
-    private async saveReport(reportPath: string, actions: UpdateAction[]) {
+    private async saveReport(reportPath0: string, index: number, actions: UpdateAction[]) {
         type Attr =
-            | "type"
+            | "actionType"
             | "program"
             | "orgUnit"
             | "eventId"
+            | "dataElement"
             | "teiId"
-            | "dataElementOrAttribute"
+            | "teiAttribute"
             | "value"
             | "valuePrev";
         type Row = Record<Attr, string>;
 
+        const reportPath = path.join(
+            path.dirname(reportPath0),
+            path.basename(reportPath0).replace(/\.(\w+)$/, `-${index}.$1`)
+        );
+
         const createCsvWriter = CsvWriter.createObjectCsvWriter;
+
         const header: Array<{ id: Attr; title: string }> = [
             { id: "program", title: "Program" },
-            { id: "type", title: "Type" },
             { id: "orgUnit", title: "Org Unit" },
             { id: "eventId", title: "Event ID" },
             { id: "teiId", title: "TEI ID" },
-            { id: "dataElementOrAttribute", title: "DE / TeiAttribute" },
-            { id: "valuePrev", title: "Previous Value" },
-            { id: "value", title: "Value" },
+            { id: "actionType", title: "Action Type" },
+            { id: "dataElement", title: "Data element" },
+            { id: "teiAttribute", title: "TEI Attribute" },
+            { id: "valuePrev", title: "Current Value" },
+            { id: "value", title: "New Value" },
         ];
         const csvWriter = createCsvWriter({ path: reportPath, header });
 
-        const records = actions.map((action): Row => {
+        const formatObj = (obj: NamedRef) => `${obj.name.trim()} [${obj.id}]`;
+
+        const records = actions.map((action): Row | undefined => {
+            const valueChanged = action.value != action.valuePrev;
+            if (!valueChanged) return;
+
             return {
-                type: action.type,
-                program: action.program.name,
-                orgUnit: action.orgUnit.name,
-                eventId: action.type === "event" ? action.eventId : "-",
-                teiId: action.type === "teiAttribute" ? action.teiId : "-",
-                dataElementOrAttribute:
-                    action.type === "event" ? action.dataElement.name : action.attribute.name,
+                program: formatObj(action.program),
+                orgUnit: formatObj(action.orgUnit),
+                eventId: action.eventId || "-",
+                teiId: action.teiId || "-",
+                actionType: action.type,
+                dataElement: action.type === "event" ? formatObj(action.dataElement) : "-",
+                teiAttribute: action.type === "teiAttribute" ? formatObj(action.teiAttribute) : "-",
                 value: action.value,
                 valuePrev: action.valuePrev,
             };
         });
 
-        await csvWriter.writeRecords(records);
+        await csvWriter.writeRecords(_.compact(records));
 
         log.info(`Written: ${reportPath}`);
     }
 
-    async getEventEffects(options: RunRulesOptions): Async<{ effects: EventEffect[]; metadata: Metadata }> {
-        const metadata = await getData(
-            this.api.metadata.get({
-                ...metadataQuery,
-                programs: { ...metadataQuery.programs, filter: { id: { in: options.ids } } },
-            })
-        );
-
-        const outputEffects: EventEffect[] = [];
-
+    async getEventEffects(
+        metadata: Metadata,
+        options: RunRulesOptions,
+        onEffects: (eventEffects: EventEffect[]) => void
+    ): Async<void> {
         for (const program of metadata.programs) {
             for (const programStage of program.programStages) {
-                const eventEffect = await this.getEventEffect({
-                    program,
-                    programStage,
-                    metadata,
-                    startDate: options.startDate,
-                });
-                if (eventEffect) outputEffects.push(eventEffect);
+                await this.getEventEffectsFromProgramStage(
+                    {
+                        program,
+                        programStage,
+                        metadata,
+                    },
+                    options,
+                    onEffects
+                );
             }
         }
-
-        return { effects: outputEffects, metadata };
     }
 
-    private async getEventEffect(options: {
-        program: Program;
-        programStage: ProgramStage;
-        metadata: Metadata;
-        startDate?: string;
-    }): Promise<Maybe<EventEffect>> {
+    private async getEventEffectsFromProgramStage(
+        options: {
+            program: Program;
+            programStage: ProgramStage;
+            metadata: Metadata;
+        },
+        runOptions: RunRulesOptions,
+        onEffects: (eventEffects: EventEffect[]) => void
+    ): Promise<void> {
         const { program, programStage, metadata } = options;
+        const { startDate, endDate, orgUnitsIds, programRulesIds } = runOptions;
 
-        log.debug(`Get data for ${program.id}: ${program.name} / ${programStage.name}`);
+        log.info(`Get data for ${program.id}: ${program.name} / ${programStage.name}`);
 
-        log.debug(`Get events`);
-        const events = await this.getEvents({
-            programId: program.id,
-            programStageId: programStage.id,
-            startDate: options.startDate,
-        });
-        log.debug(`Events: ${events.length}`);
+        const orgUnits = orgUnitsIds ? orgUnitsIds : [undefined];
 
-        log.debug(`Get trackedEntities`);
-        const teis = await this.getTeis(program.id);
-        log.debug(`Tracked Entities: ${teis.length}`);
+        for (const orgUnit of orgUnits) {
+            await this.getPaginated(async page => {
+                log.info(
+                    `Get events for: program=${program.id}, programStage=${programStage.id}, orgUnit=${orgUnit}, startDate={startDate} endDate=${endDate}, page=${page}`
+                );
 
-        const teisById = _.keyBy(teis, tei => tei.trackedEntityInstance);
-        const enrollmentsById = _(teis)
-            .flatMap(tei => tei.enrollments)
-            .keyBy(enrollment => enrollment.enrollment)
-            .value();
+                const events = await getData(
+                    this.api.events.get({
+                        program: program.id,
+                        orgUnit,
+                        startDate,
+                        endDate,
+                        programStage: programStage.id,
+                        page,
+                        pageSize: 1_000,
+                    })
+                ).then(res => res.events as D2Event[]);
 
-        const programRuleEvents = events.map(getProgramEvent);
+                log.info(`Events: ${events.length}`);
 
-        for (const d2Event of events) {
-            const event = getProgramEvent(d2Event);
+                const teiIds = _(events)
+                    .map(event => event.trackedEntityInstance)
+                    .compact()
+                    .uniq()
+                    .value();
 
-            logger.debug(`Process event: ${event.eventId}`);
+                log.debug(`Get tracked entities for events: ${teiIds.length}`);
+                const teis = await this.getTeis(teiIds);
+                log.info(`Tracked entities: ${teis.length}`);
 
-            const selectedOrgUnit: OrgUnit = {
-                id: event.orgUnitId,
-                name: event.orgUnitName,
-                code: "",
-                groups: [],
-            };
+                const teisById = _.keyBy(teis, tei => tei.trackedEntityInstance);
+                const enrollmentsById = _(teis)
+                    .flatMap(tei => tei.enrollments)
+                    .keyBy(enrollment => enrollment.enrollment)
+                    .value();
 
-            const tei = event.trackedEntityInstanceId ? teisById[event.trackedEntityInstanceId] : undefined;
+                const programRuleEvents = events.map(getProgramEvent);
+                const eventEffects: EventEffect[] = [];
 
-            const enrollment = event.enrollmentId ? enrollmentsById[event.enrollmentId] : undefined;
+                for (const d2Event of events) {
+                    const event = getProgramEvent(d2Event);
 
-            const selectedEntity: TrackedEntityAttributeValuesMap | undefined = tei
-                ? _(tei.attributes)
-                      .map(attr => [attr.attribute, attr.value] as [Id, string])
-                      .fromPairs()
-                      .value()
-                : undefined;
+                    logger.trace(`Process event: ${event.eventId}`);
 
-            const getEffectsOptions: GetProgramRuleEffectsOptions = {
-                currentEvent: event,
-                otherEvents: programRuleEvents,
-                trackedEntityAttributes: getMap(
-                    program.programTrackedEntityAttributes
-                        .map(ptea => ptea.trackedEntityAttribute)
-                        .map(tea => ({
-                            id: tea.id,
-                            valueType: tea.valueType,
-                            optionSetId: tea.optionSet?.id,
-                        }))
-                ),
-                selectedEnrollment: enrollment
-                    ? {
-                          enrolledAt: enrollment.enrollmentDate,
-                          occurredAt: enrollment.incidentDate,
-                          enrollmentId: enrollment.enrollment,
-                      }
-                    : undefined,
-                selectedEntity,
-                programRulesContainer: {
-                    programRules: metadata.programRules
-                        .filter(rule => rule.program.id === program.id)
-                        .map(rule => {
-                            const actions = rule.programRuleActions.map(action => ({
-                                ...action,
-                                dataElementId: action.dataElement?.id,
-                                programStageId: action.programStage?.id,
-                                programStageSectionId: action.programStageSection?.id,
-                                trackedEntityAttributeId: action.trackedEntityAttribute?.id,
-                                optionGroupId: action.optionGroup?.id,
-                                optionId: action.option?.id,
-                            }));
+                    const selectedOrgUnit: OrgUnit = {
+                        id: event.orgUnitId,
+                        name: event.orgUnitName,
+                        code: "",
+                        groups: [],
+                    };
 
-                            return { ...rule, programId: rule.program.id, programRuleActions: actions };
-                        }),
-                    programRuleVariables: metadata.programRuleVariables
-                        .filter(variable => variable.program.id === program.id)
-                        .map(variable => ({
-                            ...variable,
-                            programId: variable.program?.id,
-                            dataElementId: variable.dataElement?.id,
-                            trackedEntityAttributeId: variable.trackedEntityAttribute?.id,
-                            programStageId: variable.programStage?.id,
-                        })),
-                    constants: metadata.constants,
-                },
-                dataElements: getMap(
-                    metadata.dataElements.map(dataElement => ({
-                        id: dataElement.id,
-                        valueType: dataElement.valueType,
-                        optionSetId: dataElement.optionSet?.id,
-                    }))
-                ),
-                optionSets: getMap(metadata.optionSets),
-                selectedOrgUnit,
-            };
+                    const tei = event.trackedEntityInstanceId
+                        ? teisById[event.trackedEntityInstanceId]
+                        : undefined;
 
-            log.debug(`Get effects: eventId=${event.eventId} (tei: ${tei?.trackedEntityInstance || "-"})`);
-            const effects = getProgramRuleEffects(getEffectsOptions).filter(e => e.type === "ASSIGN");
-            log.debug(`Event: ${event.eventId} - assign_effects: ${effects.length}`);
+                    const enrollment = event.enrollmentId ? enrollmentsById[event.enrollmentId] : undefined;
 
-            if (!_.isEmpty(effects)) {
-                const eventEffect: EventEffect = {
-                    program,
-                    event: d2Event,
-                    effects,
-                    orgUnit: selectedOrgUnit,
-                    tei,
-                };
+                    const selectedEntity: TrackedEntityAttributeValuesMap | undefined = tei
+                        ? _(tei.attributes)
+                              .map(attr => [attr.attribute, attr.value] as [Id, string])
+                              .fromPairs()
+                              .value()
+                        : undefined;
 
-                return eventEffect;
-            }
+                    const getEffectsOptions: GetProgramRuleEffectsOptions = {
+                        currentEvent: event,
+                        otherEvents: programRuleEvents,
+                        trackedEntityAttributes: getMap(
+                            program.programTrackedEntityAttributes
+                                .map(ptea => ptea.trackedEntityAttribute)
+                                .map(tea => ({
+                                    id: tea.id,
+                                    valueType: tea.valueType,
+                                    optionSetId: tea.optionSet?.id,
+                                }))
+                        ),
+                        selectedEnrollment: enrollment
+                            ? {
+                                  enrolledAt: enrollment.enrollmentDate,
+                                  occurredAt: enrollment.incidentDate,
+                                  enrollmentId: enrollment.enrollment,
+                              }
+                            : undefined,
+                        selectedEntity,
+                        programRulesContainer: {
+                            programRules: metadata.programRules
+                                .filter(rule => !programRulesIds || programRulesIds.includes(rule.id))
+                                .filter(rule => rule.program.id === program.id)
+                                .map(rule => {
+                                    const actions = rule.programRuleActions.map(action => ({
+                                        ...action,
+                                        dataElementId: action.dataElement?.id,
+                                        programStageId: action.programStage?.id,
+                                        programStageSectionId: action.programStageSection?.id,
+                                        trackedEntityAttributeId: action.trackedEntityAttribute?.id,
+                                        optionGroupId: action.optionGroup?.id,
+                                        optionId: action.option?.id,
+                                    }));
+
+                                    return {
+                                        ...rule,
+                                        programId: rule.program.id,
+                                        programRuleActions: actions,
+                                    };
+                                }),
+                            programRuleVariables: metadata.programRuleVariables
+                                .filter(variable => variable.program.id === program.id)
+                                .map(variable => ({
+                                    ...variable,
+                                    programId: variable.program?.id,
+                                    dataElementId: variable.dataElement?.id,
+                                    trackedEntityAttributeId: variable.trackedEntityAttribute?.id,
+                                    programStageId: variable.programStage?.id,
+                                })),
+                            constants: metadata.constants,
+                        },
+                        dataElements: getMap(
+                            metadata.dataElements.map(dataElement => ({
+                                id: dataElement.id,
+                                valueType: dataElement.valueType,
+                                optionSetId: dataElement.optionSet?.id,
+                            }))
+                        ),
+                        optionSets: getMap(metadata.optionSets),
+                        selectedOrgUnit,
+                    };
+
+                    log.trace(
+                        `Get effects: eventId=${event.eventId} (tei: ${tei?.trackedEntityInstance || "-"})`
+                    );
+                    const effects = getProgramRuleEffects(getEffectsOptions).filter(e => e.type === "ASSIGN");
+                    log.debug(`Event: ${event.eventId} - assign_effects: ${effects.length}`);
+
+                    if (!_.isEmpty(effects)) {
+                        const eventEffect: EventEffect = {
+                            program,
+                            event: d2Event,
+                            effects,
+                            orgUnit: selectedOrgUnit,
+                            tei,
+                        };
+
+                        eventEffects.push(eventEffect);
+                    }
+                }
+
+                await onEffects(eventEffects);
+                return events;
+            });
         }
+
+        return;
     }
 
     private async getPaginated<T>(fn: (page: number) => Promise<T[]>): Async<T[]> {
@@ -358,34 +445,14 @@ export class D2ProgramRules {
         return objects;
     }
 
-    private async getEvents(options: {
-        programId: Id;
-        programStageId?: Id;
-        startDate?: string;
-    }): Async<D2Event[]> {
-        return this.getPaginated(page => {
-            return getData(
-                this.api.events.get({
-                    program: options.programId,
-                    page,
-                    startDate: options.startDate,
-                    programStage: options.programStageId,
-                    pageSize: 1_000,
-                })
-            ).then(res => res.events as D2Event[]);
-        });
-    }
-
-    private async getTeis(programId: Id): Async<TrackedEntityInstance[]> {
-        return this.getPaginated(page => {
+    private async getTeis(ids: Id[]): Async<TrackedEntityInstance[]> {
+        return getInChunks(ids, groupOfIds => {
             return getData(
                 this.api.trackedEntityInstances.get({
                     ouMode: "ALL",
-                    program: programId,
-                    page,
-                    pageSize: 1_000,
-                    totalPages: true,
+                    trackedEntityInstance: groupOfIds.join(";"),
                     fields: "*",
+                    totalPages: true,
                 })
             ).then(res => res.trackedEntityInstances);
         });
@@ -535,21 +602,23 @@ function getUpdateActionEvent(
         return {
             type: "event",
             eventId: event.event,
+            teiId: event.trackedEntityInstance,
             program,
             orgUnit: { id: event.orgUnit, name: event.orgUnitName },
             dataElement: dataElementsById[dataElementId] || { id: dataElementId, name: "-" },
             value: strValue,
-            valuePrev: event.dataValues.find(dv => dv.dataElement === dataElementId)?.value ?? "-",
+            valuePrev: event.dataValues.find(dv => dv.dataElement === dataElementId)?.value ?? "",
         };
     }
 }
 
 function getUpdateActionTeiAttribute(
     program: Program,
+    event: D2Event,
     tei: TrackedEntityInstance,
-    attributeId: Id,
-    value: D2DataValueToPost["value"] | undefined | null
+    ruleEffectAssign: RuleEffectAssign
 ): UpdateActionTeiAttribute | undefined {
+    const { id: attributeId, value } = ruleEffectAssign;
     const attributes = _(program.programTrackedEntityAttributes)
         .flatMap(ptea => ptea.trackedEntityAttribute)
         .value();
@@ -564,10 +633,11 @@ function getUpdateActionTeiAttribute(
         const strValue = value === null || value === undefined ? "" : value.toString();
         return {
             type: "teiAttribute",
+            eventId: event.event,
             teiId: tei.trackedEntityInstance,
             program,
             orgUnit: { id: tei.orgUnit, name: tei.orgUnit },
-            attribute: attributesById[attributeId] || { id: attributeId, name: "-" },
+            teiAttribute: attributesById[attributeId] || { id: attributeId, name: "-" },
             value: strValue,
             valuePrev: tei.attributes.find(dv => dv.attribute === attributeId)?.value ?? "-",
         };
@@ -581,6 +651,7 @@ function setDataValue(
 ): D2EventToPost {
     const hasValue = _(event.dataValues).some(dv => dv.dataElement === dataElementId);
     const newValue = value === undefined ? "" : value;
+    if (!hasValue && !newValue) return event;
 
     const dataValuesUpdated = hasValue
         ? _(event.dataValues as D2DataValueToPost[])
@@ -600,6 +671,7 @@ function setTeiAttributeValue(
 ): TrackedEntityInstance {
     const hasValue = _(tei.attributes).some(attr => attr.attribute === attributeId);
     const newValue = value === undefined ? "" : value.toString();
+    if (!hasValue && !newValue) return tei;
 
     const attributesUpdated: Attribute[] = hasValue
         ? _(tei.attributes)
@@ -619,6 +691,7 @@ type UpdateAction = UpdateActionEvent | UpdateActionTeiAttribute;
 interface UpdateActionEvent {
     type: "event";
     eventId: Id;
+    teiId?: Id;
     program: NamedRef;
     orgUnit: NamedRef;
     dataElement: NamedRef;
@@ -629,11 +702,16 @@ interface UpdateActionEvent {
 interface UpdateActionTeiAttribute {
     type: "teiAttribute";
     teiId: Id;
+    eventId: Id;
     program: NamedRef;
     orgUnit: NamedRef;
-    attribute: NamedRef;
+    teiAttribute: NamedRef;
     value: D2Value;
     valuePrev: string;
 }
 
 const postOptions = { dryRun: false };
+
+function diff<T>(objs1: T[], objs2: T[]): T[] {
+    return _.differenceWith(objs1, objs2, _.isEqual);
+}

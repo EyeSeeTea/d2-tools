@@ -8,14 +8,14 @@ import { EventStatus } from "@eyeseetea/d2-api/api/events";
 
 export type RuleEffect = RuleEffectAssign | RuleEffectOther;
 
-interface RuleEffectAssign {
+export interface RuleEffectAssign {
     type: "ASSIGN";
     id: Id;
     targetDataType?: "dataElement" | "trackedEntityAttribute";
     value: string | number | boolean | undefined;
 }
 
-interface RuleEffectOther {
+export interface RuleEffectOther {
     type: "HIDEFIELD" | "HIDEOPTION" | "HIDEOPTIONGROUP" | "HIDESECTION" | "SETMANDATORYFIELD";
 }
 

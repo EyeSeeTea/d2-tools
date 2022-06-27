@@ -16,8 +16,8 @@ export function getCommand() {
 
 const programIdsOptions = option({
     type: StringsSeparatedByCommas,
-    long: "ids",
-    description: "List of program ID1,ID2[,IDN] to export (comma-separated)",
+    long: "programs-ids",
+    description: "List of program ID1,ID2[,IDN] (comma-separated)",
 });
 
 const exportCmd = command({
@@ -66,11 +66,26 @@ const runProgramRulesCmd = command({
     description: "Run program rules for programs",
     args: {
         url: getApiUrlOption(),
-        ids: programIdsOptions,
+        programIds: programIdsOptions,
+        programRulesIds: option({
+            type: optional(StringsSeparatedByCommas),
+            long: "program-rules-ids",
+            description: "List of program rules ID1,ID2[,IDN] to use (comma-separated)",
+        }),
+        orgUnitsIds: option({
+            type: optional(StringsSeparatedByCommas),
+            long: "org-units-ids",
+            description: "List of organisation units to filter (comma-separated)",
+        }),
         startDate: option({
             type: optional(string),
             long: "start-date",
             description: "Start date for events",
+        }),
+        endDate: option({
+            type: optional(string),
+            long: "end-date",
+            description: "End date for events",
         }),
         post: flag({
             long: "post",
