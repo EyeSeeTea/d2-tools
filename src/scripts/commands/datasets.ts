@@ -1,25 +1,26 @@
 import _ from "lodash";
-import { command, run, string, option, restPositionals, optional, subcommands, Type } from "cmd-ts";
+import { command, string, option, restPositionals, optional, subcommands } from "cmd-ts";
 import { DataSetsD2Repository } from "data/DataSetsD2Repository";
 import { ShowDataSetsDiffUseCase } from "domain/usecases/ShowDataSetsDiffUseCase";
-import path from "path";
 import { D2Api } from "types/d2-api";
 import { ShowSchemaUseCase } from "domain/usecases/ShowSchemaUseCase";
+import {
+    getApiUrlOption,
+    getD2Api,
+    StringPairSeparatedByDash,
+    StringsSeparatedByCommas,
+} from "scripts/common";
 
-export function compareDataSetsCli() {
+export function getCommand() {
     const compareCmd = command({
-        name: path.basename(__filename),
+        name: "compare",
         description: "Compare pairs of DHIS2 data sets",
         args: {
-            url1: option({
-                type: string,
-                long: "url",
-                description: "http://USERNAME:PASSWORD@host1:8080",
-            }),
+            url1: getApiUrlOption({ long: "url" }),
             url2: option({
                 type: optional(string),
                 long: "url2",
-                description: "http://USERNAME:PASSWORD@host2:8080",
+                description: "http://USERNAME:PASSWORD@HOST:PORT",
             }),
             ignoreProperties: option({
                 type: optional(StringsSeparatedByCommas),
@@ -29,12 +30,13 @@ export function compareDataSetsCli() {
             dataSetIdsPairs: restPositionals({
                 type: StringPairSeparatedByDash,
                 displayName: "ID1-ID2",
+                description: "Pairs of data set IDs to compare",
             }),
         },
         handler: async args => {
             if (_.isEmpty(args.dataSetIdsPairs)) throw new Error("Missing ID pairs: ID1-ID2");
-            const api1 = new D2Api({ baseUrl: args.url1 });
-            const api2 = args.url2 ? new D2Api({ baseUrl: args.url2 }) : api1;
+            const api1 = getD2Api(args.url1);
+            const api2 = args.url2 ? getD2Api(args.url2) : api1;
             const dataSetsRepository1 = new DataSetsD2Repository(api1);
             const dataSetsRepository2 = new DataSetsD2Repository(api2);
 
@@ -47,7 +49,7 @@ export function compareDataSetsCli() {
     });
 
     const showSchemaCmd = command({
-        name: path.basename(__filename),
+        name: "show-schema",
         description: "Show DHIS2 data sets schema to be used in compare command",
         args: {},
         handler: async () => {
@@ -58,32 +60,8 @@ export function compareDataSetsCli() {
         },
     });
 
-    const dataSetSubcommands = subcommands({
-        name: "DHIS2 Data set",
+    return subcommands({
+        name: "datasets",
         cmds: { compare: compareCmd, "show-schema": showSchemaCmd },
     });
-
-    const cliSubcommands = subcommands({
-        name: "DHIS2 Data set",
-        cmds: { datasets: dataSetSubcommands },
-    });
-
-    const args = process.argv.slice(2);
-    run(cliSubcommands, args);
 }
-
-type Pair = [string, string];
-
-const StringPairSeparatedByDash: Type<string, Pair> = {
-    async from(str) {
-        const [id1, id2] = str.split("-");
-        if (!id1 || !id2) throw new Error(`Invalid pair: ${str} (expected ID1-ID2)`);
-        return [id1, id2];
-    },
-};
-
-const StringsSeparatedByCommas: Type<string, string[]> = {
-    async from(str) {
-        return str.split(",");
-    },
-};
