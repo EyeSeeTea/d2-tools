@@ -93,7 +93,9 @@ export interface ProgramRuleVariable {
     id: Id;
     displayName: string;
     programRuleVariableSourceType: D2ProgramRuleVariable["programRuleVariableSourceType"];
-    valueType?: string; // Present in capture-app type, even though variable have no valueType
+    // valueType is present in capture-app type. This field was added on 2.38, and its value
+    // depends on the source type: dataElement, TEA, or Calculated Value.
+    valueType: string;
     programId: Id;
     dataElementId?: Id;
     trackedEntityAttributeId?: Id;

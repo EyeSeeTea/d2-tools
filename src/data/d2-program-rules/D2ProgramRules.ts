@@ -383,13 +383,21 @@ export class D2ProgramRules {
                                 }),
                             programRuleVariables: metadata.programRuleVariables
                                 .filter(variable => variable.program.id === program.id)
-                                .map(variable => ({
-                                    ...variable,
-                                    programId: variable.program?.id,
-                                    dataElementId: variable.dataElement?.id,
-                                    trackedEntityAttributeId: variable.trackedEntityAttribute?.id,
-                                    programStageId: variable.programStage?.id,
-                                })),
+                                .map(
+                                    (variable): ProgramRuleVariable => ({
+                                        ...variable,
+                                        programId: variable.program?.id,
+                                        dataElementId: variable.dataElement?.id,
+                                        trackedEntityAttributeId: variable.trackedEntityAttribute?.id,
+                                        programStageId: variable.programStage?.id,
+                                        // 2.38 has valueType. For older versions, get from DE/TEA.
+                                        valueType:
+                                            variable.valueType ||
+                                            variable.dataElement?.valueType ||
+                                            variable.trackedEntityAttribute?.valueType ||
+                                            "TEXT",
+                                    })
+                                ),
                             constants: metadata.constants,
                         },
                         dataElements: getMap(
@@ -520,7 +528,12 @@ const metadataQuery = {
         },
     },
     programRuleVariables: {
-        fields: { $owner: true, displayName: true },
+        fields: {
+            $owner: true,
+            displayName: true,
+            dataElement: { id: true, valueType: true },
+            trackedEntityAttribute: { id: true, valueType: true },
+        },
     },
     optionSets: {
         fields: {
@@ -534,7 +547,18 @@ const metadataQuery = {
     },
 } as const;
 
-type Metadata = MetadataPick<typeof metadataQuery>;
+type MetadataQuery = typeof metadataQuery;
+type BaseMetadata = MetadataPick<MetadataQuery>;
+type D2ProgramRuleVariableBase = BaseMetadata["programRuleVariables"][number];
+
+interface D2ProgramRuleVariableWithValueType extends D2ProgramRuleVariableBase {
+    // Present from2.38
+    valueType?: string;
+}
+
+interface Metadata extends MetadataPick<MetadataQuery> {
+    programRuleVariables: D2ProgramRuleVariableWithValueType[];
+}
 
 interface D2Event extends Event {
     trackedEntityInstance: Id | undefined;
