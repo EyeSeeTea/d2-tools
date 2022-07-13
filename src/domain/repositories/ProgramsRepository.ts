@@ -10,6 +10,7 @@ export interface ProgramsRepository {
 
 export interface RunRulesOptions {
     programIds: Id[];
+    programStagesIds?: Id[];
     programRulesIds?: Id[];
     orgUnitsIds?: Id[];
     startDate?: string;

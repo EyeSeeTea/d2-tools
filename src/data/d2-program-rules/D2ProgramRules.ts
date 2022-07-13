@@ -71,12 +71,17 @@ export class D2ProgramRules {
 
     private async getMetadata(options: RunRulesOptions): Promise<Metadata> {
         log.debug("Get metadata for programs");
-        return await getData(
+        const metadata0 = await getData(
             this.api.metadata.get({
                 ...metadataQuery,
                 programs: { ...metadataQuery.programs, filter: { id: { in: options.programIds } } },
             })
         );
+
+        return {
+            ...metadata0,
+            dataElementsById: _.keyBy(metadata0.dataElements),
+        };
     }
 
     private getUpdatedTeis(teisCurrent: TrackedEntityInstance[], actions: UpdateAction[]) {
@@ -247,6 +252,8 @@ export class D2ProgramRules {
     ): Async<void> {
         for (const program of metadata.programs) {
             for (const programStage of program.programStages) {
+                if (options.programStagesIds && !options.programStagesIds.includes(programStage.id)) continue;
+
                 await this.getEventEffectsFromProgramStage(
                     {
                         program,
@@ -312,11 +319,11 @@ export class D2ProgramRules {
                     .keyBy(enrollment => enrollment.enrollment)
                     .value();
 
-                const programRuleEvents = events.map(getProgramEvent);
+                const programRuleEvents = events.map(event => getProgramEvent(event, metadata));
                 const eventEffects: EventEffect[] = [];
 
                 for (const d2Event of events) {
-                    const event = getProgramEvent(d2Event);
+                    const event = getProgramEvent(d2Event, metadata);
 
                     logger.trace(`Process event: ${event.eventId}`);
 
@@ -550,6 +557,7 @@ const metadataQuery = {
 type MetadataQuery = typeof metadataQuery;
 type BaseMetadata = MetadataPick<MetadataQuery>;
 type D2ProgramRuleVariableBase = BaseMetadata["programRuleVariables"][number];
+type D2DataElement = BaseMetadata["dataElements"][number];
 
 interface D2ProgramRuleVariableWithValueType extends D2ProgramRuleVariableBase {
     // Present from2.38
@@ -558,6 +566,7 @@ interface D2ProgramRuleVariableWithValueType extends D2ProgramRuleVariableBase {
 
 interface Metadata extends MetadataPick<MetadataQuery> {
     programRuleVariables: D2ProgramRuleVariableWithValueType[];
+    dataElementsById: Record<Id, D2DataElement>;
 }
 
 interface D2Event extends Event {
@@ -577,7 +586,7 @@ interface EventEffect {
     tei?: TrackedEntityInstance;
 }
 
-function getProgramEvent(event: D2Event): ProgramEvent {
+function getProgramEvent(event: D2Event, metadata: Metadata): ProgramEvent {
     const teiId = event.trackedEntityInstance;
 
     return {
@@ -593,7 +602,14 @@ function getProgramEvent(event: D2Event): ProgramEvent {
         trackedEntityInstanceId: teiId,
         scheduledAt: event.dueDate,
         // Add data values: Record<DataElementId, Value>
-        ...fromPairs(event.dataValues.map(dv => [dv.dataElement, dv.value])),
+        ...fromPairs(
+            event.dataValues.map(dv => {
+                const valueType = metadata.dataElementsById[dv.dataElement]?.valueType;
+                const isBoolean = valueType && ["BOOLEAN", "TRUE_ONLY"].includes(valueType);
+                const value = isBoolean ? dv.value.toString() === "true" : false;
+                return [dv.dataElement, value];
+            })
+        ),
     };
 }
 
