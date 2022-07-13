@@ -251,57 +251,53 @@ export class D2ProgramRules {
         onEffects: (eventEffects: EventEffect[]) => void
     ): Async<void> {
         for (const program of metadata.programs) {
-            for (const programStage of program.programStages) {
-                if (options.programStagesIds && !options.programStagesIds.includes(programStage.id)) continue;
-
-                await this.getEventEffectsFromProgramStage(
-                    {
-                        program,
-                        programStage,
-                        metadata,
-                    },
-                    options,
-                    onEffects
-                );
-            }
+            await this.getEventEffectsFromProgramStage(
+                {
+                    program,
+                    metadata,
+                },
+                options,
+                onEffects
+            );
         }
     }
 
     private async getEventEffectsFromProgramStage(
-        options: {
-            program: Program;
-            programStage: ProgramStage;
-            metadata: Metadata;
-        },
+        options: { program: Program; metadata: Metadata },
         runOptions: RunRulesOptions,
         onEffects: (eventEffects: EventEffect[]) => void
     ): Promise<void> {
-        const { program, programStage, metadata } = options;
+        const { program, metadata } = options;
         const { startDate, endDate, orgUnitsIds, programRulesIds } = runOptions;
 
-        log.info(`Get data for ${program.id}: ${program.name} / ${programStage.name}`);
+        log.info(`Get data for ${program.id}: ${program.name}`);
 
         const orgUnits = orgUnitsIds ? orgUnitsIds : [undefined];
 
         for (const orgUnit of orgUnits) {
             await this.getPaginated(async page => {
                 log.info(
-                    `Get events: program=${program.id}, programStage=${programStage.id}, orgUnit=${orgUnit}, startDate=${startDate} endDate=${endDate}, page=${page}`
+                    `Get events: program=${program.id}, orgUnit=${orgUnit}, startDate=${startDate} endDate=${endDate}, page=${page}`
                 );
 
                 const events = await getData(
                     this.api.events.get({
                         program: program.id,
-                        programStage: programStage.id,
                         orgUnit,
                         startDate,
                         endDate,
                         page,
                         pageSize: 1_000,
+                        trackedEntityInstance: runOptions.teiId,
                     })
                 ).then(res => res.events as D2Event[]);
 
+                console.log(
+                    "events",
+                    events.map(e => e.dataValues.find(dv => dv.dataElement === "VfSglCfyLjU"))
+                );
                 log.info(`Events: ${events.length}`);
+                console.log("debug-events", events.map(e => e.event).join(", "));
 
                 const teiIds = _(events)
                     .map(event => event.trackedEntityInstance)
@@ -598,6 +594,7 @@ function getProgramEvent(event: D2Event, metadata: Metadata): ProgramEvent {
         enrollmentId: event.enrollment,
         enrollmentStatus: event.enrollmentStatus,
         status: event.status,
+        eventDate: event.eventDate,
         occurredAt: event.eventDate,
         trackedEntityInstanceId: teiId,
         scheduledAt: event.dueDate,

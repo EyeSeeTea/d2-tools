@@ -127,6 +127,7 @@ export interface ProgramRuleEventObj {
     enrollmentId?: Id;
     enrollmentStatus?: "ACTIVE" | "COMPLETED" | "CANCELLED";
     status?: EventStatus;
+    eventDate?: StringDateTime;
     occurredAt?: StringDateTime;
     scheduledAt?: StringDateTime;
 }
