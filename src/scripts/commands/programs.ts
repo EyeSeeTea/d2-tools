@@ -72,11 +72,6 @@ const runProgramRulesCmd = command({
             long: "program-rules-ids",
             description: "List of program rules ID1,ID2[,IDN] to use (comma-separated)",
         }),
-        programStagesIds: option({
-            type: optional(StringsSeparatedByCommas),
-            long: "program-stages-ids",
-            description: "List of program stages ID1,ID2[,IDN] to use (comma-separated)",
-        }),
         orgUnitsIds: option({
             type: optional(StringsSeparatedByCommas),
             long: "org-units-ids",
