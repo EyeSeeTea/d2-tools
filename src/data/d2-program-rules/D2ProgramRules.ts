@@ -280,12 +280,7 @@ export class D2ProgramRules {
                     })
                 ).then(res => res.events as D2Event[]);
 
-                console.log(
-                    "events",
-                    events.map(e => e.dataValues.find(dv => dv.dataElement === "VfSglCfyLjU"))
-                );
                 log.info(`Events: ${events.length}`);
-                console.log("debug-events", events.map(e => e.event).join(", "));
 
                 const teiIds = _(events)
                     .map(event => event.trackedEntityInstance)
