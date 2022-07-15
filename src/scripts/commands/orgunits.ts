@@ -199,7 +199,8 @@ DELETE FROM organisationunit WHERE organisationunitid IN (SELECT * FROM orgs);
 
 \\echo -- Cleaning up...
 
-DROP MATERIALIZED VIEW orgs CASCADE;`;
+DROP MATERIALIZED VIEW orgs CASCADE;
+`;
 }
 // Maybe this is worth checking too:
 // https://github.com/dhis2/dhis2-utils/blob/master/resources/sql/delete_orgunittree_with_data.sql
