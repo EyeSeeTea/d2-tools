@@ -111,9 +111,11 @@ export class D2ProgramRules {
                 const event = eventsById[eventId];
                 if (!event) throw new Error(`Event not found: ${eventId}`);
 
-                return actions.reduce((accEvent, action): D2EventToPost => {
+                const eventUpdated = actions.reduce((accEvent, action): D2EventToPost => {
                     return event ? setDataValue(accEvent, action.dataElement.id, action.value) : accEvent;
                 }, event as D2EventToPost);
+
+                return eventUpdated;
             })
             .value();
     }
@@ -187,6 +189,7 @@ export class D2ProgramRules {
         type Attr =
             | "actionType"
             | "program"
+            | "programStage"
             | "orgUnit"
             | "eventId"
             | "dataElement"
@@ -205,6 +208,7 @@ export class D2ProgramRules {
 
         const header: Array<{ id: Attr; title: string }> = [
             { id: "program", title: "Program" },
+            { id: "programStage", title: "Program Stage" },
             { id: "orgUnit", title: "Org Unit" },
             { id: "eventId", title: "Event ID" },
             { id: "teiId", title: "TEI ID" },
@@ -216,7 +220,7 @@ export class D2ProgramRules {
         ];
         const csvWriter = createCsvWriter({ path: reportPath, header });
 
-        const formatObj = (obj: NamedRef) => `${obj.name.trim()} [${obj.id}]`;
+        const formatObj = (obj: NamedRef | undefined) => (obj ? `${obj.name.trim()} [${obj.id}]` : "-");
 
         const records = actions.map((action): Row | undefined => {
             const valueChanged = action.value != action.valuePrev;
@@ -224,6 +228,7 @@ export class D2ProgramRules {
 
             return {
                 program: formatObj(action.program),
+                programStage: formatObj(action.programStage),
                 orgUnit: formatObj(action.orgUnit),
                 eventId: action.eventId || "-",
                 teiId: action.teiId || "-",
@@ -553,7 +558,6 @@ interface D2Event extends Event {
 }
 
 type Program = Metadata["programs"][number];
-type ProgramStage = Program["programStages"][number];
 
 interface EventEffect {
     program: Program;
@@ -596,6 +600,7 @@ function getUpdateActionEvent(
     value: D2DataValueToPost["value"] | undefined | null
 ): UpdateActionEvent | undefined {
     const dataElementsById = _.keyBy(metadata.dataElements, de => de.id);
+    const programStagesNamedRefById = _.keyBy(program.programStages, programStage => programStage.id);
 
     const dataElementIdsInProgram = new Set(
         _(program.programStages)
@@ -605,7 +610,15 @@ function getUpdateActionEvent(
             .value()
     );
 
-    if (!dataElementIdsInProgram.has(dataElementId)) {
+    const eventMatchesProgramStage = program.programStages
+        .filter(programStage =>
+            _(programStage.programStageDataElements).some(psde => psde.dataElement.id === dataElementId)
+        )
+        .some(programStageContainingDE => programStageContainingDE.id === event.programStage);
+
+    if (!eventMatchesProgramStage) {
+        return undefined;
+    } else if (!dataElementIdsInProgram.has(dataElementId)) {
         logger.debug(`Skip ASSIGN effect as dataElement ${dataElementId} does not belong to program`);
         return undefined;
     } else {
@@ -615,6 +628,7 @@ function getUpdateActionEvent(
             eventId: event.event,
             teiId: event.trackedEntityInstance,
             program,
+            programStage: programStagesNamedRefById[event.programStage],
             orgUnit: { id: event.orgUnit, name: event.orgUnitName },
             dataElement: dataElementsById[dataElementId] || { id: dataElementId, name: "-" },
             value: strValue,
@@ -636,6 +650,7 @@ function getUpdateActionTeiAttribute(
 
     const attributesById = _.keyBy(attributes, de => de.id);
     const attributeIdsInProgram = new Set(attributes.map(de => de.id));
+    const programStagesNamedRefById = _.keyBy(program.programStages, programStage => programStage.id);
 
     if (!attributeIdsInProgram.has(attributeId)) {
         logger.debug(`Skip ASSIGN effect as attribute ${attributeId} does not belong to program`);
@@ -647,6 +662,7 @@ function getUpdateActionTeiAttribute(
             eventId: event.event,
             teiId: tei.trackedEntityInstance,
             program,
+            programStage: programStagesNamedRefById[event.programStage],
             orgUnit: { id: tei.orgUnit, name: tei.orgUnit },
             teiAttribute: attributesById[attributeId] || { id: attributeId, name: "-" },
             value: strValue,
@@ -704,6 +720,7 @@ interface UpdateActionEvent {
     eventId: Id;
     teiId?: Id;
     program: NamedRef;
+    programStage?: NamedRef;
     orgUnit: NamedRef;
     dataElement: NamedRef;
     value: D2Value;
@@ -715,6 +732,7 @@ interface UpdateActionTeiAttribute {
     teiId: Id;
     eventId: Id;
     program: NamedRef;
+    programStage?: NamedRef;
     orgUnit: NamedRef;
     teiAttribute: NamedRef;
     value: D2Value;
