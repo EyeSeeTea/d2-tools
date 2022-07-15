@@ -1,4 +1,4 @@
-// Commands related to dhis2 database direct manipulation.
+// Commands related to organisation units manipulation.
 // The generated sql files can be run for example with: d2-docker run-sql <file>
 
 import _ from "lodash";
@@ -7,38 +7,18 @@ import { command, subcommands, positional, flag, option, optional, string } from
 import { HierarchyLevel, OrgUnitPath } from "scripts/common";
 
 export function getCommand() {
-    const removeOrgUnitLevelCommand = command({
-        name: "remove-orgunit-level",
+    const removeCommand = command({
+        name: "remove",
         description: "Create a sql file that removes organisation units below a hierarchy level",
         args: {
-            level: positional({
-                type: HierarchyLevel,
+            level: option({
+                type: optional(HierarchyLevel),
+                long: "level",
                 description: "Maximum hierarchy level to keep",
             }),
-            outputFile: option({
-                type: optional(string),
-                long: "output-file",
-                description: "Name of the output file that will contain the sql commands",
-            }),
-            overwrite: flag({
-                long: "overwrite",
-                description: "Overwrite ouput file if exists",
-            }),
-        },
-        handler: async args => {
-            const outputFile = args.outputFile ?? "remove_orgunits.sql";
-            const sqlCommands = removeOrgs(`hierarchylevel > ${args.level}`);
-            safeWrite(outputFile, sqlCommands, args.overwrite);
-            process.exit(0);
-        },
-    });
-
-    const removeOrgUnitChildrenCommand = command({
-        name: "remove-orgunit-children",
-        description: "Create a sql file that removes all children of an organisation unit",
-        args: {
-            path: positional({
-                type: OrgUnitPath,
+            path: option({
+                type: optional(OrgUnitPath),
+                long: "path",
                 description: "Path of the organisation unit to prune of its children",
             }),
             outputFile: option({
@@ -52,18 +32,34 @@ export function getCommand() {
             }),
         },
         handler: async args => {
-            const outputFile = args.outputFile ?? "remove_orgunits.sql";
-            const sqlCommands = removeOrgs(`path LIKE '${args.path}/%'`);
-            safeWrite(outputFile, sqlCommands, args.overwrite);
+            if (args.level === undefined && args.path === undefined) {
+                console.error("At least one of --level or --path needed.");
+                process.exit(1);
+            }
+
+            const whereConditions = ([] as Array<string>)
+                .concat(
+                    args.level !== undefined ? [`hierarchylevel > ${args.level}`] : [],
+                    args.path !== undefined ? [`path LIKE '${args.path}/%'`] : []
+                )
+                .join(" AND ");
+
+            const sqlCommands = removeOrgs(whereConditions);
+
+            if (args.outputFile) {
+                safeWrite(args.outputFile, sqlCommands, args.overwrite);
+            } else {
+                process.stdout.write(sqlCommands);
+            }
+
             process.exit(0);
         },
     });
 
     return subcommands({
-        name: "database",
+        name: "orgunits",
         cmds: {
-            "remove-orgunit-level": removeOrgUnitLevelCommand,
-            "remove-orgunit-children": removeOrgUnitChildrenCommand,
+            remove: removeCommand,
         },
     });
 }
