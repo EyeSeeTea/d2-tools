@@ -5,14 +5,14 @@
 -- https://github.com/dhis2/dhis2-utils/blob/master/resources/sql/delete_orgunittree_with_data.sql
 
 
-\\echo -- Finding all orgunits to delete...
+\echo -- Finding all orgunits to delete...
 
 CREATE MATERIALIZED VIEW orgs
     AS SELECT organisationunitid FROM organisationunit WHERE <%= whereCondition %>;
 CREATE UNIQUE INDEX idx_orgs ON orgs (organisationunitid);
 
 
-\\echo -- Finding related data to delete...
+\echo -- Finding related data to delete...
 
 CREATE MATERIALIZED VIEW rm_trackedentityinstance
     AS SELECT trackedentityinstanceid FROM trackedentityinstance WHERE
@@ -49,7 +49,7 @@ CREATE MATERIALIZED VIEW rm_programmessage
         programinstanceid       IN (SELECT * FROM rm_programinstance);
 
 
-\\echo -- Creating indices to speed up the slowest foreign key constraint checks...
+\echo -- Creating indices to speed up the slowest foreign key constraint checks...
 
 CREATE INDEX IF NOT EXISTS idx_datavalue_organisationunitid                 ON datavalue                 (sourceid);
 CREATE INDEX IF NOT EXISTS idx_datavalueaudit_organisationunitid            ON datavalueaudit            (organisationunitid);
@@ -59,8 +59,8 @@ CREATE INDEX IF NOT EXISTS idx_programinstance_organisationunitid           ON p
 CREATE INDEX IF NOT EXISTS idx_dataset_organisationunit                     ON datasetsource             (sourceid);
 
 
-\\echo -- Deleting references to those orgunits in the data...
-\\echo -- Some tables may not exist and give an error, but that is okay.
+\echo -- Deleting references to those orgunits in the data...
+\echo -- Some tables may not exist and give an error, but that is okay.
 
 DELETE FROM programmessage_emailaddresses    WHERE programmessageemailaddressid     IN (SELECT * FROM rm_programmessage);
 DELETE FROM programmessage_deliverychannels  WHERE programmessagedeliverychannelsid IN (SELECT * FROM rm_programmessage);
@@ -114,11 +114,11 @@ DELETE FROM validationresult                     WHERE organisationunitid      I
 DELETE FROM visualization_organisationunits      WHERE organisationunitid      IN (SELECT * FROM orgs);
 
 
-\\echo -- Deleting orgunits themselves...
+\echo -- Deleting orgunits themselves...
 
 DELETE FROM organisationunit WHERE organisationunitid IN (SELECT * FROM orgs);
 
 
-\\echo -- Cleaning up...
+\echo -- Cleaning up...
 
 DROP MATERIALIZED VIEW orgs CASCADE;
