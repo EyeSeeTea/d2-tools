@@ -8,7 +8,8 @@ shell:~$ yarn build
 ## Execute Program Rules
 
 ### Instalation Notes
-For this script to work you may need to install svn
+
+For this script to work you may need to install svn.
 
 ### Create report with events or TEA to be updated
 
