@@ -3,7 +3,7 @@
 
 import _ from "lodash";
 import fs from "fs";
-import { command, subcommands, positional, flag, option, optional, string } from "cmd-ts";
+import { command, subcommands, flag, option, optional, string } from "cmd-ts";
 import { HierarchyLevel, OrgUnitPath } from "scripts/common";
 
 export function getCommand() {
