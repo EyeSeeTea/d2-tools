@@ -17,10 +17,12 @@ CREATE UNIQUE INDEX idx_orgs ON orgs (organisationunitid);
 CREATE MATERIALIZED VIEW rm_trackedentityinstance
     AS SELECT trackedentityinstanceid FROM trackedentityinstance WHERE
         organisationunitid IN (SELECT * FROM orgs);
+CREATE UNIQUE INDEX idx_trackedentityinstance ON rm_trackedentityinstance (trackedentityinstanceid);
 
 CREATE MATERIALIZED VIEW rm_programinstance
     AS SELECT programinstanceid FROM programinstance WHERE
         organisationunitid IN (SELECT * FROM orgs);
+CREATE UNIQUE INDEX idx_programinstance ON rm_programinstance (programinstanceid);
 
 -- The following would be very slow (but I am not sure why):
 -- CREATE MATERIALIZED VIEW rm_programstageinstance
@@ -37,9 +39,11 @@ CREATE MATERIALIZED VIEW rm_programstageinstance_programinstance
 CREATE MATERIALIZED VIEW rm_programstageinstance
     AS SELECT * FROM rm_programstageinstance_orgs
     UNION ALL SELECT * FROM rm_programstageinstance_programinstance;
+CREATE UNIQUE INDEX idx_programstageinstance ON rm_programstageinstance (programstageinstanceid);
 
 CREATE MATERIALIZED VIEW rm_interpretation
     AS SELECT interpretationid FROM interpretation WHERE organisationunitid IN (SELECT * FROM orgs);
+CREATE UNIQUE INDEX idx_interpretation ON rm_interpretation (interpretationid);
 
 CREATE MATERIALIZED VIEW rm_programmessage
     AS SELECT id FROM programmessage WHERE
@@ -47,6 +51,7 @@ CREATE MATERIALIZED VIEW rm_programmessage
         trackedentityinstanceid IN (SELECT * FROM rm_trackedentityinstance) OR
         programstageinstanceid  IN (SELECT * FROM rm_programstageinstance) OR
         programinstanceid       IN (SELECT * FROM rm_programinstance);
+CREATE UNIQUE INDEX idx_programmessage ON rm_programmessage (id);
 
 
 \echo -- Creating indices to speed up the slowest foreign key constraint checks...
@@ -57,7 +62,16 @@ CREATE INDEX IF NOT EXISTS idx_program_organisationunits_organisationunitid ON p
 CREATE INDEX IF NOT EXISTS idx_orgunitgroup_organisationunitid              ON orgunitgroupmembers       (organisationunitid);
 CREATE INDEX IF NOT EXISTS idx_programinstance_organisationunitid           ON programinstance           (organisationunitid);
 CREATE INDEX IF NOT EXISTS idx_dataset_organisationunit                     ON datasetsource             (sourceid);
+CREATE INDEX IF NOT EXISTS idx_parentid                                     ON organisationunit          (parentid);
+CREATE INDEX IF NOT EXISTS idx_programstageinstance_organisationunitid      ON programstageinstance      (organisationunitid);
+CREATE INDEX IF NOT EXISTS idx_trackedentityinstance_organisationunitid     ON trackedentityinstance     (organisationunitid);
 
+CREATE INDEX IF NOT EXISTS idx_entityinstancedatavalueaudit_programstageinstanceid ON trackedentitydatavalueaudit              (programstageinstanceid);
+CREATE INDEX IF NOT EXISTS idx_programmessage_programstageinstanceid               ON programmessage                           (programstageinstanceid);
+CREATE INDEX IF NOT EXISTS idx_programstageinstancecomments_programstageinstanceid ON programstageinstancecomments             (programstageinstanceid);
+CREATE INDEX IF NOT EXISTS idx_programstagenotification_psi                        ON programnotificationinstance              (programstageinstanceid);
+CREATE INDEX IF NOT EXISTS idx_relationshipitem_programstageinstanceid             ON relationshipitem                         (programstageinstanceid);
+CREATE INDEX IF NOT EXISTS idx_s9i10v8xg7d22hlhmesia51l                            ON programstageinstance_messageconversation (programstageinstanceid);
 
 \echo -- Deleting references to those orgunits in the data...
 \echo -- Some tables may not exist and give an error, but that is okay.
