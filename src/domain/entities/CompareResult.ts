@@ -1,3 +1,1 @@
-export type CompareResult =
-    | { type: "equal" }
-    | { type: "non-equal"; diff: string };
+export type CompareResult = { type: "equal" } | { type: "non-equal"; diff: string };
