@@ -1,5 +1,4 @@
 import _ from "lodash";
-import path from "path";
 import * as CsvWriter from "csv-writer";
 import { systemSettingsStore } from "capture-core/metaDataMemoryStores/systemSettings/systemSettings.store";
 import { rulesEngine } from "capture-core/rules/rulesEngine";
@@ -28,8 +27,7 @@ import {
     TeiPostResponse,
     TrackedEntityInstance,
 } from "@eyeseetea/d2-api/api/trackedEntityInstances";
-import logger from "utils/log";
-import { fromPairs, Maybe } from "utils/ts-utils";
+import { fromPairs } from "utils/ts-utils";
 import { RunRulesOptions } from "domain/repositories/ProgramsRepository";
 import { HttpResponse } from "@eyeseetea/d2-api/api/common";
 
@@ -44,11 +42,11 @@ export class D2ProgramRules {
         const { post, reportPath } = options;
 
         const metadata = await this.getMetadata(options);
-        let page = 1;
+        const allActions: UpdateAction[] = [];
 
         await this.getEventEffects(metadata, options, async eventEffects => {
             const actions = this.getActions(eventEffects, metadata);
-            const eventsCurrent = eventEffects.map(eventEffect => eventEffect.event);
+            const eventsCurrent = _.flatMap(eventEffects, eventEffect => eventEffect.events);
             const eventsById = _.keyBy(eventsCurrent, event => event.event);
             const eventsUpdated = this.getUpdatedEvents(actions, eventsById);
 
@@ -64,9 +62,11 @@ export class D2ProgramRules {
                 log.info(`TEIs with changes to post: ${teisWithChanges.length}`);
 
             if (post) await this.postTeis(teisWithChanges);
-            if (reportPath) await this.saveReport(reportPath, page, actions);
-            page++;
+
+            allActions.push(...actions);
         });
+
+        if (reportPath) await this.saveReport(reportPath, allActions);
     }
 
     private async getMetadata(options: RunRulesOptions): Promise<Metadata> {
@@ -129,8 +129,7 @@ export class D2ProgramRules {
     private getActions(eventEffects: EventEffect[], metadata: Metadata): UpdateAction[] {
         return _.flatMap(eventEffects, eventEffect => {
             return _(eventEffect.effects)
-                .map(ruleEffect => this.getUpdateAction(ruleEffect, eventEffect, metadata))
-                .compact()
+                .flatMap(ruleEffect => this.getUpdateAction(ruleEffect, eventEffect, metadata))
                 .value();
         });
     }
@@ -139,28 +138,33 @@ export class D2ProgramRules {
         effect: RuleEffect,
         eventEffect: EventEffect,
         metadata: Metadata
-    ): Maybe<UpdateAction> {
-        const { program, event, tei } = eventEffect;
+    ): UpdateAction[] {
+        const { program, event, events, tei } = eventEffect;
 
         switch (effect.type) {
             case "ASSIGN":
-                log.trace(`Effect ${effect.type} ${effect.targetDataType}:${effect.id} -> ${effect.value}`);
+                log.debug(`Effect ${effect.type} ${effect.targetDataType}:${effect.id} -> ${effect.value}`);
 
                 switch (effect.targetDataType) {
                     case "dataElement":
-                        return getUpdateActionEvent(metadata, program, event, effect.id, effect.value);
+                        return _(events)
+                            .map(event =>
+                                getUpdateActionEvent(metadata, program, event, effect.id, effect.value)
+                            )
+                            .compact()
+                            .value();
                     case "trackedEntityAttribute":
                         if (!tei) {
                             log.error("No TEI to assign effect to");
-                            return undefined;
+                            return [];
                         } else {
-                            return getUpdateActionTeiAttribute(program, event, tei, effect);
+                            return _.compact([getUpdateActionTeiAttribute(program, event, tei, effect)]);
                         }
                     default:
-                        return undefined;
+                        return [];
                 }
             default:
-                return undefined;
+                return [];
         }
     }
 
@@ -191,7 +195,7 @@ export class D2ProgramRules {
             log.error(JSON.stringify(res.response.importSummaries, null, 4));
     }
 
-    private async saveReport(reportPath0: string, index: number, actions: UpdateAction[]) {
+    private async saveReport(reportPath: string, actions: UpdateAction[]) {
         type Attr =
             | "actionType"
             | "program"
@@ -203,12 +207,8 @@ export class D2ProgramRules {
             | "teiAttribute"
             | "value"
             | "valuePrev";
-        type Row = Record<Attr, string>;
 
-        const reportPath = path.join(
-            path.dirname(reportPath0),
-            path.basename(reportPath0).replace(/\.(\w+)$/, `-${index}.$1`)
-        );
+        type Row = Record<Attr, string>;
 
         const createCsvWriter = CsvWriter.createObjectCsvWriter;
 
@@ -274,6 +274,8 @@ export class D2ProgramRules {
         const orgUnits = orgUnitsIds ? orgUnitsIds : [undefined];
 
         for (const orgUnit of orgUnits) {
+            const data: { events: D2Event[]; teis: TrackedEntityInstance[] } = { events: [], teis: [] };
+
             await this.getPaginated(async page => {
                 log.info(
                     `Get events: program=${program.id}, orgUnit=${orgUnit}, startDate=${startDate} endDate=${endDate}, page=${page}`
@@ -304,19 +306,36 @@ export class D2ProgramRules {
                 const teis = await this.getTeis(teiIds);
                 log.info(`Tracked entities: ${teis.length}`);
 
-                const teisById = _.keyBy(teis, tei => tei.trackedEntityInstance);
-                const enrollmentsById = _(teis)
-                    .flatMap(tei => tei.enrollments)
-                    .keyBy(enrollment => enrollment.enrollment)
-                    .value();
+                data.events.push(...events);
+                data.teis.push(...teis);
 
-                const programRuleEvents = events.map(event => getProgramEvent(event, metadata));
-                const eventEffects: EventEffect[] = [];
+                return [];
+            });
 
+            const teisById = _.keyBy(data.teis, tei => tei.trackedEntityInstance);
+
+            const enrollmentsById = _(data.teis)
+                .flatMap(tei => tei.enrollments)
+                .keyBy(enrollment => enrollment.enrollment)
+                .value();
+
+            const eventsGroups = _(data.events)
+                .groupBy(ev =>
+                    // Group events for tracked programs, do not group for event programs
+                    ev.trackedEntityInstance
+                        ? [ev.orgUnit, ev.program, ev.trackedEntityInstance].join(".")
+                        : ev.event
+                )
+                .values()
+                .value();
+
+            const allEvents = data.events.map(event => getProgramEvent(event, metadata));
+            const eventEffects: EventEffect[] = [];
+
+            eventsGroups.forEach(events => {
                 for (const d2Event of events) {
                     const event = getProgramEvent(d2Event, metadata);
-
-                    logger.trace(`Process event: ${event.eventId}`);
+                    log.debug(`Process event: ${event.eventId}`);
 
                     const selectedOrgUnit: OrgUnit = {
                         id: event.orgUnitId,
@@ -340,7 +359,7 @@ export class D2ProgramRules {
 
                     const getEffectsOptions: GetProgramRuleEffectsOptions = {
                         currentEvent: event,
-                        otherEvents: programRuleEvents,
+                        otherEvents: allEvents,
                         trackedEntityAttributes: getMap(
                             program.programTrackedEntityAttributes
                                 .map(ptea => ptea.trackedEntityAttribute)
@@ -409,7 +428,7 @@ export class D2ProgramRules {
                         selectedOrgUnit,
                     };
 
-                    log.trace(
+                    log.debug(
                         `Get effects: eventId=${event.eventId} (tei: ${tei?.trackedEntityInstance || "-"})`
                     );
                     const effects = getProgramRuleEffects(getEffectsOptions).filter(e => e.type === "ASSIGN");
@@ -419,6 +438,7 @@ export class D2ProgramRules {
                         const eventEffect: EventEffect = {
                             program,
                             event: d2Event,
+                            events: events,
                             effects,
                             orgUnit: selectedOrgUnit,
                             tei,
@@ -427,10 +447,9 @@ export class D2ProgramRules {
                         eventEffects.push(eventEffect);
                     }
                 }
-
-                await onEffects(eventEffects);
-                return events;
             });
+
+            await onEffects(eventEffects);
         }
 
         return;
@@ -571,6 +590,7 @@ type Program = Metadata["programs"][number];
 interface EventEffect {
     program: Program;
     event: D2Event;
+    events: D2Event[];
     effects: RuleEffect[];
     orgUnit: OrgUnit;
     tei?: TrackedEntityInstance;
@@ -620,14 +640,6 @@ function getUpdateActionEvent(
     const dataElementsById = _.keyBy(metadata.dataElements, de => de.id);
     const programStagesNamedRefById = _.keyBy(program.programStages, programStage => programStage.id);
 
-    const dataElementIdsInProgram = new Set(
-        _(program.programStages)
-            .flatMap(programStage => programStage.programStageDataElements)
-            .map(psde => psde.dataElement)
-            .map(de => de.id)
-            .value()
-    );
-
     const eventMatchesProgramStage = program.programStages
         .filter(programStage =>
             _(programStage.programStageDataElements).some(psde => psde.dataElement.id === dataElementId)
@@ -635,15 +647,14 @@ function getUpdateActionEvent(
         .some(programStageContainingDE => programStageContainingDE.id === event.programStage);
 
     if (!eventMatchesProgramStage) {
-        logger.debug(
-            `Skip ASSIGN effect as event ${event.event} / dataElement ${dataElementId} does not belong to program stage`
+        log.debug(
+            `Skip ASSIGN effect for event:${event.event} as dataElement:${dataElementId} not in event.programStage:${event.programStage}`
         );
-        return undefined;
-    } else if (!dataElementIdsInProgram.has(dataElementId)) {
-        logger.debug(`Skip ASSIGN effect as dataElement ${dataElementId} does not belong to program`);
+
         return undefined;
     } else {
         const strValue = value === null || value === undefined ? "" : value.toString();
+
         return {
             type: "event",
             eventId: event.event,
@@ -674,7 +685,7 @@ function getUpdateActionTeiAttribute(
     const programStagesNamedRefById = _.keyBy(program.programStages, programStage => programStage.id);
 
     if (!attributeIdsInProgram.has(attributeId)) {
-        logger.debug(`Skip ASSIGN effect as attribute ${attributeId} does not belong to program`);
+        log.debug(`Skip ASSIGN effect as attribute ${attributeId} does not belong to program`);
         return undefined;
     } else {
         const strValue = value === null || value === undefined ? "" : value.toString();
