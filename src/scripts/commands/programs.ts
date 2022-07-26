@@ -1,16 +1,29 @@
 import _ from "lodash";
 import { command, string, subcommands, option, positional, optional, flag } from "cmd-ts";
 
-import { getApiUrlOption, getD2Api, StringsSeparatedByCommas } from "scripts/common";
+import {
+    getApiUrlOption,
+    getApiUrlOptions,
+    getD2Api,
+    getD2ApiFromArgs,
+    StringsSeparatedByCommas,
+} from "scripts/common";
 import { ProgramsD2Repository } from "data/ProgramsD2Repository";
 import { ExportProgramsUseCase } from "domain/usecases/ExportProgramsUseCase";
 import { ImportProgramsUseCase } from "domain/usecases/ImportProgramsUseCase";
 import { RunProgramRulesUseCase } from "domain/usecases/RunProgramRulesUseCase";
+import { GetDuplicatedEventsUseCase } from "domain/usecases/GetDuplicatedEventsUseCase";
+import { ProgramEventsD2Repository } from "data/ProgramEventsD2Repository";
 
 export function getCommand() {
     return subcommands({
         name: "programs",
-        cmds: { export: exportCmd, import: importCmd, "run-program-rules": runProgramRulesCmd },
+        cmds: {
+            export: exportCmd,
+            import: importCmd,
+            "run-program-rules": runProgramRulesCmd,
+            "get-duplicated-events": getDuplicatedEventsCmd,
+        },
     });
 }
 
@@ -102,5 +115,40 @@ const runProgramRulesCmd = command({
         const programsRepository = new ProgramsD2Repository(api);
 
         new RunProgramRulesUseCase(programsRepository).execute(args);
+    },
+});
+
+const getDuplicatedEventsCmd = command({
+    name: "Duplicated events",
+    description: "Detect and delete duplicated events for event/tracker programs",
+    args: {
+        ...getApiUrlOptions(),
+        programIds: programIdsOptions,
+        orgUnitsIds: option({
+            type: optional(StringsSeparatedByCommas),
+            long: "org-units-ids",
+            description: "List of organisation units to filter (comma-separated)",
+        }),
+        startDate: option({
+            type: optional(string),
+            long: "start-date",
+            description: "Start date for events",
+        }),
+        endDate: option({
+            type: optional(string),
+            long: "end-date",
+            description: "End date for events",
+        }),
+        reportPath: option({
+            type: string,
+            long: "save-report",
+            description: "Save report to CSV file",
+        }),
+    },
+    handler: async args => {
+        const api = getD2ApiFromArgs(args);
+        const eventsRepository = new ProgramEventsD2Repository(api);
+
+        new GetDuplicatedEventsUseCase(eventsRepository).execute(args);
     },
 });
