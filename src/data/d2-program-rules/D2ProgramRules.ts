@@ -62,8 +62,8 @@ export class D2ProgramRules {
             const teisWithChanges = diff(teisUpdated, teisCurrent);
             if (!_(teisWithChanges).isEmpty())
                 log.info(`TEIs with changes to post: ${teisWithChanges.length}`);
-            if (post) await this.postTeis(teisWithChanges);
 
+            if (post) await this.postTeis(teisWithChanges);
             if (reportPath) await this.saveReport(reportPath, page, actions);
             page++;
         });
@@ -290,6 +290,7 @@ export class D2ProgramRules {
                         trackedEntityInstance: runOptions.teiId,
                     })
                 ).then(res => res.events as D2Event[]);
+                if (_.isEmpty(events)) return [];
 
                 log.info(`Events: ${events.length}`);
 
@@ -634,6 +635,9 @@ function getUpdateActionEvent(
         .some(programStageContainingDE => programStageContainingDE.id === event.programStage);
 
     if (!eventMatchesProgramStage) {
+        logger.debug(
+            `Skip ASSIGN effect as event ${event.event} / dataElement ${dataElementId} does not belong to program stage`
+        );
         return undefined;
     } else if (!dataElementIdsInProgram.has(dataElementId)) {
         logger.debug(`Skip ASSIGN effect as dataElement ${dataElementId} does not belong to program`);
