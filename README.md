@@ -23,7 +23,7 @@ shell:~$ node dist/index.js programs run-program-rules \
   --save-report=run-program-rules.csv
 ```
 
-### Create report and post events or TEA
+### Create report and post events or tracked entity attributes
 
 ```console
 shell:~$ node dist/index.js programs run-program-rules \
@@ -34,8 +34,16 @@ shell:~$ node dist/index.js programs run-program-rules \
   --start-date=2022-06-02 \
   --end-date=2022-06-04 \
   --save-report=run-program-rules.csv
-  --post
+  [--post]
 ```
+
+Notes:
+
+- The script does not use the new 2.38 tracker endpoints (`/api/tracker/...`) to keep compatibility with other  DHIS2 versions (older version tested: 2.33). The script takes in account that some fields in models have been renamed or added (example: programRuleVariable in 2.38 has a field `valueType`).
+- Even though data values in events are stored as strings, you can use normal boolean comparisons in your rule conditions/expressions (example: #{SV_FirstConsultation} == true`).
+- Events being considered on a event update:
+  -  For tracked program: group events by trackedEntityInstance. That's required to access events in other program stages.
+  -  For events program: only the matching event is considered.
 
 ## Datasets
 

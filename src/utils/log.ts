@@ -9,6 +9,6 @@ manager.createConsoleAppender({
 });
 
 const logLevelFromEnv = process.env["LOG_LEVEL"] as STANDARD_LEVELS;
-const logger = manager.createLogger(undefined, logLevelFromEnv || "debug");
+const logger = manager.createLogger(undefined, logLevelFromEnv || "info");
 
 export default logger;
