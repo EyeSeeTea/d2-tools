@@ -8,9 +8,10 @@ export interface ProgramEventsRepository {
 }
 
 export interface GetOptions {
-    programIds?: Id[];
+    programIds: Id[];
     programStagesIds?: Id[];
-    orgUnitsIds?: Id[];
+    orgUnitsIds: Id[];
+    orgUnitMode?: "SELECTED" | "CHILDREN" | "DESCENDANTS";
     startDate?: Timestamp;
     endDate?: Timestamp;
 }

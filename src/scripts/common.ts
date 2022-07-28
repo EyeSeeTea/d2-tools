@@ -1,5 +1,6 @@
 import { option, optional, string, Type } from "cmd-ts";
 import { D2Api } from "types/d2-api";
+import { isElementOfUnion } from "utils/ts-utils";
 
 export function getD2Api(url: string): D2Api {
     const { baseUrl, auth } = getApiOptionsFromUrl(url);
@@ -72,3 +73,12 @@ export const AuthString: Type<string, Auth> = {
         return { username, password };
     },
 };
+
+export function choiceOf<T extends string>(values: readonly T[]): Type<string, T> {
+    return {
+        async from(str) {
+            if (!isElementOfUnion<T>(str, values)) throw new Error(`Valid values: ${values.join(",")}`);
+            return str;
+        },
+    };
+}

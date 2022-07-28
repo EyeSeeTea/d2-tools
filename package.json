@@ -21,6 +21,7 @@
         "cmd-ts": "^0.10.0",
         "csv-writer": "^1.6.0",
         "d2-utilizr": "^0.2.16",
+        "file-system-cache": "^2.0.0",
         "json-diff": "^0.7.3",
         "lodash": "^4.17.21",
         "loglevel": "^1.8.0",

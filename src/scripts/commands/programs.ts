@@ -2,6 +2,7 @@ import _ from "lodash";
 import { command, string, subcommands, option, positional, optional, flag } from "cmd-ts";
 
 import {
+    choiceOf,
     getApiUrlOption,
     getApiUrlOptions,
     getD2Api,
@@ -12,7 +13,7 @@ import { ProgramsD2Repository } from "data/ProgramsD2Repository";
 import { ExportProgramsUseCase } from "domain/usecases/ExportProgramsUseCase";
 import { ImportProgramsUseCase } from "domain/usecases/ImportProgramsUseCase";
 import { RunProgramRulesUseCase } from "domain/usecases/RunProgramRulesUseCase";
-import { GetDuplicatedEventsUseCase } from "domain/usecases/GetDuplicatedEventsUseCase";
+import { GetDuplicatedEventsUseCase, orgUnitModes } from "domain/usecases/GetDuplicatedEventsUseCase";
 import { ProgramEventsD2Repository } from "data/ProgramEventsD2Repository";
 
 export function getCommand() {
@@ -125,9 +126,14 @@ const getDuplicatedEventsCmd = command({
         ...getApiUrlOptions(),
         programIds: programIdsOptions,
         orgUnitsIds: option({
-            type: optional(StringsSeparatedByCommas),
+            type: StringsSeparatedByCommas,
             long: "org-units-ids",
             description: "List of organisation units to filter (comma-separated)",
+        }),
+        orgUnitMode: option({
+            type: optional(choiceOf(orgUnitModes)),
+            long: "org-unit-mode",
+            description: `Orgunit mode: ${orgUnitModes.join(", ")}`,
         }),
         startDate: option({
             type: optional(string),
@@ -139,6 +145,11 @@ const getDuplicatedEventsCmd = command({
             long: "end-date",
             description: "End date for events",
         }),
+        ignoreDataElementsIds: option({
+            type: optional(StringsSeparatedByCommas),
+            long: "ignore-dataelements-ids",
+            description: "List of data elements to ignore on event data values (comma-separated)",
+        }),
         reportPath: option({
             type: string,
             long: "save-report",
@@ -149,6 +160,6 @@ const getDuplicatedEventsCmd = command({
         const api = getD2ApiFromArgs(args);
         const eventsRepository = new ProgramEventsD2Repository(api);
 
-        new GetDuplicatedEventsUseCase(eventsRepository).execute(args);
+        new GetDuplicatedEventsUseCase(eventsRepository).execute(_.omit(args, ["url"]));
     },
 });
