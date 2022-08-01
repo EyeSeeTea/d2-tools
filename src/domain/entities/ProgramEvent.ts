@@ -1,16 +1,20 @@
-import { Id } from "./Base";
+import { Id, NamedRef } from "./Base";
 import _ from "lodash";
 import { Timestamp } from "./Date";
 
 export interface ProgramEvent {
     id: Id;
-    programId: Id;
-    orgUnitId: Id;
-    programStageId: Id;
+    program: NamedRef;
+    orgUnit: NamedRef;
+    programStage: NamedRef;
     dataValues: EventDataValue[];
     trackedEntityInstanceId?: Id;
     created: Timestamp;
+    status: EventStatus;
+    date: Timestamp;
 }
+
+type EventStatus = "ACTIVE" | "COMPLETED" | "VISITED" | "SCHEDULED" | "OVERDUE" | "SKIPPED";
 
 export interface EventDataValue {
     dataElementId: Id;
@@ -24,25 +28,29 @@ export class DuplicatedProgramEvents {
         return _(events)
             .groupBy(event =>
                 _.compact([
-                    event.orgUnitId,
-                    event.programId,
-                    event.programStageId,
+                    event.orgUnit.id,
+                    event.program.id,
+                    event.programStage.id,
                     event.trackedEntityInstanceId,
                 ]).join(".")
             )
             .values()
-            .flatMap(events => this.excludeDuplicatedEventsForGroup(events))
+            .flatMap(events => this.getDuplicatedEventsForGroup(events))
             .value();
     }
 
-    private excludeDuplicatedEventsForGroup(eventsGroup: ProgramEvent[]): ProgramEvent[] {
-        const getOldestEvent = (events: ProgramEvent[]) => _.first(_.sortBy(events, ev => ev.created));
+    private getDuplicatedEventsForGroup(eventsGroup: ProgramEvent[]): ProgramEvent[] {
+        const excludeOldestEvent = (events: ProgramEvent[]) =>
+            _(events)
+                .sortBy(ev => ev.created)
+                .drop(1)
+                .value();
 
         return _(eventsGroup)
             .groupBy(event => this.getEventDataValuesUid(event))
             .values()
             .filter(events => events.length > 1)
-            .map(getOldestEvent)
+            .flatMap(excludeOldestEvent)
             .compact()
             .value();
     }

@@ -15,6 +15,7 @@ import { ImportProgramsUseCase } from "domain/usecases/ImportProgramsUseCase";
 import { RunProgramRulesUseCase } from "domain/usecases/RunProgramRulesUseCase";
 import { GetDuplicatedEventsUseCase, orgUnitModes } from "domain/usecases/GetDuplicatedEventsUseCase";
 import { ProgramEventsD2Repository } from "data/ProgramEventsD2Repository";
+import { ProgramEventsExportCsvRepository } from "data/ProgramEventsExportCsvRepository";
 
 export function getCommand() {
     return subcommands({
@@ -150,16 +151,22 @@ const getDuplicatedEventsCmd = command({
             long: "ignore-dataelements-ids",
             description: "List of data elements to ignore on event data values (comma-separated)",
         }),
-        reportPath: option({
+        saveReport: option({
             type: string,
             long: "save-report",
             description: "Save report to CSV file",
+        }),
+        post: flag({
+            long: "post",
+            description: "Post events",
         }),
     },
     handler: async args => {
         const api = getD2ApiFromArgs(args);
         const eventsRepository = new ProgramEventsD2Repository(api);
+        const eventsExportRepository = new ProgramEventsExportCsvRepository();
+        const options = _.omit(args, ["url"]);
 
-        new GetDuplicatedEventsUseCase(eventsRepository).execute(_.omit(args, ["url"]));
+        new GetDuplicatedEventsUseCase(eventsRepository, eventsExportRepository).execute(options);
     },
 });

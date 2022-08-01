@@ -5,9 +5,13 @@ import { Timestamp } from "domain/entities/Date";
 import { ProgramEventsRepository } from "domain/repositories/ProgramEventsRepository";
 import { DuplicatedProgramEvents } from "domain/entities/ProgramEvent";
 import logger from "utils/log";
+import { ProgramEventsExportRepository } from "domain/repositories/ProgramEventsExportRepository";
 
 export class GetDuplicatedEventsUseCase {
-    constructor(private eventsRepository: ProgramEventsRepository) {}
+    constructor(
+        private eventsRepository: ProgramEventsRepository,
+        private reportsRepository: ProgramEventsExportRepository
+    ) {}
 
     async execute(options: GetDuplicatedEventsOptions): Async<void> {
         logger.debug(`Get events: ${JSON.stringify(options)}`);
@@ -16,8 +20,23 @@ export class GetDuplicatedEventsUseCase {
 
         const duplicatedEvents = new DuplicatedProgramEvents(options).get(events);
         logger.debug(`Duplicated events: ${duplicatedEvents.length}`);
-        // Create CSV report (maybe XLXS?)
-        // Add --post
+
+        if (options.saveReport) {
+            await this.reportsRepository.save({ outputPath: options.saveReport, events: duplicatedEvents });
+            logger.info(`Report: ${options.saveReport}`);
+        }
+
+        if (options.post) {
+            const result = await this.eventsRepository.delete(duplicatedEvents);
+
+            if (result.type === "success") {
+                logger.info(`POST successful: ${result.message}`);
+            } else {
+                logger.error(`POST error: ${result.message}`);
+            }
+        } else if (duplicatedEvents.length > 0) {
+            logger.info(`Use --post to delete values on server`);
+        }
     }
 }
 
@@ -32,4 +51,6 @@ interface GetDuplicatedEventsOptions {
     startDate?: Timestamp;
     endDate?: Timestamp;
     ignoreDataElementsIds?: Id[];
+    saveReport?: string;
+    post: boolean;
 }
