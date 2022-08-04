@@ -1,5 +1,5 @@
 import _ from "lodash";
-import XLSX from "xlsx";
+import * as XLSX from "xlsx";
 
 import { Async } from "domain/entities/Async";
 import { ReadOptions, Row, Sheet, Spreadsheet, SpreadsheetDataSource } from "data/SpreadsheetsDataSource";

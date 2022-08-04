@@ -3,7 +3,7 @@ import { run, subcommands } from "cmd-ts";
 
 import * as datasets from "./commands/datasets";
 import * as programs from "./commands/programs";
-import * as dataelements from "./commands/dataelements";
+import * as translations from "./commands/translations";
 
 export function runCli() {
     const cliSubcommands = subcommands({
@@ -11,7 +11,7 @@ export function runCli() {
         cmds: {
             datasets: datasets.getCommand(),
             programs: programs.getCommand(),
-            dataelements: dataelements.getCommand(),
+            translations: translations.getCommand(),
         },
     });
 
