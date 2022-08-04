@@ -31,7 +31,10 @@ export class TranslateMetadataUseCase {
         const objectsToPost = await this.getObjectsToPost(options);
         log.info(`Payload: ${objectsToPost.length} objects`);
 
-        const payload = await this.repositories.metadata.save(objectsToPost, { dryRun: !options.post });
+        const { stats, payload } = await this.repositories.metadata.save(objectsToPost, {
+            dryRun: !options.post,
+        });
+        log.info(`POST stats: ${JSON.stringify(stats)}`);
 
         if (saveToFile) {
             log.info(`Payload saved: ${saveToFile}`);

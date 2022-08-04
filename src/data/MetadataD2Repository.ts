@@ -16,17 +16,17 @@ export class MetadataD2Repository implements MetadataRepository {
         return this.getMetadataObjects(models);
     }
 
-    async save(objects: MetadataObject[], options: SaveOptions): Async<Payload> {
+    async save(objects: MetadataObject[], options: SaveOptions): Async<{ payload: Payload; stats: object }> {
         const payload = await this.mergeWithExistingObjects(objects);
 
-        await runMetadata(
+        const res = await runMetadata(
             this.api.metadata.post(payload, {
                 mergeMode: "REPLACE",
                 importMode: options.dryRun ? "VALIDATE" : "COMMIT",
             })
         );
 
-        return payload;
+        return { payload, stats: res.stats };
     }
 
     private async mergeWithExistingObjects(objects: MetadataObject[]): Async<Metadata> {
