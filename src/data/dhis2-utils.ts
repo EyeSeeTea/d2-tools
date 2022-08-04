@@ -1,4 +1,7 @@
+import { HttpResponse } from "@eyeseetea/d2-api/api/common";
+import { EventsPostResponse } from "@eyeseetea/d2-api/api/events";
 import { CancelableResponse } from "@eyeseetea/d2-api/repositories/CancelableResponse";
+import { Id } from "domain/entities/Base";
 import _ from "lodash";
 import log from "utils/log";
 import { MetadataResponse } from "../types/d2-api";
@@ -16,17 +19,38 @@ export function getErrorFromResponse(res: MetadataResponse): string {
 }
 
 export async function runMetadata(
-    d2Response: CancelableResponse<MetadataResponse>,
-    options = { description: "" }
-): Promise<void> {
+    d2Response: CancelableResponse<MetadataResponse>
+): Promise<MetadataResponse> {
     const res = await d2Response.getData();
+    return res.status !== "OK" ? Promise.reject(getErrorFromResponse(res)) : Promise.resolve(res);
+}
+
+export function getData<T>(d2Response: CancelableResponse<T>): Promise<T> {
+    return d2Response.getData();
+}
+
+export function checkPostEventsResponse(res: HttpResponse<EventsPostResponse>): void {
+    const importMessages = _(res.response.importSummaries || [])
+        .map(importSummary =>
+            importSummary.status !== "SUCCESS"
+                ? _.compact([
+                      importSummary.description,
+                      ...importSummary.conflicts.map(c => JSON.stringify(c)),
+                  ]).join("\n")
+                : null
+        )
+        .compact()
+        .value();
+
     if (res.status !== "OK") {
-        return Promise.reject(getErrorFromResponse(res));
-    } else {
-        const description = options.description || "metadata";
-        log.debug(`POST ${description}: ${res.status} ${JSON.stringify(res.stats)}`);
-        Promise.resolve(undefined);
+        const msg = [`POST /events error`, res.message, ...importMessages].join("\n") || "Unknown error";
+        log.error(msg);
     }
+}
+
+export async function getInChunks<T>(ids: Id[], getter: (idsGroup: Id[]) => Promise<T[]>): Promise<T[]> {
+    const objsCollection = await promiseMap(_.chunk(ids, 300), idsGroup => getter(idsGroup));
+    return _.flatten(objsCollection);
 }
 
 export function promiseMap<T, S>(inputValues: T[], mapper: (value: T) => Promise<S>): Promise<S[]> {

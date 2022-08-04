@@ -2,7 +2,7 @@ import _ from "lodash";
 
 export type Maybe<T> = T | undefined;
 
-export type Expand<T> = T extends infer O ? { [K in keyof O]: O[K] } : never;
+export type Expand<T> = {} & { [P in keyof T]: T[P] };
 
 export type GetValue<T> = T[keyof T];
 
@@ -69,6 +69,16 @@ export function isElementOfUnion<Union extends string>(
 
 export function getKeys<K extends string>(obj: Record<K, unknown>): K[] {
     return Object.keys(obj) as K[];
+}
+
+/* idRecordOf: Similar to recordOf, but use to add an id field from the object key */
+
+type AddId<T> = Expand<{ [K in keyof T]: T[K] & { id: K } }>;
+
+export function idRecordOf<T>() {
+    return function <Obj extends Record<string, Omit<T, "id">>>(obj: Obj): AddId<Obj> {
+        return _.mapValues(obj, (value: Omit<T, "id">, id) => ({ ...value, id })) as AddId<Obj>;
+    };
 }
 
 export type GetRecordId<T extends Record<any, { id: unknown }>> = GetValue<T>["id"];
