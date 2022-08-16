@@ -1,12 +1,14 @@
-function printToConsole(msg: string): void {
-    process.stdout.write(msg + "\n");
-}
+import SimpleLogger, { STANDARD_LEVELS } from "simple-node-logger";
 
-const log = {
-    info: printToConsole,
-    debug: printToConsole,
-    error: printToConsole,
-    warn: printToConsole,
-};
+const manager = new SimpleLogger();
 
-export default log;
+manager.createConsoleAppender({
+    writer(s: string) {
+        process.stderr.write(s + "\n");
+    },
+});
+
+const logLevelFromEnv = process.env["LOG_LEVEL"] as STANDARD_LEVELS;
+const logger = manager.createLogger(undefined, logLevelFromEnv || "debug");
+
+export default logger;

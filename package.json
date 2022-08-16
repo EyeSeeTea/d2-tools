@@ -4,9 +4,10 @@
     "main": "src/index.ts",
     "description": "DHIS2 tools",
     "scripts": {
+        "postinstall": "src/scripts/postinstall.sh",
         "build:dev": "webpack --mode development --watch",
         "build": "webpack --mode production",
-        "lint": "eslint src/* --ext .ts",
+        "lint": "eslint src/{data,domain,scripts,types,utils} --ext .ts",
         "service": "nodemon",
         "start": "node dist/index.js",
         "release": "standard-version"
@@ -18,8 +19,10 @@
         "@types/json-diff": "^0.7.0",
         "cmd-ts": "^0.10.0",
         "csv-writer": "^1.6.0",
+        "d2-utilizr": "^0.2.16",
         "json-diff": "^0.7.3",
         "lodash": "^4.17.21",
+        "loglevel": "^1.8.0",
         "simple-node-logger": "^21.8.12"
     },
     "devDependencies": {
@@ -35,6 +38,7 @@
         "eslint-plugin-node": "^11.1.0",
         "eslint-plugin-prettier": "^4.0.0",
         "eslint-plugin-promise": "^6.0.0",
+        "flow-remove-types": "^2.179.0",
         "nodemon": "^2.0.15",
         "prettier": "^2.6.0",
         "ts-loader": "^9.2.8",

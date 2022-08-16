@@ -5,6 +5,38 @@ shell:~$ yarn install
 shell:~$ yarn build
 ```
 
+## Execute Program Rules
+
+### Instalation Notes
+For this script to work you may need to install svn
+
+### Create report with events or TEA to be updated
+
+```console
+shell:~$ node dist/index.js programs run-program-rules \
+  --url='http://USER:PASSWORD@localhost:8080' \
+  --programs-ids=ORvg6A5ed7z \
+  --program-rules-ids=qvk8trY5En6 \
+  --org-units-ids=rSAdSn2l11O,vNiy1wYCpUC \
+  --start-date=2022-06-02 \
+  --end-date=2022-06-04 \
+  --save-report=run-program-rules.csv
+```
+
+### Create report and post events or TEA
+
+```console
+shell:~$ node dist/index.js programs run-program-rules \
+  --url='http://USER:PASSWORD@localhost:8080' \
+  --programs-ids=ORvg6A5ed7z \
+  --program-rules-ids=qvk8trY5En6 \
+  --org-units-ids=rSAdSn2l11O,vNiy1wYCpUC \
+  --start-date=2022-06-02 \
+  --end-date=2022-06-04 \
+  --save-report=run-program-rules.csv
+  --post
+```
+
 ## Datasets
 
 ### Compare pairs of data sets
