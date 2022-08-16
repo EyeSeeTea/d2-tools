@@ -8,6 +8,7 @@ shell:~$ yarn build
 ## Execute Program Rules
 
 ### Instalation Notes
+
 For this script to work you may need to install svn
 
 ### Create report with events or TEA to be updated
@@ -35,6 +36,19 @@ shell:~$ node dist/index.js programs run-program-rules \
   --end-date=2022-06-04 \
   --save-report=run-program-rules.csv
   --post
+```
+
+## Programs export/import
+
+Export a program with all its associated metadata and data (events, enrollments, tracked entities).
+
+```console
+shell:~$ yarn start programs export --url='http://USER:PASSWORD@localhost:8080' \
+  --programs-ids=kX2GpLIa75l,kpNc7KvydVz programs.json
+```
+
+```console
+shell:~$ yarn start programs import --url='http://USER:PASSWORD@localhost:8080' programs.json
 ```
 
 ## Datasets
