@@ -309,7 +309,7 @@ export class D2ProgramRules {
                 data.events.push(...events);
                 data.teis.push(...teis);
 
-                return [];
+                return events;
             });
 
             const teisById = _.keyBy(data.teis, tei => tei.trackedEntityInstance);
