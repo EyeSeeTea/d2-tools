@@ -479,7 +479,12 @@ export class D2ProgramRules {
                     fields: "*",
                     totalPages: true,
                 })
-            ).then(res => res.trackedEntityInstances);
+            )
+                .then(res => res.trackedEntityInstances)
+                .catch(() => {
+                    console.error(`Error getting TEIs: ${ids.join(",")}. Fallback to empty set`);
+                    return [];
+                });
         });
     }
 }
