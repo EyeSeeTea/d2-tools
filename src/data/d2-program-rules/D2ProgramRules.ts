@@ -42,7 +42,8 @@ export class D2ProgramRules {
         const { post, reportPath } = options;
 
         const metadata = await this.getMetadata(options);
-        const allActions: UpdateAction[] = [];
+        //const allActions: UpdateAction[] = [];
+        let index = 1;
 
         await this.getEventEffects(metadata, options, async eventEffects => {
             const actions = this.getActions(eventEffects, metadata);
@@ -63,10 +64,12 @@ export class D2ProgramRules {
 
             if (post) await this.postTeis(teisWithChanges);
 
-            allActions.push(...actions);
+            if (reportPath && actions.length) {
+                await this.saveReport(reportPath + `.${index}`, actions);
+                index++;
+            }
+            //allActions.push(...actions);
         });
-
-        if (reportPath) await this.saveReport(reportPath, allActions);
     }
 
     private async getMetadata(options: RunRulesOptions): Promise<Metadata> {
