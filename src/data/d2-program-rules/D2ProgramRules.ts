@@ -271,9 +271,9 @@ export class D2ProgramRules {
 
         log.info(`Get data for ${program.id}: ${program.name}`);
 
-        const orgUnitsIdsFromOu = orgUnitsIds ? orgUnitsIds : [];
+        const orgUnitsIdsFromOu: string[] | undefined[] = orgUnitsIds ? orgUnitsIds : [undefined];
 
-        const orgUnitsIdsFromOug = [];
+        const orgUnitsIdsFromOug: string[] = [];
 
         const fields = { organisationUnits: { id: true as const } as const };
         if (orgUnitGroupIds) {
@@ -286,15 +286,17 @@ export class D2ProgramRules {
                 })
             );
 
-            orgUnitsIdsFromOug.push(
-                organisationUnitGroups
-                    .map((orgunitgroup: any) => orgunitgroup.organisationUnits.map((ou: any) => ou.id).flat())
-                    .flat()
-            );
+            const uidList: string[] = organisationUnitGroups
+                .map((orgunitgroup: any) => orgunitgroup.organisationUnits.map((ou: any) => ou.id).flat())
+                .flat();
+            uidList.forEach(uid => orgUnitsIdsFromOug.push(uid));
             log.info(`Get ou ids: orgUnit=${orgUnitsIdsFromOug}`);
         }
         const orgUnitsFromGroups = orgUnitsIdsFromOug ? orgUnitsIdsFromOug : [];
-        const orgUnits = [...orgUnitsIdsFromOu, ...orgUnitsFromGroups];
+        let orgUnits = [...orgUnitsIdsFromOu, ...orgUnitsFromGroups];
+        if (orgUnits.length == 0) {
+            orgUnits = [undefined];
+        }
         for (const orgUnit of orgUnits) {
             const data: { events: D2Event[]; teis: TrackedEntityInstance[] } = { events: [], teis: [] };
 
