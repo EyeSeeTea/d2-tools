@@ -66,7 +66,9 @@ export class D2ProgramRules {
             allActions.push(...actions);
         });
 
-        if (reportPath) await this.saveReport(reportPath, allActions);
+        if (reportPath) {
+            await this.saveReport(reportPath, allActions);
+        }
     }
 
     private async getMetadata(options: RunRulesOptions): Promise<Metadata> {
@@ -302,7 +304,9 @@ export class D2ProgramRules {
 
             await this.getPaginated(async page => {
                 log.info(
-                    `Get events: program=${program.id}, orgUnit=${orgUnit}, startDate=${startDate} endDate=${endDate}, page=${page}`
+                    `Get events: program=${program.id}, orgUnit=${
+                        orgUnit || "-"
+                    }, startDate=${startDate} endDate=${endDate}, page=${page}`
                 );
 
                 const events = await getData(
@@ -314,6 +318,7 @@ export class D2ProgramRules {
                         page,
                         pageSize: 1_000,
                         trackedEntityInstance: runOptions.teiId,
+                        totalPages: false,
                     })
                 ).then(res => res.events as D2Event[]);
                 if (_.isEmpty(events)) return [];
@@ -345,18 +350,15 @@ export class D2ProgramRules {
 
             const eventsGroups = _(data.events)
                 .groupBy(ev =>
-                    // Group events for tracked programs, do not group for event programs
-                    ev.trackedEntityInstance
-                        ? [ev.orgUnit, ev.program, ev.trackedEntityInstance].join(".")
-                        : ev.event
+                    [ev.orgUnit, ev.program, ev.attributeOptionCombo, ev.trackedEntityInstance].join(".")
                 )
                 .values()
                 .value();
 
-            const allEvents = data.events.map(event => getProgramEvent(event, metadata));
             const eventEffects: EventEffect[] = [];
 
             eventsGroups.forEach(events => {
+                const allEvents = events.map(event => getProgramEvent(event, metadata));
                 for (const d2Event of events) {
                     const event = getProgramEvent(d2Event, metadata);
                     log.debug(`Process event: ${event.eventId}`);
@@ -456,7 +458,9 @@ export class D2ProgramRules {
                         `Get effects: eventId=${event.eventId} (tei: ${tei?.trackedEntityInstance || "-"})`
                     );
                     const effects = getProgramRuleEffects(getEffectsOptions).filter(e => e.type === "ASSIGN");
-                    log.debug(`Event: ${event.eventId} - assign_effects: ${effects.length}`);
+                    log.debug(
+                        `Get effects: [results] eventId: ${event.eventId}, assign_effects: ${effects.length}`
+                    );
 
                     if (!_.isEmpty(effects)) {
                         const eventEffect: EventEffect = {
@@ -503,7 +507,12 @@ export class D2ProgramRules {
                     fields: "*",
                     totalPages: true,
                 })
-            ).then(res => res.trackedEntityInstances);
+            )
+                .then(res => res.trackedEntityInstances)
+                .catch(() => {
+                    console.error(`Error getting TEIs: ${ids.join(",")}. Fallback to empty set`);
+                    return [];
+                });
         });
     }
 }
