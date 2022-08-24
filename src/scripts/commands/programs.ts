@@ -77,6 +77,11 @@ const runProgramRulesCmd = command({
             long: "org-units-ids",
             description: "List of organisation units to filter (comma-separated)",
         }),
+        orgUnitGroupIds: option({
+            type: optional(StringsSeparatedByCommas),
+            long: "org-unit-groups-ids",
+            description: "List of organisation unit groups to filter (comma-separated)",
+        }),
         teiId: option({
             type: optional(string),
             long: "tei-id",

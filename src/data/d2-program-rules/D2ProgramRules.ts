@@ -267,12 +267,34 @@ export class D2ProgramRules {
         onEffects: (eventEffects: EventEffect[]) => void
     ): Promise<void> {
         const { program, metadata } = options;
-        const { startDate, endDate, orgUnitsIds, programRulesIds } = runOptions;
+        const { startDate, endDate, orgUnitsIds, orgUnitGroupIds, programRulesIds } = runOptions;
 
         log.info(`Get data for ${program.id}: ${program.name}`);
 
-        const orgUnits = orgUnitsIds ? orgUnitsIds : [undefined];
+        const orgUnitsIdsFromOu = orgUnitsIds ? orgUnitsIds : [];
 
+        const orgUnitsIdsFromOug = [];
+
+        const fields = { organisationUnits: { id: true as const } as const };
+        if (orgUnitGroupIds) {
+            const { organisationUnitGroups } = await getData(
+                this.api.metadata.get({
+                    organisationUnitGroups: {
+                        fields,
+                        filter: { id: { in: orgUnitGroupIds } },
+                    },
+                })
+            );
+
+            orgUnitsIdsFromOug.push(
+                organisationUnitGroups
+                    .map((orgunitgroup: any) => orgunitgroup.organisationUnits.map((ou: any) => ou.id).flat())
+                    .flat()
+            );
+            log.info(`Get ou ids: orgUnit=${orgUnitsIdsFromOug}`);
+        }
+        const orgUnitsFromGroups = orgUnitsIdsFromOug ? orgUnitsIdsFromOug : [];
+        const orgUnits = [...orgUnitsIdsFromOu, ...orgUnitsFromGroups];
         for (const orgUnit of orgUnits) {
             const data: { events: D2Event[]; teis: TrackedEntityInstance[] } = { events: [], teis: [] };
 
