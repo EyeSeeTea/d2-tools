@@ -17,4 +17,5 @@ export interface RunRulesOptions {
     endDate?: string;
     reportPath?: string;
     post: boolean;
+    payloadPath?: string;
 }

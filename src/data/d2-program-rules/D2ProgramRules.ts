@@ -1,4 +1,5 @@
 import _ from "lodash";
+import fs from "fs";
 import * as CsvWriter from "csv-writer";
 import { systemSettingsStore } from "capture-core/metaDataMemoryStores/systemSettings/systemSettings.store";
 import { rulesEngine } from "capture-core/rules/rulesEngine";
@@ -51,17 +52,24 @@ export class D2ProgramRules {
             const eventsUpdated = this.getUpdatedEvents(actions, eventsById);
 
             const eventsWithChanges = diff(eventsUpdated, eventsCurrent);
-            if (!_(eventsWithChanges).isEmpty())
-                log.info(`Events with changes to post: ${eventsWithChanges.length}`);
-            if (post) await this.postEvents(eventsWithChanges);
+            log.info(`Events with changes to post: ${eventsWithChanges.length}`);
 
             const teisCurrent = _.compact(eventEffects.map(eventEffect => eventEffect.tei));
             const teisUpdated: TrackedEntityInstance[] = this.getUpdatedTeis(teisCurrent, actions);
             const teisWithChanges = diff(teisUpdated, teisCurrent);
-            if (!_(teisWithChanges).isEmpty())
-                log.info(`TEIs with changes to post: ${teisWithChanges.length}`);
+            log.info(`TEIs with changes to post: ${teisWithChanges.length}`);
 
-            if (post) await this.postTeis(teisWithChanges);
+            if (options.payloadPath) {
+                const payload = { events: eventsWithChanges, trackedEntityInstances: teisWithChanges };
+                fs.writeFileSync(options.payloadPath, JSON.stringify(payload, null, 4));
+                log.info(`Payload saved: ${options.payloadPath}`);
+            }
+
+            if (post) {
+                log.info("POST changes");
+                await this.postEvents(eventsWithChanges);
+                await this.postTeis(teisWithChanges);
+            }
 
             allActions.push(...actions);
         });
@@ -129,11 +137,14 @@ export class D2ProgramRules {
     }
 
     private getActions(eventEffects: EventEffect[], metadata: Metadata): UpdateAction[] {
-        return _.flatMap(eventEffects, eventEffect => {
-            return _(eventEffect.effects)
-                .flatMap(ruleEffect => this.getUpdateAction(ruleEffect, eventEffect, metadata))
-                .value();
-        });
+        return _(eventEffects)
+            .flatMap(eventEffect => {
+                return _(eventEffect.effects)
+                    .flatMap(ruleEffect => this.getUpdateAction(ruleEffect, eventEffect, metadata))
+                    .value();
+            })
+            .uniqWith(_.isEqual)
+            .value();
     }
 
     private getUpdateAction(
@@ -317,6 +328,9 @@ export class D2ProgramRules {
                 return events;
             });
 
+            log.info(`Total events: ${data.events.length}`);
+            log.info(`Total TEIS: ${data.teis.length}`);
+
             const teisById = _.keyBy(data.teis, tei => tei.trackedEntityInstance);
 
             const enrollmentsById = _(data.teis)
@@ -325,6 +339,7 @@ export class D2ProgramRules {
                 .value();
 
             const eventsGroups = _(data.events)
+                .filter(ev => Boolean(ev.eventDate))
                 .groupBy(ev =>
                     [ev.orgUnit, ev.program, ev.attributeOptionCombo, ev.trackedEntityInstance].join(".")
                 )
@@ -332,6 +347,8 @@ export class D2ProgramRules {
                 .value();
 
             const eventEffects: EventEffect[] = [];
+
+            log.debug("Start program rules processing");
 
             eventsGroups.forEach(events => {
                 const allEvents = events.map(event => getProgramEvent(event, metadata));
@@ -486,7 +503,7 @@ export class D2ProgramRules {
             )
                 .then(res => res.trackedEntityInstances)
                 .catch(() => {
-                    console.error(`Error getting TEIs: ${ids.join(",")}. Fallback to empty set`);
+                    log.error(`Error getting TEIs: ${ids.join(",")}. Fallback to empty set`);
                     return [];
                 });
         });
