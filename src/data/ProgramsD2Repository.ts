@@ -16,13 +16,14 @@ type TrackerDataKey = "events" | "enrollments" | "trackedEntities";
 export class ProgramsD2Repository implements ProgramsRepository {
     constructor(private api: D2Api) {}
 
-    async export(options: { ids: Id[] }): Async<ProgramExport> {
-        const programIds = options.ids;
+    async export(options: { ids: Id[]; orgUnitIds: Id[] | undefined }): Async<ProgramExport> {
+        const { ids: programIds, orgUnitIds } = options;
         const metadata = await this.getMetadata(programIds);
 
-        const events = await this.getFromTracker<object>("events", { programIds });
-        const enrollments = await this.getFromTracker<D2Enrollment>("enrollments", { programIds });
-        const trackedEntities = await this.getFromTracker<D2TrackedEntity>("trackedEntities", { programIds });
+        const getOptions = { programIds, orgUnitIds };
+        const events = await this.getFromTracker<object>("events", getOptions);
+        const enrollments = await this.getFromTracker<D2Enrollment>("enrollments", getOptions);
+        const trackedEntities = await this.getFromTracker<D2TrackedEntity>("trackedEntities", getOptions);
 
         /* Remove redundant enrollments info from TEIs */
         const trackedEntitiesWithoutEnrollments = trackedEntities.map(trackedEntity => ({
@@ -62,13 +63,14 @@ export class ProgramsD2Repository implements ProgramsRepository {
         return metadata;
     }
 
-    async import(programExport: ProgramExport): Async<void> {
+    async import(programExport: D2ProgramExport): Async<void> {
         const metadataRes = await runMetadata(this.api.metadata.post(programExport.metadata));
         log.info(`Metadata import status: ${metadataRes.status}`);
 
-        const { events, enrollments, trackedEntities } = programExport.data as D2ProgramData;
+        const { events, enrollments, trackedEntities } = programExport.data;
         const teisById = _.keyBy(trackedEntities, tei => tei.trackedEntity);
 
+        // DHIS2 exports enrollments without attributes, but requires it on import, add from TEI
         const enrollmentsWithAttributes = enrollments.map(enrollment => ({
             ...enrollment,
             attributes: teisById[enrollment.trackedEntity]?.attributes || [],
@@ -126,7 +128,7 @@ export class ProgramsD2Repository implements ProgramsRepository {
 
     private async getFromTracker<T>(
         apiPath: string,
-        options: { programIds: string[]; orgUnitIds?: string[]; fields?: string }
+        options: { programIds: string[]; orgUnitIds: string[] | undefined; fields?: string }
     ): Promise<T[]> {
         const output = [];
         const { programIds, orgUnitIds, fields = "*" } = options;
@@ -166,7 +168,7 @@ export class ProgramsD2Repository implements ProgramsRepository {
 
 type TrackerResponse = { status: string; typeReports: object[] };
 
-export interface D2ProgramExport {
+interface D2ProgramExport {
     metadata: object;
     data: D2ProgramData;
 }
