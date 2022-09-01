@@ -1,0 +1,2 @@
+//
+export { makeQuerySingleResource } from "./makeQuerySingleResource";

@@ -4,12 +4,13 @@
     "main": "src/index.ts",
     "description": "DHIS2 tools",
     "scripts": {
-        "postinstall": "src/scripts/postinstall.sh",
+        "postinstall_": "src/scripts/postinstall.sh",
         "build:dev": "webpack --mode development --watch",
         "build": "webpack --mode production",
         "lint": "eslint src/{data,domain,scripts,types,utils} --ext .ts",
         "service": "nodemon",
         "start": "node dist/index.js",
+        "prettify": "prettier \"./**/*.{js,jsx,json,css,ts,tsx}\" --write",
         "release": "standard-version"
     },
     "author": "EyeSeeTea <arnau@eyeseetea.com>",

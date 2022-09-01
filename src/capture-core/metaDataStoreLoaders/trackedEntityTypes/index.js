@@ -1,0 +1,2 @@
+//
+export { loadTrackedEntityTypes } from "./loadTrackedEntityTypes";

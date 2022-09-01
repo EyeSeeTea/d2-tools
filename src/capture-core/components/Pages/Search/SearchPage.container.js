@@ -1,0 +1,146 @@
+//
+import { useDispatch, useSelector } from "react-redux";
+import React, { useCallback, useMemo, useEffect } from "react";
+
+import { useLocationQuery } from "../../../utils/routing";
+import { SearchPageComponent } from "./SearchPage.component";
+
+import {
+    cleanSearchRelatedData,
+    navigateToMainPage,
+    showInitialViewOnSearchPage,
+} from "./SearchPage.actions";
+import { searchScopes } from "./SearchPage.constants";
+import { useTrackedEntityTypesWithCorrelatedPrograms } from "../../../hooks/useTrackedEntityTypesWithCorrelatedPrograms";
+import { useCurrentTrackedEntityTypeId } from "../../../hooks/useCurrentTrackedEntityTypeId";
+
+const buildSearchOption = (id, name, searchGroups, searchScope, type) => ({
+    searchOptionId: id,
+    searchOptionName: name,
+    TETypeName: type,
+    searchGroups: [...searchGroups.values()].map(
+        ({ unique, searchForm, minAttributesRequiredToSearch }, index) => ({
+            unique,
+            searchForm,
+            // We adding the `formId` here for the reason that we will use it in the SearchPage component.
+            // Specifically the function `addFormData` will add an object for each input field to the store.
+            // Also the formId is passed in the `Form` component and needs to be identical with the one in
+            // the store in order for the `Form` to function. For these reasons we generate it once here.
+            formId: `searchPageForm-${id}-${index}`,
+            searchScope,
+            minAttributesRequiredToSearch,
+        })
+    ),
+});
+
+const useSearchOptions = () => {
+    const trackedEntityTypesWithCorrelatedPrograms = useTrackedEntityTypesWithCorrelatedPrograms();
+    return useMemo(
+        () =>
+            Object.values(trackedEntityTypesWithCorrelatedPrograms)
+                // $FlowFixMe https://github.com/facebook/flow/issues/2221
+                .reduce(
+                    (
+                        acc,
+                        {
+                            trackedEntityTypeId,
+                            trackedEntityTypeName,
+                            trackedEntityTypeSearchGroups,
+                            programs,
+                        }
+                    ) => ({
+                        ...acc,
+                        [trackedEntityTypeId]: buildSearchOption(
+                            trackedEntityTypeId,
+                            trackedEntityTypeName,
+                            trackedEntityTypeSearchGroups,
+                            searchScopes.TRACKED_ENTITY_TYPE
+                        ),
+
+                        ...programs.reduce(
+                            (accumulated, { programId, programName, searchGroups }) => ({
+                                ...accumulated,
+                                [programId]: buildSearchOption(
+                                    programId,
+                                    programName,
+                                    searchGroups,
+                                    searchScopes.PROGRAM,
+                                    trackedEntityTypeName
+                                ),
+                            }),
+                            {}
+                        ),
+                    }),
+                    {}
+                ),
+        [trackedEntityTypesWithCorrelatedPrograms]
+    );
+};
+
+const usePreselectedProgram = currentSelectionsId => {
+    const trackedEntityTypesWithCorrelatedPrograms = useTrackedEntityTypesWithCorrelatedPrograms();
+
+    return useMemo(() => {
+        const { programId } =
+            Object.values(trackedEntityTypesWithCorrelatedPrograms)
+                // $FlowFixMe https://github.com/facebook/flow/issues/2221
+                .map(({ programs }) =>
+                    programs.find(
+                        ({ programId: currentProgramId }) => currentProgramId === currentSelectionsId
+                    )
+                )
+                .filter(program => program)[0] || {};
+
+        return programId;
+    }, [currentSelectionsId, trackedEntityTypesWithCorrelatedPrograms]);
+};
+
+export const SearchPage = () => {
+    const dispatch = useDispatch();
+    const { programId, orgUnitId } = useLocationQuery();
+
+    const dispatchShowInitialSearchPage = useCallback(() => {
+        dispatch(showInitialViewOnSearchPage());
+    }, [dispatch]);
+    const dispatchNavigateToMainPage = useCallback(() => {
+        dispatch(navigateToMainPage());
+    }, [dispatch]);
+    const dispatchCleanSearchRelatedData = useCallback(() => {
+        dispatch(cleanSearchRelatedData());
+    }, [dispatch]);
+
+    const availableSearchOptions = useSearchOptions();
+    const preselectedProgramId = usePreselectedProgram(programId);
+
+    const searchStatus = useSelector(({ searchPage }) => searchPage.searchStatus);
+    const error = useSelector(
+        ({ activePage }) => activePage.selectionsError && activePage.selectionsError.error
+    );
+    const ready = useSelector(({ activePage }) => !activePage.isLoading);
+
+    const trackedEntityTypeId = useCurrentTrackedEntityTypeId();
+
+    useEffect(() => {
+        if (programId && programId !== preselectedProgramId) {
+            // There is no search for Event type of programs.
+            // In this case we navigate the users back to the main page
+            dispatchNavigateToMainPage();
+        }
+    }, [programId, preselectedProgramId, dispatchNavigateToMainPage]);
+
+    return (
+        <SearchPageComponent
+            navigateToMainPage={dispatchNavigateToMainPage}
+            showInitialSearchPage={dispatchShowInitialSearchPage}
+            cleanSearchRelatedInfo={dispatchCleanSearchRelatedData}
+            availableSearchOptions={availableSearchOptions}
+            preselectedProgramId={preselectedProgramId}
+            trackedEntityTypeId={trackedEntityTypeId}
+            searchStatus={searchStatus}
+            error={error}
+            ready={ready}
+            orgUnitId={orgUnitId}
+            programId={programId}
+        />
+    );
+};

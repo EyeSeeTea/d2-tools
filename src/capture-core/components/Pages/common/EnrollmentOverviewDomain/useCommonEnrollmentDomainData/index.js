@@ -1,0 +1,2 @@
+//
+export { useCommonEnrollmentDomainData } from "./useCommonEnrollmentDomainData";

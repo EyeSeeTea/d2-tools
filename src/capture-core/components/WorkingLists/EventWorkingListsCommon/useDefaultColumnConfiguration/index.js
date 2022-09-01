@@ -1,0 +1,2 @@
+//
+export { useDefaultColumnConfig } from "./useDefaultColumnConfig";

@@ -1,0 +1,41 @@
+//
+import { useDataMutation } from "@dhis2/app-runtime";
+import React from "react";
+import { ActionsComponent } from "./Actions.component";
+
+const enrollmentUpdate = {
+    resource: "tracker?async=false&importStrategy=UPDATE",
+    type: "create",
+    data: enrollment => ({
+        enrollments: [enrollment],
+    }),
+};
+const enrollmentDelete = {
+    resource: "tracker?async=false&importStrategy=DELETE",
+    type: "create",
+    data: enrollment => ({
+        enrollments: [enrollment],
+    }),
+};
+
+export const Actions = ({ enrollment = {}, refetchEnrollment, refetchTEI, onDelete, ...passOnProps }) => {
+    const [updateMutation, { loading: updateLoading }] = useDataMutation(enrollmentUpdate, {
+        onComplete: () => {
+            refetchEnrollment();
+            refetchTEI();
+        },
+    });
+    const [deleteMutation, { loading: deleteLoading }] = useDataMutation(enrollmentDelete, {
+        onComplete: onDelete,
+    });
+
+    return (
+        <ActionsComponent
+            enrollment={enrollment}
+            onUpdate={updateMutation}
+            onDelete={deleteMutation}
+            loading={updateLoading || deleteLoading}
+            {...passOnProps}
+        />
+    );
+};
