@@ -1,6 +1,7 @@
 import { Id, NamedRef } from "./Base";
 import _ from "lodash";
 import { Timestamp } from "./Date";
+import { Maybe } from "utils/ts-utils";
 
 export interface ProgramEvent {
     id: Id;
@@ -22,7 +23,9 @@ export interface EventDataValue {
 }
 
 export class DuplicatedProgramEvents {
-    constructor(private options: { ignoreDataElementsIds?: Id[] }) {}
+    constructor(
+        private options: { ignoreDataElementsIds: Maybe<Id[]>; checkDataElementsIds?: Maybe<Id[]> }
+    ) {}
 
     get(events: ProgramEvent[]): ProgramEvent[] {
         return _(events)
@@ -56,10 +59,11 @@ export class DuplicatedProgramEvents {
     }
 
     private getEventDataValuesUid(event: ProgramEvent) {
-        const { ignoreDataElementsIds } = this.options;
+        const { ignoreDataElementsIds, checkDataElementsIds } = this.options;
 
         return _(event.dataValues)
             .sortBy(dv => dv.dataElementId)
+            .filter(dv => (checkDataElementsIds ? checkDataElementsIds.includes(dv.dataElementId) : true))
             .reject(dv => (ignoreDataElementsIds ? ignoreDataElementsIds.includes(dv.dataElementId) : false))
             .map(dv => [dv.dataElementId, dv.value].join("."))
             .join();

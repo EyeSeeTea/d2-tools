@@ -146,6 +146,11 @@ const getDuplicatedEventsCmd = command({
             long: "end-date",
             description: "End date for events",
         }),
+        checkDataElementsIds: option({
+            type: optional(StringsSeparatedByCommas),
+            long: "check-dataelements-ids",
+            description: "List of data elements to check on event data values (comma-separated)",
+        }),
         ignoreDataElementsIds: option({
             type: optional(StringsSeparatedByCommas),
             long: "ignore-dataelements-ids",

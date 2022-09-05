@@ -6,6 +6,7 @@ import { ProgramEventsRepository } from "domain/repositories/ProgramEventsReposi
 import { DuplicatedProgramEvents } from "domain/entities/ProgramEvent";
 import logger from "utils/log";
 import { ProgramEventsExportRepository } from "domain/repositories/ProgramEventsExportRepository";
+import { Maybe } from "utils/ts-utils";
 
 export class GetDuplicatedEventsUseCase {
     constructor(
@@ -18,7 +19,10 @@ export class GetDuplicatedEventsUseCase {
         const events = await this.eventsRepository.get(options);
         logger.debug(`Events: ${events.length}`);
 
-        const duplicatedEvents = new DuplicatedProgramEvents(options).get(events);
+        const duplicatedEvents = new DuplicatedProgramEvents({
+            ignoreDataElementsIds: options.ignoreDataElementsIds,
+            checkDataElementsIds: options.checkDataElementsIds,
+        }).get(events);
         logger.debug(`Duplicated events: ${duplicatedEvents.length}`);
 
         if (options.saveReport) {
@@ -48,9 +52,10 @@ interface GetDuplicatedEventsOptions {
     programIds: Id[];
     orgUnitsIds: Id[];
     orgUnitMode?: OrgUnitMode;
-    startDate?: Timestamp;
-    endDate?: Timestamp;
-    ignoreDataElementsIds?: Id[];
+    startDate: Maybe<Timestamp>;
+    endDate: Maybe<Timestamp>;
+    ignoreDataElementsIds: Maybe<Id[]>;
+    checkDataElementsIds: Maybe<Id[]>;
     saveReport?: string;
     post: boolean;
 }
