@@ -25,7 +25,7 @@ export class ImportTranslationsRepositorySpreadsheetRepository implements Import
         return _(spreadsheet.sheets)
             .flatMap((sheet): FieldTranslations => {
                 return _(sheet.rows)
-                    .map((row, rowIndex) => this.fromRow(row, `${sheet.name}:${rowIndex}`, options))
+                    .map((row, rowIndex) => this.fromRow(row, rowIndex, `${sheet.name}:${rowIndex}`, options))
                     .compact()
                     .value();
             })
@@ -34,10 +34,12 @@ export class ImportTranslationsRepositorySpreadsheetRepository implements Import
 
     private fromRow(
         row: Row,
+        rowIndex: number,
         rowInfo: string,
         options: GetFieldTranslationsOptions
     ): Maybe<FieldTranslation> {
         const { locales } = options;
+        const isFirstRow = rowIndex === 0;
         const warn = (msg: string) => log.warn(`[${rowInfo}]: ${msg}`);
 
         const identifier = {
@@ -65,7 +67,7 @@ export class ImportTranslationsRepositorySpreadsheetRepository implements Import
 
         const translations = _(translationColumns)
             .flatMap((translationColumn): Maybe<Translation> => {
-                const [field, localeName] = translationColumn.split(":");
+                const [field, localeName] = translationColumn.split(":").map(s => s.trim());
                 const locale = localeName ? localesByName[localeName] : undefined;
                 const text = row[translationColumn];
 
@@ -73,7 +75,7 @@ export class ImportTranslationsRepositorySpreadsheetRepository implements Import
                     warn(`Translation property/text parsing failed`);
                     return undefined;
                 } else if (!locale) {
-                    warn(`Locale not found in DB: name=${locale}`);
+                    if (isFirstRow) warn(`Locale not found in DB: name=${localeName}`);
                     return undefined;
                 } else {
                     const property = _.upperCase(field).replace(/\s+/, "_");

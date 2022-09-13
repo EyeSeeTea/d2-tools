@@ -30,11 +30,11 @@ export class TranslateMetadataUseCase {
         const { savePayload: saveToFile } = options;
         const objectsToPost = await this.getObjectsToPost(options);
         log.info(`Payload: ${objectsToPost.length} objects`);
+        const dryRun = !options.post;
 
-        const { stats, payload } = await this.repositories.metadata.save(objectsToPost, {
-            dryRun: !options.post,
-        });
-        log.info(`POST stats: ${JSON.stringify(stats)}`);
+        const { stats, payload } = await this.repositories.metadata.save(objectsToPost, { dryRun });
+        const message = dryRun ? `POST (dryRun=true)` : "POST";
+        log.info(`${message}: ${JSON.stringify(stats)}`);
 
         if (saveToFile) {
             log.info(`Payload saved: ${saveToFile}`);
@@ -69,7 +69,7 @@ export class TranslateMetadataUseCase {
     ): MetadataObject[] {
         const objectsById = _.keyBy(objects, obj => `${obj.model}:${obj.id}`);
         const objectsByCode = _.keyBy(objects, obj => `${obj.model}:${obj.code}`);
-        const objectsByName = _.keyBy(objects, obj => `${obj.model}:${obj.name}`);
+        const objectsByNameCI = _.keyBy(objects, obj => `${obj.model}:${obj.name?.toLowerCase()}`);
 
         const objectsUpdated = _(fieldTranslations)
             .map((fieldTranslation): Maybe<MetadataObject> => {
@@ -81,7 +81,7 @@ export class TranslateMetadataUseCase {
                 const object =
                     get(objectsById, identifier.id) ||
                     get(objectsByCode, identifier.code) ||
-                    get(objectsByName, identifier.name);
+                    get(objectsByNameCI, identifier.name?.toLocaleLowerCase());
 
                 if (!object) {
                     log.warn(`Object not found: ${fieldTranslation.model}:${JSON.stringify(identifier)}`);
