@@ -66,21 +66,27 @@ export class ImportTranslationsRepositorySpreadsheetRepository implements Import
             .value();
 
         const translations = _(translationColumns)
-            .flatMap((translationColumn): Maybe<Translation> => {
-                const [field, localeName] = translationColumn.split(":").map(s => s.trim());
-                const locale = localeName ? localesByName[localeName] : undefined;
-                const text = row[translationColumn];
+            .flatMap(translationColumn => {
+                const [fields = "", localeName] = translationColumn.split(":").map(s => s.trim());
 
-                if (!(field && text)) {
-                    warn(`Translation property/text parsing failed`);
-                    return undefined;
-                } else if (!locale) {
-                    if (isFirstRow) warn(`Locale not found in DB: name=${localeName}`);
-                    return undefined;
-                } else {
-                    const property = _.upperCase(field).replace(/\s+/, "_");
-                    return { property: property, locale: locale.locale, value: text };
-                }
+                return fields
+                    .split(",")
+                    .map(s => s.trim())
+                    .map(field => {
+                        const locale = localeName ? localesByName[localeName] : undefined;
+                        const text = row[translationColumn];
+
+                        if (!(field && text)) {
+                            warn(`Translation property/text parsing failed`);
+                            return undefined;
+                        } else if (!locale) {
+                            if (isFirstRow) warn(`Locale not found in DB: name=${localeName}`);
+                            return undefined;
+                        } else {
+                            const property = _.upperCase(field).replace(/\s+/, "_");
+                            return { property: property, locale: locale.locale, value: text };
+                        }
+                    });
             })
             .compact()
             .value();
