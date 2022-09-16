@@ -25,6 +25,7 @@ import log from "utils/log";
 import { Event, EventsPostRequest, EventsPostResponse } from "@eyeseetea/d2-api/api/events";
 import {
     Attribute,
+    TeiOuRequest,
     TeiPostResponse,
     TrackedEntityInstance,
 } from "@eyeseetea/d2-api/api/trackedEntityInstances";
@@ -52,12 +53,11 @@ export class D2ProgramRules {
             const eventsUpdated = this.getUpdatedEvents(actions, eventsById);
 
             const eventsWithChanges = diff(eventsUpdated, eventsCurrent);
-            log.info(`Events with changes to post: ${eventsWithChanges.length}`);
 
             const teisCurrent = _.compact(eventEffects.map(eventEffect => eventEffect.tei));
             const teisUpdated: TrackedEntityInstance[] = this.getUpdatedTeis(teisCurrent, actions);
             const teisWithChanges = diff(teisUpdated, teisCurrent);
-            log.info(`TEIs with changes to post: ${teisWithChanges.length}`);
+            log.info(`Changes to post: events=${eventsWithChanges.length}, teis=${teisWithChanges.length}`);
 
             if (options.payloadPath) {
                 const payload = { events: eventsWithChanges, trackedEntityInstances: teisWithChanges };
@@ -195,6 +195,7 @@ export class D2ProgramRules {
 
     private async postTeis(teis: TrackedEntityInstance[]) {
         if (_.isEmpty(teis)) return;
+
         if (postOptions.dryRun) return; // dryRun does not work on TEI, skip POST altogether
 
         const res = await this.api.trackedEntityInstances
@@ -272,10 +273,11 @@ export class D2ProgramRules {
         for (const program of metadata.programs) {
             switch (program.programType) {
                 case "WITHOUT_REGISTRATION":
-                case "WITH_REGISTRATION":
                     await this.getEventEffectsForProgram({ program, metadata }, options, onEffects);
+                    break;
                 case "WITH_REGISTRATION":
-                //await this.getEventEffectsForTrackerProgram({ program, metadata }, options, onEffects);
+                    await this.getEventEffectsForTrackerProgram({ program, metadata }, options, onEffects);
+                    break;
             }
         }
     }
@@ -370,6 +372,77 @@ export class D2ProgramRules {
 
             onEffects(eventEffects);
         }
+    }
+
+    private async getEventEffectsForTrackerProgram(
+        options: { program: Program; metadata: Metadata },
+        runOptions: RunRulesOptions,
+        onEffects: (eventEffects: EventEffect[]) => void
+    ): Promise<void> {
+        const { program, metadata } = options;
+        const { startDate, endDate, orgUnitsIds, programRulesIds } = runOptions;
+
+        log.info(`Get data for tracker program: [${program.id}] ${program.name}`);
+        let page = 1;
+        const pageSize = 1000;
+        let totalPages: Maybe<number>;
+
+        do {
+            log.info(
+                `Get TEIs: program=${
+                    program.id
+                }, tei-startDate=${startDate} tei-endDate=${endDate}, pageSize=${pageSize}, totalPages=${
+                    totalPages || "-"
+                }, page=${page}`
+            );
+
+            const orgUnitsFilter: TeiOuRequest = orgUnitsIds
+                ? { ou: orgUnitsIds, ouMode: "SELECTED" }
+                : { ouMode: "ALL" };
+
+            const res = await getData(
+                this.api.trackedEntityInstances.get({
+                    program: program.id,
+                    order: "created:asc",
+                    ...orgUnitsFilter,
+                    fields: "*,enrollments[events]",
+                    programStartDate: startDate,
+                    programEndDate: endDate,
+                    totalPages: true,
+                    page: page,
+                    pageSize: pageSize,
+                })
+            );
+
+            const teis = res.trackedEntityInstances as unknown as TeiWithEvents[];
+            const pager = res.pager;
+            totalPages = pager.pageCount;
+
+            log.info(`TEIs read: ${teis.length}`);
+
+            const eventEffects = _(teis)
+                .flatMap(tei => {
+                    const events = _.flatMap(tei.enrollments, enrollment => enrollment.events);
+
+                    return events.map(event => {
+                        return this.getEffects({
+                            event,
+                            program,
+                            programRulesIds,
+                            metadata,
+                            tei,
+                            teis,
+                            events,
+                        });
+                    });
+                })
+                .compact()
+                .value();
+
+            onEffects(eventEffects);
+
+            page++;
+        } while (page <= totalPages);
     }
 
     private getEffects(options: {
@@ -830,3 +903,8 @@ interface Data {
     events: D2Event[];
     teis: TrackedEntityInstance[];
 }
+
+type TeiWithEvents = TrackedEntityInstance & {
+    trackedEntityInstance: Id;
+    enrollments: Array<{ events: D2Event[] }>;
+};
