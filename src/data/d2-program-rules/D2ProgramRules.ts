@@ -57,7 +57,7 @@ export class D2ProgramRules {
             const teisCurrent = _.compact(eventEffects.map(eventEffect => eventEffect.tei));
             const teisUpdated: TrackedEntityInstance[] = this.getUpdatedTeis(teisCurrent, actions);
             const teisWithChanges = diff(teisUpdated, teisCurrent);
-            log.info(`Changes to post: events=${eventsWithChanges.length}, teis=${teisWithChanges.length}`);
+            log.info(`Changes: events=${eventsWithChanges.length}, teis=${teisWithChanges.length}`);
 
             if (options.payloadPath) {
                 const payload = { events: eventsWithChanges, trackedEntityInstances: teisWithChanges };
@@ -299,9 +299,14 @@ export class D2ProgramRules {
 
             await this.getPaginated(async page => {
                 log.info(
-                    `Get events: program=${program.id}, orgUnit=${
-                        orgUnit || "-"
-                    }, startDate=${startDate} endDate=${endDate}, page=${page}`
+                    [
+                        "Get events:",
+                        `program=${program.id}`,
+                        `orgUnit=${orgUnit || "-"}`,
+                        `startDate=${startDate}`,
+                        `endDate=${endDate}`,
+                        `page=${page}`,
+                    ].join(" ")
                 );
 
                 const events = await getData(
@@ -352,7 +357,7 @@ export class D2ProgramRules {
             const eventEffects = _(eventsGroups)
                 .flatMap(events => {
                     return events.map(event => {
-                        const tei = event.trackedEntityInstance
+                        const teiForEvent = event.trackedEntityInstance
                             ? teisById[event.trackedEntityInstance]
                             : undefined;
 
@@ -361,7 +366,7 @@ export class D2ProgramRules {
                             program,
                             programRulesIds,
                             metadata,
-                            tei,
+                            tei: teiForEvent,
                             teis: data.teis,
                             events,
                         });
@@ -385,15 +390,22 @@ export class D2ProgramRules {
         log.info(`Get data for tracker program: [${program.id}] ${program.name}`);
         let page = 1;
         const pageSize = 1000;
-        let totalPages: Maybe<number>;
+        let total: Maybe<{ pages: number; count: number }>;
+
+        const base = { program, programRulesIds, metadata };
 
         do {
             log.info(
-                `Get TEIs: program=${
-                    program.id
-                }, tei-startDate=${startDate} tei-endDate=${endDate}, pageSize=${pageSize}, totalPages=${
-                    totalPages || "-"
-                }, page=${page}`
+                [
+                    "Get TEIs:",
+                    `program=${program.id}`,
+                    `enrollment-startDate=${startDate}`,
+                    `enrollment-endDate=${endDate}`,
+                    `page-size=${pageSize}`,
+                    `total=${total?.count || "-"}`,
+                    `total-pages=${total?.pages || "-"}`,
+                    `[page=${page}]`,
+                ].join(" ")
             );
 
             const orgUnitsFilter: TeiOuRequest = orgUnitsIds
@@ -416,25 +428,21 @@ export class D2ProgramRules {
 
             const teis = res.trackedEntityInstances as unknown as TeiWithEvents[];
             const pager = res.pager;
-            totalPages = pager.pageCount;
+            total = { pages: pager.pageCount, count: pager.total };
 
-            log.info(`TEIs read: ${teis.length}`);
+            const eventsCount = _(teis)
+                .flatMap(tei => tei.enrollments)
+                .flatMap(enrollment => enrollment.events)
+                .size();
+            log.info(`Run rules engine: TEIs=${teis.length} events=${eventsCount}`);
 
             const eventEffects = _(teis)
                 .flatMap(tei => {
-                    const events = _.flatMap(tei.enrollments, enrollment => enrollment.events);
+                    const teiEvents = _.flatMap(tei.enrollments, enrollment => enrollment.events);
 
-                    return events.map(event => {
-                        return this.getEffects({
-                            event,
-                            program,
-                            programRulesIds,
-                            metadata,
-                            tei,
-                            teis,
-                            events,
-                        });
-                    });
+                    return teiEvents
+                        .filter(event => Boolean(event.eventDate))
+                        .map(event => this.getEffects({ ...base, event, tei, teis, events: teiEvents }));
                 })
                 .compact()
                 .value();
@@ -442,7 +450,7 @@ export class D2ProgramRules {
             onEffects(eventEffects);
 
             page++;
-        } while (page <= totalPages);
+        } while (page <= total.pages);
     }
 
     private getEffects(options: {
@@ -551,9 +559,33 @@ export class D2ProgramRules {
             selectedOrgUnit,
         };
 
-        log.debug(`Get effects: eventId=${event.eventId} (tei: ${tei?.trackedEntityInstance || "-"})`);
-        const effects = getProgramRuleEffects(getEffectsOptions).filter(e => e.type === "ASSIGN");
-        log.debug(`Get effects: [results] eventId: ${event.eventId}, assign_effects: ${effects.length}`);
+        const [effects, errors] = captureConsoleError(() => {
+            return getProgramRuleEffects(getEffectsOptions).filter(effect => effect.type === "ASSIGN");
+        });
+
+        if (errors) {
+            log.error(
+                _.compact([
+                    "Get effects [error]:",
+                    `eventId=${event.eventId}`,
+                    tei ? `tei=${tei.trackedEntityInstance || "-"}` : null,
+                    ":",
+                    errors.join(", "),
+                ]).join(" ")
+            );
+
+            // Skip effect if there were errors (as the engine still returns a value)
+            return undefined;
+        }
+
+        log.debug(
+            _.compact([
+                "Get effects[results]:",
+                `eventId=${event.eventId}`,
+                tei ? `tei=${tei.trackedEntityInstance || "-"}` : null,
+                `ASSIGNs: ${effects.length}`,
+            ]).join(" ")
+        );
 
         if (!_.isEmpty(effects)) {
             const eventEffect: EventEffect = {
@@ -908,3 +940,12 @@ type TeiWithEvents = TrackedEntityInstance & {
     trackedEntityInstance: Id;
     enrollments: Array<{ events: D2Event[] }>;
 };
+
+function captureConsoleError<U>(fn: () => U): [U, Maybe<string[]>] {
+    const errors: string[] = [];
+    const prevConsoleError = console.error;
+    console.error = (msg: string) => errors.push(msg);
+    const res = fn();
+    console.error = prevConsoleError;
+    return [res, errors.length > 0 ? errors : undefined];
+}
