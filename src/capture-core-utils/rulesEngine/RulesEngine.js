@@ -24,7 +24,7 @@ function updateVariable(variableToAssign, data, variablesHash) {
 
     if (!variableHash) {
         // If a variable is mentioned in the content of the rule, but does not exist in the variables hash, show a warning:
-        log.warn(`Variable ${variableHashKey} was not defined.`);
+        console.error(`Variable ${variableHashKey} was not defined.`);
     } else {
         const { variableType } = variableHash;
         let variableValue = normalizeRuleVariable(data, variableType);
@@ -52,7 +52,7 @@ function updateVariable(variableToAssign, data, variablesHash) {
  */
 const replaceVariablesWithValues = (expression, variablesHash) => {
     const warnMessage = (expr, variablePresent) => {
-        log.warn(`Expression ${expr} contains context variable ${variablePresent} 
+        console.error(`Expression ${expr} contains context variable ${variablePresent} 
     - but this variable is not defined.`);
     };
 
@@ -288,12 +288,12 @@ export class RulesEngine {
                         dhisFunctions,
                         strippedExpression,
                         e =>
-                            log.warn(
+                            console.error(
                                 `Expression with id rule:${rule.id} could not be run. Original condition was: ${rule.condition} - Evaluation ended up as:${expression} - error message:${e}`
                             )
                     );
                 } else {
-                    log.warn(
+                    console.error(
                         `Rule id:'${rule.id}'' and name:'${rule.name}' had no condition specified. Please check rule configuration.`
                     );
                 }
@@ -325,10 +325,11 @@ export class RulesEngine {
                                 const evaluatedRuleEffectData = executeExpression(
                                     dhisFunctions,
                                     strippedExpression,
-                                    e =>
-                                        log.warn(
+                                    e => {
+                                        console.error(
                                             `Expression with id rule: action:${id} could not be run. Original condition was: ${rule.condition} - Evaluation ended up as:${strippedExpression} - error message:${e}`
-                                        )
+                                        );
+                                    }
                                 );
                                 ruleEffectData = trimQuotes(evaluatedRuleEffectData);
                             }
