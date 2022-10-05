@@ -32,6 +32,19 @@ Notes:
     -   For tracked program: group events by trackedEntityInstance. That's required to access events in other program stages.
     -   For events program: only the matching event is considered.
 
+## Programs export/import
+
+Export a program with all its associated metadata and data (events, enrollments, tracked entities).
+
+```console
+shell:~$ yarn start programs export --url='http://USER:PASSWORD@localhost:8080' \
+  --programs-ids=kX2GpLIa75l,kpNc7KvydVz programs.json
+```
+
+```console
+shell:~$ yarn start programs import --url='http://USER:PASSWORD@localhost:8080' programs.json
+```
+
 ## Datasets
 
 ### Compare pairs of data sets
