@@ -94,3 +94,19 @@ shell:~$ yarn start datasets compare \
 
 DiMntK7qKZQ - Z3tlf5sqWiK: equal
 ```
+
+### Copy the Organisation Units from a data set to one or more datasets:
+
+```console
+shell:~$ yarn start datasets copy-org-units -o="LthvL9t2acW" -d="RvS8hay27O2" \
+    --url='http://USER:PASSWORD@localhost:8080' \
+    --origin-dataset=DiMntK7qKZQ \
+    --destination-datasets=Z3tlf5sqWiK,jHF49Vvup66 \
+    [--replace, -r]
+```
+
+Notes:
+
+-   If a destination data set contains all the origin OUs no action is taken and a warning is shown.
+-   The `--replace` flag allows to overwrite the destination Organisation Units. If `--replace` is set, and the OUs are **identical** in the origin and destination data sets, no action is taken and a warning is shown.
+-   If no data set is modified a warning is shown.
