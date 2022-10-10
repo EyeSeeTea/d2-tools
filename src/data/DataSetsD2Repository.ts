@@ -1,6 +1,6 @@
 import _ from "lodash";
 import { DataSetsRepository } from "domain/repositories/DataSetsRepository";
-import { D2Api, Id } from "types/d2-api";
+import { D2Api, Id, MetadataResponse } from "types/d2-api";
 import { dataSetSchema } from "./DataSetSchema";
 import { DataSet } from "domain/entities/DataSet";
 
@@ -26,6 +26,16 @@ export class DataSetsD2Repository implements DataSetsRepository {
         } else {
             return _.keyBy(dataSets, dataSet => dataSet.id);
         }
+    }
+
+    async post(data: object, options: object): Promise<MetadataResponse> {
+        const response = await this.api.metadata.post(data, options).getData();
+
+        if (response.status !== "OK") {
+            console.error(JSON.stringify(response.typeReports, null, 4));
+        }
+
+        return response;
     }
 
     getSchema(): object {
