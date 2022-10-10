@@ -98,13 +98,13 @@ DiMntK7qKZQ - Z3tlf5sqWiK: equal
 ### Copy the Organisation Units from a data set to one or more datasets:
 
 ```console
-shell:~$ yarn start datasets copy-org-units -o="LthvL9t2acW" -d="RvS8hay27O2" \
+shell:~$ yarn start datasets copy-org-units \
     --url='http://USER:PASSWORD@localhost:8080' \
     --origin-dataset=DiMntK7qKZQ \
     --destination-datasets=Z3tlf5sqWiK,jHF49Vvup66 \
     [--replace, -r]
 
-shell:~$ yarn start datasets copy-org-units -o="LthvL9t2acW" -d="RvS8hay27O2" \
+shell:~$ yarn start datasets copy-org-units \
     --url='http://USER:PASSWORD@localhost:8080' \
     -o=DiMntK7qKZQ \
     -d=Z3tlf5sqWiK,jHF49Vvup66 \
