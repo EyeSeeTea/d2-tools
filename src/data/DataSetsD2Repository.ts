@@ -1,6 +1,6 @@
 import _ from "lodash";
 import { DataSetsRepository } from "domain/repositories/DataSetsRepository";
-import { D2Api, Id, MetadataResponse, PostOptions } from "types/d2-api";
+import { D2Api, Id, PostOptions } from "types/d2-api";
 import { dataSetSchema } from "./DataSetSchema";
 import { DataSet } from "domain/entities/DataSet";
 import { DataSetMetadata } from "domain/entities/DataSetMetadata";
