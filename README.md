@@ -103,17 +103,12 @@ shell:~$ yarn start datasets copy-org-units \
     --origin-dataset=DiMntK7qKZQ \
     --destination-datasets=Z3tlf5sqWiK,jHF49Vvup66 \
     [--replace, -r]
-
-shell:~$ yarn start datasets copy-org-units \
-    --url='http://USER:PASSWORD@localhost:8080' \
-    -o=DiMntK7qKZQ \
-    -d=Z3tlf5sqWiK,jHF49Vvup66 \
-    [--replace, -r]
 ```
 
 Notes:
 
 -   `origin-dataset` and `destination-datasets` has a length check to match DHIS2 ID length.
+-   `--origin-dataset` and `--destination-datasets` has a short form: `-o` and `-d`.
 -   If a destination data set contains all the origin OUs no action is taken and a warning is shown.
 -   The `--replace` flag allows to overwrite the destination Organisation Units. If `--replace` is set, and the OUs are **identical** in the origin and destination data sets, no action is taken and a warning is shown.
 -   If no data set is modified a warning is shown.
