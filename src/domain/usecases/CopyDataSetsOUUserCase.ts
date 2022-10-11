@@ -1,8 +1,9 @@
 import _ from "lodash";
 import { DataSetsRepository } from "domain/repositories/DataSetsRepository";
-import { Id, PostOptions, Ref } from "types/d2-api";
+import { Id, Ref } from "types/d2-api";
 import { DataSet } from "domain/entities/DataSet";
 import { OUCopyResult } from "domain/entities/OUCopyResult";
+import { DataSetMetadata } from "domain/entities/DataSetMetadata";
 
 export class CopyDataSetsOUUserCase {
     constructor(private dataSetsRepository: DataSetsRepository) {}
@@ -46,10 +47,8 @@ export class CopyDataSetsOUUserCase {
 
         let result: OUCopyResult;
         if (!_.isEmpty(data)) {
-            const metadata = { dataSets: data };
-            const postOptions: Partial<PostOptions> = { async: false };
-            const postResponse = await this.dataSetsRepository.post(metadata, postOptions);
-            result = postResponse.status;
+            const metadata: DataSetMetadata = { dataSets: data };
+            result = await this.dataSetsRepository.post(metadata);
             if (result === "ERROR") console.debug("Error while posting the dataSets.");
         } else {
             result = "NO_CHANGE";

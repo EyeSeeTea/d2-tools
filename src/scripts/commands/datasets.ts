@@ -83,7 +83,7 @@ export function getCommand() {
             replace: flag({
                 type: boolean,
                 long: "replace",
-                short: 'r',
+                short: "r",
                 description: "Replace the destination Organisation Units",
             }),
         },

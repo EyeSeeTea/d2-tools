@@ -1,8 +1,11 @@
 import _ from "lodash";
 import { DataSetsRepository } from "domain/repositories/DataSetsRepository";
-import { D2Api, Id, MetadataResponse } from "types/d2-api";
+import { D2Api, Id, MetadataResponse, PostOptions } from "types/d2-api";
 import { dataSetSchema } from "./DataSetSchema";
 import { DataSet } from "domain/entities/DataSet";
+import { DataSetMetadata } from "domain/entities/DataSetMetadata";
+import { runMetadata } from "./dhis2-utils";
+import { OUCopyResult } from "domain/entities/OUCopyResult";
 
 export class DataSetsD2Repository implements DataSetsRepository {
     constructor(private api: D2Api) {}
@@ -28,14 +31,20 @@ export class DataSetsD2Repository implements DataSetsRepository {
         }
     }
 
-    async post(data: object, options: object): Promise<MetadataResponse> {
-        const response = await this.api.metadata.post(data, options).getData();
+    async post(data: DataSetMetadata): Promise<OUCopyResult> {
+        try {
+            const options: Partial<PostOptions> = { async: false };
+            const response = await runMetadata(this.api.metadata.post(data, options));
 
-        if (response.status !== "OK") {
-            console.error(JSON.stringify(response.typeReports, null, 4));
+            if (response.status !== "OK") {
+                console.error(JSON.stringify(response.typeReports, null, 4));
+            }
+
+            return response.status;
+        } catch (errror) {
+            console.debug(errror);
+            return "ERROR";
         }
-
-        return response;
     }
 
     getSchema(): object {

@@ -1,8 +1,10 @@
 import { DataSet } from "domain/entities/DataSet";
-import { Id, MetadataResponse } from "types/d2-api";
+import { DataSetMetadata } from "domain/entities/DataSetMetadata";
+import { OUCopyResult } from "domain/entities/OUCopyResult";
+import { Id } from "types/d2-api";
 
 export interface DataSetsRepository {
     get(ids: Id[]): Promise<Record<Id, DataSet>>;
-    post(data: object, options: object): Promise<MetadataResponse>;
+    post(data: DataSetMetadata): Promise<OUCopyResult>;
     getSchema(): object;
 }
