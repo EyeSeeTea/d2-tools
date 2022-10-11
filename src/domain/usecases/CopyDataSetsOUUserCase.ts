@@ -1,50 +1,52 @@
 import _ from "lodash";
 import { DataSetsRepository } from "domain/repositories/DataSetsRepository";
-import { PostOptions, Ref } from "types/d2-api";
+import { Id, PostOptions, Ref } from "types/d2-api";
 import { DataSet } from "domain/entities/DataSet";
 import { OUCopyResult } from "domain/entities/OUCopyResult";
 
 export class CopyDataSetsOUUserCase {
-    constructor(
-        private dataSetsRepository: DataSetsRepository
-    ) { }
+    constructor(private dataSetsRepository: DataSetsRepository) {}
 
     async execute(options: {
-        originDataset: string;
+        originDataset: Id;
         destinationDatasets: string[];
         replace: boolean | undefined;
     }): Promise<OUCopyResult> {
-        const { originDataset, destinationDatasets, replace } = options;
+        const { originDataset, destinationDatasets, replace = false } = options;
 
-        console.debug(`Replace the destination OU: ${replace ? "True" : "False"}`);
+        console.debug(`Replace the destination OU: ${replace}`);
 
         const datasets = await this.dataSetsRepository.get([originDataset, ...destinationDatasets]);
 
         const origDataset = datasets[originDataset];
-        const destDatasets = destinationDatasets.map((id) => datasets[id]);
+        const destDatasets = destinationDatasets.map(id => datasets[id]);
 
         if (!origDataset || !destDatasets) throw new Error("Missing DataSets");
 
-        const data: DataSet[] = [];
+        const data: DataSet[] = _(destDatasets)
+            .map(destDataSet => {
+                if (!destDataSet) throw new Error("Missing DataSets");
+                const dataSetsEqual = compare(origDataset, destDataSet, replace);
+                let item: DataSet | undefined = undefined;
 
-        destDatasets.forEach((destDataSet) => {
-            if (!destDataSet) throw new Error("Missing DataSets");
-            const dataSetsEqual = compare(origDataset, destDataSet, replace ?? false);
-
-            if (!dataSetsEqual) {
-                if (replace) {
-                    data.push({ ...destDataSet, organisationUnits: origDataset.organisationUnits })
+                if (!dataSetsEqual) {
+                    if (replace) {
+                        item = { ...destDataSet, organisationUnits: origDataset.organisationUnits };
+                    } else {
+                        item = mergeDataSetOUs(origDataset, destDataSet);
+                    }
                 } else {
-                    data.push(mergeDataSetOUs(origDataset, destDataSet));
+                    console.debug(`DataSet with ID:${destDataSet.id} already contains all the OUs.`);
                 }
-            } else {
-                console.debug(`DataSet with ID:${destDataSet.id} already contains all the OUs.`);
-            }
-        });
+
+                return item;
+            })
+            .compact()
+            .value();
 
         let result: OUCopyResult;
         if (!_.isEmpty(data)) {
-            const metadata = { dataSets: [...data] };
+            const metadata = { dataSets: data };
             const postOptions: Partial<PostOptions> = { async: false };
             const postResponse = await this.dataSetsRepository.post(metadata, postOptions);
             result = postResponse.status;
@@ -61,18 +63,15 @@ export class CopyDataSetsOUUserCase {
 function compare(dataSet1: DataSet, dataSet2: DataSet, replace: boolean): boolean {
     const OUs1ToDiff = getDataSetWithSortedOUs(dataSet1);
     const OUs2ToDiff = getDataSetWithSortedOUs(dataSet2);
-    let differences;
 
     if (replace) {
-        differences = _.isEqual(OUs1ToDiff, OUs2ToDiff);
+        return _.isEqual(OUs1ToDiff, OUs2ToDiff);
     } else {
-        const filtered = OUs2ToDiff.filter((ou) => {
+        const filtered = OUs2ToDiff.filter(ou => {
             return ou.id === OUs1ToDiff.find(ou2 => ou2.id === ou.id)?.id;
-        })
-        differences = _.isEqual(OUs1ToDiff, filtered)
+        });
+        return _.isEqual(OUs1ToDiff, filtered);
     }
-
-    return differences;
 }
 
 function getDataSetWithSortedOUs(dataSet: DataSet): DataSet["organisationUnits"] {
@@ -80,10 +79,10 @@ function getDataSetWithSortedOUs(dataSet: DataSet): DataSet["organisationUnits"]
 }
 
 function mergeDataSetOUs(orgDataset: DataSet, destDataSet: DataSet): DataSet {
-    const mergedOUs: DataSet["organisationUnits"] = _.uniqBy(
-        [...orgDataset.organisationUnits, ...destDataSet.organisationUnits],
-        "id"
-    );
+    const mergedOUs: DataSet["organisationUnits"] = _.uniq([
+        ...orgDataset.organisationUnits,
+        ...destDataSet.organisationUnits,
+    ]);
 
     return {
         ...destDataSet,
