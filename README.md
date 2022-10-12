@@ -6,6 +6,24 @@ shell:~$ yarn install
 shell:~$ yarn build
 ```
 
+## How to run
+
+The entry point CLI is executed with `yarn start`. Pass `--help` to show commands and arguments to commands:
+
+```console
+shell:~$ yarn start --help
+# ...
+shell:~$ yarn start datasets --help
+```
+
+The default log level is `info`. Set the desired level using env variable `LOG_LEVEL`:
+
+```console
+shell:~$ LOG_LEVEL=debug yarn start datasets
+```
+
+Available levels: 'all' | 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'fatal'
+
 ## Execute Program Rules
 
 ### Create report and post events or tracked entity attributes
