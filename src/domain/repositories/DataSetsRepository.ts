@@ -1,5 +1,4 @@
 import { DataSet, DataSetMetadata } from "domain/entities/DataSet";
-import { OUCopyResult } from "domain/entities/OUCopyResult";
 import { Id } from "types/d2-api";
 
 export interface DataSetsRepository {
@@ -7,3 +6,5 @@ export interface DataSetsRepository {
     post(data: DataSetMetadata): Promise<OUCopyResult>;
     getSchema(): object;
 }
+
+export type OUCopyResult = "OK" | "ERROR" | "NO_CHANGE";

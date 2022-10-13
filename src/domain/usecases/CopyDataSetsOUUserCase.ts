@@ -1,8 +1,7 @@
 import _ from "lodash";
-import { DataSetsRepository } from "domain/repositories/DataSetsRepository";
+import { DataSetsRepository, OUCopyResult } from "domain/repositories/DataSetsRepository";
 import { Id, Ref } from "types/d2-api";
 import { DataSet } from "domain/entities/DataSet";
-import { OUCopyResult } from "domain/entities/OUCopyResult";
 import { DataSetMetadata } from "domain/entities/DataSet";
 
 export class CopyDataSetsOUUserCase {
