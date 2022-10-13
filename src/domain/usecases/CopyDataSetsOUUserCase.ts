@@ -15,7 +15,7 @@ export class CopyDataSetsOUUserCase {
     }): Promise<OUCopyResult> {
         const { originDataset, destinationDatasets, replace = false } = options;
 
-        log.debug(`Replace the destination OU: ${replace}`);
+        log.info(`Replace the destination OU: ${replace}`);
 
         const datasets = await this.dataSetsRepository.get([originDataset, ...destinationDatasets]);
 
@@ -36,7 +36,7 @@ export class CopyDataSetsOUUserCase {
                         item = mergeDataSetOUs(origDataset, destDataSet);
                     }
                 } else {
-                    log.debug(`DataSet with ID:${destDataSet.id} already contains all the OUs.`);
+                    log.warn(`DataSet with ID:${destDataSet.id} already contains all the OUs.`);
                 }
 
                 return item;
@@ -48,10 +48,10 @@ export class CopyDataSetsOUUserCase {
         if (!_.isEmpty(data)) {
             const metadata: DataSetMetadata = { dataSets: data };
             result = await this.dataSetsRepository.post(metadata);
-            if (result === "ERROR") log.debug(`Error while posting the dataSets.`);
+            if (result === "ERROR") log.error(`Error while posting the dataSets.`);
         } else {
             result = "NO_CHANGE";
-            log.debug(`All destination DataSets already contains the OUs. No changes made.`);
+            log.warn(`All destination DataSets already contains the OUs. No changes made.`);
         }
 
         return result;
