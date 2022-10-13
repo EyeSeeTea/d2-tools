@@ -2,8 +2,7 @@ import _ from "lodash";
 import { DataSetsRepository } from "domain/repositories/DataSetsRepository";
 import { D2Api, Id, PostOptions } from "types/d2-api";
 import { dataSetSchema } from "./DataSetSchema";
-import { DataSet } from "domain/entities/DataSet";
-import { DataSetMetadata } from "domain/entities/DataSetMetadata";
+import { DataSet, DataSetMetadata } from "domain/entities/DataSet";
 import { runMetadata } from "./dhis2-utils";
 import { OUCopyResult } from "domain/entities/OUCopyResult";
 

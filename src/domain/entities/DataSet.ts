@@ -37,6 +37,10 @@ export interface DataSet {
     }>;
 }
 
+export interface DataSetMetadata {
+    dataSets: DataSet[];
+}
+
 type Id = string;
 
 type Ref = { id: Id };
