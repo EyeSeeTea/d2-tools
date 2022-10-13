@@ -3,6 +3,7 @@ import { DataSetsRepository, OUCopyResult } from "domain/repositories/DataSetsRe
 import { Id, Ref } from "types/d2-api";
 import { DataSet } from "domain/entities/DataSet";
 import { DataSetMetadata } from "domain/entities/DataSet";
+import log from "utils/log";
 
 export class CopyDataSetsOUUserCase {
     constructor(private dataSetsRepository: DataSetsRepository) {}
@@ -14,7 +15,7 @@ export class CopyDataSetsOUUserCase {
     }): Promise<OUCopyResult> {
         const { originDataset, destinationDatasets, replace = false } = options;
 
-        console.debug(`Replace the destination OU: ${replace}`);
+        log.debug(`Replace the destination OU: ${replace}`);
 
         const datasets = await this.dataSetsRepository.get([originDataset, ...destinationDatasets]);
 
@@ -35,7 +36,7 @@ export class CopyDataSetsOUUserCase {
                         item = mergeDataSetOUs(origDataset, destDataSet);
                     }
                 } else {
-                    console.debug(`DataSet with ID:${destDataSet.id} already contains all the OUs.`);
+                    log.debug(`DataSet with ID:${destDataSet.id} already contains all the OUs.`);
                 }
 
                 return item;
@@ -47,10 +48,10 @@ export class CopyDataSetsOUUserCase {
         if (!_.isEmpty(data)) {
             const metadata: DataSetMetadata = { dataSets: data };
             result = await this.dataSetsRepository.post(metadata);
-            if (result === "ERROR") console.debug("Error while posting the dataSets.");
+            if (result === "ERROR") log.debug(`Error while posting the dataSets.`);
         } else {
             result = "NO_CHANGE";
-            console.debug("All destination DataSets already contains the OUs. No changes made.");
+            log.debug(`All destination DataSets already contains the OUs. No changes made.`);
         }
 
         return result;
