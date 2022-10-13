@@ -77,10 +77,10 @@ function getDataSetWithSortedOUs(dataSet: DataSet): DataSet["organisationUnits"]
 }
 
 function mergeDataSetOUs(orgDataset: DataSet, destDataSet: DataSet): DataSet {
-    const mergedOUs: DataSet["organisationUnits"] = _.uniq([
-        ...orgDataset.organisationUnits,
-        ...destDataSet.organisationUnits,
-    ]);
+    const mergedOUs: DataSet["organisationUnits"] = _.uniqBy(
+        [...orgDataset.organisationUnits, ...destDataSet.organisationUnits],
+        x => x.id
+    );
 
     return {
         ...destDataSet,
