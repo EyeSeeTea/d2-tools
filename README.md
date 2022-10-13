@@ -22,7 +22,7 @@ The default log level is `info`. Set the desired level using env variable `LOG_L
 shell:~$ LOG_LEVEL=debug yarn start datasets
 ```
 
-Available levels: 'all' | 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'fatal'
+Available levels: 'debug' | 'info' | 'warn' | 'error'
 
 ## Execute Program Rules
 
