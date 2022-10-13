@@ -19,13 +19,12 @@ export class CopyDataSetsOUUserCase {
         const datasets = await this.dataSetsRepository.get([originDataset, ...destinationDatasets]);
 
         const origDataset = datasets[originDataset];
-        const destDatasets = destinationDatasets.map(id => datasets[id]);
+        const destDatasets = _.compact(destinationDatasets.map(id => datasets[id]));
 
-        if (!origDataset || !destDatasets) throw new Error("Missing DataSets");
+        if (!origDataset) throw new Error("Missing DataSets");
 
         const data: DataSet[] = _(destDatasets)
             .map(destDataSet => {
-                if (!destDataSet) throw new Error("Missing DataSets");
                 const dataSetsEqual = compare(origDataset, destDataSet, replace);
                 let item: DataSet | undefined = undefined;
 
