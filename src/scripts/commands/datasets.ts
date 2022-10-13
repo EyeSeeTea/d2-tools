@@ -13,6 +13,7 @@ import {
     IDString,
     IdsSeparatedByCommas,
 } from "scripts/common";
+import log from "utils/log";
 
 export function getCommand() {
     const compareCmd = command({
@@ -91,11 +92,16 @@ export function getCommand() {
             const api = getD2Api(args.url);
             const dataSetsRepository = new DataSetsD2Repository(api);
 
-            const copyOUs = new CopyDataSetsOUUserCase(dataSetsRepository);
-            const result = await copyOUs.execute(args);
+            try {
+                const copyOUs = new CopyDataSetsOUUserCase(dataSetsRepository);
+                const result = await copyOUs.execute(args);
 
-            const statusCode = result === "OK" ? 0 : result === "NO_CHANGE" ? 0 : 1;
-            process.exit(statusCode);
+                const statusCode = result === "OK" ? 0 : result === "NO_CHANGE" ? 0 : 1;
+                process.exit(statusCode);
+            } catch (err: any) {
+                log.error(err.message);
+                process.exit(1);
+            }
         },
     });
 
