@@ -39,7 +39,7 @@
         "eslint-plugin-node": "^11.1.0",
         "eslint-plugin-prettier": "^4.0.0",
         "eslint-plugin-promise": "^6.0.0",
-        "flow-remove-types": "^2.179.0",
+        "flow-remove-types": "2.182.0",
         "nodemon": "^2.0.15",
         "prettier": "^2.6.0",
         "ts-loader": "^9.2.8",
