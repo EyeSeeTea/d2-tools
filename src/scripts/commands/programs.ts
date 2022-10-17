@@ -1,16 +1,31 @@
 import _ from "lodash";
 import { command, string, subcommands, option, positional, optional, flag } from "cmd-ts";
 
-import { getApiUrlOption, getD2Api, StringsSeparatedByCommas } from "scripts/common";
+import {
+    choiceOf,
+    getApiUrlOption,
+    getApiUrlOptions,
+    getD2Api,
+    getD2ApiFromArgs,
+    StringsSeparatedByCommas,
+} from "scripts/common";
 import { ProgramsD2Repository } from "data/ProgramsD2Repository";
 import { ExportProgramsUseCase } from "domain/usecases/ExportProgramsUseCase";
 import { ImportProgramsUseCase } from "domain/usecases/ImportProgramsUseCase";
 import { RunProgramRulesUseCase } from "domain/usecases/RunProgramRulesUseCase";
+import { GetDuplicatedEventsUseCase, orgUnitModes } from "domain/usecases/GetDuplicatedEventsUseCase";
+import { ProgramEventsD2Repository } from "data/ProgramEventsD2Repository";
+import { ProgramEventsExportCsvRepository } from "data/ProgramEventsExportCsvRepository";
 
 export function getCommand() {
     return subcommands({
         name: "programs",
-        cmds: { export: exportCmd, import: importCmd, "run-program-rules": runProgramRulesCmd },
+        cmds: {
+            export: exportCmd,
+            import: importCmd,
+            "run-program-rules": runProgramRulesCmd,
+            "get-duplicated-events": getDuplicatedEventsCmd,
+        },
     });
 }
 
@@ -107,5 +122,61 @@ const runProgramRulesCmd = command({
         const programsRepository = new ProgramsD2Repository(api);
 
         new RunProgramRulesUseCase(programsRepository).execute(args);
+    },
+});
+
+const getDuplicatedEventsCmd = command({
+    name: "Duplicated events",
+    description: "Detect and delete duplicated events for event/tracker programs",
+    args: {
+        ...getApiUrlOptions(),
+        programIds: programIdsOptions,
+        orgUnitsIds: option({
+            type: StringsSeparatedByCommas,
+            long: "org-units-ids",
+            description: "List of organisation units to filter (comma-separated)",
+        }),
+        orgUnitMode: option({
+            type: optional(choiceOf(orgUnitModes)),
+            long: "org-unit-mode",
+            description: `Orgunit mode: ${orgUnitModes.join(", ")}`,
+        }),
+        startDate: option({
+            type: optional(string),
+            long: "start-date",
+            description: "Start date for events",
+        }),
+        endDate: option({
+            type: optional(string),
+            long: "end-date",
+            description: "End date for events",
+        }),
+        checkDataElementsIds: option({
+            type: optional(StringsSeparatedByCommas),
+            long: "check-dataelements-ids",
+            description: "List of data elements to check on event data values (comma-separated)",
+        }),
+        ignoreDataElementsIds: option({
+            type: optional(StringsSeparatedByCommas),
+            long: "ignore-dataelements-ids",
+            description: "List of data elements to ignore on event data values (comma-separated)",
+        }),
+        saveReport: option({
+            type: string,
+            long: "save-report",
+            description: "Save report to CSV file",
+        }),
+        post: flag({
+            long: "post",
+            description: "Post events",
+        }),
+    },
+    handler: async args => {
+        const api = getD2ApiFromArgs(args);
+        const eventsRepository = new ProgramEventsD2Repository(api);
+        const eventsExportRepository = new ProgramEventsExportCsvRepository();
+        const options = _.omit(args, ["url"]);
+
+        new GetDuplicatedEventsUseCase(eventsRepository, eventsExportRepository).execute(options);
     },
 });
