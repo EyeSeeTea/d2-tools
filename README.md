@@ -1,7 +1,6 @@
 ## Setup
 
 ```console
-shell:~$ sudo apt install subversion # Required by post-install script
 shell:~$ yarn install
 shell:~$ yarn build
 ```
@@ -26,7 +25,7 @@ Available levels: 'debug' | 'info' | 'warn' | 'error'
 
 ## Execute Program Rules
 
-### Create report and post events or tracked entity attributes
+Create report and post events or tracked entity attributes:
 
 ```console
 shell:~$ yarn start programs run-program-rules \
@@ -113,7 +112,7 @@ shell:~$ yarn start datasets compare \
 DiMntK7qKZQ - Z3tlf5sqWiK: equal
 ```
 
-### Copy the Organisation Units from a data set to one or more datasets:
+### Copy the organisation units from a data set to one or more datasets:
 
 ```console
 shell:~$ yarn start datasets copy-org-units \
@@ -133,12 +132,10 @@ Notes:
 
 ## Translations
 
-### Update objects from spreadsheet
-
-Update any type of DHIS" metadata object using a xlsx spreadsheet as a data source:
+Update objects from spreadsheet. Update any type of DHIS2 metadata object using a xlsx spreadsheet as a data source:
 
 ```console
-shell:~$ node dist/index.js translations from-spreadsheet \
+shell:~$ yarn start translations from-spreadsheet \
   --url='http://USER:PASSWORD@localhost:8080' \
   --save-payload=payload.json \
   --post \
