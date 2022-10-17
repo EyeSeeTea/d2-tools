@@ -29,7 +29,7 @@ Create report and post events or tracked entity attributes:
 
 ```console
 shell:~$ yarn start programs run-program-rules \
-  --url='http://USER:PASSWORD@localhost:8080' \
+  --url='http://USER:PASSWORD@HOST:PORT' \
   --programs-ids=ORvg6A5ed7z \
   --program-rules-ids=qvk8trY5En6 \
   --org-units-ids=rSAdSn2l11O,vNiy1wYCpUC \
@@ -54,12 +54,12 @@ Notes:
 Export a program with all its associated metadata and data (events, enrollments, tracked entities).
 
 ```console
-shell:~$ yarn start programs export --url='http://USER:PASSWORD@localhost:8080' \
+shell:~$ yarn start programs export --url='http://USER:PASSWORD@HOST:PORT' \
   --programs-ids=kX2GpLIa75l,kpNc7KvydVz programs.json
 ```
 
 ```console
-shell:~$ yarn start programs import --url='http://USER:PASSWORD@localhost:8080' programs.json
+shell:~$ yarn start programs import --url='http://USER:PASSWORD@HOST:PORT' programs.json
 ```
 
 ## Datasets
@@ -68,7 +68,7 @@ shell:~$ yarn start programs import --url='http://USER:PASSWORD@localhost:8080' 
 
 ```console
 shell:~$ yarn start datasets compare \
-  --url='http://USER:PASSWORD@localhost:8080' \
+  --url='http://USER:PASSWORD@HOST:PORT' \
   DiMntK7qKZQ-Z3tlf5sqWiK \
   TuL8IOPzpHh-jHF49Vvup66
 
@@ -84,8 +84,8 @@ TuL8IOPzpHh - jHF49Vvup66: equal
 
 ```console
 shell:~$ yarn start datasets compare \
-  --url='http://USER:PASSWORD@host1:8080' \
-  --url2='http://USER:PASSWORD@host2:8080' \
+  --url='http://USER:PASSWORD@HOST:PORT' \
+  --url2='http://USER:PASSWORD@HOST2:PORT' \
   DiMntK7qKZQ-Z3tlf5sqWiK \
   TuL8IOPzpHh-jHF49Vvup66
 ```
@@ -105,7 +105,7 @@ shell:~$ yarn start datasets show-schema
 
 ```console
 shell:~$ yarn start datasets compare \
-    --url='http://USER:PASSWORD@localhost:8080' \
+    --url='http://USER:PASSWORD@HOST:PORT' \
     --ignore-properties="expiryDays,sections" \
     DiMntK7qKZQ-Z3tlf5sqWiK
 
@@ -116,7 +116,7 @@ DiMntK7qKZQ - Z3tlf5sqWiK: equal
 
 ```console
 shell:~$ yarn start datasets copy-org-units \
-    --url='http://USER:PASSWORD@localhost:8080' \
+    --url='http://USER:PASSWORD@HOST:PORT' \
     --origin-dataset=DiMntK7qKZQ \
     --destination-datasets=Z3tlf5sqWiK,jHF49Vvup66 \
     [--replace, -r]
@@ -136,7 +136,7 @@ Update objects from spreadsheet. Update any type of DHIS2 metadata object using 
 
 ```console
 shell:~$ yarn start translations from-spreadsheet \
-  --url='http://USER:PASSWORD@localhost:8080' \
+  --url='http://USER:PASSWORD@HOST:PORT' \
   --save-payload=payload.json \
   --post \
   translations.xlsx
@@ -158,7 +158,7 @@ Get dangling data values and save them in a CSV file:
 ```
 $ yarn build
 $ yarn start datavalues get-dangling-values \
-  --url='http://admin:PASSWORD@localhost:8036' \
+  --url='http://USER:PASSWORD@HOST:PORT' \
   --dataelementgroup-ids=OUwLDu1i5xa,SMkbYuGmadE \
   --orgunit-ids=AGZEUf9meZ6 --include-orgunits-children \
   --start-date=1970 --end-date=2023 \
@@ -169,7 +169,7 @@ To delete the dangling data values, use the generated CSV as data source and thi
 
 ```
 $ yarn start datavalues post-dangling-values \
-  --url='http://admin:PASSWORD@localhost:8036' dataValues.csv
+  --url='http://USER:PASSWORD@HOST:PORT' dataValues.csv
 ```
 
 ### Revert data values
@@ -178,7 +178,7 @@ It reverts the last data values, using the data value audit. For each of these d
 
 ```
 $ yarn start datavalues revert \
- --url='http://ignacio.foche:PASSWORD@HOST:PORT' \
+ --url='http://USER:PASSWORD@HOST:PORT' \
  --dataset-ids=Tu81BTLUuCT --orgunit-ids=XKKI1hhyFxk --periods=2020,2021 \
  --date=2022-06-01 --usernames="android" \
  datavalues.json
@@ -190,7 +190,7 @@ It deletes the duplicated events for some events/tracker programs. An example:
 
 ```
 $ yarn tools programs get-duplicated-events \
-  --url='http://admin:PASSWORD@localhost:8093' \
+  --url='http://USER:PASSWORD@HOST:PORT' \
   --save-report=duplicated-events-ecare-pilot.csv \
   --programs-ids=vYRMQ43Zl3Y --org-units-ids=yT7tCISNWG6 \
   --start-date="2022-05-09" --end-date="2022-06-05"
