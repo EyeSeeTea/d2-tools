@@ -69,6 +69,23 @@ export const StringsSeparatedByCommas: Type<string, string[]> = {
     },
 };
 
+export const IDString: Type<string, string> = {
+    async from(str) {
+        if (_(str).isEmpty()) throw new Error("Value cannot be empty");
+        if (str.length !== 11) throw new Error("ID must be 11 char long");
+        return str;
+    },
+};
+
+export const IdsSeparatedByCommas: Type<string, string[]> = {
+    async from(str) {
+        const values = _.compact(str.split(","));
+        if (_(values).isEmpty()) throw new Error("Value cannot be empty");
+        if (!_.every(values, item => item.length === 11)) throw new Error("IDs must be 11 char long");
+        return values;
+    },
+};
+
 export const AuthString: Type<string, Auth> = {
     async from(str) {
         const [username, password] = str.split(":");

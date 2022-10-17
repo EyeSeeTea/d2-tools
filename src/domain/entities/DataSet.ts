@@ -39,6 +39,10 @@ export interface DataSetToCompare {
     }>;
 }
 
+export interface DataSetMetadata {
+    dataSets: DataSet[];
+}
+
 export interface DataSet {
     id: Id;
     name: string;

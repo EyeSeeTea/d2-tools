@@ -155,7 +155,7 @@ export class GetDanglingValuesUseCase {
     }
 
     private async getDataValuesData(dataValues: DataValue[]): Promise<DataValuesData> {
-        const dataSets = await this.dataSetsRepository.get();
+        const dataSets = await this.dataSetsRepository.getAll();
 
         log.debug(`Building intermediate data for data sets`);
 

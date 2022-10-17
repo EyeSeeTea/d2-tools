@@ -6,6 +6,24 @@ shell:~$ yarn install
 shell:~$ yarn build
 ```
 
+## How to run
+
+The entry point CLI is executed with `yarn start`. Pass `--help` to show commands and arguments to commands:
+
+```console
+shell:~$ yarn start --help
+# ...
+shell:~$ yarn start datasets --help
+```
+
+The default log level is `info`. Set the desired level using env variable `LOG_LEVEL`:
+
+```console
+shell:~$ LOG_LEVEL=debug yarn start datasets
+```
+
+Available levels: 'debug' | 'info' | 'warn' | 'error'
+
 ## Execute Program Rules
 
 ### Create report and post events or tracked entity attributes
@@ -94,6 +112,24 @@ shell:~$ yarn start datasets compare \
 
 DiMntK7qKZQ - Z3tlf5sqWiK: equal
 ```
+
+### Copy the Organisation Units from a data set to one or more datasets:
+
+```console
+shell:~$ yarn start datasets copy-org-units \
+    --url='http://USER:PASSWORD@localhost:8080' \
+    --origin-dataset=DiMntK7qKZQ \
+    --destination-datasets=Z3tlf5sqWiK,jHF49Vvup66 \
+    [--replace, -r]
+```
+
+Notes:
+
+-   `origin-dataset` and `destination-datasets` has a length check to match DHIS2 ID length.
+-   `--origin-dataset` and `--destination-datasets` has a short form: `-o` and `-d`.
+-   If a destination data set contains all the origin OUs no action is taken and a warning is shown.
+-   The `--replace` flag allows to overwrite the destination Organisation Units. If `--replace` is set, and the OUs are **identical** in the origin and destination data sets, no action is taken and a warning is shown.
+-   If no data set is modified a warning is shown.
 
 ## Translations
 
