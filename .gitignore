@@ -130,3 +130,6 @@ dist
 /data
 /bak
 capture-core*
+/.env
+/.env.*
+!/.env.template

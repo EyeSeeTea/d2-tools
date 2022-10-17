@@ -1,4 +1,5 @@
-import { Id } from "./Base";
+import { PartialBy } from "utils/ts-utils";
+import { Id, IndexedById, NamedRef } from "./Base";
 import { DateTimeIso8601 } from "./DateTime";
 
 export interface DataValue {
@@ -14,6 +15,11 @@ export interface DataValue {
     followup: boolean;
     deleted?: boolean;
 }
+
+export type DataValueToPost = PartialBy<
+    DataValue,
+    "storedBy" | "created" | "lastUpdated" | "followup" | "deleted"
+>;
 
 type Period = string;
 type Username = string;
@@ -47,4 +53,10 @@ export function formatDataValue(dataValue: DataValue): string {
     ];
 
     return parts.map(([name, value]) => `${name}=${value}`).join(" ");
+}
+
+export interface DataValuesMetadata {
+    dataElements: IndexedById<NamedRef>;
+    categoryOptionCombos: IndexedById<NamedRef>;
+    orgUnits: IndexedById<NamedRef>;
 }

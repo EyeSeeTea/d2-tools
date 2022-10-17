@@ -8,7 +8,6 @@ import {
 import { SpreadsheetXlsxDataSource } from "domain/repositories/SpreadsheetXlsxRepository";
 import log from "utils/log";
 import { Maybe } from "utils/ts-utils";
-import { Translation } from "domain/entities/Translation";
 
 const columnsMapping = {
     id: ["id", "uid"],
