@@ -73,13 +73,15 @@ export class GetDanglingValuesUseCase {
                 .size(),
         };
 
+        const sendAttachment = danglingValues.length > 0;
+
         log.debug(`Send report to: ${options.notify.join(", ")}`);
 
         await this.notificationsRepository.send({
             recipients: options.notify,
             subject: `Dangling values report`,
             body: `Dangling values: ${counts.all} (non-zero: ${counts.nonZero})`,
-            attachments: [{ type: "file", file: options.outputFile }],
+            attachments: sendAttachment ? [{ type: "file", file: options.outputFile }] : [],
         });
     }
 

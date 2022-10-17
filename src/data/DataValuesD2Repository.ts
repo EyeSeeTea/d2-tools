@@ -32,6 +32,7 @@ export class DataValuesD2Repository implements DataValuesRepository {
 
     async post(options: { dataValues: DataValueToPost[] }): Async<void> {
         const { dataValues } = options;
+        if (_.isEmpty(dataValues)) return;
         const res = await this.api.dataValues.postSet({ force: true }, { dataValues }).getData();
         log.debug(`POST /dataValues response: ${JSON.stringify(res.importCount)}`);
 
