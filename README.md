@@ -130,3 +130,24 @@ Notes:
 -   If a destination data set contains all the origin OUs no action is taken and a warning is shown.
 -   The `--replace` flag allows to overwrite the destination Organisation Units. If `--replace` is set, and the OUs are **identical** in the origin and destination data sets, no action is taken and a warning is shown.
 -   If no data set is modified a warning is shown.
+
+## Translations
+
+### Update objects from spreadsheet
+
+Update any type of DHIS" metadata object using a xlsx spreadsheet as a data source:
+
+```console
+shell:~$ node dist/index.js translations from-spreadsheet \
+  --url='http://USER:PASSWORD@localhost:8080' \
+  --save-payload=payload.json \
+  --post \
+  translations.xlsx
+```
+
+Expected format of `xlsx` file:
+
+-   All sheets in file will be parsed.
+-   A Column named `type`/`kind` specifies the DHIS2 entity type (singular). Example: `dataElement`, `dataSet`.
+-   Columns named `id`/`name`/`code` will be used to match the existing object in the database. No need to specify all of them.
+-   Translation columns should have the format: `field:localeName`. A DHIS2 Locale with that name should exist in the database. Example: `formName:French`.

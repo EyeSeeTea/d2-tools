@@ -1,0 +1,64 @@
+//
+import React, { Component } from "react";
+import { withStyles } from "@material-ui/core/styles";
+import { SelectBoxes, orientations } from "../../FormFields/Options/SelectBoxes";
+import {
+    getSingleSelectOptionSetFilterData,
+    getMultiSelectOptionSetFilterData,
+} from "./optionSetFilterDataGetter";
+
+const getStyles = theme => ({
+    selectBoxesContainer: {
+        maxHeight: theme.typography.pxToRem(250),
+        overflowY: "auto",
+        marginRight: theme.typography.pxToRem(-24),
+    },
+    selectBoxesInnerContainer: {
+        marginLeft: 12,
+    },
+});
+
+// $FlowFixMe[incompatible-variance] automated comment
+// $FlowFixMe[cannot-resolve-name] automated comment
+class OptionSetFilterPlain extends Component {
+    onGetUpdateData() {
+        const { value, singleSelect } = this.props;
+
+        if (!value) {
+            return null;
+        }
+
+        if (singleSelect) {
+            return getSingleSelectOptionSetFilterData(value);
+        }
+
+        return getMultiSelectOptionSetFilterData(value);
+    }
+
+    onIsValid() {
+        //eslint-disable-line
+        return true;
+    }
+
+    render() {
+        const { onCommitValue, options, value, classes, singleSelect } = this.props;
+
+        return (
+            <div className={classes.selectBoxesContainer}>
+                <div className={classes.selectBoxesInnerContainer}>
+                    {/* $FlowFixMe */}
+                    <SelectBoxes
+                        options={options}
+                        value={value}
+                        onBlur={onCommitValue}
+                        orientation={orientations.VERTICAL}
+                        multiSelect={!singleSelect}
+                        nullable
+                    />
+                </div>
+            </div>
+        );
+    }
+}
+
+export const OptionSetFilter = withStyles(getStyles)(OptionSetFilterPlain);

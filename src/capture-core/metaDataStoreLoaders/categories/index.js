@@ -1,0 +1,2 @@
+//
+export { loadCategories } from "./loadCategories";

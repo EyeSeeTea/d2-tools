@@ -1,0 +1,75 @@
+//
+import { batchActions } from "redux-batched-actions";
+
+import { getApplicableRuleEffectsForTrackerProgram, updateRulesEffects } from "../../../../rules";
+
+import { getDataEntryKey } from "../../../DataEntry/common/getDataEntryKey";
+import { loadNewDataEntry } from "../../../DataEntry/actions/dataEntryLoadNew.actions";
+import { openDataEntryForNewEnrollment } from "./open.actions";
+import { getEnrollmentDateValidatorContainer, getIncidentDateValidatorContainer } from "../fieldValidators";
+import { convertGeometryOut } from "../../converters";
+import { convertDateObjectToDateFormatString } from "../../../../utils/converters/date";
+import { addFormData } from "../../../D2Form/actions/form.actions";
+
+const itemId = "newEnrollment";
+
+const dataEntryPropsToInclude = [
+    {
+        id: "enrolledAt",
+        type: "DATE",
+        // $FlowFixMe[incompatible-call] automated comment
+        validatorContainers: getEnrollmentDateValidatorContainer(),
+    },
+    {
+        id: "occurredAt",
+        type: "DATE",
+        // $FlowFixMe[incompatible-call] automated comment
+        validatorContainers: getIncidentDateValidatorContainer(),
+    },
+    {
+        clientId: "geometry",
+        dataEntryId: "geometry",
+        onConvertOut: convertGeometryOut,
+    },
+];
+
+export const batchActionTypes = {
+    OPEN_DATA_ENTRY_FOR_NEW_ENROLLMENT_BATCH: "OpenDataEntryForNewEnrollmentBatch",
+};
+
+export const openDataEntryForNewEnrollmentBatchAsync = async ({
+    program,
+    orgUnit,
+    dataEntryId,
+    extraActions = [],
+    extraDataEntryProps = [],
+    formValues,
+    clientValues,
+}) => {
+    const formId = getDataEntryKey(dataEntryId, itemId);
+
+    const dataEntryActions = loadNewDataEntry(
+        dataEntryId,
+        itemId,
+        [...dataEntryPropsToInclude, ...extraDataEntryProps],
+        { enrolledAt: convertDateObjectToDateFormatString(new Date()) }
+    );
+
+    const addFormDataActions = addFormData(`${dataEntryId}-${itemId}`, formValues);
+    const effects = getApplicableRuleEffectsForTrackerProgram({
+        program,
+        orgUnit,
+        attributeValues: clientValues,
+    });
+
+    return batchActions(
+        [
+            openDataEntryForNewEnrollment(dataEntryId),
+            ...dataEntryActions,
+            addFormDataActions,
+            updateRulesEffects(effects, formId),
+            ...extraActions,
+        ],
+        batchActionTypes.OPEN_DATA_ENTRY_FOR_NEW_ENROLLMENT_BATCH
+    );
+};

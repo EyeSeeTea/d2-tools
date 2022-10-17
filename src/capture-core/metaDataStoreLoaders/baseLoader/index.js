@@ -1,0 +1,2 @@
+//
+export { loadMetaData } from "./loadMetaData";

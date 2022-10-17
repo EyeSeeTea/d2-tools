@@ -1,0 +1,2 @@
+//
+export { queryTrackedEntityTypesOutline } from "./queryTrackedEntityTypesOutline";

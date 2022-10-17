@@ -1,0 +1,2 @@
+//
+export { useViewHasTemplateChanges } from "./useViewHasTemplateChanges";

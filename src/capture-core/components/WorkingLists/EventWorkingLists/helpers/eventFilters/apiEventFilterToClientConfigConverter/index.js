@@ -1,0 +1,2 @@
+//
+export { convertToClientConfig } from "./convertToClientConfig";

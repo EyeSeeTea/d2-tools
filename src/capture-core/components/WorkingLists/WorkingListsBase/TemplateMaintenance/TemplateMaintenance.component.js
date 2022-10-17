@@ -1,0 +1,68 @@
+//
+import React, { useCallback, useImperativeHandle, forwardRef } from "react";
+import { ExistingTemplateDialog } from "./ExistingTemplateDialog.component";
+import { NewTemplateDialog } from "./NewTemplateDialog.component";
+import { DeleteConfirmationDialog } from "./DeleteConfirmationDialog.component";
+import { SharingDialog } from "./SharingDialog.component";
+import { dialogModes } from "./dialogModes";
+
+const TemplateMaintenancePlain = (props, ref) => {
+    const {
+        mode,
+        currentTemplate,
+        onAddTemplate,
+        onUpdateTemplate,
+        onDeleteTemplate,
+        onSetSharingSettings,
+        templateSharingType,
+        ...passOnProps
+    } = props;
+
+    const handleUpdateTemplate = useCallback(() => {
+        onUpdateTemplate(currentTemplate);
+    }, [onUpdateTemplate, currentTemplate]);
+
+    const handleDeleteTemplate = useCallback(() => {
+        onDeleteTemplate(currentTemplate);
+    }, [onDeleteTemplate, currentTemplate]);
+
+    const handleSetSharingSettings = useCallback(
+        sharingSettings => {
+            onSetSharingSettings(sharingSettings, currentTemplate.id);
+        },
+        [onSetSharingSettings, currentTemplate.id]
+    );
+
+    useImperativeHandle(ref, () => ({
+        handleUpdateTemplate,
+    }));
+
+    return (
+        <>
+            <ExistingTemplateDialog
+                {...passOnProps}
+                open={mode === dialogModes.REPLACE}
+                onSaveTemplate={handleUpdateTemplate}
+            />
+            <NewTemplateDialog
+                {...passOnProps}
+                open={mode === dialogModes.NEW}
+                onSaveTemplate={onAddTemplate}
+            />
+            <DeleteConfirmationDialog
+                {...passOnProps}
+                open={mode === dialogModes.DELETE}
+                onDeleteTemplate={handleDeleteTemplate}
+                templateName={currentTemplate.name}
+            />
+            <SharingDialog
+                open={mode === dialogModes.SHARING}
+                templateId={currentTemplate.id}
+                onClose={handleSetSharingSettings}
+                templateSharingType={templateSharingType}
+            />
+        </>
+    );
+};
+
+export const TemplateMaintenance = forwardRef(TemplateMaintenancePlain);
