@@ -39,7 +39,7 @@ export function getCommand() {
             await new TranslateMetadataUseCase(repositories).execute(args);
 
             if (!args.post) {
-                log.info(`Metadata not saved. Add option --post to save the payload`);
+                log.info(`Metadata not posted to the server. Add option --post to persist`);
             }
         },
     });
