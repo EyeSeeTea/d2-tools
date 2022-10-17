@@ -4,7 +4,6 @@
     "main": "src/index.ts",
     "description": "DHIS2 tools",
     "scripts": {
-        "postinstall_": "src/scripts/postinstall.sh",
         "build:dev": "webpack --mode development --watch",
         "build": "webpack --mode production",
         "tools": "node dist/index.js",
