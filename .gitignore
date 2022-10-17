@@ -127,5 +127,6 @@ dist
 *.code-workspace
 
 # App
+/data
 /bak
 capture-core*
