@@ -3,8 +3,8 @@ import { EventsPostResponse } from "@eyeseetea/d2-api/api/events";
 import { CancelableResponse } from "@eyeseetea/d2-api/repositories/CancelableResponse";
 import { Id } from "domain/entities/Base";
 import _ from "lodash";
-import log from "utils/log";
 import { MetadataResponse } from "../types/d2-api";
+import log from "utils/log";
 
 export function getErrorFromResponse(res: MetadataResponse): string {
     console.debug(JSON.stringify(res, null, 4));

@@ -1,4 +1,5 @@
 import { option, optional, string, Type } from "cmd-ts";
+import _ from "lodash";
 import { D2Api } from "types/d2-api";
 import { isElementOfUnion } from "utils/ts-utils";
 
@@ -62,7 +63,9 @@ export const StringPairSeparatedByDash: Type<string, Pair> = {
 
 export const StringsSeparatedByCommas: Type<string, string[]> = {
     async from(str) {
-        return str.split(",");
+        const values = _.compact(str.split(","));
+        if (_(values).isEmpty()) throw new Error("Value cannot be empty");
+        return values;
     },
 };
 

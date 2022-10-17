@@ -3,9 +3,11 @@ import { CompareResult } from "domain/entities/CompareResult";
 import { DataSetsRepository } from "domain/repositories/DataSetsRepository";
 import { Id, Ref } from "types/d2-api";
 import { diffString } from "json-diff";
-import { DataSet } from "domain/entities/DataSet";
+import { DataSetToCompare } from "domain/entities/DataSet";
 
-const defaultIgnoreProperties: Array<keyof DataSet> = ["id", "name"];
+const defaultIgnoreProperties: Array<keyof DataSetC> = ["id", "name"];
+
+type DataSetC = DataSetToCompare;
 
 export class ShowDataSetsDiffUseCase {
     constructor(
@@ -24,8 +26,8 @@ export class ShowDataSetsDiffUseCase {
         const ids1 = dataSetIdsPairs.map(pair => pair[0]);
         const ids2 = dataSetIdsPairs.map(pair => pair[1]);
 
-        const dataSets1 = await this.dataSetsRepository1.get(ids1);
-        const dataSets2 = await this.dataSetsRepository2.get(ids2);
+        const dataSets1 = await this.dataSetsRepository1.getComparableDataSets(ids1);
+        const dataSets2 = await this.dataSetsRepository2.getComparableDataSets(ids2);
 
         const results: CompareResult[] = [];
 
@@ -57,7 +59,7 @@ export interface CompareOptions {
     ignoreProperties?: string[];
 }
 
-function compare(dataSet1: DataSet, dataSet2: DataSet, options: CompareOptions): CompareResult {
+function compare(dataSet1: DataSetC, dataSet2: DataSetC, options: CompareOptions): CompareResult {
     const dataSet1ToDiff = getDataSetWithSortedSets(dataSet1, options);
     const dataSet2ToDiff = getDataSetWithSortedSets(dataSet2, options);
     const differences = diffString(dataSet1ToDiff, dataSet2ToDiff);
@@ -65,12 +67,12 @@ function compare(dataSet1: DataSet, dataSet2: DataSet, options: CompareOptions):
     return differences ? { type: "non-equal", diff: differences } : { type: "equal" };
 }
 
-interface ComparableDataSet extends Omit<DataSet, "name" | "dataSetElements" | "sections"> {
-    dataSetElements: Array<Omit<DataSet["dataSetElements"][number], "dataSet">>;
-    sections: Array<Omit<DataSet["sections"][number], "sortOrder">>;
+interface ComparableDataSet extends Omit<DataSetC, "name" | "dataSetElements" | "sections"> {
+    dataSetElements: Array<Omit<DataSetC["dataSetElements"][number], "dataSet">>;
+    sections: Array<Omit<DataSetC["sections"][number], "sortOrder">>;
 }
 
-function getDataSetWithSortedSets(dataSet: DataSet, options: CompareOptions): Partial<ComparableDataSet> {
+function getDataSetWithSortedSets(dataSet: DataSetC, options: CompareOptions): Partial<ComparableDataSet> {
     const comparableDataSet: ComparableDataSet = {
         ...dataSet,
         dataSetElements: _(dataSet.dataSetElements)
@@ -93,7 +95,7 @@ function getDataSetWithSortedSets(dataSet: DataSet, options: CompareOptions): Pa
 
 type SectionWithoutSortOrder = ComparableDataSet["sections"][number];
 
-function getSections(dataSet: DataSet): SectionWithoutSortOrder[] {
+function getSections(dataSet: DataSetC): SectionWithoutSortOrder[] {
     return _(dataSet.sections)
         .sortBy(section => section.sortOrder)
         .map(section => _.omit(section, ["sortOrder"]))

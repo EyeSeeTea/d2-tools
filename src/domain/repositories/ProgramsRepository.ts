@@ -11,6 +11,7 @@ export interface ProgramsRepository {
 
 export interface RunRulesOptions {
     programIds: Id[];
+    teiId?: Id;
     programRulesIds?: Id[];
     orgUnitsIds?: Id[];
     startDate?: Timestamp;
