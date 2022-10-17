@@ -62,7 +62,7 @@ export class MetadataD2Repository implements MetadataRepository {
 
     private async getD2Metadata(models: string[]): Async<Metadata> {
         const params = _(models)
-            .map(model => [`${model}:fields`, ":owner"] as [string, string])
+            .map(model => [`${model + "s"}:fields`, ":owner"] as [string, string])
             .fromPairs()
             .value();
 
