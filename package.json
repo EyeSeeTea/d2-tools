@@ -6,7 +6,6 @@
     "scripts": {
         "build:dev": "webpack --mode development --watch",
         "build": "webpack --mode production",
-        "tools": "node dist/index.js",
         "lint": "eslint src/{data,domain,scripts,types,utils} --ext .ts",
         "service": "nodemon",
         "start": "node dist/index.js",
