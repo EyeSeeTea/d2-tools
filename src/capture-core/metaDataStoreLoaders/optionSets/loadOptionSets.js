@@ -1,0 +1,105 @@
+//
+import { chunk } from "capture-core-utils";
+import { getContext } from "../context";
+import { queryOptionSets, queryOptionGroups } from "./queries";
+
+const getOptionGroups = optionSetIds => {
+    const pageSize = 1000;
+
+    const request = async (page = 1) => {
+        const { optionGroups, hasNextPage } = await queryOptionGroups(optionSetIds, page, pageSize);
+        if (hasNextPage) {
+            const optionGroupsFromPageHierarchy = await request((page += 1));
+            return [...optionGroups, ...optionGroupsFromPageHierarchy];
+        }
+
+        return optionGroups || [];
+    };
+
+    return request();
+};
+
+async function getIdsToLoad(optionSetsOutline) {
+    const idsToLoad = [];
+    const { storageController, storeNames } = getContext();
+    // $FlowFixMe[prop-missing] automated comment
+    await optionSetsOutline.asyncForEach(async outline => {
+        const storeOptionSet = await storageController.get(storeNames.OPTION_SETS, outline.id);
+
+        if (!storeOptionSet || storeOptionSet.version !== outline.version) {
+            idsToLoad.push(outline.id);
+        }
+    });
+    return idsToLoad;
+}
+
+const getGroupsByOptionSet = (groupsByOptionSet, optionGroups) =>
+    optionGroups.reduce((accGroupsByOptionSet, optionGroup) => {
+        accGroupsByOptionSet[optionGroup.optionSet.id] = [
+            ...(accGroupsByOptionSet[optionGroup.optionSet.id] || []),
+            optionGroup,
+        ];
+        return accGroupsByOptionSet;
+    }, groupsByOptionSet);
+
+const getGroupsBatchesByOptionSet = optionGroupsBatches =>
+    optionGroupsBatches.reduce(
+        (accGroupsByOptionSets, batch) => getGroupsByOptionSet(accGroupsByOptionSets, batch),
+        {}
+    );
+
+const getOptionSets = optionSetsBatches =>
+    optionSetsBatches.reduce((accOptionSets, batch) => [...accOptionSets, ...batch], []);
+
+const getCacheOptionSets = (optionSets, optionGroupsByOptionSet) =>
+    optionSets.map(optionSet => ({
+        id: optionSet.id,
+        displayName: optionSet.displayName,
+        version: optionSet.version,
+        valueType: optionSet.valueType,
+        translations: optionSet.translations,
+        options:
+            optionSet.options &&
+            [...optionSet.options.values()]
+                .filter(option => option)
+                .map(option => ({
+                    id: option.id,
+                    displayName: option.displayName,
+                    code: option.code,
+                    style: option.style,
+                    translations: option.translations,
+                })),
+        optionGroups:
+            optionGroupsByOptionSet[optionSet.id] &&
+            optionGroupsByOptionSet[optionSet.id].map(optionGroup => ({
+                id: optionGroup.id,
+                displayName: optionGroup.displayName,
+                options: optionGroup.options && [...optionGroup.options.values()].map(option => option.id),
+            })),
+    }));
+
+export async function loadOptionSets(optionSetsOutline) {
+    const filteredOptionSetsOutline = optionSetsOutline.reduce(
+        (accFilteredOptionSetsOutline, optionSetMeta) => {
+            if (!accFilteredOptionSetsOutline.find(om => om.id === optionSetMeta.id)) {
+                accFilteredOptionSetsOutline.push(optionSetMeta);
+            }
+            return accFilteredOptionSetsOutline;
+        },
+        []
+    );
+    const optionSetsIds = await getIdsToLoad(filteredOptionSetsOutline);
+    const batchedOptionSetIds = chunk(optionSetsIds, 100);
+
+    const optionSetsBatches = await Promise.all(batchedOptionSetIds.map(batch => queryOptionSets(batch)));
+
+    const optionGroupsBatches = await Promise.all(batchedOptionSetIds.map(batch => getOptionGroups(batch)));
+
+    const optionSets = getOptionSets(optionSetsBatches);
+
+    const optionGroupsByOptionSet = getGroupsBatchesByOptionSet(optionGroupsBatches);
+    const optionSetsToStore = getCacheOptionSets(optionSets, optionGroupsByOptionSet);
+
+    const { storageController, storeNames } = getContext();
+    await storageController.setAll(storeNames.OPTION_SETS, optionSetsToStore);
+}

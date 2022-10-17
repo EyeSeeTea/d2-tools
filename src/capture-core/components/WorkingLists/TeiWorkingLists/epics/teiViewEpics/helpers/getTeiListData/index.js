@@ -1,0 +1,2 @@
+//
+export { getTeiListData } from "./getTeiListData";

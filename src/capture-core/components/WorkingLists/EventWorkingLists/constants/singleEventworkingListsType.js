@@ -1,0 +1,2 @@
+//
+export const SINGLE_EVENT_WORKING_LISTS_TYPE = "SINGLE_EVENT";

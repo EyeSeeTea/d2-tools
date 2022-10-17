@@ -1,0 +1,2 @@
+//
+export { withEndColumnMenu } from "./withEndColumnMenu";

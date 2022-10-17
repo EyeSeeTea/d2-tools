@@ -1,0 +1,83 @@
+//
+import log from "loglevel";
+import { errorCreator } from "capture-core-utils";
+import { dataElementTypes } from "../../../metaData";
+import {
+    getTextFieldConfig,
+    getOrgUnitFieldConfig,
+    getBooleanFieldConfig,
+    getTrueOnlyFieldConfig,
+    getDateFieldConfig,
+    getDateTimeFieldConfig,
+    getAgeFieldConfig,
+    getCoordinateFieldConfig,
+    getPolygonFieldConfig,
+    getUserNameFieldConfig,
+    getFileResourceFieldConfig,
+    getImageFieldConfig,
+    getOptionSetFieldConfig,
+    getTextRangeFieldConfig,
+    getDateRangeFieldConfig,
+    getDateTimeRangeFieldConfig,
+    getViewModeFieldConfig,
+} from "./configs";
+
+const errorMessages = {
+    NO_FORMFIELD_FOR_TYPE: "Formfield component not specified for type",
+};
+
+const fieldForTypes = {
+    [dataElementTypes.EMAIL]: getTextFieldConfig,
+    [dataElementTypes.TEXT]: getTextFieldConfig,
+    [dataElementTypes.PHONE_NUMBER]: getTextFieldConfig,
+    [dataElementTypes.LONG_TEXT]: (metaData, options, context) => {
+        const fieldConfig = getTextFieldConfig(metaData, options, context, { multiLine: true });
+        return fieldConfig;
+    },
+    [dataElementTypes.NUMBER]: getTextFieldConfig,
+    [dataElementTypes.NUMBER_RANGE]: getTextRangeFieldConfig,
+    [dataElementTypes.INTEGER]: getTextFieldConfig,
+    [dataElementTypes.INTEGER_RANGE]: getTextRangeFieldConfig,
+    [dataElementTypes.INTEGER_POSITIVE]: getTextFieldConfig,
+    [dataElementTypes.INTEGER_POSITIVE_RANGE]: getTextRangeFieldConfig,
+    [dataElementTypes.INTEGER_NEGATIVE]: getTextFieldConfig,
+    [dataElementTypes.INTEGER_NEGATIVE_RANGE]: getTextRangeFieldConfig,
+    [dataElementTypes.INTEGER_ZERO_OR_POSITIVE]: getTextFieldConfig,
+    [dataElementTypes.INTEGER_ZERO_OR_POSITIVE_RANGE]: getTextRangeFieldConfig,
+    [dataElementTypes.BOOLEAN]: getBooleanFieldConfig,
+    [dataElementTypes.TRUE_ONLY]: getTrueOnlyFieldConfig,
+    [dataElementTypes.DATE]: (metaData, options) => getDateFieldConfig(metaData, options),
+    [dataElementTypes.DATE_RANGE]: getDateRangeFieldConfig,
+    [dataElementTypes.DATETIME]: getDateTimeFieldConfig,
+    [dataElementTypes.DATETIME_RANGE]: getDateTimeRangeFieldConfig,
+    [dataElementTypes.TIME]: getTextFieldConfig,
+    [dataElementTypes.TIME_RANGE]: getTextRangeFieldConfig,
+    [dataElementTypes.PERCENTAGE]: getTextFieldConfig,
+    [dataElementTypes.URL]: getTextFieldConfig,
+    [dataElementTypes.AGE]: getAgeFieldConfig,
+    [dataElementTypes.ORGANISATION_UNIT]: getOrgUnitFieldConfig,
+    [dataElementTypes.COORDINATE]: getCoordinateFieldConfig,
+    [dataElementTypes.POLYGON]: getPolygonFieldConfig,
+    [dataElementTypes.USERNAME]: getUserNameFieldConfig,
+    [dataElementTypes.FILE_RESOURCE]: getFileResourceFieldConfig,
+    [dataElementTypes.IMAGE]: getImageFieldConfig,
+    [dataElementTypes.UNKNOWN]: () => null,
+};
+
+export function getDefaultFormField(metaData, options, context) {
+    if (options.viewMode) {
+        return getViewModeFieldConfig(metaData, options);
+    }
+
+    const type = metaData.type;
+    if (!fieldForTypes[type]) {
+        log.warn(errorCreator(errorMessages.NO_FORMFIELD_FOR_TYPE)({ metaData }));
+        return fieldForTypes[dataElementTypes.UNKNOWN](metaData, options, context);
+    }
+
+    if (metaData.optionSet) {
+        return getOptionSetFieldConfig(metaData, options);
+    }
+
+    return fieldForTypes[type](metaData, options, context);
+}

@@ -1,0 +1,6 @@
+{
+    "watch": [".env", "src"],
+    "ext": "ts",
+    "ignore": ["src/**/*.test.ts"],
+    "exec": "npx ts-node -r dotenv/config ./src/index"
+}

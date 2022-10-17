@@ -1,0 +1,2 @@
+//
+export { localeCompareStrings } from "./localeCompareStrings";
