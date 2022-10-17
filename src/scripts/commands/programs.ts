@@ -32,7 +32,7 @@ export function getCommand() {
 const programIdsOptions = option({
     type: StringsSeparatedByCommas,
     long: "programs-ids",
-    description: "List of program ID1,ID2[,IDN] (comma-separated)",
+    description: "List of program (comma-separated)",
 });
 
 const exportCmd = command({
@@ -41,6 +41,11 @@ const exportCmd = command({
     args: {
         url: getApiUrlOption(),
         programIds: programIdsOptions,
+        orgUnitIds: option({
+            type: optional(StringsSeparatedByCommas),
+            long: "orgunits-ids",
+            description: "List of organisation units (comma-separated)",
+        }),
         outputFile: positional({
             type: string,
             description: "Output file (JSON)",
@@ -50,9 +55,10 @@ const exportCmd = command({
         if (_.isEmpty(args.programIds)) throw new Error("Missing program IDs");
         const api = getD2Api(args.url);
         const programsRepository = new ProgramsD2Repository(api);
+
         new ExportProgramsUseCase(programsRepository).execute({
+            ...args,
             ids: args.programIds,
-            outputFile: args.outputFile,
         });
     },
 });
@@ -85,7 +91,7 @@ const runProgramRulesCmd = command({
         programRulesIds: option({
             type: optional(StringsSeparatedByCommas),
             long: "program-rules-ids",
-            description: "List of program rules ID1,ID2[,IDN] to use (comma-separated)",
+            description: "List of program rules to use (comma-separated)",
         }),
         orgUnitsIds: option({
             type: optional(StringsSeparatedByCommas),
