@@ -96,9 +96,6 @@ export function assertUnreachable(value: never, message = `No such case in exhau
     throw new Error(message);
 }
 
-export const yes = true as const;
-export const no = false as const;
-
 export type RecursivePartial<T> = {
     [P in keyof T]?: T[P] extends (infer U)[]
         ? RecursivePartial<U>[]

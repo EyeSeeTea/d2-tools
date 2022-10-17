@@ -125,9 +125,11 @@ dist
 # End of https://www.toptal.com/developers/gitignore/api/node,yarn
 
 *.code-workspace
-/bak
-/data
 
+# App
+/data
+/bak
+capture-core*
 /.env
 /.env.*
 !/.env.template
