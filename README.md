@@ -189,7 +189,7 @@ $ yarn start datavalues revert \
 It deletes the duplicated events for some events/tracker programs. An example:
 
 ```
-$ yarn tools programs get-duplicated-events \
+$ yarn start programs get-duplicated-events \
   --url='http://USER:PASSWORD@HOST:PORT' \
   --save-report=duplicated-events-ecare-pilot.csv \
   --programs-ids=vYRMQ43Zl3Y --org-units-ids=yT7tCISNWG6 \
