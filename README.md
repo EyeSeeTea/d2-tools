@@ -148,3 +148,52 @@ Expected format of `xlsx` file:
 -   A Column named `type`/`kind` specifies the DHIS2 entity type (singular). Example: `dataElement`, `dataSet`.
 -   Columns named `id`/`name`/`code` will be used to match the existing object in the database. No need to specify all of them.
 -   Translation columns should have the format: `field:localeName`. A DHIS2 Locale with that name should exist in the database. Example: `formName:French`.
+
+## Data values
+
+### Dangling data values
+
+Get dangling data values and save them in a CSV file:
+
+```
+$ yarn build
+$ yarn start datavalues get-dangling-values \
+  --url='http://admin:PASSWORD@localhost:8036' \
+  --dataelementgroup-ids=OUwLDu1i5xa,SMkbYuGmadE \
+  --orgunit-ids=AGZEUf9meZ6 --include-orgunits-children \
+  --start-date=1970 --end-date=2023 \
+  --notify-email=user@server.org dataValues.csv
+```
+
+To delete the dangling data values, use the generated CSV as data source and this command:
+
+```
+$ yarn start datavalues post-dangling-values \
+  --url='http://admin:PASSWORD@localhost:8036' dataValues.csv
+```
+
+### Revert data values
+
+It reverts the last data values, using the data value audit. For each of these data values, it finds its N audit records, gets the last valid and first invalid audit record and use them to build an updated data value. Example:
+
+```
+$ yarn start datavalues revert \
+ --url='http://ignacio.foche:PASSWORD@HOST:PORT' \
+ --dataset-ids=Tu81BTLUuCT --orgunit-ids=XKKI1hhyFxk --periods=2020,2021 \
+ --date=2022-06-01 --usernames="android" \
+ datavalues.json
+```
+
+### Delete duplicated event data values
+
+It deletes the duplicated events for some events/tracker programs. An example:
+
+```
+$ yarn tools programs get-duplicated-events \
+  --url='http://admin:PASSWORD@localhost:8093' \
+  --save-report=duplicated-events-ecare-pilot.csv \
+  --programs-ids=vYRMQ43Zl3Y --org-units-ids=yT7tCISNWG6 \
+  --start-date="2022-05-09" --end-date="2022-06-05"
+```
+
+Add option `--post` to actually (soft) delete the events.
