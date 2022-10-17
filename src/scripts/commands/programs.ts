@@ -122,6 +122,11 @@ const runProgramRulesCmd = command({
             long: "save-report",
             description: "Save CSV report with the program rules",
         }),
+        payloadPath: option({
+            type: optional(string),
+            long: "save-payload",
+            description: "Save JSON payload with event/TEIs",
+        }),
     },
     handler: async args => {
         const api = getD2Api(args.url);
