@@ -105,6 +105,15 @@ export function choiceOf<T extends string>(values: readonly T[]): Type<string, T
     };
 }
 
+export const periodYears: Type<string, string[]> = {
+    async from(str) {
+        const values = _.compact(str.split(","));
+        if (_(values).isEmpty()) throw new Error("Value cannot be empty");
+        if (!_.every(values, item => item.length === 4)) throw new Error("Year must be 4 char long");
+        return values;
+    },
+};
+
 function isDir(str: string): boolean {
     const stat = fs.statSync(str);
 
