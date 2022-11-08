@@ -64,3 +64,7 @@ export interface DataSetDataElement {
     id: Id;
     categoryCombo: CategoryCombo;
 }
+
+export interface DataSetId {
+    id: Id;
+}
