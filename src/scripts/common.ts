@@ -1,4 +1,6 @@
 import { option, optional, string, Type } from "cmd-ts";
+import fs from "fs";
+import path from "path";
 import _ from "lodash";
 import { D2Api } from "types/d2-api";
 import { isElementOfUnion } from "utils/ts-utils";
@@ -102,3 +104,25 @@ export function choiceOf<T extends string>(values: readonly T[]): Type<string, T
         },
     };
 }
+
+function isDir(str: string): boolean {
+    const stat = fs.statSync(str);
+
+    return stat.isDirectory();
+}
+
+export const FilePath: Type<string, string> = {
+    async from(str) {
+        const resolved = path.resolve(str);
+
+        if (!fs.existsSync(resolved)) {
+            const subPath = resolved.substring(0, resolved.lastIndexOf("/"));
+            if (fs.existsSync(resolved) && isDir(subPath)) {
+                return resolved;
+            }
+            throw new Error("Path doesn't exist");
+        }
+
+        return resolved;
+    },
+};
