@@ -5,6 +5,7 @@ import * as datasets from "./commands/datasets";
 import * as programs from "./commands/programs";
 import * as translations from "./commands/translations";
 import * as dataValues from "./commands/dataValues";
+import * as indicators from "./commands/indicators";
 
 export function runCli() {
     const cliSubcommands = subcommands({
@@ -14,6 +15,7 @@ export function runCli() {
             programs: programs.getCommand(),
             translations: translations.getCommand(),
             datavalues: dataValues.getCommand(),
+            indicators: indicators.getCommand(),
         },
     });
 
