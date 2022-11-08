@@ -1,8 +1,7 @@
 import _ from "lodash";
 import { DataSetsRepository } from "domain/repositories/DataSetsRepository";
-import { IndicatorsRepository } from "domain/repositories/IndicatorsRepository";
-import { DataSetId } from "domain/entities/DataSet";
-import { indicatorDataRow } from "domain/entities/Indicator";
+import { IndicatorsRepository, indicatorDataRow } from "domain/repositories/IndicatorsRepository";
+import { Ref } from "@eyeseetea/d2-api";
 
 export class GetIndicatorNumDenIDsUseCase {
     constructor(
@@ -11,27 +10,29 @@ export class GetIndicatorNumDenIDsUseCase {
     ) {}
 
     private async processIndicatorsItem(indicatorsItem: string) {
-        const dataElementsIDs = processDEParams(indicatorsItem);
+        const dataElements = processDEParams(indicatorsItem);
         const programDataElements = processPDEParams(indicatorsItem);
-        const categoryOptionCombos = processCCOptionsParams(indicatorsItem);
+        const categoryOptionCombos = processCOCombosParams(indicatorsItem);
         const indicators = processPIndicatorsParams(indicatorsItem);
 
-        const dataSets = await this.dataSetsRepository.getDataSetByElementId(dataElementsIDs);
+        const cocDataElements = _.uniq(categoryOptionCombos.map(item => item.dataElement));
+        const dataElementsList = [...dataElements, ...cocDataElements];
+
+        const dataSets = await this.dataSetsRepository.getDataSetByElementId(dataElementsList);
 
         return {
-            dataElementsList: [...dataElementsIDs, ...categoryOptionCombos.map(item => item.dataElement)],
-            programDataElementsList: programDataElements.map(item => item.dataElement),
-            coCombosList: categoryOptionCombos.map(item => item.ccOption),
+            dataElementsList: dataElementsList,
+            categoryOptionCombos: categoryOptionCombos,
+            programDataElementsList: _.uniq(programDataElements.map(item => item.dataElement)),
+            coCombosList: _.uniq(categoryOptionCombos.map(item => item.coCombo)),
             pIndicatorsList: indicators,
             dataSetsList: processDataSets(dataSets),
-            programList: programDataElements.map(item => item.program),
+            programList: _.uniq(programDataElements.map(item => item.program)),
         };
     }
 
     async execute(options: { indicatorsIDs: string[] }): Promise<indicatorDataRow[]> {
         const { indicatorsIDs } = options;
-
-        // log.info(`Replace the destination OU: ${replace}`);
 
         const indicatorsMetadata = await this.indicatorsRepository.get(indicatorsIDs);
 
@@ -69,47 +70,70 @@ function trimLineBreaks(string: string) {
     return string.replace(/\n|\r/g, "");
 }
 
-function processDEParams(exp: string) {
-    const dataElems = exp.match(/(?:#\{.{11}\})/g) ?? [];
+function trimItemSeparators(string: string, type: string) {
+    return string.replace(`${type}{`, "").replace("}", "");
+}
 
-    return dataElems.flatMap(item => {
-        const dataElement = item.replace("#{", "").replace("}", "");
-        return dataElement;
-    });
+function processDEParams(exp: string) {
+    const dataElems = _.uniq(exp.match(/(?:#\{.{11}\})/g)) ?? [];
+
+    return _(dataElems)
+        .flatMap(item => {
+            const dataElement = trimItemSeparators(item, "#");
+            return dataElement;
+        })
+        .uniq()
+        .value();
 }
 
 function processPDEParams(exp: string) {
     const progDEs = exp.match(/(?:D\{.{11}\..{11}\})/g) ?? [];
 
     return progDEs.flatMap(item => {
-        const cleanItem = item.replace("D{", "").replace("}", "");
+        const cleanItem = trimItemSeparators(item, "D");
         const [program, dataElement] = cleanItem.split(".");
         return program && dataElement ? { dataElement: dataElement, program: program } : [];
     });
 }
 
-function processCCOptionsParams(exp: string) {
-    const ccOptions = exp.match(/(?:#\{.{11}\..{11}\})/g) ?? [];
+function processCOCombosParams(exp: string) {
+    const coCombos = exp.match(/(?:#\{.{11}\..{11}\})/g) ?? [];
 
-    return ccOptions.flatMap(item => {
-        const cleanItem = item.replace("#{", "").replace("}", "");
-        const [dataElement, ccOption] = cleanItem.split(".");
-        return dataElement && ccOption ? { dataElement: dataElement, ccOption: ccOption } : [];
+    return coCombos.flatMap(item => {
+        const cleanItem = trimItemSeparators(item, "#");
+        const [dataElement, coCombo] = cleanItem.split(".");
+        return dataElement && coCombo ? { dataElement: dataElement, coCombo: coCombo } : [];
     });
 }
 
 function processPIndicatorsParams(exp: string) {
     const indicators = exp.match(/(?:I\{.{11}\})/g) ?? [];
 
-    return indicators.flatMap(item => {
-        const dataElement = item.replace("I{", "").replace("}", "");
-        return dataElement;
-    });
+    return _(indicators)
+        .flatMap(item => {
+            const dataElement = trimItemSeparators(item, "I");
+            return dataElement;
+        })
+        .uniq()
+        .value();
 }
 
-function processDataSets(dataSets: DataSetId[]) {
+const dataSetsList = [
+    "tnek2LjfuIm",
+    "zna8KfLMXn4",
+    "fdBM4sWSuPR",
+    "SHw2zOysJ1R",
+    "Uc3j0vpsfSB",
+    "Sn0dExPzQqW",
+    "NKWbkXyfO5F",
+    "p0NhuIUoeST",
+    "deKCGAGoEHz",
+];
+
+function processDataSets(dataSets: Ref[]) {
     return _(dataSets)
-        .flatMap(dataSet => dataSet.id)
+        .flatMap(dataSet => (dataSetsList.includes(dataSet.id) ? dataSet.id : []))
         .compact()
+        .uniq()
         .value();
 }
