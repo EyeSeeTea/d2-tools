@@ -62,15 +62,15 @@ export function getCommand() {
             }),
             orgUnitsIDs: option({
                 type: IdsSeparatedByCommas,
-                long: "org-units",
+                long: "org-unit",
                 short: "o",
-                description: "ORG1,ORG2,...",
+                description: "ORG1",
             }),
             period: option({
                 type: periodYears,
                 long: "period",
                 short: "op",
-                description: "2000,2001...",
+                description: "2000",
             }),
             path: option({
                 type: optional(FilePath),
