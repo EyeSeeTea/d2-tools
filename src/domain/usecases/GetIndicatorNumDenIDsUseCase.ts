@@ -9,7 +9,7 @@ export class GetIndicatorNumDenIDsUseCase {
         private dataSetsRepository: DataSetsRepository
     ) {}
 
-    private async processIndicatorsItem(indicatorsItem: string) {
+    private async processIndicatorsItem(indicatorsItem: string, dataSetFilterList?: string[]) {
         const dataElements = processDEParams(indicatorsItem);
         const programDataElements = processPDEParams(indicatorsItem);
         const categoryOptionCombos = processCOCombosParams(indicatorsItem);
@@ -26,25 +26,35 @@ export class GetIndicatorNumDenIDsUseCase {
             programDataElementsList: _.uniq(programDataElements.map(item => item.dataElement)),
             coCombosList: _.uniq(categoryOptionCombos.map(item => item.coCombo)),
             pIndicatorsList: indicators,
-            dataSetsList: processDataSets(dataSets),
+            dataSetsList: processDataSets(dataSets, dataSetFilterList),
             programList: _.uniq(programDataElements.map(item => item.program)),
         };
     }
 
-    async execute(options: { indicatorsIDs: string[] }): Promise<indicatorDataRow[]> {
-        const { indicatorsIDs } = options;
+    async execute(options: {
+        indicatorsIDs: string[];
+        dataSetFilterList?: string[];
+    }): Promise<indicatorDataRow[]> {
+        const { indicatorsIDs, dataSetFilterList } = options;
 
         const indicatorsMetadata = await this.indicatorsRepository.get(indicatorsIDs);
 
         const indicatorsData = await Promise.all(
             indicatorsMetadata.map(async indicatorsItem => {
-                const numerator = await this.processIndicatorsItem(indicatorsItem.numerator);
-                const denominator = await this.processIndicatorsItem(indicatorsItem.denominator);
+                const numerator = await this.processIndicatorsItem(
+                    indicatorsItem.numerator,
+                    dataSetFilterList
+                );
+                const denominator = await this.processIndicatorsItem(
+                    indicatorsItem.denominator,
+                    dataSetFilterList
+                );
 
                 return {
                     id: indicatorsItem.id,
                     indName: indicatorsItem.name,
                     numerator: trimLineBreaks(indicatorsItem.numerator),
+                    numDescription: indicatorsItem.numeratorDescription,
                     numDataElementsList: numerator.dataElementsList,
                     numProgramDataElementsList: numerator.programDataElementsList,
                     numCOCombosList: numerator.coCombosList,
@@ -52,6 +62,7 @@ export class GetIndicatorNumDenIDsUseCase {
                     numDataSetsList: numerator.dataSetsList,
                     numProgramList: numerator.programList,
                     denominator: trimLineBreaks(indicatorsItem.denominator),
+                    denDescription: indicatorsItem.denominatorDescription,
                     denDataElementsList: denominator.dataElementsList,
                     denProgramDataElementsList: denominator.programDataElementsList,
                     denCOCombosList: denominator.coCombosList,
@@ -118,21 +129,11 @@ function processPIndicatorsParams(exp: string) {
         .value();
 }
 
-const dataSetsList = [
-    "tnek2LjfuIm",
-    "zna8KfLMXn4",
-    "fdBM4sWSuPR",
-    "SHw2zOysJ1R",
-    "Uc3j0vpsfSB",
-    "Sn0dExPzQqW",
-    "NKWbkXyfO5F",
-    "p0NhuIUoeST",
-    "deKCGAGoEHz",
-];
-
-function processDataSets(dataSets: Ref[]) {
+function processDataSets(dataSets: Ref[], dataSetFilterList?: string[]) {
     return _(dataSets)
-        .flatMap(dataSet => (dataSetsList.includes(dataSet.id) ? dataSet.id : []))
+        .flatMap(dataSet =>
+            dataSetFilterList ? (dataSetFilterList.includes(dataSet.id) ? dataSet.id : []) : dataSet.id
+        )
         .compact()
         .uniq()
         .value();

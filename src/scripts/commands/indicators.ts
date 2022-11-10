@@ -20,6 +20,12 @@ export function getCommand() {
                 short: "i",
                 description: "IND1,IND2,...",
             }),
+            dataSetFilterList: option({
+                type: optional(IdsSeparatedByCommas),
+                long: "ds-filter",
+                short: "i",
+                description: "DS1,DS2,...",
+            }),
             path: option({
                 type: optional(FilePath),
                 long: "file",
@@ -42,7 +48,7 @@ export function getCommand() {
 
                 process.exit(0);
             } catch (err: any) {
-                log.error(err.message);
+                log.error(err);
                 process.exit(1);
             }
         },
@@ -72,6 +78,12 @@ export function getCommand() {
                 short: "op",
                 description: "2000",
             }),
+            dataSetFilterList: option({
+                type: optional(IdsSeparatedByCommas),
+                long: "ds-filter",
+                short: "i",
+                description: "DS1,DS2,...",
+            }),
             path: option({
                 type: optional(FilePath),
                 long: "file",
@@ -96,7 +108,7 @@ export function getCommand() {
 
                 process.exit(0);
             } catch (err: any) {
-                log.error(err.message);
+                log.error(err);
                 process.exit(1);
             }
         },

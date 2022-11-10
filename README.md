@@ -206,11 +206,14 @@ Get a CSV with the IDs of the items used by Indicators:
 shell:~$ yarn start indicators get-de-values-report \
 --url='http://USER:PASSWORD@HOST:PORT' \
 --indicators=vYRMQ43Zl3Y,vYRMQ43Zl3Y \
---path=./indicatorsRefIDs.csv
+--ds-filter=vYRMQ43Zl3Y,vYRMQ43Zl3Y \
+--file=./indicatorsRefIDs.csv
 ```
 Working items types: dataElements, programDataElements, programIndicator.
 
-Path can be a file or directory path, if its a directory path the file will be named `indicatorsRefIDs.csv`
+The ds-filter option allows to filter which dataSets are used.
+
+File option can be a file or directory path, if its a directory path the file will be named `indicatorsRefIDs.csv`
 
 CSV headers:
 
@@ -225,9 +228,13 @@ shell:~$ yarn start indicators get-de-values-report \
 --indicators=vYRMQ43Zl3Y,vYRMQ43Zl3Y \
 --org-unit=vYRMQ43Zl3Y \
 --period=2000 \
---path=./indicatorsValuesReport.csv
+--ds-filter=vYRMQ43Zl3Y,vYRMQ43Zl3Y \
+--file=./indicatorsValuesReport.csv
 ```
-Path can be a file or directory path, if its a directory path the file will be named `indicatorsValuesReport.csv`
+
+The ds-filter option allows to filter which dataSets are used.
+
+File option can be a file or directory path, if its a directory path the file will be named `indicatorsValuesReport.csv`
 
 CSV headers:
 

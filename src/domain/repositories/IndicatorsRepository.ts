@@ -12,7 +12,9 @@ export interface Indicator {
     id: Id;
     name: string;
     numerator: string;
+    numeratorDescription: string;
     denominator: string;
+    denominatorDescription: string;
 }
 
 export interface metadataItemName {
@@ -24,7 +26,7 @@ export type indicatorDataRow = {
     id: Id;
     indName: string;
     numerator: string;
-    numDescription?: string;
+    numDescription: string;
     numDataElementsList: string[];
     numProgramDataElementsList: string[];
     numCOCombosList: string[];
@@ -32,7 +34,7 @@ export type indicatorDataRow = {
     numDataSetsList: string[];
     numProgramList: string[];
     denominator: string;
-    denDescription?: string;
+    denDescription: string;
     denDataElementsList: string[];
     denProgramDataElementsList: string[];
     denCOCombosList: string[];

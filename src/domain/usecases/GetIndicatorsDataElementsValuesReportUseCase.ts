@@ -16,7 +16,7 @@ export class GetIndicatorsDataElementsValuesReportUseCase {
         private dataValuesRepository: DataValuesRepository
     ) {}
 
-    private async processIndicatorsItem(indicatorsItem: string) {
+    private async processIndicatorsItem(indicatorsItem: string, dataSetFilterList?: string[]) {
         const dataElements = processDEParams(indicatorsItem);
         const categoryOptionCombos = processCOCombosParams(indicatorsItem);
 
@@ -28,7 +28,7 @@ export class GetIndicatorsDataElementsValuesReportUseCase {
         return {
             dataElements: dataElements,
             categoryOptionCombos: categoryOptionCombos,
-            dataSetsList: processDataSets(dataSets),
+            dataSetsList: processDataSets(dataSets, dataSetFilterList),
         };
     }
 
@@ -36,15 +36,22 @@ export class GetIndicatorsDataElementsValuesReportUseCase {
         indicatorsIDs: string[];
         orgUnitsIDs: string[];
         period: string[];
+        dataSetFilterList?: string[];
     }): Promise<valueReportRow[]> {
-        const { indicatorsIDs, orgUnitsIDs, period } = options;
+        const { indicatorsIDs, orgUnitsIDs, period, dataSetFilterList } = options;
 
         const indicatorsMetadata = await this.indicatorsRepository.get(indicatorsIDs);
 
         const dataElementCheckArray: deCheckType[] = await Promise.all(
             indicatorsMetadata.map(async indicatorsItem => {
-                const numerator = await this.processIndicatorsItem(indicatorsItem.numerator);
-                const denominator = await this.processIndicatorsItem(indicatorsItem.denominator);
+                const numerator = await this.processIndicatorsItem(
+                    indicatorsItem.numerator,
+                    dataSetFilterList
+                );
+                const denominator = await this.processIndicatorsItem(
+                    indicatorsItem.denominator,
+                    dataSetFilterList
+                );
 
                 return {
                     dataSets: [...numerator.dataSetsList, ...denominator.dataSetsList],
@@ -108,21 +115,11 @@ function processCOCombosParams(exp: string) {
     });
 }
 
-const dataSetsList = [
-    "tnek2LjfuIm",
-    "zna8KfLMXn4",
-    "fdBM4sWSuPR",
-    "SHw2zOysJ1R",
-    "Uc3j0vpsfSB",
-    "Sn0dExPzQqW",
-    "NKWbkXyfO5F",
-    "p0NhuIUoeST",
-    "deKCGAGoEHz",
-];
-
-function processDataSets(dataSets: Ref[]) {
+function processDataSets(dataSets: Ref[], dataSetFilterList?: string[]) {
     return _(dataSets)
-        .flatMap(dataSet => (dataSetsList.includes(dataSet.id) ? dataSet.id : []))
+        .flatMap(dataSet =>
+            dataSetFilterList ? (dataSetFilterList.includes(dataSet.id) ? dataSet.id : []) : dataSet.id
+        )
         .compact()
         .uniq()
         .value();

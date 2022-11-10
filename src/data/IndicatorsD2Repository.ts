@@ -102,7 +102,9 @@ const fields = {
     id: true,
     name: true,
     numerator: true,
+    numeratorDescription: true,
     denominator: true,
+    denominatorDescription: true,
 } as const;
 
 const indicatorsDataHeaders = [
