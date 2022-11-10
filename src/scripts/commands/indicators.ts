@@ -48,7 +48,7 @@ export function getCommand() {
 
                 process.exit(0);
             } catch (err: any) {
-                log.error(err);
+                log.error(err.stack);
                 process.exit(1);
             }
         },
@@ -108,7 +108,7 @@ export function getCommand() {
 
                 process.exit(0);
             } catch (err: any) {
-                log.error(err);
+                log.error(err.stack);
                 process.exit(1);
             }
         },
