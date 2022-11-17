@@ -1,15 +1,19 @@
 import _ from "lodash";
-import { command, string, option, restPositionals, optional, subcommands } from "cmd-ts";
+import { command, string, option, restPositionals, optional, subcommands, boolean, flag } from "cmd-ts";
 import { DataSetsD2Repository } from "data/DataSetsD2Repository";
 import { ShowDataSetsDiffUseCase } from "domain/usecases/ShowDataSetsDiffUseCase";
 import { D2Api } from "types/d2-api";
 import { ShowSchemaUseCase } from "domain/usecases/ShowSchemaUseCase";
+import { CopyDataSetsOUUserCase } from "domain/usecases/CopyDataSetsOUUserCase";
 import {
     getApiUrlOption,
     getD2Api,
     StringPairSeparatedByDash,
     StringsSeparatedByCommas,
+    IDString,
+    IdsSeparatedByCommas,
 } from "scripts/common";
+import log from "utils/log";
 
 export function getCommand() {
     const compareCmd = command({
@@ -60,8 +64,49 @@ export function getCommand() {
         },
     });
 
+    const copyOUCmd = command({
+        name: "copy-org-units",
+        description: "Copy organization units of a DHIS2 data set to one or more data sets",
+        args: {
+            url: getApiUrlOption({ long: "url" }),
+            originDataset: option({
+                type: IDString,
+                long: "origin-dataset",
+                short: "o",
+                description: "Origin data set ID",
+            }),
+            destinationDatasets: option({
+                type: IdsSeparatedByCommas,
+                long: "destination-datasets",
+                short: "d",
+                description: "dataSetID1,dataSetID2,...",
+            }),
+            replace: flag({
+                type: boolean,
+                long: "replace",
+                short: "r",
+                description: "Replace the destination Organisation Units",
+            }),
+        },
+        handler: async args => {
+            const api = getD2Api(args.url);
+            const dataSetsRepository = new DataSetsD2Repository(api);
+
+            try {
+                const copyOUs = new CopyDataSetsOUUserCase(dataSetsRepository);
+                const result = await copyOUs.execute(args);
+
+                const statusCode = result === "OK" ? 0 : result === "NO_CHANGE" ? 0 : 1;
+                process.exit(statusCode);
+            } catch (err: any) {
+                log.error(err.message);
+                process.exit(1);
+            }
+        },
+    });
+
     return subcommands({
         name: "datasets",
-        cmds: { compare: compareCmd, "show-schema": showSchemaCmd },
+        cmds: { compare: compareCmd, "show-schema": showSchemaCmd, "copy-org-units": copyOUCmd },
     });
 }

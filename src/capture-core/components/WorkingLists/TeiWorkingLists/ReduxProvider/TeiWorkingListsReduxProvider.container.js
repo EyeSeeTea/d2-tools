@@ -1,0 +1,66 @@
+//
+import React, { useCallback } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { TeiWorkingListsSetup } from "../Setup";
+import {
+    useWorkingListsCommonStateManagement,
+    fetchTemplates,
+    TEMPLATE_SHARING_TYPE,
+} from "../../WorkingListsCommon";
+import { useTrackerProgram } from "../../../../hooks/useTrackerProgram";
+import { TEI_WORKING_LISTS_TYPE } from "../constants";
+
+import { navigateToEnrollmentOverview } from "../../../../actions/navigateToEnrollmentOverview/navigateToEnrollmentOverview.actions";
+
+const useApiTemplate = () => {
+    const workingListsTemplatesTEI = useSelector(
+        ({ workingListsTemplates }) => workingListsTemplates.teiList
+    );
+    return workingListsTemplatesTEI && workingListsTemplatesTEI.templates;
+};
+
+export const TeiWorkingListsReduxProvider = ({ storeId, programId, orgUnitId }) => {
+    const program = useTrackerProgram(programId);
+    const apiTemplates = useApiTemplate();
+
+    const {
+        lastTransaction,
+        lastTransactionOnListDataRefresh,
+        listDataRefreshTimestamp,
+        records,
+        ...commonStateManagementProps
+    } = useWorkingListsCommonStateManagement(storeId, TEI_WORKING_LISTS_TYPE, program);
+    const dispatch = useDispatch();
+
+    const onLoadTemplates = useCallback(() => {
+        dispatch(fetchTemplates(programId, storeId, TEI_WORKING_LISTS_TYPE));
+    }, [dispatch, programId, storeId]);
+
+    const onSelectListRow = useCallback(
+        ({ id }) => {
+            const record = records[id];
+
+            return dispatch(
+                navigateToEnrollmentOverview({
+                    teiId: id,
+                    programId,
+                    orgUnitId: orgUnitId || record.programOwner,
+                })
+            );
+        },
+        [dispatch, orgUnitId, programId, records]
+    );
+
+    return (
+        <TeiWorkingListsSetup
+            {...commonStateManagementProps}
+            templateSharingType={TEMPLATE_SHARING_TYPE[storeId]}
+            onSelectListRow={onSelectListRow}
+            onLoadTemplates={onLoadTemplates}
+            program={program}
+            records={records}
+            orgUnitId={orgUnitId}
+            apiTemplates={apiTemplates}
+        />
+    );
+};
