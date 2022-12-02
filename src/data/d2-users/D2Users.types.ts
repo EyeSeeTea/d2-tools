@@ -1,13 +1,10 @@
-import {
-    D2DataElement,
-    D2ProgramRuleAction,
-    D2ProgramRuleVariable,
-    D2TrackedEntityAttribute,
-} from "@eyeseetea/d2-api/2.36";
-import { EventStatus } from "@eyeseetea/d2-api/api/events";
 
+///necesito descargar, templates. y usuarios con grupos
+// y lista de roles
+// comprobar que los roles asignados hacen mach con los del template,
+// y si no actualizar el usuario quitando los roles extra
+///lo que se actualizaran seran los user usercredentials
 export type Id = string;
-
 export interface UserDetails {
     id: Id;
     displayName: string;
@@ -15,94 +12,60 @@ export interface UserDetails {
     username: string;
 }
 
-export interface Constant {
-    id: Id;
-    displayName: string;
-    value: number;
+export interface UserCreedentials {
+    lastLogin: StringDateTime;
+    passwordLastUpdated: StringDateTime;
+    invitation: boolean;
+    selfRegisterd: boolean;
+    uid: Id;
+    disabled: boolean;
+    twoFA: boolean;
+    username: string;
+    userRoles: IdItem[];
 }
-
-type IdMap<T> = Record<Id, T>;
-
-type Expression = string;
 
 export interface User {
     id: Id;
     lastUpdatedBy: UserDetails;
     createdBy: UserDetails;
-    user: UserDetails;
-    lastUpdated: Date;
-
-    condition: Expression;
-    displayName: string;
-    programId: Id;
-    programRuleActions: ProgramRuleAction[];
-}
-
-export interface ProgramRuleAction {
-    id: string;
-    content?: string;
-    displayContent?: string;
-    data?: Expression;
-    location?: string;
-    programRuleActionType: D2ProgramRuleAction["programRuleActionType"];
-    dataElementId?: Id;
-    programStageId?: Id;
-    programStageSectionId?: Id;
-    trackedEntityAttributeId?: Id;
-    optionGroupId?: Id;
-    optionId?: Id;
-    style?: object;
-}
-
-export interface OrgUnit extends IdNameCode {
-    groups: IdNameCode[];
-}
-
-export interface IdNameCode {
-    id: Id;
+    twoFA: boolean;
+    invitation: false;
+    selftRefistered: false;
+    firstName: string;
+    phoneNumber: string;
     name: string;
-    code: string;
-}
-
-export interface ProgramRuleVariable {
-    id: Id;
+    favorite: false;
     displayName: string;
-    programRuleVariableSourceType: D2ProgramRuleVariable["programRuleVariableSourceType"];
-    // valueType is present in capture-app type. This field was added on 2.38, and its value
-    // depends on the source type: dataElement, TEA, or Calculated Value.
-    valueType: string;
-    programId: Id;
-    dataElementId?: Id;
-    trackedEntityAttributeId?: Id;
-    programStageId?: Id;
-    useNameForOptionSet?: boolean;
+    externalAuth: boolean;
+    externalAccess: boolean;
+    surname: string;
+    disabled: boolean;
+    email: string;
+    passwordLastUpdated: StringDateTime;
+    username: string;
+    userCredentials: UserCreedentials;
+    userGroups: IdItem[];
+    userRoles: IdItem[];
+}
+export interface UserRole {
+    created: StringDateTime;
+    lastUpdated: StringDateTime;
+    name: string;
+    id: string;
+    description: string;
+    lastUpdatedBy: UserDetails;
+    authorities: string[];
+    users: IdItem[];
+}
+export interface UserGroup {
+    created: StringDateTime;
+    lastUpdated: StringDateTime;
+    name: string;
+    id: string;
+    users: IdItem[];
+}
+export interface IdItem {
+    id: Id;
 }
 
 type StringDateTime = string;
-
-export interface Enrollment {
-    enrolledAt?: StringDateTime;
-    occurredAt?: StringDateTime;
-    enrollmentId?: StringDateTime;
-}
-
-type DataElementId = Id;
-
-export type TrackedEntityAttributeValuesMap = Record<DataElementId, string>;
-
-export type ProgramRuleEvent = ProgramRuleEventObj; // & Record<DataElementId, string>;
-
-export interface ProgramRuleEventObj {
-    eventId: Id;
-    programId?: Id;
-    programStageId?: Id;
-    orgUnitId: Id;
-    orgUnitName: string;
-    trackedEntityInstanceId?: Id | undefined;
-    enrollmentId?: Id;
-    enrollmentStatus?: "ACTIVE" | "COMPLETED" | "CANCELLED";
-    status?: EventStatus;
-    eventDate?: StringDateTime;
-    occurredAt?: StringDateTime;
-    scheduledAt?: StringDateTime;
-}
