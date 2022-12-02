@@ -1,9 +1,3 @@
-
-///necesito descargar, templates. y usuarios con grupos
-// y lista de roles
-// comprobar que los roles asignados hacen mach con los del template,
-// y si no actualizar el usuario quitando los roles extra
-///lo que se actualizaran seran los user usercredentials
 export type Id = string;
 export interface UserDetails {
     id: Id;
