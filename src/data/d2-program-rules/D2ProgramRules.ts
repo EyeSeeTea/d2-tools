@@ -22,7 +22,7 @@ import {
 } from "./D2ProgramRules.types";
 import { checkPostEventsResponse, getData, getInChunks } from "data/dhis2-utils";
 import log from "utils/log";
-import { Event, EventsPostRequest, EventsPostResponse } from "@eyeseetea/d2-api/api/events";
+import { Event, EventsGetRequest, EventsPostRequest, EventsPostResponse } from "@eyeseetea/d2-api/api/events";
 import {
     Attribute,
     TeiOuRequest,
@@ -309,6 +309,8 @@ export class D2ProgramRules {
                     ].join(" ")
                 );
 
+                type EventsGetRequestWithFields = EventsGetRequest & { fields: string };
+
                 const events = await getData(
                     this.api.events.get({
                         program: program.id,
@@ -319,7 +321,8 @@ export class D2ProgramRules {
                         pageSize: 1_000,
                         trackedEntityInstance: runOptions.teiId,
                         totalPages: false,
-                    })
+                        fields: "*",
+                    } as EventsGetRequestWithFields)
                 ).then(res => res.events as D2Event[]);
 
                 if (_.isEmpty(events)) return [];
