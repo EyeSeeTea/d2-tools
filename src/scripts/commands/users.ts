@@ -1,23 +1,21 @@
 import _ from "lodash";
-import { command, string, subcommands, option, optional } from "cmd-ts";
+import { command, subcommands, option, optional } from "cmd-ts";
 
 import { getApiUrlOption, getD2Api, StringsSeparatedByCommas } from "scripts/common";
-import { ProgramsD2Repository } from "data/ProgramsD2Repository";
-import { RunProgramRulesUseCase } from "domain/usecases/RunProgramRulesUseCase";
 import { RunUserPermissionsUseCase } from "domain/usecases/RunUserPermissionsUseCase";
 import { UsersD2Repository } from "data/UsersD2Repository";
-import { TemplateGroup, UsersOptions } from "domain/repositories/UsersRepository";
+import { TemplateGroup } from "domain/repositories/UsersRepository";
 
 export function getCommand() {
     return subcommands({
         name: "users",
         cmds: {
-            "user-permissions": runUsersPermisionCmd,
+            "run-users-permissions": runUsersPermisionsCmd,
         },
     });
 }
 
-const runUsersPermisionCmd = command({
+const runUsersPermisionsCmd = command({
     name: "run-users-permissions",
     description: "Run user permissions",
     args: {
@@ -31,14 +29,13 @@ const runUsersPermisionCmd = command({
     },
     handler: async args => {
         const api = getD2Api(args.url);
-        const templates = args.template_group
-        const programsRepository = new UsersD2Repository(api);
-        const UsersOptions:TemplateGroup[] = templates!.map( item =>{ 
-            const templateId = item.split("-")[0]
-            const groupId = item.split("-")[1]
-            return {templateId:templateId??"-", groupId:groupId??"-"} 
-        }
-            )
-        new RunUserPermissionsUseCase(programsRepository).execute({templates: UsersOptions});
+        const templates = args.template_group;
+        const usersRepository = new UsersD2Repository(api);
+        const UsersOptions: TemplateGroup[] = templates!.map(item => {
+            const templateId = item.split("-")[0];
+            const groupId = item.split("-")[1];
+            return { templateId: templateId ?? "-", groupId: groupId ?? "-" };
+        });
+        new RunUserPermissionsUseCase(usersRepository).execute({ templates: UsersOptions });
     },
 });
