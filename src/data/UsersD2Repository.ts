@@ -10,19 +10,22 @@ type Users = { users: User[] };
 export class UsersD2Repository implements UsersRepository {
     constructor(private api: D2Api) {}
     async checkPermissions(options: UsersOptions): Async<void> {
-        const { templates: templates } = options;
+        const { templates: templateGroups } = options;
         debugger;
-        const userTemplateIds = templates.map(template => {
+        const userTemplateIds = templateGroups.map(template => {
             return template.templateId;
         });
-        const userGroupIds = templates.map(template => {
+        const userGroupIds = templateGroups.map(template => {
             return template.groupId;
         });
         // const userGroupIds = templates.forEach(template => {template.groupId})
         const allUserTemplates = await this.getUsers(userTemplateIds);
         const allUsers = await this.getAllUsers();
         debugger;
-        allUsers.map(user => {
+
+        // aqui deberia de devolver el usuario con sus detalles
+        //y los roles extra, y el usuario para ser pusheado.
+        const userinfo = allUsers.map(user => {
             const templateUserGroup: string[] = userGroupIds.filter(templateUserGroup => {
                 const value = user.userGroups.filter(userGroupItem => {
                     userGroupItem.id == templateUserGroup;
@@ -30,14 +33,14 @@ export class UsersD2Repository implements UsersRepository {
                 return value;
             });
 
-            const templateMatch = templates.filter(template => {
-                user.userGroups.filter(userGroup => {
-                    template.groupId == userGroup.id;
-                });
+            const templateMatch = templateGroups.find(template => {
+                return user.userGroups.some(userGroup => template.groupId == userGroup.id);
             });
+
+            //return errors, wa
             debugger;
             const userTemplate = allUserTemplates.filter(item => {
-                item.id == templateMatch[0]?.templateId;
+                item.id == templateMatch?.templateId;
             });
             const validRoles = user.userRoles.filter(userRole => {
                 userTemplate[0]?.userRoles.filter(userTemplateItem => {

@@ -14,7 +14,4 @@ export class D2Users {
     async run(options: UsersOptions): Async<void> {
         console.log("run" + options);
     }
-    calculateDaysBetweenDates(begin:Date, end:Date) {
-        
-    }
 }

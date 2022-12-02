@@ -1,4 +1,4 @@
-import _ from "lodash";
+import _, { uniqueId } from "lodash";
 import { command, subcommands, option, optional } from "cmd-ts";
 
 import { getApiUrlOption, getD2Api, StringsSeparatedByCommas } from "scripts/common";
