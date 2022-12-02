@@ -1,3 +1,7 @@
+import { UserField } from "capture-core/components/FormFields/UserField";
+import { TemplateGroup } from "domain/repositories/UsersRepository";
+import { UserInfo } from "os";
+
 export type Id = string;
 export interface UserDetails {
     id: Id;
@@ -18,6 +22,31 @@ export interface UserCreedentials {
     userRoles: IdItem[];
 }
 
+export interface UserRes {
+    fixedUser: User,
+    validUserRoles: IdItem[],
+    invalidUserRoles: IdItem[],
+    actionRequired: boolean,
+    updated?: boolean,
+    networkRes?: string,
+    userTemplate?: User,
+    groupTemplate?: UserGroup
+}
+export interface UserCSV {
+    id: Id,
+    username: string,
+    email: string,
+    displayName: string,
+    userGroups: string[],
+    lastUpdatedBy: string,
+    updated?: boolean,
+    networkRes?: string,
+    createdBy: string,
+    userType: string,
+    templateUser: string,
+    validUserRoles: IdItem[],
+    invalidUserRoles: IdItem[]
+}
 export interface User {
     id: Id;
     lastUpdatedBy: UserDetails;
