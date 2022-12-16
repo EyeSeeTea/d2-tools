@@ -3,6 +3,10 @@
 // comprobar que los roles asignados hacen mach con los del template,
 // y si no actualizar el usuario quitando los roles extra
 ///lo que se actualizaran seran los user usercredentials
+import { UserField } from "capture-core/components/FormFields/UserField";
+import { TemplateGroup } from "domain/repositories/UsersRepository";
+import { UserInfo } from "os";
+
 export type Id = string;
 export interface UserDetails {
     id: Id;
@@ -29,6 +33,37 @@ export interface UserRoleAuthority {
     name: string;
 }
 
+export interface UserResult {
+    user: User;
+    validRoles: IdItem[];
+    invalidRoles: IdItem[];
+}
+
+export interface UserRes {
+    fixedUser: User;
+    validUserRoles: IdItem[];
+    invalidUserRoles: IdItem[];
+    actionRequired: boolean;
+    updated?: boolean;
+    networkRes?: string;
+    userTemplate?: User;
+    groupTemplate?: UserGroup;
+}
+export interface UserCSV {
+    id: Id;
+    username: string;
+    email: string;
+    displayName: string;
+    userGroups: string[];
+    lastUpdatedBy: string;
+    updated?: boolean;
+    networkRes?: string;
+    createdBy: string;
+    userType: string;
+    templateUser: string;
+    validUserRoles: IdItem[];
+    invalidUserRoles: IdItem[];
+}
 export interface User {
     id: Id;
     lastUpdatedBy: UserDetails;
@@ -71,12 +106,6 @@ export interface UserGroup {
 }
 export interface IdItem {
     id: Id;
-}
-
-export interface UserResult {
-    user: User;
-    validRoles: IdItem[];
-    invalidRoles: IdItem[];
 }
 
 type StringDateTime = string;

@@ -3,7 +3,7 @@ import { UserRoleAuthority } from "data/d2-users/D2Users.types";
 import { Async } from "domain/entities/Async";
 
 export interface UsersRepository {
-    checkPermissions(options: UsersOptions): Async<void>;
+    checkPermissions(options: UsersOptions): Promise<Async<void>>;
 }
 
 export interface TemplateGroup {
