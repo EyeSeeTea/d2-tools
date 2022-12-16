@@ -1,4 +1,3 @@
-
 ///necesito descargar, templates. y usuarios con grupos
 // y lista de roles
 // comprobar que los roles asignados hacen mach con los del template,
@@ -22,6 +21,12 @@ export interface UserCreedentials {
     twoFA: boolean;
     username: string;
     userRoles: IdItem[];
+}
+
+export interface UserRoleAuthority {
+    id: Id;
+    authorities: string[];
+    name: string;
 }
 
 export interface User {
@@ -66,6 +71,12 @@ export interface UserGroup {
 }
 export interface IdItem {
     id: Id;
+}
+
+export interface UserResult {
+    user: User;
+    validRoles: IdItem[];
+    invalidRoles: IdItem[];
 }
 
 type StringDateTime = string;

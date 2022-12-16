@@ -34,7 +34,12 @@ const runUsersPermisionsCmd = command({
         const UsersOptions: TemplateGroup[] = templates!.map(item => {
             const templateId = item.split("-")[0];
             const groupId = item.split("-")[1];
-            return { templateId: templateId ?? "-", groupId: groupId ?? "-" };
+            return {
+                templateId: templateId ?? "-",
+                groupId: groupId ?? "-",
+                validRoles: [],
+                invalidRoles: [],
+            };
         });
         new RunUserPermissionsUseCase(usersRepository).execute({ templates: UsersOptions });
     },
