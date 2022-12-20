@@ -27,8 +27,18 @@ export class UsersD2Repository implements UsersRepository {
 
         const allUserTemplates = await this.getUsers(userTemplateIds);
         const allGroupTemplates = await this.getGroups(userGroupIds);
+        debugger;
         const allUsers = await this.getAllUsers();
-        const userRoles: UserRoleAuthority[] = await this.getAllUserRoles();
+        const userRoles: UserRoleAuthority[] = await this.getAllUserRoles(options);
+        const validateRoles = userRoles.filter(role => {
+            return role.authorities.length == 0;
+        });
+        if (validateRoles.length > 0) {
+            validateRoles.forEach(role => {
+                log.error(`Role ${role.id} - ${role.name} has no authorities`);
+            });
+            throw new Error("Roles with no authorities are not allowed");
+        }
         templateGroups.map(item => {
             const user = allUserTemplates.find(template => {
                 return template.id == item.templateId;
@@ -43,9 +53,8 @@ export class UsersD2Repository implements UsersRepository {
                     });
                 })
             );
-            debugger;
 
-            const validRoles: UserRoleAuthority[] = _.compact(
+            const validRolesByAuthority: UserRoleAuthority[] = _.compact(
                 userRoles.map(role => {
                     const authorities = role.authorities.filter(authority => {
                         if (templateAutorities.indexOf(authority) >= 0) return authority;
@@ -56,7 +65,7 @@ export class UsersD2Repository implements UsersRepository {
                 })
             );
 
-            const invalidRoles: UserRoleAuthority[] = _.compact(
+            const invalidRolesByAuthority: UserRoleAuthority[] = _.compact(
                 userRoles.map(role => {
                     const authorities = role.authorities.filter(authority => {
                         if (templateAutorities.indexOf(authority) == -1) return authority;
@@ -66,73 +75,77 @@ export class UsersD2Repository implements UsersRepository {
                     }
                 })
             );
-            item.validRoles = validRoles;
-            item.invalidRoles = invalidRoles;
+
+            const validRoles: string[] = _.compact(
+                validRolesByAuthority.map(role => {
+                    return role.id;
+                })
+            );
+
+            const invalidRoles: string[] = _.compact(
+                invalidRolesByAuthority.map(role => {
+                    return role.id;
+                })
+            );
+
+            item.validRolesByAuthority = validRolesByAuthority;
+            item.invalidRolesByAuthority = invalidRolesByAuthority;
+            item.validRolesById = validRoles;
+            item.invalidRolesById = invalidRoles;
+            item.name = allUserTemplates.find(template => {
+                return template.id == item.templateId;
+            })?.name;
         });
-        debugger; //todo: check the workflow from here:
 
         const userinfo: UserRes[] = allUsers.map(user => {
-            const templateUserGroup: string[] = userGroupIds.filter(templateUserGroup => {
-                const value = user.userGroups.filter(userGroupItem => {
-                    userGroupItem.id == templateUserGroup;
-                });
-                return value;
-            });
-
             const templateGroupMatch = templateGroups.find(template => {
-                return user.userGroups.some(userGroup => template.groupId == userGroup.id);
+                return user.userGroups.some(
+                    userGroup => userGroup != undefined && template.groupId == userGroup.id
+                );
             });
 
             if (templateGroupMatch == undefined) {
                 //template not found
-                const fixedUser = user;
-                fixedUser.userRoles = [];
+                const fixedUser = JSON.parse(JSON.stringify(user));
+                fixedUser.userCredentials.userRoles = [];
                 const userInfoRes: UserRes = {
+                    user: user,
                     fixedUser: fixedUser,
                     validUserRoles: [],
                     actionRequired: user.userCredentials.userRoles.length > 0,
                     invalidUserRoles: user.userCredentials.userRoles,
-                    userTemplate: undefined,
-                    groupTemplate: undefined,
+                    userNameTemplate: "user name not found",
+                    templateIdTemplate: "template not found",
+                    groupIdTemplate: "group not found",
                 };
                 return userInfoRes;
             } else {
-                const userTemplate = allUserTemplates.filter(item => {
-                    return item.id == templateGroupMatch?.templateId;
+                const validRoles = user.userCredentials.userRoles.filter(userRole => {
+                    return templateGroupMatch?.validRolesById.indexOf(userRole.id) >= 0;
                 });
-                const templateRoles = userTemplate[0]!.userCredentials.userRoles.map(item => {
-                    return item.id;
-                });
-                const groupTemplate = allGroupTemplates.filter(item => {
-                    item.id == templateGroupMatch?.groupId;
+                const invalidRoles = user.userCredentials.userRoles.filter(userRole => {
+                    return templateGroupMatch?.invalidRolesById.indexOf(userRole.id) >= 0;
                 });
 
-                const validRoles = user.userRoles.filter(userRole => {
-                    userTemplate[0]?.userRoles.filter(userTemplateItem => {
-                        return userRole.id == userTemplateItem.id;
-                    });
-                });
-                const invalidRoles = user.userRoles.filter(userRole => {
-                    userTemplate[0]?.userRoles.filter(userTemplateItem => {
-                        userRole.id != userTemplateItem.id;
-                    });
-                });
-                const fixedUser = user;
-                fixedUser.userRoles = validRoles;
+                //clone user
+                const fixedUser = JSON.parse(JSON.stringify(user));
+                fixedUser.userCredentials.userRoles = validRoles;
                 const userInfoRes: UserRes = {
+                    user: user,
                     fixedUser: fixedUser,
                     validUserRoles: validRoles,
                     actionRequired: invalidRoles.length > 0,
                     invalidUserRoles: invalidRoles,
-                    userTemplate: userTemplate[0] ?? undefined,
-                    groupTemplate: groupTemplate[0] ?? undefined,
+                    userNameTemplate: templateGroupMatch.name ?? "user name not found",
+                    templateIdTemplate: templateGroupMatch.templateId ?? "template not found",
+                    groupIdTemplate: templateGroupMatch.groupId ?? "group not found",
                 };
 
                 //return errors, wa
-                debugger;
                 return userInfoRes;
             }
         });
+        debugger;
         //return userInfoRes
         const userActionRequired = userinfo.filter(item => item.actionRequired);
         const userToPost: User[] = userActionRequired.map(item => {
@@ -145,14 +158,25 @@ export class UsersD2Repository implements UsersRepository {
         await pushUsers(usersReadytoPost, { payloadId: `users-${date}` }, this.api);
     }
 
-    async getAllUserRoles(): Promise<UserRoleAuthority[]> {
+    async getAllUserRoles(options: UsersOptions): Promise<UserRoleAuthority[]> {
         log.info(`Get metadata: all roles:`);
+        const excludeRoles = options.excludedRoles;
+        if (excludeRoles.length == 0) {
+            const responses = await this.api
+                .get<UserRoleAuthorities>(`/userRoles.json?paging=false&fields=id,name,authorities`)
+                .getData();
+            return responses.userRoles;
+        } else {
+            const responses = await this.api
+                .get<UserRoleAuthorities>(
+                    `/userRoles.json?paging=false&fields=id,name,authorities&filter=id:!in:[${excludeRoles.join(
+                        ","
+                    )}]`
+                )
+                .getData();
 
-        const responses = await this.api
-            .get<UserRoleAuthorities>(`/userRoles.json?paging=false&fields=id,name,authorities`)
-            .getData();
-
-        return responses.userRoles;
+            return responses.userRoles;
+        }
 
         /* 
         const userActionRequired = userInfoRes.filter(item => item.actionRequired)
@@ -203,7 +227,7 @@ export class UsersD2Repository implements UsersRepository {
 
         const responses = await this.api
             .get<UserGroups>(
-                `/groups?filter=id:in:[${groupsIds.join(
+                `/userGroups?filter=id:in:[${groupsIds.join(
                     ","
                 )}]&fields=id,created,lastUpdated,name,users&paging=false.json`
             )
@@ -223,8 +247,9 @@ export class UsersD2Repository implements UsersRepository {
 }
 
 async function pushUsers(usersReadyToPost: Users, options: { payloadId: string }, api: D2Api) {
+    debugger;
     const response: UserResponse = await api
-        .post<UserResponse>("/users", { async: false }, { users: usersReadyToPost })
+        .post<UserResponse>("/users", { async: false }, usersReadyToPost)
         .getData()
         .catch(err => {
             if (err?.response?.data) {

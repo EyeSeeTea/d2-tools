@@ -9,10 +9,14 @@ export interface UsersRepository {
 export interface TemplateGroup {
     templateId: Id;
     groupId: Id;
-    validRoles: UserRoleAuthority[];
-    invalidRoles: UserRoleAuthority[];
+    validRolesByAuthority: UserRoleAuthority[];
+    invalidRolesByAuthority: UserRoleAuthority[];
+    validRolesById: string[];
+    invalidRolesById: string[];
+    name?: string;
 }
 
 export interface UsersOptions {
     templates: TemplateGroup[];
+    excludedRoles: string[];
 }

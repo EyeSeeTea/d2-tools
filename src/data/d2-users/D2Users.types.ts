@@ -1,12 +1,3 @@
-///necesito descargar, templates. y usuarios con grupos
-// y lista de roles
-// comprobar que los roles asignados hacen mach con los del template,
-// y si no actualizar el usuario quitando los roles extra
-///lo que se actualizaran seran los user usercredentials
-import { UserField } from "capture-core/components/FormFields/UserField";
-import { TemplateGroup } from "domain/repositories/UsersRepository";
-import { UserInfo } from "os";
-
 export type Id = string;
 export interface UserDetails {
     id: Id;
@@ -40,14 +31,16 @@ export interface UserResult {
 }
 
 export interface UserRes {
+    user: User;
     fixedUser: User;
     validUserRoles: IdItem[];
     invalidUserRoles: IdItem[];
     actionRequired: boolean;
     updated?: boolean;
     networkRes?: string;
-    userTemplate?: User;
-    groupTemplate?: UserGroup;
+    userNameTemplate?: string;
+    templateIdTemplate?: string;
+    groupIdTemplate?: string;
 }
 export interface UserCSV {
     id: Id;

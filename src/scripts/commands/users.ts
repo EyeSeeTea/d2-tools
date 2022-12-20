@@ -26,6 +26,12 @@ const runUsersPermisionsCmd = command({
             description:
                 "List of template-groups key-value (comma-separated, template1-group1,template2-group2...)",
         }),
+        exclude_roles: option({
+            type: optional(StringsSeparatedByCommas),
+            long: "exclude-roles",
+            description:
+                "List of roles id to be excluded, for example due have empty authorities (comma-separated, id1,id2...)",
+        }),
     },
     handler: async args => {
         const api = getD2Api(args.url);
@@ -37,10 +43,16 @@ const runUsersPermisionsCmd = command({
             return {
                 templateId: templateId ?? "-",
                 groupId: groupId ?? "-",
-                validRoles: [],
-                invalidRoles: [],
+                validRolesByAuthority: [],
+                invalidRolesByAuthority: [],
+                validRolesById: [],
+                invalidRolesById: [],
             };
         });
-        new RunUserPermissionsUseCase(usersRepository).execute({ templates: UsersOptions });
+        const exclude_roles: string[] = args.exclude_roles ?? [];
+        new RunUserPermissionsUseCase(usersRepository).execute({
+            templates: UsersOptions,
+            excludedRoles: exclude_roles,
+        });
     },
 });
