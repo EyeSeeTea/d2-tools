@@ -6,8 +6,9 @@ export interface UserDetails {
     username: string;
 }
 
-export interface UserCreedentials {
-    lastLogin: StringDateTime;
+export interface UserCredentials {
+    lastUpdated: string;
+    lastLogin: string;
     passwordLastUpdated: StringDateTime;
     invitation: boolean;
     selfRegisterd: boolean;
@@ -41,6 +42,8 @@ export interface UserRes {
     userNameTemplate?: string;
     templateIdTemplate?: string;
     groupIdTemplate?: string;
+    multipleUserGroups?: string[];
+    undefinedUserGroups?: boolean;
 }
 export interface UserCSV {
     id: Id;
@@ -76,7 +79,7 @@ export interface User {
     email: string;
     passwordLastUpdated: StringDateTime;
     username: string;
-    userCredentials: UserCreedentials;
+    userCredentials: UserCredentials;
     userGroups: IdItem[];
     userRoles: IdItem[];
 }

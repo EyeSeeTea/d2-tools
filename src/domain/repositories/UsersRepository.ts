@@ -19,4 +19,5 @@ export interface TemplateGroup {
 export interface UsersOptions {
     templates: TemplateGroup[];
     excludedRoles: string[];
+    excludedUsers: string[];
 }

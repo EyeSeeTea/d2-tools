@@ -1,11 +1,11 @@
 import _ from "lodash";
 import { Async } from "domain/entities/Async";
-import { D2Api, PostOptions } from "types/d2-api";
+import { D2Api } from "types/d2-api";
 import log from "utils/log";
 import fs from "fs";
 import { UsersOptions, UsersRepository } from "domain/repositories/UsersRepository";
-import { User, UserGroup, UserRes, UserResult, UserRoleAuthority } from "./d2-users/D2Users.types";
-import { runMetadata } from "./dhis2-utils";
+import { User, UserGroup, UserRes, UserRoleAuthority } from "./d2-users/D2Users.types";
+import * as CsvWriter from "csv-writer";
 type Users = { users: User[] };
 type UserGroups = { userGroups: UserGroup[] };
 type UserRoleAuthorities = { userRoles: UserRoleAuthority[] };
@@ -28,7 +28,7 @@ export class UsersD2Repository implements UsersRepository {
         const allUserTemplates = await this.getUsers(userTemplateIds);
         const allGroupTemplates = await this.getGroups(userGroupIds);
         debugger;
-        const allUsers = await this.getAllUsers();
+        const allUsers = await this.getAllUsers(options);
         const userRoles: UserRoleAuthority[] = await this.getAllUserRoles(options);
         const validateRoles = userRoles.filter(role => {
             return role.authorities.length == 0;
@@ -97,69 +97,109 @@ export class UsersD2Repository implements UsersRepository {
             })?.name;
         });
 
-        const userinfo: UserRes[] = allUsers.map(user => {
-            const templateGroupMatch = templateGroups.find(template => {
-                return user.userGroups.some(
-                    userGroup => userGroup != undefined && template.groupId == userGroup.id
-                );
-            });
-
-            if (templateGroupMatch == undefined) {
-                //template not found
-                const fixedUser = JSON.parse(JSON.stringify(user));
-                fixedUser.userCredentials.userRoles = [];
-                const userInfoRes: UserRes = {
-                    user: user,
-                    fixedUser: fixedUser,
-                    validUserRoles: [],
-                    actionRequired: user.userCredentials.userRoles.length > 0,
-                    invalidUserRoles: user.userCredentials.userRoles,
-                    userNameTemplate: "user name not found",
-                    templateIdTemplate: "template not found",
-                    groupIdTemplate: "group not found",
-                };
-                return userInfoRes;
-            } else {
-                const validRoles = user.userCredentials.userRoles.filter(userRole => {
-                    return templateGroupMatch?.validRolesById.indexOf(userRole.id) >= 0;
+        const userinfo: UserRes[] = _.compact(
+            allUsers.map(user => {
+                const templateGroupMatch = templateGroups.find(template => {
+                    return user.userGroups.some(
+                        userGroup => userGroup != undefined && template.groupId == userGroup.id
+                    );
                 });
-                const invalidRoles = user.userCredentials.userRoles.filter(userRole => {
-                    return templateGroupMatch?.invalidRolesById.indexOf(userRole.id) >= 0;
+                const AllGroupMatch = templateGroups.filter(template => {
+                    return user.userGroups.some(
+                        userGroup => userGroup != undefined && template.groupId == userGroup.id
+                    );
                 });
 
-                //clone user
-                const fixedUser = JSON.parse(JSON.stringify(user));
-                fixedUser.userCredentials.userRoles = validRoles;
-                const userInfoRes: UserRes = {
-                    user: user,
-                    fixedUser: fixedUser,
-                    validUserRoles: validRoles,
-                    actionRequired: invalidRoles.length > 0,
-                    invalidUserRoles: invalidRoles,
-                    userNameTemplate: templateGroupMatch.name ?? "user name not found",
-                    templateIdTemplate: templateGroupMatch.templateId ?? "template not found",
-                    groupIdTemplate: templateGroupMatch.groupId ?? "group not found",
-                };
+                if (templateGroupMatch == undefined) {
+                    //template not found
+                    log.error(`Warning: User don't have groups ${user.id} - ${user.name}`);
 
-                //return errors, wa
-                return userInfoRes;
-            }
-        });
+                    const fixedUser = JSON.parse(JSON.stringify(user));
+                    fixedUser.userCredentials.userRoles = [];
+                    const userInfoRes: UserRes = {
+                        user: user,
+                        fixedUser: fixedUser,
+                        validUserRoles: [],
+                        actionRequired: user.userCredentials.userRoles.length > 0,
+                        invalidUserRoles: user.userCredentials.userRoles,
+                        userNameTemplate: "user name not found",
+                        templateIdTemplate: "template not found",
+                        groupIdTemplate: "group not found",
+                        undefinedUserGroups: true,
+                    };
+                    return userInfoRes;
+                } else {
+                    const validRoles = user.userCredentials.userRoles.filter(userRole => {
+                        return templateGroupMatch?.validRolesById.indexOf(userRole.id) >= 0;
+                    });
+                    const invalidRoles = user.userCredentials.userRoles.filter(userRole => {
+                        return templateGroupMatch?.invalidRolesById.indexOf(userRole.id) >= 0;
+                    });
+
+                    //clone user
+                    const fixedUser = JSON.parse(JSON.stringify(user));
+                    fixedUser.userCredentials.userRoles = validRoles;
+
+                    if (AllGroupMatch.length > 1) {
+                        log.error(`Warning: User have more than 1 group ${user.id} - ${user.name}`);
+                        AllGroupMatch.forEach(element => {
+                            log.warn(element.groupId);
+                        });
+                        const userInfoRes: UserRes = {
+                            user: user,
+                            fixedUser: fixedUser,
+                            validUserRoles: validRoles,
+                            actionRequired: false,
+                            invalidUserRoles: invalidRoles,
+                            userNameTemplate: templateGroupMatch.name ?? "user name not found",
+                            templateIdTemplate: templateGroupMatch.templateId ?? "template not found",
+                            groupIdTemplate: templateGroupMatch.groupId ?? "group not found",
+                            multipleUserGroups: AllGroupMatch.map(item => item.groupId),
+                        };
+
+                        //return errors, wa
+                        return userInfoRes;
+                    } else {
+                        const userInfoRes: UserRes = {
+                            user: user,
+                            fixedUser: fixedUser,
+                            validUserRoles: validRoles,
+                            actionRequired: invalidRoles.length > 0,
+                            invalidUserRoles: invalidRoles,
+                            userNameTemplate: templateGroupMatch.name ?? "user name not found",
+                            templateIdTemplate: templateGroupMatch.templateId ?? "template not found",
+                            groupIdTemplate: templateGroupMatch.groupId ?? "group not found",
+                        };
+
+                        //return errors, wa
+                        return userInfoRes;
+                    }
+                }
+            })
+        );
         debugger;
         //return userInfoRes
+        const date = new Date();
+        logErrors(
+            userinfo.filter(
+                item => !item.actionRequired && (item.undefinedUserGroups || item.multipleUserGroups)
+            ),
+            { payloadId: `users-errors-${date}` }
+        );
+        saveInCsv(
+            userinfo.filter(
+                item => !item.actionRequired && (item.undefinedUserGroups || item.multipleUserGroups)
+            ),
+            `users-errors-${date}`
+        );
         const userActionRequired = userinfo.filter(item => item.actionRequired);
-        const userToPost: User[] = userActionRequired.map(item => {
-            return item.fixedUser;
-        });
 
         //Push users to dhis2
-        const usersReadytoPost: Users = { users: userToPost };
-        const date = new Date();
-        await pushUsers(usersReadytoPost, { payloadId: `users-${date}` }, this.api);
+        await pushUsers(userActionRequired, { payloadId: `users-${date}` }, this.api);
     }
 
     async getAllUserRoles(options: UsersOptions): Promise<UserRoleAuthority[]> {
-        log.info(`Get metadata: all roles:`);
+        log.info(`Get metadata: All roles excluding ids: ${options.excludedRoles.join(", ")}`);
         const excludeRoles = options.excludedRoles;
         if (excludeRoles.length == 0) {
             const responses = await this.api
@@ -213,7 +253,7 @@ export class UsersD2Repository implements UsersRepository {
     }
 
     private async getUsers(userIds: string[]): Promise<User[]> {
-        log.info(`Get metadata: users IDS: ${userIds.join(", ")}`);
+        log.info(`Get metadata: All users IDS: ${userIds.join(", ")}`);
 
         const responses = await this.api
             .get<Users>(`/users?filter=id:in:[${userIds.join(",")}]&fields=*&paging=false.json`)
@@ -223,7 +263,7 @@ export class UsersD2Repository implements UsersRepository {
     }
 
     private async getGroups(groupsIds: string[]): Promise<UserGroup[]> {
-        log.info(`Get metadata: groups IDS: ${groupsIds.join(", ")}`);
+        log.info(`Get metadata: All groups`);
 
         const responses = await this.api
             .get<UserGroups>(
@@ -235,19 +275,28 @@ export class UsersD2Repository implements UsersRepository {
 
         return responses["userGroups"];
     }
-    private async getAllUsers(): Promise<User[]> {
-        log.info(`Get metadata: all users:`);
+    private async getAllUsers(options: UsersOptions): Promise<User[]> {
+        log.info(`Get metadata: All users: ${options.excludedUsers.join(", ")}`);
 
         const responses = await this.api
-            .get<Users>(`/users.json?paging=false&fields=*,userCredentials[*]`)
+            .get<Users>(
+                `/users.json?paging=false&fields=*,userCredentials[*]&filter=id:!in:[${options.excludedUsers.join(
+                    ","
+                )}]`
+            )
             .getData();
 
         return responses["users"];
     }
 }
 
-async function pushUsers(usersReadyToPost: Users, options: { payloadId: string }, api: D2Api) {
+async function pushUsers(userActionRequired: UserRes[], options: { payloadId: string }, api: D2Api) {
     debugger;
+
+    const userToPost: User[] = userActionRequired.map(item => {
+        return item.fixedUser;
+    });
+    const usersReadyToPost: Users = { users: userToPost };
     const response: UserResponse = await api
         .post<UserResponse>("/metadata", { async: false }, usersReadyToPost)
         .getData()
@@ -259,12 +308,104 @@ async function pushUsers(usersReadyToPost: Users, options: { payloadId: string }
             }
         });
     debugger;
+    saveResult(userActionRequired, response);
+    return response;
+}
+function logErrors(userConfigErrors: UserRes[], options: { payloadId: string }) {
+    const errorJsonPath = `user-config-json-error-${options.payloadId}.json`;
+    log.error(`Save import error: ${errorJsonPath}`);
+    fs.writeFileSync(errorJsonPath, JSON.stringify({ userConfigErrors }, null, 4));
+}
+
+type Attr =
+    | "id"
+    | "username"
+    | "lastUpdated"
+    | "lastLogin"
+    | "disabled"
+    | "actionRequired"
+    | "undefinedGroups"
+    | "multipleGroups"
+    | "userRoles"
+    | "invalidRoles"
+    | "validRoles";
+
+type Row = Record<Attr, string>;
+
+const headers: Record<Attr, { title: string }> = {
+    id: { title: "User ID" },
+    username: { title: "Username" },
+    lastUpdated: { title: "LastUpdated" },
+    lastLogin: { title: "LastLogin" },
+    disabled: { title: "Disabled" },
+    actionRequired: { title: "ActionRequired" },
+    undefinedGroups: { title: "UndefinedGroups" },
+    multipleGroups: { title: "MultipleTemplateGroups" },
+    userRoles: { title: "UserRoles" },
+    invalidRoles: { title: "InvalidRoles" },
+    validRoles: { title: "ValidRoles" },
+};
+
+async function saveInCsv(users: UserRes[], filepath: string) {
+    const createCsvWriter = CsvWriter.createObjectCsvWriter;
+    const csvHeader = _.map(headers, (obj, key) => ({ id: key, ...obj }));
+    const csvWriter = createCsvWriter({ path: filepath, header: csvHeader });
+
+    const records = users.map((user): Row => {
+        return {
+            id: user.user.id,
+            username: user.user.userCredentials.username,
+            lastUpdated: user.user.userCredentials.lastUpdated,
+            lastLogin: user.user.userCredentials.lastLogin,
+            disabled: user.user.userCredentials.disabled.toString(),
+            actionRequired: user.actionRequired.toString(),
+            undefinedGroups: user.undefinedUserGroups?.toString() ?? "",
+            multipleGroups: user.multipleUserGroups?.join(", ") ?? "",
+            userRoles: user.user.userCredentials.userRoles
+                .map(item => {
+                    return item.id;
+                })
+                .join(", "),
+            validRoles: user.validUserRoles
+                .map(item => {
+                    return item.id;
+                })
+                .join(", "),
+            invalidRoles: user.invalidUserRoles
+                .map(item => {
+                    return item.id;
+                })
+                .join(", "),
+        };
+    });
+
+    await csvWriter.writeRecords(records);
+}
+async function saveResult(userActionRequired: UserRes[], response: UserResponse) {
+    log.info(`Saving report (failed push)`);
+    const date = -new Date();
+
+    const userToPost: User[] = userActionRequired.map(item => {
+        return item.fixedUser;
+    });
+    const userBeforePost: User[] = userActionRequired.map(item => {
+        return item.user;
+    });
+    const csvErrorFilename = `users-push-error-${date}.csv`;
+    const jsonUserFilename = `users-push-error-${date}.json`;
+
     if (response.status !== "OK") {
-        const errorJsonPath = `programs-import-error-${options.payloadId}.json`;
-        log.error(`Save import error: ${errorJsonPath}`);
-        fs.writeFileSync(errorJsonPath, JSON.stringify({ response, usersReadyToPost }, null, 4));
-        return response;
+        log.error(`Save errors in csv: `);
+        await saveInCsv(userActionRequired, `${csvErrorFilename}`);
+        log.error(`Save jsons on import error: ${jsonUserFilename}`);
+        fs.writeFileSync(jsonUserFilename, JSON.stringify({ response, userToPost }, null, 4));
     } else {
-        return response;
+        const jsonBackupUserFilename = `users-backup-error-${date}.json`;
+        log.error(`Save pushed users details in csv: ${csvErrorFilename}`);
+        await saveInCsv(userActionRequired, `${csvErrorFilename}`);
+        log.error(`Save pushed users: ${jsonUserFilename}`);
+        fs.writeFileSync(jsonUserFilename, JSON.stringify({ response, userToPost }, null, 4));
+        log.error(`Save backup of users: ${jsonBackupUserFilename}`);
+        fs.writeFileSync(jsonBackupUserFilename, JSON.stringify({ response, userBeforePost }, null, 4));
     }
 }
