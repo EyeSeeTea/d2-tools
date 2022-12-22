@@ -180,22 +180,22 @@ export class UsersD2Repository implements UsersRepository {
         debugger;
         //return userInfoRes
         const date = new Date();
-        logErrors(
-            userinfo.filter(
-                item => !item.actionRequired && (item.undefinedUserGroups || item.multipleUserGroups)
-            ),
-            { payloadId: `users-errors-${date}` }
+
+        const usersWithErrors = userinfo.filter(
+            item => !item.actionRequired && (item.undefinedUserGroups || item.multipleUserGroups)
         );
-        saveInCsv(
-            userinfo.filter(
-                item => !item.actionRequired && (item.undefinedUserGroups || item.multipleUserGroups)
-            ),
-            `users-errors-${date}`
-        );
+
+        //save errors in user configs
+        if (usersWithErrors.length > 0) {
+            saveInJsonFormat(JSON.stringify({ usersWithErrors }, null, 4), `users-errors-${date}`);
+            saveInCsv(usersWithErrors, `users-errors-${date}`);
+        }
         const userActionRequired = userinfo.filter(item => item.actionRequired);
 
         //Push users to dhis2
-        await pushUsers(userActionRequired, { payloadId: `users-${date}` }, this.api);
+        if (userActionRequired.length > 0) {
+            await pushUsers(userActionRequired, this.api);
+        }
     }
 
     async getAllUserRoles(options: UsersOptions): Promise<UserRoleAuthority[]> {
@@ -217,39 +217,6 @@ export class UsersD2Repository implements UsersRepository {
 
             return responses.userRoles;
         }
-
-        /* 
-        const userActionRequired = userInfoRes.filter(item => item.actionRequired)
-
-        //todo fix user update
-        const userCSV: UserCSV[] = userActionRequired.map(async item => {
-
-            const options: Partial<PostOptions> = { async: false };
-            const response = await runMetadata(this.api.metadata.post({ "users": item.fixedUser }, options));
-
-            item.networkRes = response.status
-            if (response.status !== "OK") {
-                console.error(JSON.stringify(response.typeReports, null, 4));
-            }
-            item.updated = true
-            return {
-                id: item.fixedUser.id,
-                username: item.fixedUser.username,
-                email: item.fixedUser.email,
-                displayName: item.fixedUser.displayName,
-                userGroups: item.fixedUser.userGroups.join(","),
-                lastUpdatedBy: item.fixedUser.lastUpdatedBy.username,
-                createdBy: item.fixedUser.createdBy.username,
-                userType: item.groupTemplate,
-                templateUser: item.userTemplate,
-                validUserRoles: item.validUserRoles,
-                invalidUserRoles: item.invalidUserRoles,
-                networkRes: item.networkRes ?? "-"
-            }
-
-        }) */
-
-        //todo write csv
     }
 
     private async getUsers(userIds: string[]): Promise<User[]> {
@@ -290,7 +257,7 @@ export class UsersD2Repository implements UsersRepository {
     }
 }
 
-async function pushUsers(userActionRequired: UserRes[], options: { payloadId: string }, api: D2Api) {
+async function pushUsers(userActionRequired: UserRes[], api: D2Api) {
     debugger;
 
     const userToPost: User[] = userActionRequired.map(item => {
@@ -307,14 +274,8 @@ async function pushUsers(userActionRequired: UserRes[], options: { payloadId: st
                 return { status: "ERROR", typeReports: [] };
             }
         });
-    debugger;
     saveResult(userActionRequired, response);
     return response;
-}
-function logErrors(userConfigErrors: UserRes[], options: { payloadId: string }) {
-    const errorJsonPath = `user-config-json-error-${options.payloadId}.json`;
-    log.error(`Save import error: ${errorJsonPath}`);
-    fs.writeFileSync(errorJsonPath, JSON.stringify({ userConfigErrors }, null, 4));
 }
 
 type Attr =
@@ -349,7 +310,7 @@ const headers: Record<Attr, { title: string }> = {
 async function saveInCsv(users: UserRes[], filepath: string) {
     const createCsvWriter = CsvWriter.createObjectCsvWriter;
     const csvHeader = _.map(headers, (obj, key) => ({ id: key, ...obj }));
-    const csvWriter = createCsvWriter({ path: filepath, header: csvHeader });
+    const csvWriter = createCsvWriter({ path: filepath + ".csv", header: csvHeader });
 
     const records = users.map((user): Row => {
         return {
@@ -391,21 +352,26 @@ async function saveResult(userActionRequired: UserRes[], response: UserResponse)
     const userBeforePost: User[] = userActionRequired.map(item => {
         return item.user;
     });
-    const csvErrorFilename = `users-push-error-${date}.csv`;
-    const jsonUserFilename = `users-push-error-${date}.json`;
+    const csvErrorFilename = `users-push-error-${date}`;
+    const jsonUserFilename = `users-push-error-${date}`;
 
     if (response.status !== "OK") {
         log.error(`Save errors in csv: `);
         await saveInCsv(userActionRequired, `${csvErrorFilename}`);
         log.error(`Save jsons on import error: ${jsonUserFilename}`);
-        fs.writeFileSync(jsonUserFilename, JSON.stringify({ response, userToPost }, null, 4));
+        saveInJsonFormat(JSON.stringify({ response, userToPost }, null, 4), `users-errors-${date}`);
     } else {
-        const jsonBackupUserFilename = `users-backup-error-${date}.json`;
+        const jsonBackupUserFilename = `users-backup-error-${date}`;
         log.error(`Save pushed users details in csv: ${csvErrorFilename}`);
         await saveInCsv(userActionRequired, `${csvErrorFilename}`);
         log.error(`Save pushed users: ${jsonUserFilename}`);
-        fs.writeFileSync(jsonUserFilename, JSON.stringify({ response, userToPost }, null, 4));
+        saveInJsonFormat(JSON.stringify({ response, userToPost }, null, 4), `users-errors-${date}`);
         log.error(`Save backup of users: ${jsonBackupUserFilename}`);
-        fs.writeFileSync(jsonBackupUserFilename, JSON.stringify({ response, userBeforePost }, null, 4));
+        saveInJsonFormat(JSON.stringify({ response, userBeforePost }, null, 4), `users-errors-${date}`);
     }
+}
+
+function saveInJsonFormat(content: string, file: string) {
+    fs.writeFileSync(file + ".json", content);
+    log.info(`Json saved in ${file}`);
 }
