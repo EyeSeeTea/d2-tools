@@ -249,7 +249,7 @@ export class UsersD2Repository implements UsersRepository {
 async function pushUsers(usersReadyToPost: Users, options: { payloadId: string }, api: D2Api) {
     debugger;
     const response: UserResponse = await api
-        .post<UserResponse>("/users", { async: false }, usersReadyToPost)
+        .post<UserResponse>("/metadata", { async: false }, usersReadyToPost)
         .getData()
         .catch(err => {
             if (err?.response?.data) {
