@@ -1,5 +1,5 @@
 import _, { uniqueId } from "lodash";
-import { command, subcommands, option, optional } from "cmd-ts";
+import { command, subcommands, option, optional, flag, boolean } from "cmd-ts";
 
 import { getApiUrlOption, getD2Api, StringsSeparatedByCommas } from "scripts/common";
 import { RunUserPermissionsUseCase } from "domain/usecases/RunUserPermissionsUseCase";
@@ -38,6 +38,12 @@ const runUsersPermisionsCmd = command({
             description:
                 "List of users id to be excluded, for example the user templates (added by default from template-group) (comma-separated, id1,id2...)",
         }),
+        pushReport: flag({
+            type: boolean,
+            long: "push-report",
+            short: "p",
+            description: "Push report to dhis2 event program",
+        }),
     },
     handler: async args => {
         const api = getD2Api(args.url);
@@ -57,6 +63,7 @@ const runUsersPermisionsCmd = command({
         });
         const exclude_roles: string[] = args.exclude_roles ?? [];
         const exclude_users: string[] = args.exclude_roles ?? [];
+        const push_report: boolean = args.pushReport ?? false;
         UsersOptions?.map(item => {
             exclude_users.push(item.templateId);
         });
@@ -65,6 +72,7 @@ const runUsersPermisionsCmd = command({
             templates: UsersOptions,
             excludedRoles: exclude_roles,
             excludedUsers: exclude_users,
+            pushReport: push_report,
         });
     },
 });

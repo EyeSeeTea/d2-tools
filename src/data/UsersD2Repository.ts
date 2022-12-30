@@ -16,7 +16,7 @@ export class UsersD2Repository implements UsersRepository {
     constructor(private api: D2Api) {}
 
     async checkPermissions(options: UsersOptions): Promise<Async<void>> {
-        const { templates: templateGroups } = options;
+        const { templates: templateGroups, pushReport: pushReport } = options;
 
         const userTemplateIds = templateGroups.map(template => {
             return template.templateId;
@@ -187,6 +187,7 @@ export class UsersD2Repository implements UsersRepository {
 
         //save errors in user configs
         if (usersWithErrors.length > 0) {
+            if (pushReport) await pushReport(usersWithErrors, this.api, "users-errors", date);
             saveInJsonFormat(JSON.stringify({ usersWithErrors }, null, 4), `users-errors-${date}`);
             saveInCsv(usersWithErrors, `users-errors-${date}`);
         }

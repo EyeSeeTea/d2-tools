@@ -20,4 +20,5 @@ export interface UsersOptions {
     templates: TemplateGroup[];
     excludedRoles: string[];
     excludedUsers: string[];
+    pushReport: boolean;
 }
