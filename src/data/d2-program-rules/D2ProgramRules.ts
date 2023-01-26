@@ -160,12 +160,9 @@ export class D2ProgramRules {
 
                 switch (effect.targetDataType) {
                     case "dataElement":
-                        return _(events)
-                            .map(event =>
-                                getUpdateActionEvent(metadata, program, event, effect.id, effect.value)
-                            )
-                            .compact()
-                            .value();
+                        return _.compact([
+                            getUpdateActionEvent(metadata, program, event, effect.id, effect.value),
+                        ]);
                     case "trackedEntityAttribute":
                         if (!tei) {
                             log.error("No TEI to assign effect to");
@@ -268,7 +265,7 @@ export class D2ProgramRules {
     async getEventEffects(
         metadata: Metadata,
         options: RunRulesOptions,
-        onEffects: (eventEffects: EventEffect[]) => void
+        onEffects: (eventEffects: EventEffect[]) => Promise<void>
     ): Async<void> {
         for (const program of metadata.programs) {
             switch (program.programType) {
@@ -285,7 +282,7 @@ export class D2ProgramRules {
     private async getEventEffectsForProgram(
         options: { program: Program; metadata: Metadata },
         runOptions: RunRulesOptions,
-        onEffects: (eventEffects: EventEffect[]) => void
+        onEffects: (eventEffects: EventEffect[]) => Promise<void>
     ): Promise<void> {
         const { program, metadata } = options;
         const { startDate, endDate, orgUnitsIds, programRulesIds } = runOptions;
@@ -375,14 +372,14 @@ export class D2ProgramRules {
                 .compact()
                 .value();
 
-            onEffects(eventEffects);
+            await onEffects(eventEffects);
         }
     }
 
     private async getEventEffectsForTrackerProgram(
         options: { program: Program; metadata: Metadata },
         runOptions: RunRulesOptions,
-        onEffects: (eventEffects: EventEffect[]) => void
+        onEffects: (eventEffects: EventEffect[]) => Promise<void>
     ): Promise<void> {
         const { program, metadata } = options;
         const { startDate, endDate, orgUnitsIds, programRulesIds } = runOptions;
@@ -447,7 +444,7 @@ export class D2ProgramRules {
                 .compact()
                 .value();
 
-            onEffects(eventEffects);
+            await onEffects(eventEffects);
 
             page++;
         } while (page <= total.pages);
