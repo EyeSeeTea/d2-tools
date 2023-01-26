@@ -386,7 +386,7 @@ export class D2ProgramRules {
 
         log.info(`Get data for tracker program: [${program.id}] ${program.name}`);
         let page = 1;
-        const pageSize = 1000;
+        const pageSize = 100;
         let total: Maybe<{ pages: number; count: number }>;
 
         const base = { program, programRulesIds, metadata };
