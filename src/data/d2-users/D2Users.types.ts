@@ -44,7 +44,9 @@ export interface UserRes {
     groupIdTemplate?: string;
     multipleUserGroups?: string[];
     undefinedUserGroups?: boolean;
+    undefinedRoles?: boolean;
 }
+
 export interface UserCSV {
     id: Id;
     username: string;
@@ -83,6 +85,7 @@ export interface User {
     userGroups: IdItem[];
     userRoles: IdItem[];
 }
+
 export interface UserRole {
     created: StringDateTime;
     lastUpdated: StringDateTime;
@@ -93,12 +96,47 @@ export interface UserRole {
     authorities: string[];
     users: IdItem[];
 }
+
 export interface UserGroup {
     created: StringDateTime;
     lastUpdated: StringDateTime;
     name: string;
     id: string;
     users: IdItem[];
+}
+
+export interface Program {
+    program: string;
+    programStages: ProgramStage[];
+    organisationUnits: string[];
+}
+
+export interface ProgramStage {
+    id: string;
+    programStageDataElements: ProgramStageDataElement[];
+}
+
+export interface ProgramStageDataElement {
+    name: string;
+    code: string;
+    dataElement: string;
+}
+
+export interface ProgramMetadata {
+    id: string;
+    programStageId: string;
+    dataElements: DataElement[];
+    orgUnitId: string;
+}
+
+export interface EventDataValue {
+    dataElement: Id;
+    value: string | number;
+}
+export interface DataElement {
+    id: string;
+    code: string;
+    name: string;
 }
 export interface IdItem {
     id: Id;

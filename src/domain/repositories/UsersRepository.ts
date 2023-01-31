@@ -21,4 +21,5 @@ export interface UsersOptions {
     excludedRoles: string[];
     excludedUsers: string[];
     pushReport: boolean;
+    pushProgramId: string;
 }

@@ -1,5 +1,5 @@
 import _, { uniqueId } from "lodash";
-import { command, subcommands, option, optional, flag, boolean } from "cmd-ts";
+import { command, subcommands, option, optional, flag, boolean, string } from "cmd-ts";
 
 import { getApiUrlOption, getD2Api, StringsSeparatedByCommas } from "scripts/common";
 import { RunUserPermissionsUseCase } from "domain/usecases/RunUserPermissionsUseCase";
@@ -24,25 +24,32 @@ const runUsersPermisionsCmd = command({
             type: optional(StringsSeparatedByCommas),
             long: "template-group",
             description:
-                "List of template-groups key-value (comma-separated, template1-group1,template2-group2...)",
+                "List of template-groups key-value (comma-separated, template1-group1,template2-group2...).",
         }),
         exclude_roles: option({
             type: optional(StringsSeparatedByCommas),
             long: "exclude-roles",
             description:
-                "List of roles id to be excluded, for example due have empty authorities (comma-separated, id1,id2...)",
+                "List of roles id to be excluded, for example due have empty authorities (comma-separated, id1,id2...).",
         }),
         exclude_users: option({
             type: optional(StringsSeparatedByCommas),
             long: "exclude-users",
             description:
-                "List of users id to be excluded, for example the user templates (added by default from template-group) (comma-separated, id1,id2...)",
+                "List of users id to be excluded, for example the user templates (added by default from template-group) (comma-separated, id1,id2...).",
         }),
         pushReport: flag({
             type: boolean,
             long: "push-report",
             short: "p",
-            description: "Push report to dhis2 event program",
+            description: "Push report to dhis2 event program.",
+        }),
+        pushProgramId: option({
+            type: string,
+            long: "push-program-id",
+            short: "pid",
+            description:
+                "Push user program id org unit  to report result in dhis2 server, the dataelements must have the codes: ADMIN_invalid_Users_1_Events, ADMIN_invalid_Roles_Users_2_Events, ADMIN_invalid_Users_file_3_Events, ADMIN_invalid_Roles_Users_file_4_Events",
         }),
     },
     handler: async args => {
@@ -64,6 +71,7 @@ const runUsersPermisionsCmd = command({
         const exclude_roles: string[] = args.exclude_roles ?? [];
         const exclude_users: string[] = args.exclude_roles ?? [];
         const push_report: boolean = args.pushReport ?? false;
+        const push_program_id: string = args.pushProgramId ?? "tBI5HRoOMUz";
         UsersOptions?.map(item => {
             exclude_users.push(item.templateId);
         });
@@ -73,6 +81,7 @@ const runUsersPermisionsCmd = command({
             excludedRoles: exclude_roles,
             excludedUsers: exclude_users,
             pushReport: push_report,
+            pushProgramId: push_program_id,
         });
     },
 });
