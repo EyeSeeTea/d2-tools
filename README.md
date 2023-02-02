@@ -6,6 +6,8 @@ shell:~$ yarn install
 shell:~$ yarn build
 ```
 
+Note: Use the environment variable `LOG_LEVEL` to set the logging level. Values: 'debug' | 'info' | 'warn' | 'error'. Example: `LOG_LEVEL=debug yarn start [...]`
+
 ## Execute Program Rules
 
 ### Create report and post events or tracked entity attributes
