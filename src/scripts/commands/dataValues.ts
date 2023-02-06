@@ -118,7 +118,7 @@ const getDanglingValuesCmd = command({
         }),
         notify: option({
             type: optional(StringsSeparatedByCommas),
-            long: "notify",
+            long: "notify-email",
             description: "Send report to emails/userId/userGroupIds (comma-separated)",
         }),
         outputFile: positional({
