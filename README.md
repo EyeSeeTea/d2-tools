@@ -5,6 +5,7 @@ The required node version is v16.14.0. Alternatively, you can run:
 shell:~$ nvm use
 ```
 
+To build the script run:
 ```console
 shell:~$ yarn install
 shell:~$ yarn build
