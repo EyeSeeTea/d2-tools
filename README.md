@@ -1,5 +1,10 @@
 ## Setup
 
+The required node version is v16.14.0. Alternatively, you can run:
+```console
+shell:~$ nvm use
+```
+
 ```console
 shell:~$ yarn install
 shell:~$ yarn build
