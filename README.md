@@ -203,3 +203,16 @@ $ yarn start programs get-duplicated-events \
 ```
 
 Add option `--post` to actually (soft) delete the events.
+
+## Notifications
+
+### Send user info email
+
+Send an email read from a JSON file to a list of users in a CSV file:
+
+```
+$ yarn build
+$ yarn start notifications send-user-info-notification \
+  --url='http://USER:PASSWORD@HOST:PORT' \
+  usernames.csv emailContent.json
+```
