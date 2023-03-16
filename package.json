@@ -17,7 +17,6 @@
     "dependencies": {
         "@eyeseetea/d2-api": "^1.11.0",
         "@types/json-diff": "^0.7.0",
-        "@types/jsonfile": "^6.1.1",
         "cmd-ts": "^0.10.0",
         "csv-reader": "^1.0.8",
         "csv-writer": "^1.6.0",
@@ -36,6 +35,7 @@
         "@types/nodemailer": "^6.4.4",
         "@typescript-eslint/eslint-plugin": "^5.15.0",
         "@typescript-eslint/parser": "^5.15.0",
+        "@types/jsonfile": "^6.1.1",
         "dotenv": "^16.0.1",
         "eslint": "^8.11.0",
         "eslint-config-prettier": "^8.5.0",
