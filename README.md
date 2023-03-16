@@ -162,7 +162,6 @@ Expected format of `xlsx` file:
 Get dangling data values and save them in a CSV file:
 
 ```
-$ yarn build
 $ yarn start datavalues get-dangling-values \
   --url='http://USER:PASSWORD@HOST:PORT' \
   --dataelementgroup-ids=OUwLDu1i5xa,SMkbYuGmadE \
@@ -211,7 +210,6 @@ Add option `--post` to actually (soft) delete the events.
 Send an email read from a JSON file to a list of users in a CSV file:
 
 ```
-$ yarn build
 $ yarn start notifications send-user-info-notification \
   --url='http://USER:PASSWORD@HOST:PORT' \
   usernames.csv emailContent.json
