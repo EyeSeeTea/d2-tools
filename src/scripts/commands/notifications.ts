@@ -1,6 +1,6 @@
 import { command, positional, subcommands } from "cmd-ts";
 import { NotificationsEmailRepository } from "data/NotificationsEmailRepository";
-import { RecipientD2Repository } from "data/RecipientD2Repository";
+import { UserD2Repository } from "data/UserD2Repository";
 import { UserInfoNotificationDefaultRepository } from "data/UserInfoNotificationsDefaultRepository";
 import { SendUserInfoNotificationsUseCase } from "domain/usecases/SendUserInfoNotificationsUseCase";
 import { getApiUrlOption, getD2Api } from "scripts/common";
@@ -32,7 +32,7 @@ const sendUserInfoNotification = command({
         const api = getD2Api(args.url);
         const userInfoEmailRepository = new UserInfoNotificationDefaultRepository();
         const notificationsRepository = new NotificationsEmailRepository();
-        const recipientRepository = new RecipientD2Repository(api);
+        const recipientRepository = new UserD2Repository(api);
 
         new SendUserInfoNotificationsUseCase(
             userInfoEmailRepository,

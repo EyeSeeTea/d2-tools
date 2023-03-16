@@ -1,11 +1,12 @@
-import { RecipientRepository } from "domain/repositories/RecipientRepository";
+import { UserRepository } from "domain/repositories/UserRepository";
 import { NotificationsRepository } from "domain/repositories/NotificationsRepository";
 import { UserInfoNotificationsRepository } from "domain/repositories/UserInfoNotificationsRepository";
 import { Path } from "domain/entities/Base";
 import log from "utils/log";
 import _ from "lodash";
-import { UsernameEmail } from "domain/entities/Notification";
 import { promiseMap } from "data/dhis2-utils";
+import { User } from "domain/entities/User";
+import { Maybe } from "utils/ts-utils";
 
 interface Options {
     url: string;
@@ -13,14 +14,14 @@ interface Options {
     emailContentFile: Path;
 }
 
-interface UserDetails extends UsernameEmail {
+interface UserDetails extends User {
     password: string;
 }
 
 export class SendUserInfoNotificationsUseCase {
     constructor(
         private userInfoNotificationRepository: UserInfoNotificationsRepository,
-        private recipientRepository: RecipientRepository,
+        private recipientRepository: UserRepository,
         private notificationsRepository: NotificationsRepository
     ) {}
 
@@ -34,19 +35,19 @@ export class SendUserInfoNotificationsUseCase {
         log.debug(`Get emails for each user in CSV file from DHIS2`);
         const usernames = _(userInfoNotification.userInfos)
             .map(({ username }) => username)
-            .compact()
             .value();
         const recipients = await this.recipientRepository.getByUsernames(usernames);
 
         log.debug(`Send user info email to: ${recipients.join(", ")}`);
-        const recipientsMap = recipients.reduce<{ [index: string]: UsernameEmail }>((acc, curr) => {
-            acc[curr.username] = curr;
-            return acc;
-        }, {});
+        const recipientsMap = _.keyBy(recipients, recipient => recipient.username);
 
-        const userDetails: UserDetails[] = userInfoNotification.userInfos.map(userInfo =>
-            Object.assign(userInfo, recipientsMap[userInfo.username as keyof typeof recipientsMap])
-        );
+        const userDetails = _(userInfoNotification.userInfos)
+            .map((userInfo): Maybe<UserDetails> => {
+                const user = recipientsMap[userInfo.username];
+                return user ? { ...userInfo, id: user.id, email: user.email } : undefined;
+            })
+            .compact()
+            .value();
 
         const interpolation = _.template(userInfoNotification.email.body);
         await promiseMap(userDetails, userDetail =>
