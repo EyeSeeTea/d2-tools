@@ -88,8 +88,8 @@ export class GetDanglingValuesUseCase {
         await this.notificationsRepository.send({
             recipients: emails,
             subject: `Dangling values report`,
-            body: `Dangling values: ${counts.all} (non-zero: ${counts.nonZero})`,
-            attachments: sendAttachment ? [{ type: "file", file: options.outputFile }] : [],
+            body: { type: "text", contents: `Dangling values: ${counts.all} (non-zero: ${counts.nonZero})` },
+            attachments: sendAttachment ? [{ type: "file", path: options.outputFile }] : [],
         });
     }
 

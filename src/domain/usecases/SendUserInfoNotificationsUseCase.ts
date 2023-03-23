@@ -7,6 +7,7 @@ import _ from "lodash";
 import { promiseMap } from "data/dhis2-utils";
 import { User } from "domain/entities/User";
 import { Maybe } from "utils/ts-utils";
+import { Attachment } from "domain/entities/Notification";
 
 interface Options {
     url: string;
@@ -50,12 +51,25 @@ export class SendUserInfoNotificationsUseCase {
             .value();
 
         const interpolation = _.template(userInfoNotification.email.body);
+        const attachments = (userInfoNotification.email.attachments || []).map(
+            (path): Attachment => ({
+                type: "file",
+                path: path,
+            })
+        );
+
         await promiseMap(userDetails, userDetail =>
             this.notificationsRepository.send({
                 recipients: [userDetail.email],
                 subject: userInfoNotification.email.subject,
-                body: interpolation({ password: userDetail.password }),
-                attachments: [],
+                body: {
+                    type: "html",
+                    contents: interpolation({
+                        username: userDetail.username,
+                        password: userDetail.password,
+                    }),
+                },
+                attachments: attachments,
             })
         );
     }
