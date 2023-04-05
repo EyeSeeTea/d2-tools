@@ -11,7 +11,7 @@ import { DanglingDataValuesRepository } from "domain/repositories/DanglingDataVa
 import { Maybe } from "utils/ts-utils";
 import { DanglingDataValue } from "domain/entities/DanglingDataValue";
 import { NotificationsRepository } from "domain/repositories/NotificationsRepository";
-import { RecipientRepository } from "domain/repositories/RecipientRepository";
+import { UserRepository } from "domain/repositories/UserRepository";
 
 interface GetDanglingValuesOptions {
     outputFile: Path;
@@ -33,7 +33,7 @@ export class GetDanglingValuesUseCase {
         private dataValuesRepository: DataValuesRepository,
         private danglingDataValuesRepository: DanglingDataValuesRepository,
         private notificationsRepository: NotificationsRepository,
-        private recipientRepository: RecipientRepository
+        private recipientRepository: UserRepository
     ) {}
 
     async execute(options: GetDanglingValuesOptions) {
@@ -78,15 +78,18 @@ export class GetDanglingValuesUseCase {
 
         const [emailsBase, ids] = _.partition(options.notify, s => s.includes("@"));
         const emailsFromMetadata = await this.recipientRepository.getByIds(ids);
-        const emails = _.concat(emailsBase, emailsFromMetadata);
+        const emails = _.concat(
+            emailsBase,
+            emailsFromMetadata.map(({ email }) => email)
+        );
 
         log.debug(`Send report to: ${emails.join(", ")}`);
 
         await this.notificationsRepository.send({
             recipients: emails,
             subject: `Dangling values report`,
-            body: `Dangling values: ${counts.all} (non-zero: ${counts.nonZero})`,
-            attachments: sendAttachment ? [{ type: "file", file: options.outputFile }] : [],
+            body: { type: "text", contents: `Dangling values: ${counts.all} (non-zero: ${counts.nonZero})` },
+            attachments: sendAttachment ? [{ type: "file", path: options.outputFile }] : [],
         });
     }
 
