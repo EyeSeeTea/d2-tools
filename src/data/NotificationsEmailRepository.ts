@@ -26,11 +26,13 @@ export class NotificationsEmailRepository implements NotificationsRepository {
             auth: { user: config.user, pass: config.password },
         });
 
-        const { body } = notification;
+        const { body, subject } = notification;
+        log.info(`Send message (${subject}): ${notification.recipients.join(", ")}`);
+
         const res = await transport.sendMail({
             to: notification.recipients,
             from: config.sender,
-            subject: notification.subject,
+            subject: subject,
             ...(body.type === "html" ? { html: body.contents } : { text: body.contents }),
             attachments: notification.attachments.map(attachment => {
                 return {

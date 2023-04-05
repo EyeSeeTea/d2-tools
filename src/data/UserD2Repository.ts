@@ -39,16 +39,22 @@ export class UserD2Repository implements UserRepository {
     }
 
     async getByUsernames(usernames: string[]): Async<User[]> {
+        const usernamesSet = new Set(usernames);
+
         const { users } = await this.api.metadata
             .get({
                 users: {
-                    fields: { id: true, email: true, userCredentials: { username: true } },
-                    filter: { "userCredentials.username": { in: usernames } },
+                    fields: {
+                        id: true,
+                        email: true,
+                        userCredentials: { username: true },
+                    },
                 },
             })
             .getData();
 
         return _(users)
+            .filter(user => usernamesSet.has(user.userCredentials?.username))
             .map(user => ({
                 id: user.id,
                 email: user.email,

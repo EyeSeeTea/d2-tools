@@ -25,7 +25,8 @@ export class UserInfoNotificationDefaultRepository implements UserInfoNotificati
                                 username: row.Username,
                                 password: row.Password,
                             };
-                            userInfos.push(userInfo);
+
+                            if (!userInfo.username.startsWith("#")) userInfos.push(userInfo);
                         })
                         .on("error", msg => {
                             log.error(msg.message);
