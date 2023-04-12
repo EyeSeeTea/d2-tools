@@ -1,11 +1,13 @@
 ## Setup
 
 The required node version is v16.14.0. Alternatively, you can run:
+
 ```console
 shell:~$ nvm use
 ```
 
 To build the script run:
+
 ```console
 shell:~$ yarn install
 shell:~$ yarn build
@@ -154,6 +156,20 @@ Expected format of `xlsx` file:
 -   A Column named `type`/`kind` specifies the DHIS2 entity type (singular). Example: `dataElement`, `dataSet`.
 -   Columns named `id`/`name`/`code` will be used to match the existing object in the database. No need to specify all of them.
 -   Translation columns should have the format: `field:localeName`. A DHIS2 Locale with that name should exist in the database. Example: `formName:French`.
+
+## Events
+
+### Move events from one orgunit to another
+
+Move events for program events (so no enrollments/TEIs move is supported):
+
+```
+$ yarn start events move-to-org-unit \
+  --url='http://USER:PASSWORD@HOST:POST' \
+  --from-orgunit-id=qs81OdIPwO9 \
+  --to-orgunit-id=ewiA4ufWiki \
+  --post
+```
 
 ## Data values
 
