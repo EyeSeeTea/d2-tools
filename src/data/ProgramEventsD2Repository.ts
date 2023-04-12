@@ -8,6 +8,7 @@ import { cartesianProduct } from "utils/array";
 import logger from "utils/log";
 import { getId, Id } from "domain/entities/Base";
 import { Result } from "domain/entities/Result";
+import { Timestamp } from "domain/entities/Date";
 
 export class ProgramEventsD2Repository implements ProgramEventsRepository {
     constructor(private api: D2Api) {}
@@ -44,9 +45,11 @@ export class ProgramEventsD2Repository implements ProgramEventsRepository {
             trackedEntityInstanceId: (event as D2Event).trackedEntityInstance,
             status: event.status,
             date: event.eventDate,
+            dueDate: event.dueDate,
             dataValues: event.dataValues.map(dv => ({
                 dataElementId: dv.dataElement,
                 value: dv.value,
+                storedBy: dv.storedBy,
             })),
         }));
     }
@@ -66,9 +69,11 @@ export class ProgramEventsD2Repository implements ProgramEventsRepository {
                 orgUnit: event.orgUnit.id,
                 status: event.status,
                 eventDate: event.date,
+                dueDate: event.dueDate,
                 dataValues: event.dataValues.map(dv => ({
                     dataElement: dv.dataElementId,
                     value: dv.value,
+                    storedBy: dv.storedBy,
                 })),
             };
         });
@@ -81,7 +86,7 @@ export class ProgramEventsD2Repository implements ProgramEventsRepository {
 
         const products = cartesianProduct(
             options.orgUnitsIds,
-            options.programIds,
+            options.programIds || [undefined],
             options.programStagesIds || [undefined]
         );
 
@@ -100,6 +105,7 @@ export class ProgramEventsD2Repository implements ProgramEventsRepository {
                     totalPages: true,
                     page: page,
                     pageSize: 1_000,
+                    fields: eventFields.join(","),
                 };
                 logger.debug(`Get API events: ${JSON.stringify(getEventsOptions)}`);
                 const { pager, events } = await this.api.events.get(getEventsOptions).getData();
@@ -114,11 +120,32 @@ export class ProgramEventsD2Repository implements ProgramEventsRepository {
     }
 }
 
-interface D2Event extends Event {
-    trackedEntityInstance?: string; // Property missing in d2-api
+const eventFields = [
+    "event",
+    "status",
+    "orgUnit",
+    "orgUnitName",
+    "program",
+    "dataValues",
+    "eventDate",
+    "dueDate",
+    "trackedEntityInstance",
+    "dataValues[dataElement,value,storedBy]",
+];
+
+interface D2Event {
+    event: string;
+    status: Event["status"];
+    orgUnit: Id;
+    orgUnitName: string;
+    program: Id;
+    dataValues: Array<{ dataElement: Id; value: string; storedBy: string }>;
+    eventDate: Timestamp;
+    dueDate: Timestamp;
+    trackedEntityInstance?: Id;
 }
 
-type EventToPost = EventsPostRequest["events"][number] & { event: Id };
+type EventToPost = EventsPostRequest["events"][number] & { event: Id; dueDate: Timestamp };
 
 async function importEvents(api: D2Api, events: EventToPost[], params?: EventsPostParams): Async<Result> {
     if (_.isEmpty(events)) {
