@@ -49,6 +49,7 @@ export class ProgramEventsD2Repository implements ProgramEventsRepository {
             dataValues: event.dataValues.map(dv => ({
                 dataElementId: dv.dataElement,
                 value: dv.value,
+                storedBy: dv.storedBy,
             })),
         }));
     }
@@ -68,9 +69,11 @@ export class ProgramEventsD2Repository implements ProgramEventsRepository {
                 orgUnit: event.orgUnit.id,
                 status: event.status,
                 eventDate: event.date,
+                dueDate: event.dueDate,
                 dataValues: event.dataValues.map(dv => ({
                     dataElement: dv.dataElementId,
                     value: dv.value,
+                    storedBy: dv.storedBy,
                 })),
             };
         });
@@ -127,7 +130,7 @@ const eventFields = [
     "eventDate",
     "dueDate",
     "trackedEntityInstance",
-    "dataValues[dataElement,value]",
+    "dataValues[dataElement,value,storedBy]",
 ];
 
 interface D2Event {
@@ -136,12 +139,13 @@ interface D2Event {
     orgUnit: Id;
     orgUnitName: string;
     program: Id;
-    dataValues: Array<{ dataElement: Id; value: string }>;
+    dataValues: Array<{ dataElement: Id; value: string; storedBy: string }>;
     eventDate: Timestamp;
+    dueDate: Timestamp;
     trackedEntityInstance?: Id;
 }
 
-type EventToPost = EventsPostRequest["events"][number] & { event: Id };
+type EventToPost = EventsPostRequest["events"][number] & { event: Id; dueDate: Timestamp };
 
 async function importEvents(api: D2Api, events: EventToPost[], params?: EventsPostParams): Async<Result> {
     if (_.isEmpty(events)) {

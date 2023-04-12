@@ -1,4 +1,4 @@
-import { Id, NamedRef, Ref } from "./Base";
+import { Id, NamedRef, Ref, Username } from "./Base";
 import _ from "lodash";
 import { Timestamp } from "./Date";
 import { Maybe } from "utils/ts-utils";
@@ -33,6 +33,7 @@ type EventStatus = "ACTIVE" | "COMPLETED" | "VISITED" | "SCHEDULED" | "OVERDUE" 
 export interface EventDataValue {
     dataElementId: Id;
     value: string;
+    storedBy: Username;
 }
 
 export class DuplicatedProgramEvents {
