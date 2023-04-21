@@ -1,6 +1,5 @@
 import nodemailer from "nodemailer";
 import path from "path";
-import fs from "fs";
 import dotenv from "dotenv";
 
 import { NotificationsRepository } from "domain/repositories/NotificationsRepository";
@@ -27,15 +26,20 @@ export class NotificationsEmailRepository implements NotificationsRepository {
             auth: { user: config.user, pass: config.password },
         });
 
+        const { body, subject } = notification;
+        log.info(`Send message (${subject}): ${notification.recipients.join(", ")}`);
+
         const res = await transport.sendMail({
             to: notification.recipients,
             from: config.sender,
-            subject: notification.subject,
-            text: notification.body,
+            subject: subject,
+            ...(body.type === "html" ? { html: body.contents } : { text: body.contents }),
             attachments: notification.attachments.map(attachment => {
-                const filename = path.basename(attachment.file);
-                const content = fs.readFileSync(filename, "utf8");
-                return { filename, content };
+                return {
+                    path: attachment.path,
+                    filename: path.basename(attachment.path),
+                    cid: path.basename(attachment.path),
+                };
             }),
         });
 
