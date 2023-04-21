@@ -36,29 +36,32 @@ export class UsersD2Repository implements UsersRepository {
     constructor(private api: D2Api) {}
 
     async checkPermissions(options: UsersOptions): Promise<Async<void>> {
-        const { templates: templateGroups, pushReport: pushReport, pushProgramId: pushProgramId } = options;
+        const {
+            templates: templateGroups,
+            pushReport: pushReport,
+            pushProgramId: pushProgramId,
+            minimalRoleId: minimalRoleId,
+        } = options;
 
         const userTemplateIds = templateGroups.map(template => {
             return template.templateId;
         });
-        const userGroupIds = templateGroups.map(template => {
-            return template.groupId;
-        });
 
         const allUserTemplates = await this.getUsers(userTemplateIds);
-        const allGroupTemplates = await this.getGroups(userGroupIds);
-        debugger;
+
         const allUsers = await this.getAllUsers(options);
         const userRoles: UserRoleAuthority[] = await this.getAllUserRoles(options);
         const validateRoles = userRoles.filter(role => {
             return role.authorities.length == 0;
         });
+
         if (validateRoles.length > 0) {
             validateRoles.forEach(role => {
                 log.error(`Role ${role.id} - ${role.name} has no authorities`);
             });
             throw new Error("Roles with no authorities are not allowed");
         }
+
         templateGroups.map(item => {
             const user = allUserTemplates.find(template => {
                 return template.id == item.templateId;
@@ -101,17 +104,17 @@ export class UsersD2Repository implements UsersRepository {
                     return role.id;
                 })
             );
-
+            debugger;
             const invalidRoles: string[] = _.compact(
                 invalidRolesByAuthority.map(role => {
                     return role.id;
                 })
             );
 
-            item.validRolesByAuthority = validRolesByAuthority;
-            item.invalidRolesByAuthority = invalidRolesByAuthority;
-            item.validRolesById = validRoles;
-            item.invalidRolesById = invalidRoles;
+            item.validRolesByAuthority = validRolesByAuthority ?? [];
+            item.invalidRolesByAuthority = invalidRolesByAuthority ?? [];
+            item.validRolesById = validRoles ?? [];
+            item.invalidRolesById = invalidRoles ?? [];
             item.name = allUserTemplates.find(template => {
                 return template.id == item.templateId;
             })?.name;
@@ -124,6 +127,7 @@ export class UsersD2Repository implements UsersRepository {
                         userGroup => userGroup != undefined && template.groupId == userGroup.id
                     );
                 });
+
                 const AllGroupMatch = templateGroups.filter(template => {
                     return user.userGroups.some(
                         userGroup => userGroup != undefined && template.groupId == userGroup.id
@@ -131,12 +135,28 @@ export class UsersD2Repository implements UsersRepository {
                 });
 
                 if (templateGroupMatch == undefined) {
-                    //template not found
+                    //template not found -> all roles are invalid except the minimal role
                     log.error(`Warning: User don't have groups ${user.id} - ${user.name}`);
+                    if (user.userRoles.length == 1) {
+                        if (minimalRoleId == user.userRoles[0]!.id) {
+                            const userInfoRes: UserRes = {
+                                user: user,
+                                fixedUser: user,
+                                validUserRoles: [{ id: minimalRoleId }],
+                                actionRequired: false,
+                                invalidUserRoles: [],
+                                userNameTemplate: "User don't have groups",
+                                templateIdTemplate: "User don't have groups",
+                                groupIdTemplate: "User don't have groups",
+                                undefinedUserGroups: true,
+                            };
+                            return userInfoRes;
+                        }
+                    }
 
                     const fixedUser = JSON.parse(JSON.stringify(user));
                     fixedUser.userCredentials.userRoles = [];
-                    fixedUser.userRoles = fixedUser.userCredentials.userRoles;
+                    fixedUser.userRoles = [{ id: minimalRoleId }];
                     const userInfoRes: UserRes = {
                         user: user,
                         fixedUser: fixedUser,
@@ -153,7 +173,7 @@ export class UsersD2Repository implements UsersRepository {
                     const userInfoRes: UserRes = {
                         user: user,
                         fixedUser: user,
-                        validUserRoles: [],
+                        validUserRoles: [{ id: minimalRoleId }],
                         actionRequired: false,
                         invalidUserRoles: [],
                         userNameTemplate: "User don't have roles",
@@ -163,16 +183,6 @@ export class UsersD2Repository implements UsersRepository {
                     };
                     return userInfoRes;
                 } else {
-                    //if only the first template was good
-                    /*                     const validRoles = user.userCredentials.userRoles.filter(userRole => {
-                        return templateGroupMatch?.validRolesById.indexOf(userRole.id) >= 0;
-                    });
-                    const invalidRoles = user.userCredentials.userRoles.filter(userRole => {
-                        return templateGroupMatch?.invalidRolesById.indexOf(userRole.id) >= 0;
-                    }); */
-
-                    //but i think if a user have two templates they could have acces to both
-                    //in that case we need merge the valid roles
                     const allValidRolesSingleList = _.uniqWith(
                         AllGroupMatch.flatMap(item => {
                             return item.validRolesById;
@@ -185,9 +195,9 @@ export class UsersD2Repository implements UsersRepository {
                         }),
                         _.isEqual
                     );
-
+                    debugger;
                     //the invalid roles are the ones that are not in the valid roles
-                    const allInvalidRolesSingleListFixed = allInValidRolesSingleList.filter(item => {
+                    const allInvalidRolesSingleListFixed = allInValidRolesSingleList?.filter(item => {
                         return allValidRolesSingleList.indexOf(item) == -1;
                     });
                     //fill the valid roles in the user  against all the possible valid roles
@@ -201,6 +211,10 @@ export class UsersD2Repository implements UsersRepository {
                             JSON.stringify(allInvalidRolesSingleListFixed).indexOf(userRole.id) >= 0
                         );
                     });
+                    if (userInvalidRoles.length > 1) {
+                        if (minimalRoleId in userInvalidRoles) {
+                        }
+                    }
                     /* 
                     if (AllGroupMatch.length > 1) {
                         debugger;
@@ -247,8 +261,8 @@ export class UsersD2Repository implements UsersRepository {
         );
         debugger;
         //return userInfoRes
-        const date = new Date();
-
+        const date = new Date().toLocaleString().replace(" ", "-").replace(":", "-");
+        debugger;
         //users without user groups
         const usersWithErrors = userinfo.filter(item => item.undefinedUserGroups);
 
@@ -256,12 +270,11 @@ export class UsersD2Repository implements UsersRepository {
         const usersToBeFixed = userinfo.filter(item => item.actionRequired);
         //save errors in user configs
         if (usersWithErrors.length > 0) {
-            debugger;
             if (pushReport) {
                 await pushReportToDhis(usersWithErrors, usersToBeFixed, this.api, pushProgramId);
             }
-            saveInJsonFormat(JSON.stringify({ usersWithErrors }, null, 4), `users-errors-${date}`);
-            saveInCsv(usersWithErrors, `users-errors-${date}`);
+            saveInJsonFormat(JSON.stringify({ usersWithErrors }, null, 4), `${date}-users-errors`);
+            saveInCsv(usersWithErrors, `${date}-users-errors`);
         }
         debugger;
         const userActionRequired = userinfo.filter(item => item.actionRequired);
@@ -333,7 +346,7 @@ export class UsersD2Repository implements UsersRepository {
 }
 
 async function pushUsers(userActionRequired: UserRes[], api: D2Api) {
-    debugger;
+    log.info("Push users to dhis2");
 
     const userToPost: User[] = userActionRequired.map(item => {
         return item.fixedUser;
@@ -386,7 +399,7 @@ async function saveInCsv(users: UserRes[], filepath: string) {
     const createCsvWriter = CsvWriter.createObjectCsvWriter;
     const csvHeader = _.map(headers, (obj, key) => ({ id: key, ...obj }));
     const csvWriter = createCsvWriter({ path: filepath + ".csv", header: csvHeader });
-
+    debugger;
     const records = users.map((user): Row => {
         return {
             id: user.user.id,
@@ -397,21 +410,9 @@ async function saveInCsv(users: UserRes[], filepath: string) {
             actionRequired: user.actionRequired.toString(),
             undefinedGroups: user.undefinedUserGroups?.toString() ?? "",
             multipleGroups: user.multipleUserGroups?.join(", ") ?? "",
-            userRoles: user.user.userCredentials.userRoles
-                .map(item => {
-                    return item.id;
-                })
-                .join(", "),
-            validRoles: user.validUserRoles
-                .map(item => {
-                    return item.id;
-                })
-                .join(", "),
-            invalidRoles: user.invalidUserRoles
-                .map(item => {
-                    return item.id;
-                })
-                .join(", "),
+            userRoles: JSON.stringify(user.user.userRoles),
+            validRoles: JSON.stringify(user.validUserRoles),
+            invalidRoles: JSON.stringify(user.invalidUserRoles),
         };
     });
 
@@ -419,8 +420,7 @@ async function saveInCsv(users: UserRes[], filepath: string) {
 }
 
 async function saveResult(userActionRequired: UserRes[], response: UserResponse) {
-    log.info(`Saving report (failed push)`);
-    const date = -new Date();
+    const date = -new Date().toLocaleString();
     debugger;
     const userToPost: User[] = userActionRequired.map(item => {
         return item.fixedUser;
@@ -428,22 +428,26 @@ async function saveResult(userActionRequired: UserRes[], response: UserResponse)
     const userBeforePost: User[] = userActionRequired.map(item => {
         return item.user;
     });
-    const csvErrorFilename = `users-push-error-${date}`;
-    const jsonUserFilename = `users-push-error-${date}`;
+    const csvErrorFilename = `${date}-users-push-error`;
+    const jsonUserFilename = `${date}-users-push-error`;
+    const csvPushedFilename = `${date}-users-pushed`;
+    const jsonUserPushedFilename = `${date}-users-pushed`;
+    const jsonUserPushedBackupFilename = `${date}-users-pushed-backup`;
     debugger;
     if (response.status !== "OK") {
+        log.info(`Saving report (failed push)`);
         log.error(`Save errors in csv: `);
         await saveInCsv(userActionRequired, `${csvErrorFilename}`);
         log.error(`Save jsons on import error: ${jsonUserFilename}`);
-        saveInJsonFormat(JSON.stringify({ response, userToPost }, null, 4), `users-errors-${date}`);
+        saveInJsonFormat(JSON.stringify({ response, userToPost }, null, 4), jsonUserFilename);
     } else {
         const jsonBackupUserFilename = `users-backup-error-${date}`;
-        log.error(`Save pushed users details in csv: ${csvErrorFilename}`);
-        await saveInCsv(userActionRequired, `${csvErrorFilename}`);
-        log.error(`Save pushed users: ${jsonUserFilename}`);
-        saveInJsonFormat(JSON.stringify({ response, userToPost }, null, 4), `users-errors-${date}`);
-        log.error(`Save backup of users: ${jsonBackupUserFilename}`);
-        saveInJsonFormat(JSON.stringify({ response, userBeforePost }, null, 4), `users-errors-${date}`);
+        log.error(`Save pushed users details in csv: ${csvPushedFilename}`);
+        await saveInCsv(userActionRequired, `${csvPushedFilename}`);
+        log.error(`Save pushed users: ${jsonUserPushedFilename}`);
+        saveInJsonFormat(JSON.stringify({ response, userToPost }, null, 4), jsonUserPushedFilename);
+        log.error(`Save backup of users: ${jsonUserPushedFilename}`);
+        saveInJsonFormat(JSON.stringify({ response, userBeforePost }, null, 4), jsonUserPushedBackupFilename);
     }
 }
 
@@ -457,11 +461,19 @@ async function getProgram(api: D2Api, programUid: string): Promise<Program[]> {
 
     const responses = await api
         .get<Programs>(
-            `/programs?filter=id:eq:${programUid}&fields=id,organisationUnits,programStages[id,programStageDataElements[id,dataElement[id,name,code]]&paging=false.json`
+            `/programs?filter=id:eq:${programUid}&fields=id,organisationUnits[id],programStages[id,programStageDataElements[id,dataElement[id,name,code]]&paging=false.json`
         )
         .getData();
-    debugger;
-    return responses["programs"];
+    /* 
+    const programs = await api.models.programs
+    .get({
+        fields: { id: true, organisationUnits: {id :true }, programStages: { id: true, programStageDataElements: { id:true, dataElement: { id:true, name:true, code:true } } }},
+        filter: { id: { eq: programUid } },
+        paging: false,
+    }
+    )
+    .getData();  */
+    return responses.programs;
 }
 
 async function pushReportToDhis(
@@ -470,6 +482,7 @@ async function pushReportToDhis(
     api: D2Api,
     pushProgramId: string
 ) {
+    log.info(`Create and Pushing report to DHIS2`);
     const responseProgram = await getProgram(api, pushProgramId);
     debugger;
     const programs = responseProgram[0] ?? undefined;
@@ -479,8 +492,12 @@ async function pushReportToDhis(
         return;
     }
     const programStage: ProgramStage | undefined = programs.programStages[0];
-    const orgUnitId: string | undefined = programs.organisationUnits[0];
-
+    //todo fix orgunit.id
+    const orgunitstring = JSON.stringify(programs.organisationUnits[0]);
+    log.info("Orgunit1:" + orgunitstring);
+    const orgUnit: { id: string } = JSON.parse(orgunitstring);
+    log.info("Orgunit2:" + orgUnit.id);
+    const orgUnitId: string = orgUnit.id;
     if (programStage === undefined) {
         log.error(`Programstage ${pushProgramId} not found`);
         return;
@@ -493,7 +510,7 @@ async function pushReportToDhis(
     const programStageDataElements: ProgramStageDataElement[] = programStage.programStageDataElements;
     //strange map behaviour
     const dataElements: DataElement[] = programStageDataElements.map(item => {
-        return { id: item.dataElement.id, name: item.dataElement.name, code: item.dataElement.code };
+        return item.dataElement;
     });
     /*     const dataElements: string[] = programStageDataElements.map(item => {
         return item.dataElement;
@@ -520,7 +537,13 @@ async function pushReportToDhis(
                 return { dataElement: "", value: "" };
         }
     });
-
+    if (dataValues.length == 0) {
+        log.info(`No data elements found`);
+        return;
+    }
+    log.info("Push report");
+    log.info(JSON.stringify(program));
+    //todo fix push, change dataelements to only add a count of errors.
     const response: UserResponse = await api
         .post<UserResponse>(
             "/events",
@@ -547,13 +570,15 @@ async function pushReportToDhis(
         .getData()
         .catch(err => {
             if (err?.response?.data) {
-                debugger;
+                log.error(JSON.stringify(err.response.data));
                 return err.response.data as UserResponse;
             } else {
-                debugger;
+                log.error("Push ERROR");
                 return { status: "ERROR", typeReports: [] };
             }
         });
-    debugger;
+    log.info(JSON.stringify(dataValues));
+    log.info(response.status);
+
     return response;
 }

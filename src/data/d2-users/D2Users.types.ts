@@ -108,7 +108,7 @@ export interface UserGroup {
 export interface Program {
     program: string;
     programStages: ProgramStage[];
-    organisationUnits: string[];
+    organisationUnits: Id[];
 }
 
 export interface ProgramStage {
@@ -119,7 +119,7 @@ export interface ProgramStage {
 export interface ProgramStageDataElement {
     name: string;
     code: string;
-    dataElement: string;
+    dataElement: DataElement;
 }
 
 export interface ProgramMetadata {
