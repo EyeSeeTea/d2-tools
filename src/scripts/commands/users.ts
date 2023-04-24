@@ -51,12 +51,12 @@ const runUsersPermisionsCmd = command({
             description:
                 "Push user program id org unit  to report result in dhis2 server, the dataelements must have the codes: ADMIN_invalid_Users_1_Events, ADMIN_invalid_Roles_Users_2_Events, ADMIN_invalid_Users_file_3_Events, ADMIN_invalid_Roles_Users_file_4_Events",
         }),
-        minimalRole: option({
+        minimalGroup: option({
             type: string,
-            long: "min-role",
+            long: "min-group",
             short: "mr",
             description:
-                "When the user does not have user groups, all their roles must be deleted but the users needs at least have one role, this is the role with less permissions for the user",
+                "When the user does not have user groups, all their roles must be deleted but the users needs at least have one role, the user is assigened to the minimal group and their roles dont be replaced",
         }),
     },
     handler: async args => {
@@ -79,7 +79,7 @@ const runUsersPermisionsCmd = command({
         const exclude_users: string[] = args.exclude_roles ?? [];
         const push_report: boolean = args.pushReport ?? false;
         const push_program_id: string = args.pushProgramId ?? "tBI5HRoOMUz";
-        const minimal_role: string = args.minimalRole ?? "J44B9Xy7kH6";
+        const minimal_group: string = args.minimalGroup ?? "J44B9Xy7kH6";
         UsersOptions?.map(item => {
             exclude_users.push(item.templateId);
         });
@@ -90,7 +90,7 @@ const runUsersPermisionsCmd = command({
             excludedUsers: exclude_users,
             pushReport: push_report,
             pushProgramId: push_program_id,
-            minimalRoleId: minimal_role,
+            minimalGroupId: minimal_group,
         });
     },
 });

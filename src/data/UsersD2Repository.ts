@@ -40,8 +40,11 @@ export class UsersD2Repository implements UsersRepository {
             templates: templateGroups,
             pushReport: pushReport,
             pushProgramId: pushProgramId,
-            minimalRoleId: minimalRoleId,
+            minimalGroupId: minimalGroupId,
         } = options;
+
+        const minimalUserGroup = await this.getGroups([minimalGroupId]);
+        const minimalUserGroupUsers = minimalUserGroup[0]!.users.length;
 
         const userTemplateIds = templateGroups.map(template => {
             return template.templateId;
@@ -104,7 +107,7 @@ export class UsersD2Repository implements UsersRepository {
                     return role.id;
                 })
             );
-            debugger;
+
             const invalidRoles: string[] = _.compact(
                 invalidRolesByAuthority.map(role => {
                     return role.id;
@@ -135,45 +138,19 @@ export class UsersD2Repository implements UsersRepository {
                 });
 
                 if (templateGroupMatch == undefined) {
+                    const templateGroupMatch = templateGroups.find(template => {
+                        return template.groupId == minimalGroupId;
+                    });
                     //template not found -> all roles are invalid except the minimal role
-                    log.error(`Warning: User don't have groups ${user.id} - ${user.name}`);
-                    if (user.userRoles.length == 1) {
-                        if (minimalRoleId == user.userRoles[0]!.id) {
-                            const userInfoRes: UserRes = {
-                                user: user,
-                                fixedUser: user,
-                                validUserRoles: [{ id: minimalRoleId }],
-                                actionRequired: false,
-                                invalidUserRoles: [],
-                                userNameTemplate: "User don't have groups",
-                                templateIdTemplate: "User don't have groups",
-                                groupIdTemplate: "User don't have groups",
-                                undefinedUserGroups: true,
-                            };
-                            return userInfoRes;
-                        }
-                    }
-
-                    const fixedUser = JSON.parse(JSON.stringify(user));
-                    fixedUser.userCredentials.userRoles = [];
-                    fixedUser.userRoles = [{ id: minimalRoleId }];
-                    const userInfoRes: UserRes = {
-                        user: user,
-                        fixedUser: fixedUser,
-                        validUserRoles: [],
-                        actionRequired: true,
-                        invalidUserRoles: user.userCredentials.userRoles,
-                        userNameTemplate: "User don't have groups",
-                        templateIdTemplate: "User don't have groups",
-                        groupIdTemplate: "User don't have groups",
-                        undefinedUserGroups: true,
-                    };
-                    return userInfoRes;
+                    log.error(
+                        `Warning: User don't have groups ${user.id} - ${user.name} adding to minimal group  ${minimalGroupId}`
+                    );
+                    minimalUserGroup[0]!.users.push({ id: user.id });
                 } else if (user.userCredentials.userRoles === undefined) {
                     const userInfoRes: UserRes = {
                         user: user,
                         fixedUser: user,
-                        validUserRoles: [{ id: minimalRoleId }],
+                        validUserRoles: [{ id: minimalGroupId }],
                         actionRequired: false,
                         invalidUserRoles: [],
                         userNameTemplate: "User don't have roles",
@@ -195,7 +172,7 @@ export class UsersD2Repository implements UsersRepository {
                         }),
                         _.isEqual
                     );
-                    debugger;
+
                     //the invalid roles are the ones that are not in the valid roles
                     const allInvalidRolesSingleListFixed = allInValidRolesSingleList?.filter(item => {
                         return allValidRolesSingleList.indexOf(item) == -1;
@@ -212,7 +189,7 @@ export class UsersD2Repository implements UsersRepository {
                         );
                     });
                     if (userInvalidRoles.length > 1) {
-                        if (minimalRoleId in userInvalidRoles) {
+                        if (minimalGroupId in userInvalidRoles) {
                         }
                     }
                     /* 
@@ -259,10 +236,16 @@ export class UsersD2Repository implements UsersRepository {
                 }
             })
         );
-        debugger;
+
         //return userInfoRes
-        const date = new Date().toLocaleString().replace(" ", "-").replace(":", "-");
-        debugger;
+        const date = new Date()
+            .toLocaleString()
+            .replace(" ", "-")
+            .replace(":", "-")
+            .replace("/", "-")
+            .replace("/", "-")
+            .replace("\\", "-");
+
         //users without user groups
         const usersWithErrors = userinfo.filter(item => item.undefinedUserGroups);
 
@@ -271,12 +254,18 @@ export class UsersD2Repository implements UsersRepository {
         //save errors in user configs
         if (usersWithErrors.length > 0) {
             if (pushReport) {
-                await pushReportToDhis(usersWithErrors, usersToBeFixed, this.api, pushProgramId);
+                const response = await pushReportToDhis(
+                    usersWithErrors,
+                    usersToBeFixed,
+                    this.api,
+                    pushProgramId
+                );
+                log.info(JSON.stringify(response?.typeReports ?? ""));
             }
-            saveInJsonFormat(JSON.stringify({ usersWithErrors }, null, 4), `${date}-users-errors`);
-            saveInCsv(usersWithErrors, `${date}-users-errors`);
+            saveInJsonFormat(JSON.stringify({ usersWithErrors }, null, 4), `${date}-users-errors1`);
+            saveInCsv(usersWithErrors, `${date}-users-errors2`);
         }
-        debugger;
+
         const userActionRequired = userinfo.filter(item => item.actionRequired);
 
         //Push users to dhis2
@@ -399,7 +388,7 @@ async function saveInCsv(users: UserRes[], filepath: string) {
     const createCsvWriter = CsvWriter.createObjectCsvWriter;
     const csvHeader = _.map(headers, (obj, key) => ({ id: key, ...obj }));
     const csvWriter = createCsvWriter({ path: filepath + ".csv", header: csvHeader });
-    debugger;
+
     const records = users.map((user): Row => {
         return {
             id: user.user.id,
@@ -420,20 +409,20 @@ async function saveInCsv(users: UserRes[], filepath: string) {
 }
 
 async function saveResult(userActionRequired: UserRes[], response: UserResponse) {
-    const date = -new Date().toLocaleString();
-    debugger;
+    const date = -new Date().toLocaleString().replace(" ", "-").replace(":", "-").replace("/", "-");
+
     const userToPost: User[] = userActionRequired.map(item => {
         return item.fixedUser;
     });
     const userBeforePost: User[] = userActionRequired.map(item => {
         return item.user;
     });
-    const csvErrorFilename = `${date}-users-push-error`;
-    const jsonUserFilename = `${date}-users-push-error`;
-    const csvPushedFilename = `${date}-users-pushed`;
-    const jsonUserPushedFilename = `${date}-users-pushed`;
-    const jsonUserPushedBackupFilename = `${date}-users-pushed-backup`;
-    debugger;
+    const csvErrorFilename = `${date}-users-push-error4`;
+    const jsonUserFilename = `${date}-users-push-error5`;
+    const csvPushedFilename = `${date}-users-pushed6`;
+    const jsonUserPushedFilename = `${date}-users-pushed7`;
+    const jsonUserPushedBackupFilename = `${date}-users-pushed-backup8`;
+
     if (response.status !== "OK") {
         log.info(`Saving report (failed push)`);
         log.error(`Save errors in csv: `);
@@ -441,7 +430,6 @@ async function saveResult(userActionRequired: UserRes[], response: UserResponse)
         log.error(`Save jsons on import error: ${jsonUserFilename}`);
         saveInJsonFormat(JSON.stringify({ response, userToPost }, null, 4), jsonUserFilename);
     } else {
-        const jsonBackupUserFilename = `users-backup-error-${date}`;
         log.error(`Save pushed users details in csv: ${csvPushedFilename}`);
         await saveInCsv(userActionRequired, `${csvPushedFilename}`);
         log.error(`Save pushed users: ${jsonUserPushedFilename}`);
@@ -484,9 +472,9 @@ async function pushReportToDhis(
 ) {
     log.info(`Create and Pushing report to DHIS2`);
     const responseProgram = await getProgram(api, pushProgramId);
-    debugger;
+
     const programs = responseProgram[0] ?? undefined;
-    debugger;
+
     if (programs === undefined) {
         log.error(`Program ${pushProgramId} not found`);
         return;
@@ -570,14 +558,14 @@ async function pushReportToDhis(
         .getData()
         .catch(err => {
             if (err?.response?.data) {
+                log.error("Push ERROR1");
                 log.error(JSON.stringify(err.response.data));
                 return err.response.data as UserResponse;
             } else {
-                log.error("Push ERROR");
+                log.error("Push ERROR2");
                 return { status: "ERROR", typeReports: [] };
             }
         });
-    log.info(JSON.stringify(dataValues));
     log.info(response.status);
 
     return response;

@@ -22,5 +22,5 @@ export interface UsersOptions {
     excludedUsers: string[];
     pushReport: boolean;
     pushProgramId: string;
-    minimalRoleId: string;
+    minimalGroupId: string;
 }
