@@ -23,4 +23,5 @@ export interface UsersOptions {
     pushReport: boolean;
     pushProgramId: string;
     minimalGroupId: string;
+    minimalRoleId: string;
 }

@@ -7,6 +7,7 @@ import { UsersOptions, UsersRepository } from "domain/repositories/UsersReposito
 import {
     DataElement,
     EventDataValue,
+    IdItem,
     Program,
     ProgramMetadata,
     ProgramStage,
@@ -33,7 +34,7 @@ type UserRoleAuthorities = { userRoles: UserRoleAuthority[] };
 type UserResponse = { status: string; typeReports: object[] };
 
 export class UsersD2Repository implements UsersRepository {
-    constructor(private api: D2Api) {}
+    constructor(private api: D2Api) { }
 
     async checkPermissions(options: UsersOptions): Promise<Async<void>> {
         const {
@@ -41,10 +42,8 @@ export class UsersD2Repository implements UsersRepository {
             pushReport: pushReport,
             pushProgramId: pushProgramId,
             minimalGroupId: minimalGroupId,
+            minimalRoleId: minimalRoleId,
         } = options;
-
-        const minimalUserGroup = await this.getGroups([minimalGroupId]);
-        const minimalUserGroupUsers = minimalUserGroup[0]!.users.length;
 
         const userTemplateIds = templateGroups.map(template => {
             return template.templateId;
@@ -52,7 +51,6 @@ export class UsersD2Repository implements UsersRepository {
 
         const allUserTemplates = await this.getUsers(userTemplateIds);
 
-        const allUsers = await this.getAllUsers(options);
         const userRoles: UserRoleAuthority[] = await this.getAllUserRoles(options);
         const validateRoles = userRoles.filter(role => {
             return role.authorities.length == 0;
@@ -123,6 +121,33 @@ export class UsersD2Repository implements UsersRepository {
             })?.name;
         });
 
+        //fix users without any group
+
+        const allUsersGroupCheck = await this.getAllUsers(options);
+        const userIdWithoutGroups: IdItem[] = _.compact(allUsersGroupCheck.map(user => {
+            const templateGroupMatch = templateGroups.find(template => {
+                return user.userGroups.some(
+                    userGroup => userGroup != undefined && template.groupId == userGroup.id
+                );
+            });
+
+            if (templateGroupMatch == undefined) {
+                //template not found -> all roles are invalid except the minimal role
+                log.error(
+                    `Warning: User don't have groups ${user.id} - ${user.name} adding to minimal group  ${minimalGroupId}`
+                );
+                const id: IdItem = { id: user.id };
+                return id
+            }
+        }));
+
+        if (userIdWithoutGroups.length > 0) {
+            const minimalUserGroup = await this.getGroups([minimalGroupId]);
+            await this.pushUsersToGroup(minimalUserGroup, userIdWithoutGroups);
+        }
+        //fix user roles based on its groups
+        debugger
+        const allUsers = await this.getAllUsers(options);
         const userinfo: UserRes[] = _.compact(
             allUsers.map(user => {
                 const templateGroupMatch = templateGroups.find(template => {
@@ -143,15 +168,18 @@ export class UsersD2Repository implements UsersRepository {
                     });
                     //template not found -> all roles are invalid except the minimal role
                     log.error(
-                        `Warning: User don't have groups ${user.id} - ${user.name} adding to minimal group  ${minimalGroupId}`
+                        `Warning: User don't have groups ${user.id} - ${user.name} error adding to minimal group  ${minimalGroupId}`
                     );
-                    minimalUserGroup[0]!.users.push({ id: user.id });
+                    throw new Error("User" + user.username + " don't have valid groups");
                 } else if (user.userCredentials.userRoles === undefined) {
+                    const fixedUser = JSON.parse(JSON.stringify(user));
+                    fixedUser.userCredentials.userRoles = [{ id: minimalRoleId }];
+                    fixedUser.userRoles = [{ id: minimalRoleId }];
                     const userInfoRes: UserRes = {
                         user: user,
-                        fixedUser: user,
-                        validUserRoles: [{ id: minimalGroupId }],
-                        actionRequired: false,
+                        fixedUser: fixedUser,
+                        validUserRoles: [{ id: minimalRoleId }],
+                        actionRequired: true,
                         invalidUserRoles: [],
                         userNameTemplate: "User don't have roles",
                         templateIdTemplate: "User don't have roles",
@@ -188,10 +216,6 @@ export class UsersD2Repository implements UsersRepository {
                             JSON.stringify(allInvalidRolesSingleListFixed).indexOf(userRole.id) >= 0
                         );
                     });
-                    if (userInvalidRoles.length > 1) {
-                        if (minimalGroupId in userInvalidRoles) {
-                        }
-                    }
                     /* 
                     if (AllGroupMatch.length > 1) {
                         debugger;
@@ -203,10 +227,7 @@ export class UsersD2Repository implements UsersRepository {
                     fixedUser.userRoles = userValidRoles;
 
                     if (AllGroupMatch.length > 1) {
-                        log.error(`Warning: User have more than 1 group ${user.id} - ${user.name}`);
-                        AllGroupMatch.forEach(element => {
-                            log.warn(element.groupId);
-                        });
+                        log.debug(`Debug: User have more than 1 group ${user.id} - ${user.name}`);
                         const userInfoRes: UserRes = {
                             user: user,
                             fixedUser: fixedUser,
@@ -238,6 +259,7 @@ export class UsersD2Repository implements UsersRepository {
         );
 
         //return userInfoRes
+        debugger
         const date = new Date()
             .toLocaleString()
             .replace(" ", "-")
@@ -247,31 +269,51 @@ export class UsersD2Repository implements UsersRepository {
             .replace("\\", "-");
 
         //users without user groups
-        const usersWithErrors = userinfo.filter(item => item.undefinedUserGroups);
+        const usersWithErrorsInGroups = userinfo.filter(item => item.undefinedUserGroups);
 
         //users with action required
         const usersToBeFixed = userinfo.filter(item => item.actionRequired);
         //save errors in user configs
-        if (usersWithErrors.length > 0) {
+        debugger
+        if (usersToBeFixed.length > 0) {
+            log.info(usersToBeFixed.length + " users will be fixed")
             if (pushReport) {
                 const response = await pushReportToDhis(
-                    usersWithErrors,
+                    usersWithErrorsInGroups,
                     usersToBeFixed,
                     this.api,
                     pushProgramId
                 );
                 log.info(JSON.stringify(response?.typeReports ?? ""));
             }
-            saveInJsonFormat(JSON.stringify({ usersWithErrors }, null, 4), `${date}-users-errors1`);
-            saveInCsv(usersWithErrors, `${date}-users-errors2`);
+            saveInJsonFormat(JSON.stringify({ usersWithErrors: usersWithErrorsInGroups }, null, 4), `${date}-users-errors1`);
+            saveInCsv(usersWithErrorsInGroups, `${date}-users-errors2`);
         }
 
         const userActionRequired = userinfo.filter(item => item.actionRequired);
 
         //Push users to dhis2
+
+        log.info(usersToBeFixed.length + " users will be pushed")
         if (userActionRequired.length > 0) {
             await pushUsers(userActionRequired, this.api);
         }
+    }
+    async pushUsersToGroup(minimalUserGroup: UserGroup[], userIdWithoutGroups: (IdItem)[]) {
+        if (userIdWithoutGroups != undefined && userIdWithoutGroups.length > 0) {
+            minimalUserGroup[0]?.users.push(...userIdWithoutGroups);
+            try {
+                const response = await this.api.models.userGroups.put(minimalUserGroup[0]!).getData();
+                response.status == "OK" ? log.info("Users added to minimal group") : log.error("Error adding users to minimal group");
+                log.info(JSON.stringify(response.response))
+
+                return response.status;
+            } catch (errror) {
+                console.debug(errror);
+                return "ERROR";
+            }
+        }
+
     }
 
     async getAllUserRoles(options: UsersOptions): Promise<UserRoleAuthority[]> {
@@ -409,7 +451,7 @@ async function saveInCsv(users: UserRes[], filepath: string) {
 }
 
 async function saveResult(userActionRequired: UserRes[], response: UserResponse) {
-    const date = -new Date().toLocaleString().replace(" ", "-").replace(":", "-").replace("/", "-");
+    const date = new Date().toLocaleString().replace(" ", "-").replace(":", "-").replace(":", "-").replace("/", "-").replace("/", "-").replace("\\", "-");
 
     const userToPost: User[] = userActionRequired.map(item => {
         return item.fixedUser;
@@ -422,9 +464,11 @@ async function saveResult(userActionRequired: UserRes[], response: UserResponse)
     const csvPushedFilename = `${date}-users-pushed6`;
     const jsonUserPushedFilename = `${date}-users-pushed7`;
     const jsonUserPushedBackupFilename = `${date}-users-pushed-backup8`;
-
+    debugger
     if (response.status !== "OK") {
-        log.info(`Saving report (failed push)`);
+        debugger
+        log.info(`Saving report: ${response.status}`);
+        log.info(`Saving report: ${response.typeReports}`);
         log.error(`Save errors in csv: `);
         await saveInCsv(userActionRequired, `${csvErrorFilename}`);
         log.error(`Save jsons on import error: ${jsonUserFilename}`);
@@ -434,7 +478,7 @@ async function saveResult(userActionRequired: UserRes[], response: UserResponse)
         await saveInCsv(userActionRequired, `${csvPushedFilename}`);
         log.error(`Save pushed users: ${jsonUserPushedFilename}`);
         saveInJsonFormat(JSON.stringify({ response, userToPost }, null, 4), jsonUserPushedFilename);
-        log.error(`Save backup of users: ${jsonUserPushedFilename}`);
+        log.error(`Save backup of users: ${jsonUserPushedBackupFilename}`);
         saveInJsonFormat(JSON.stringify({ response, userBeforePost }, null, 4), jsonUserPushedBackupFilename);
     }
 }
@@ -482,9 +526,7 @@ async function pushReportToDhis(
     const programStage: ProgramStage | undefined = programs.programStages[0];
     //todo fix orgunit.id
     const orgunitstring = JSON.stringify(programs.organisationUnits[0]);
-    log.info("Orgunit1:" + orgunitstring);
     const orgUnit: { id: string } = JSON.parse(orgunitstring);
-    log.info("Orgunit2:" + orgUnit.id);
     const orgUnitId: string = orgUnit.id;
     if (programStage === undefined) {
         log.error(`Programstage ${pushProgramId} not found`);
@@ -518,9 +560,9 @@ async function pushReportToDhis(
             case dataelement_invalid_roles_count_code:
                 return { dataElement: item.id, value: usersToBeFixed.length };
             case dataelement_invalid_users_file_code:
-                return { dataElement: item.id, value: JSON.parse(JSON.stringify(usersWithErrors)) };
+                return { dataElement: item.id, value: JSON.stringify(usersWithErrors) };
             case dataelement_invalid_roles_file_code:
-                return { dataElement: item.id, value: JSON.parse(JSON.stringify(usersToBeFixed)) };
+                return { dataElement: item.id, value: JSON.stringify(usersToBeFixed) };
             default:
                 return { dataElement: "", value: "" };
         }
@@ -530,18 +572,13 @@ async function pushReportToDhis(
         return;
     }
     log.info("Push report");
-    log.info(JSON.stringify(program));
+    log.info(JSON.stringify(dataValues));
     //todo fix push, change dataelements to only add a count of errors.
     const response: UserResponse = await api
         .post<UserResponse>(
-            "/events",
+            "/tracker",
             {
                 async: false,
-                importStrategy: "CREATE_AND_UPDATE",
-                importMode: "COMMIT",
-                dataElementIdScheme: "CODE",
-                preheatCache: true,
-                mergeMode: "MERGE",
             },
             {
                 events: [
@@ -549,7 +586,7 @@ async function pushReportToDhis(
                         program: program.id,
                         programStage: program.programStageId,
                         orgUnit: program.orgUnitId,
-                        eventDate: new Date().toISOString(),
+                        occurredAt: new Date().toISOString(),
                         dataValues: dataValues,
                     },
                 ],

@@ -54,9 +54,16 @@ const runUsersPermisionsCmd = command({
         minimalGroup: option({
             type: string,
             long: "min-group",
-            short: "mr",
+            short: "mg",
             description:
                 "When the user does not have user groups, all their roles must be deleted but the users needs at least have one role, the user is assigened to the minimal group and their roles dont be replaced",
+        }),
+        minimalRole: option({
+            type: string,
+            long: "min-role",
+            short: "mr",
+            description:
+                "At least one role is mandatory, the script will assign the given role if the user doesn't have any role",
         }),
     },
     handler: async args => {
@@ -79,7 +86,8 @@ const runUsersPermisionsCmd = command({
         const exclude_users: string[] = args.exclude_roles ?? [];
         const push_report: boolean = args.pushReport ?? false;
         const push_program_id: string = args.pushProgramId ?? "tBI5HRoOMUz";
-        const minimal_group: string = args.minimalGroup ?? "J44B9Xy7kH6";
+        const minimal_group: string = args.minimalGroup ?? "UmSnxmr4LE0";
+        const minimal_role: string = args.minimalRole ?? "J44B9Xy7kH6";
         UsersOptions?.map(item => {
             exclude_users.push(item.templateId);
         });
@@ -91,6 +99,7 @@ const runUsersPermisionsCmd = command({
             pushReport: push_report,
             pushProgramId: push_program_id,
             minimalGroupId: minimal_group,
+            minimalRoleId: minimal_role,
         });
     },
 });
