@@ -53,10 +53,13 @@ export async function getInChunks<T>(ids: Id[], getter: (idsGroup: Id[]) => Prom
     return _.flatten(objsCollection);
 }
 
-export function promiseMap<T, S>(inputValues: T[], mapper: (value: T) => Promise<S>): Promise<S[]> {
-    const reducer = (acc$: Promise<S[]>, inputValue: T): Promise<S[]> =>
+export function promiseMap<T, S>(
+    inputValues: T[],
+    mapper: (value: T, idx: number) => Promise<S>
+): Promise<S[]> {
+    const reducer = (acc$: Promise<S[]>, inputValue: T, idx: number): Promise<S[]> =>
         acc$.then((acc: S[]) =>
-            mapper(inputValue).then(result => {
+            mapper(inputValue, idx).then(result => {
                 acc.push(result);
                 return acc;
             })
