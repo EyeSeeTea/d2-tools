@@ -63,14 +63,15 @@ class DataSetD2Repository {
 
     private saveSections(sections: D2Section[]) {
         if (_.isEmpty(sections)) return;
-        const sectionsGroupList = _.chunk(sections, 100);
+
+        const sectionsGroupList = _(sections)
+            .sortBy(section => section.greyedFields.length)
+            .reverse()
+            .chunk(10)
+            .value();
 
         return promiseMap(sectionsGroupList, async (sectionsChunk, idx) => {
-            logger.info(
-                `POST ${sectionsChunk.length} sections (${JSON.stringify(sectionsChunk).length} bytes): ${
-                    idx + 1
-                }/${sectionsGroupList.length}`
-            );
+            logger.info(`POST ${sectionsChunk.length} sections: ${idx + 1}/${sectionsGroupList.length}`);
             const res = await runMetadata(this.api.metadata.post({ sections: sectionsChunk }));
             logger.info(`Result: ${res.status} (${JSON.stringify(res.stats)})`);
         });
