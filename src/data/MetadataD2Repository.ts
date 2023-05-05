@@ -37,24 +37,46 @@ export class MetadataD2Repository implements MetadataRepository {
     async getPaginated(options: { model: MetadataModel; page: number }): Async<Paginated<MetadataObject>> {
         // endpoint users pager has a for older DHIS2 (page > 1 return only one object),
         // don't page in this case.
-        const isModelUsers = options.model === "users";
-        const pageSize = 1000;
+        if (options.model === "users") {
+            const pageSize = 100_000;
 
-        const res$ = this.api.get<{ pager: Pager } & { [K in string]: BasicD2Object[] }>(
-            `/${options.model}`,
-            {
-                fields: "id,name,code",
-                pageSize: isModelUsers ? 10_000 : pageSize,
+            const res$ = this.api.get<{ pager: Pager } & { [K in string]: D2User[] }>(`/${options.model}`, {
+                fields: "id,name,userCredentials[username]",
+                pageSize: pageSize,
                 page: options.page,
-            }
-        );
-        const res = await res$.getData();
+            });
+            const res = await res$.getData();
 
-        const objects = _(res[options.model])
-            .map((obj): MetadataObject => ({ ...obj, model: options.model }))
-            .value();
+            const objects = _(res[options.model])
+                .map(
+                    (user): MetadataObject => ({
+                        ...user,
+                        model: options.model,
+                        code: user.userCredentials.username,
+                    })
+                )
+                .value();
 
-        return { objects: objects, pager: res.pager };
+            return { objects: objects, pager: res.pager };
+        } else {
+            const pageSize = 1_000;
+
+            const res$ = this.api.get<{ pager: Pager } & { [K in string]: BasicD2Object[] }>(
+                `/${options.model}`,
+                {
+                    fields: "id,name,code",
+                    pageSize: pageSize,
+                    page: options.page,
+                }
+            );
+            const res = await res$.getData();
+
+            const objects = _(res[options.model])
+                .map((obj): MetadataObject => ({ ...obj, model: options.model }))
+                .value();
+
+            return { objects: objects, pager: res.pager };
+        }
     }
 
     private async mergeWithExistingObjects(objects: MetadataObject[]): Async<Metadata> {
@@ -152,4 +174,10 @@ interface BasicD2Object {
     id: Id;
     name: string;
     code: Maybe<string>;
+}
+
+interface D2User {
+    id: Id;
+    name: string;
+    userCredentials: { username: string };
 }

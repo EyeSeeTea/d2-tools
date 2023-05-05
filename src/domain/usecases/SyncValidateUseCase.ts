@@ -99,10 +99,10 @@ export class SyncValidateUseCase {
         logger.info(`${model} in instance 2: ${objects2.length}`);
 
         logger.info(`# Only in instance 1 (count): ${objectsOnlyInInstance1.length}`);
-        objectsOnlyInInstance1.forEach(object => logger.info(`Only in: ${this.renderObject(object)}`));
+        objectsOnlyInInstance1.forEach(object => logger.debug(`Only in: ${this.renderObject(object)}`));
 
         logger.info(`# Only in instance 2 (count): ${objectsOnlyInInstance2.length}`);
-        objectsOnlyInInstance2.forEach(object => logger.info(`Only in: ${this.renderObject(object)}`));
+        objectsOnlyInInstance2.forEach(object => logger.debug(`Only in: ${this.renderObject(object)}`));
 
         return _.concat(objectsOnlyInInstance1, objectsOnlyInInstance2);
     }
@@ -112,7 +112,7 @@ export class SyncValidateUseCase {
             `[instance=${obj.instance}]`,
             ` ${obj.model}/${obj.id}`,
             ` - name="${obj.name}"`,
-            obj.code ? `code="${obj.code}"` : "",
+            obj.code ? ` - code="${obj.code}"` : "",
         ]).join("");
     }
 }
