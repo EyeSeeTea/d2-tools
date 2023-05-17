@@ -1,10 +1,12 @@
 import _, { uniqueId } from "lodash";
+import "json5/lib/register";
 import { command, subcommands, option, optional, flag, boolean, string } from "cmd-ts";
 
 import { getApiUrlOption, getD2Api, StringsSeparatedByCommas } from "scripts/common";
 import { RunUserPermissionsUseCase } from "domain/usecases/RunUserPermissionsUseCase";
 import { UsersD2Repository } from "data/UsersD2Repository";
-import { TemplateGroup } from "domain/repositories/UsersRepository";
+import { TemplateGroup, UsersOptions } from "domain/repositories/UsersRepository";
+
 
 export function getCommand() {
     return subcommands({
@@ -20,86 +22,55 @@ const runUsersPermisionsCmd = command({
     description: "Run user permissions",
     args: {
         url: getApiUrlOption(),
-        template_group: option({
-            type: optional(StringsSeparatedByCommas),
-            long: "template-group",
-            description:
-                "List of template-groups key-value (comma-separated, template1-group1,template2-group2...).",
-        }),
-        exclude_roles: option({
-            type: optional(StringsSeparatedByCommas),
-            long: "exclude-roles",
-            description:
-                "List of roles id to be excluded, for example due have empty authorities (comma-separated, id1,id2...).",
-        }),
-        exclude_users: option({
-            type: optional(StringsSeparatedByCommas),
-            long: "exclude-users",
-            description:
-                "List of users id to be excluded, for example the user templates (added by default from template-group) (comma-separated, id1,id2...).",
-        }),
-        pushReport: flag({
-            type: boolean,
-            long: "push-report",
-            short: "p",
-            description: "Push report to dhis2 event program.",
-        }),
-        pushProgramId: option({
+        config_file: option({
             type: string,
-            long: "push-program-id",
-            short: "pid",
-            description:
-                "Push user program id org unit  to report result in dhis2 server, the dataelements must have the codes: ADMIN_invalid_Users_1_Events, ADMIN_invalid_Roles_Users_2_Events, ADMIN_invalid_Users_file_3_Events, ADMIN_invalid_Roles_Users_file_4_Events",
-        }),
-        minimalGroup: option({
-            type: string,
-            long: "min-group",
-            short: "mg",
-            description:
-                "When the user does not have user groups, all their roles must be deleted but the users needs at least have one role, the user is assigened to the minimal group and their roles dont be replaced",
-        }),
-        minimalRole: option({
-            type: string,
-            long: "min-role",
-            short: "mr",
-            description:
-                "At least one role is mandatory, the script will assign the given role if the user doesn't have any role",
-        }),
+            long: "config-file",
+            description: "Config file"
+        })
     },
     handler: async args => {
-        const api = getD2Api(args.url);
-        const templates = args.template_group;
+        const api = getD2Api(args.url); 
         const usersRepository = new UsersD2Repository(api);
-        const UsersOptions: TemplateGroup[] = templates!.map(item => {
-            const templateId = item.split("-")[0];
-            const groupId = item.split("-")[1];
-            return {
-                templateId: templateId ?? "-",
-                groupId: groupId ?? "-",
-                validRolesByAuthority: [],
-                invalidRolesByAuthority: [],
-                validRolesById: [],
-                invalidRolesById: [],
-            };
-        });
-        const exclude_roles: string[] = args.exclude_roles ?? [];
-        const exclude_users: string[] = args.exclude_roles ?? [];
-        const push_report: boolean = args.pushReport ?? false;
-        const push_program_id: string = args.pushProgramId ?? "tBI5HRoOMUz";
-        const minimal_group: string = args.minimalGroup ?? "UmSnxmr4LE0";
-        const minimal_role: string = args.minimalRole ?? "J44B9Xy7kH6";
-        UsersOptions?.map(item => {
-            exclude_users.push(item.templateId);
-        });
+       
 
-        new RunUserPermissionsUseCase(usersRepository).execute({
-            templates: UsersOptions,
-            excludedRoles: exclude_roles,
-            excludedUsers: exclude_users,
-            pushReport: push_report,
-            pushProgramId: push_program_id,
-            minimalGroupId: minimal_group,
-            minimalRoleId: minimal_role,
-        });
+        new RunUserPermissionsUseCase(usersRepository).execute(
+            getOptions(args.config_file));
     },
 });
+
+function getOptions(config_file: string):UsersOptions {
+    const fs = require('fs');
+    const configJSON = JSON.parse(fs.readFileSync('./' + config_file , 'utf8'));
+    
+    const UsersOptions: TemplateGroup[] = configJSON["TEMPLATE_GROUPS"]!.map((item: any) => {
+        const templateId = item["template"];
+        const groupId = item["group"];
+        return {
+            templateId: templateId ?? "-",
+            groupId: groupId ?? "-",
+            validRolesByAuthority: [],
+            invalidRolesByAuthority: [],
+            validRolesById: [],
+            invalidRolesById: [],
+        };
+    });
+    const exclude_roles: string[] = configJSON["EXCLUDE_ROLES"] ?? [];
+    const exclude_users: string[] = configJSON["EXCLUDE_ROLES_USERS"] ?? [];
+    const push_report: boolean = configJSON["PUSH_REPORT"] ?? false;
+    const push_program_id: string = configJSON["PUSH_PROGRAM_ID"] ?? new Error(`push program id not found`);;
+    const minimal_group: string = configJSON["MINIMAL_GROUP"]  ?? new Error(`minimal group not found`);;
+    const minimal_role: string = configJSON["MINIMAL_ROLE"] ?? new Error(`minimal role not found`);;
+    UsersOptions?.map(item => {
+        exclude_users.push(item.templateId);
+    });
+    return {
+        templates: UsersOptions,
+        excludedRoles: exclude_roles,
+        excludedUsers: exclude_users,
+        pushReport: push_report,
+        pushProgramId: push_program_id,
+        minimalGroupId: minimal_group,
+        minimalRoleId: minimal_role,
+    }
+}
+

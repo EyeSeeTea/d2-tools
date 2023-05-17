@@ -1,0 +1,59 @@
+{
+	"TEMPLATE_GROUPS": [{
+			"group": "UfhhwZK73Lg",
+			"groupname": "WIDP IT team",
+			"template": "cNtWc18LXBS",
+			"username": "widp_it_team.template"
+		},
+		{
+			"group": "L5dlGQ4m5av",
+			"groupname": "WIDP User Manager",
+			"template": "Q2e3xq4hRCj",
+			"username": "widp_manager.template"
+		},
+		{
+			"group": "sCjEPgiOhP1",
+			"groupname": "WIDP admins",
+			"template": "kxaP3vUEnJn",
+			"username": "widp_admins.template"
+		},
+		{
+			"group": "e5NqEzmd8Ql",
+			"groupname": "WIDP external developers",
+			"template": "FnkRtcOGOVQ",
+			"username": "widp_external_developers.template"
+		},
+		{
+			"group": "UmSnxmr4LE0",
+			"groupname": "WIDP Users",
+			"template": "WT6QkP45vEC",
+			"username": "widp_user.template"
+		}
+	],
+	"EXCLUDE_ROLES": [{
+		"id": "byLnQNR1v1B",
+		"name": "App - Leprosy WER Report"
+	}, {
+		"id": "x0TtjEsq92c",
+		"name": "METADATSYNC - CONF"
+	}, {
+		"id": "Plo3cWpmp0P",
+		"name": "METADATASYNC - EXECUTOR"
+	}],
+	"EXCLUDE_ROLES_USERS": [{
+		"username": "ryan",
+		"group": "u72gB0R6bT6",
+		"groupname": "App - Datastore"
+	}],
+	"PUSH_PROGRAM_ID": {
+		"id": "tBI5HRoOMUz"
+	},
+	"MINIMAL_ROLE": {
+		"id": "ROLEUmSnxmr4LE0",
+		"name": "Backend access"
+	},,
+        "MINIMAL_GROUP": {
+                "id": "UmSnxmr4LE0",
+		"name": "WIDP Users"
+        }
+}
