@@ -33,6 +33,7 @@ export class NotificationsEmailRepository implements NotificationsRepository {
             to: notification.recipients,
             from: config.sender,
             subject: subject,
+            bcc: notification.bcc,
             ...(body.type === "html" ? { html: body.contents } : { text: body.contents }),
             attachments: notification.attachments.map(attachment => {
                 return {

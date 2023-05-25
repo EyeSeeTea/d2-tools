@@ -230,3 +230,49 @@ $ yarn start notifications send-user-info-notification \
   --url='http://USER:PASSWORD@HOST:PORT' \
   usernames.csv emailContent.json
 ```
+
+## Users
+
+### Migrate user email to username
+
+Migrate username
+
+```bash
+$ yarn start users migrate \
+  --url='http://USER:PASSWORD@HOST:PORT' \
+  --from='current_username@mail.com' \
+  --to='new_username@mail.com'
+```
+
+Migrate username and sending an email to the user
+
+```bash
+yarn start users migrate \
+  --url='http://USER:PASSWORD@HOST:PORT' \
+  --send-notification \
+  --from='current_username@mail.com' \
+  --to='new_username@mail.com' \
+  --template-path='email.json'
+```
+
+Migrate username and sending an email to the user and the administrator
+
+```bash
+yarn start users migrate \
+  --url='http://USER:PASSWORD@HOST:PORT' \
+  --admin-email="admin@example.com" \
+  --send-notification \
+  --from='current_username@mail.com' \
+  --to='new_username@mail.com' \
+  --template-path='email.json'
+```
+
+**email.json** must have the following structure:
+
+```json
+{
+    "subject": "DHIS2 username migration",
+    "body": "<h1>Your username was updated from ${from} to ${to}<h1>",
+    "attachments": ["path_to_file.txt"]
+}
+```

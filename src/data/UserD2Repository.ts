@@ -63,4 +63,73 @@ export class UserD2Repository implements UserRepository {
             .compact()
             .value();
     }
+
+    async getByUserName(username: string): Async<User | undefined> {
+        const { users } = await this.api.metadata
+            .get({
+                users: {
+                    fields: {
+                        id: true,
+                        email: true,
+                        userCredentials: { username: true },
+                    },
+                    filter: {
+                        "userCredentials.username": { eq: username },
+                    },
+                },
+            })
+            .getData();
+
+        return _(users)
+            .map(d2User => ({
+                id: d2User.id,
+                email: d2User.email,
+                username: d2User.userCredentials.username,
+            }))
+            .first();
+    }
+
+    async updateUserName(oldUserName: string, newUserName: string): Async<string> {
+        const { users } = await this.api.metadata
+            .get({
+                users: {
+                    fields: {
+                        $all: true,
+                    },
+                    filter: {
+                        "userCredentials.username": { eq: oldUserName },
+                    },
+                },
+            })
+            .getData();
+        const currentUser = _(users).first();
+        if (!currentUser) return "";
+
+        const userUpdate = this.api.metadata.post(
+            {
+                users: [
+                    {
+                        ...currentUser,
+                        email: newUserName,
+                        userCredentials: {
+                            ...currentUser.userCredentials,
+                            username: newUserName,
+                        },
+                    },
+                ],
+            },
+            {
+                importStrategy: "UPDATE",
+            }
+        );
+
+        const userUpdateResponse = await userUpdate.response();
+        const errorMessage = userUpdateResponse.data.typeReports
+            .flatMap(x => x.objectReports)
+            .flatMap(x => x.errorReports)
+            .map(x => x.message)
+            .join(". ");
+        console.log(errorMessage);
+        return errorMessage;
+    }
 }
