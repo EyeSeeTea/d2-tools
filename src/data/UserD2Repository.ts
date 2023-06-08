@@ -3,7 +3,8 @@ import { D2Api } from "@eyeseetea/d2-api/2.36";
 import { Async } from "domain/entities/Async";
 import { Id } from "domain/entities/Base";
 import { UserRepository } from "domain/repositories/UserRepository";
-import { User } from "domain/entities/User";
+import { User, UserMigrate } from "domain/entities/User";
+import { MigrationResult } from "domain/entities/UserMigrateStatus";
 
 export class UserD2Repository implements UserRepository {
     constructor(private api: D2Api) {}
@@ -64,59 +65,35 @@ export class UserD2Repository implements UserRepository {
             .value();
     }
 
-    async getByUserName(username: string): Async<User | undefined> {
+    async updateUserName(
+        fromProperty: string,
+        toProperty: string,
+        usersToUpdate: UserMigrate[]
+    ): Async<MigrationResult> {
         const { users } = await this.api.metadata
             .get({
                 users: {
                     fields: {
-                        id: true,
-                        email: true,
-                        userCredentials: { username: true },
+                        $owner: true,
                     },
                     filter: {
-                        "userCredentials.username": { eq: username },
+                        id: {
+                            in: usersToUpdate.map(u => u.id),
+                        },
                     },
                 },
             })
             .getData();
 
-        return _(users)
-            .map(d2User => ({
-                id: d2User.id,
-                email: d2User.email,
-                username: d2User.userCredentials.username,
-            }))
-            .first();
-    }
-
-    async updateUserName(oldUserName: string, newUserName: string): Async<string> {
-        const { users } = await this.api.metadata
-            .get({
-                users: {
-                    fields: {
-                        $all: true,
-                    },
-                    filter: {
-                        "userCredentials.username": { eq: oldUserName },
-                    },
-                },
-            })
-            .getData();
-        const currentUser = _(users).first();
-        if (!currentUser) return "";
+        const postUsers = users.map(d2User => {
+            const fromValue = _.get(d2User, fromProperty);
+            const userUpdated = _.set(d2User, toProperty, fromValue);
+            return userUpdated;
+        });
 
         const userUpdate = this.api.metadata.post(
             {
-                users: [
-                    {
-                        ...currentUser,
-                        email: newUserName,
-                        userCredentials: {
-                            ...currentUser.userCredentials,
-                            username: newUserName,
-                        },
-                    },
-                ],
+                users: postUsers,
             },
             {
                 importStrategy: "UPDATE",
@@ -129,7 +106,38 @@ export class UserD2Repository implements UserRepository {
             .flatMap(x => x.errorReports)
             .map(x => x.message)
             .join(". ");
-        console.log(errorMessage);
-        return errorMessage;
+
+        return {
+            errorMessage: errorMessage,
+            stats: {
+                ignored: userUpdateResponse.data.stats.ignored,
+                updated: userUpdateResponse.data.stats.updated,
+            },
+        };
+    }
+
+    async getAll(): Async<UserMigrate[]> {
+        const { users } = await this.api.metadata
+            .get({
+                users: {
+                    fields: {
+                        id: true,
+                        email: true,
+                        userCredentials: { username: true, disabled: true },
+                    },
+                },
+            })
+            .getData();
+
+        return users.map(d2User => {
+            return {
+                id: d2User.id,
+                userCredentials: {
+                    username: d2User.userCredentials?.username,
+                },
+                email: d2User.email,
+                disabled: d2User.userCredentials?.disabled,
+            };
+        });
     }
 }

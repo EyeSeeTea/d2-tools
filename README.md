@@ -233,38 +233,50 @@ $ yarn start notifications send-user-info-notification \
 
 ## Users
 
-### Migrate user email to username
+### Migrate user information from one attribute to another if they're different
 
-Migrate username
+Copy email to username:
 
 ```bash
 $ yarn start users migrate \
   --url='http://USER:PASSWORD@HOST:PORT' \
-  --from='current_username@mail.com' \
-  --to='new_username@mail.com'
+  --from='email' \
+  --to='userCredentials.username' \
+  --post
 ```
 
-Migrate username and sending an email to the user
+Send an email to the user:
 
 ```bash
 yarn start users migrate \
   --url='http://USER:PASSWORD@HOST:PORT' \
   --send-notification \
-  --from='current_username@mail.com' \
-  --to='new_username@mail.com' \
-  --template-path='email.json'
+  --from='email' \
+  --to='userCredentials.username' \
+  --template-path='email.json' \
+  --post
 ```
 
-Migrate username and sending an email to the user and the administrator
+Send an email both to the user and the administrator:
 
 ```bash
 yarn start users migrate \
   --url='http://USER:PASSWORD@HOST:PORT' \
   --admin-email="admin@example.com" \
   --send-notification \
-  --from='current_username@mail.com' \
-  --to='new_username@mail.com' \
+  --from='email' \
+  --to='userCredentials.username' \
   --template-path='email.json'
+```
+
+Only generate a csv report with users to update without persisting changes:
+
+```bash
+yarn start users migrate \
+  --url='http://USER:PASSWORD@HOST:PORT' \
+  --from='email' \
+  --to='userCredentials.username' \
+  --csv-path='./users.csv'
 ```
 
 **email.json** must have the following structure:

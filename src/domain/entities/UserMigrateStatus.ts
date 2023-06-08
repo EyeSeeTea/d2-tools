@@ -1,1 +1,7 @@
-export type UserMigrateStatus = "USER_NOT_FOUND" | "USER_EMAIL_EQUAL" | "OK" | "ERROR";
+export type MigrationResult = {
+    stats: {
+        ignored: number;
+        updated: number;
+    };
+    errorMessage: string;
+};

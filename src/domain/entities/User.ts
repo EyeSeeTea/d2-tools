@@ -6,3 +6,10 @@ export type User = {
     username: string;
     email: Email;
 };
+
+export type UserMigrate = Pick<User, "id" | "email"> & {
+    userCredentials: {
+        username: string;
+    };
+    disabled?: boolean;
+};

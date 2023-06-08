@@ -5,7 +5,6 @@ import { getApiUrlOption, getD2Api } from "scripts/common";
 import { MigrateUserNameUseCase } from "domain/usecases/MigrateUserNameUseCase";
 import { NotificationsEmailRepository } from "data/NotificationsEmailRepository";
 import logger from "utils/log";
-import { UserMigrateStatus } from "domain/entities/UserMigrateStatus";
 
 export function getCommand() {
     const migrateUser = command({
@@ -16,12 +15,12 @@ export function getCommand() {
             from: option({
                 type: string,
                 long: "from",
-                description: "Current username",
+                description: "Property to copy. Must be a valid USER property",
             }),
             to: option({
                 type: string,
                 long: "to",
-                description: "New username",
+                description: "Property to be updated. Must be a valid USER property",
             }),
             sendNotification: flag({
                 type: boolean,
@@ -42,6 +41,17 @@ export function getCommand() {
                     "Path to the json file with email template information (body, subject, attachments). Required if you pass the --send-notification flag",
                 defaultValue: () => "",
             }),
+            post: flag({
+                long: "post",
+                description: "Save changes",
+                defaultValue: () => false,
+            }),
+            csvPath: option({
+                type: string,
+                long: "csv-path",
+                description: "Path for the CSV report",
+                defaultValue: () => "",
+            }),
         },
         handler: async args => {
             if (args.sendNotification && !args.emailPathTemplate) {
@@ -53,26 +63,29 @@ export function getCommand() {
             const userRepository = new UserD2Repository(api);
             const notificationsRepository = new NotificationsEmailRepository();
 
-            const { status, errorMessage } = await new MigrateUserNameUseCase(
+            const migrateResult = await new MigrateUserNameUseCase(
                 userRepository,
                 notificationsRepository
             ).execute(args);
 
-            const mapMessage = new Map<UserMigrateStatus, string>();
-            mapMessage.set("OK", "User updated.");
-            mapMessage.set("USER_NOT_FOUND", `User ${args.from} does not exist.`);
-            mapMessage.set("USER_EMAIL_EQUAL", `User and email are equals.`);
-            mapMessage.set("ERROR", errorMessage);
+            logger.info(JSON.stringify(migrateResult.stats, null, " "));
 
-            logger.info(`Status: ${status}`);
-            logger.info(mapMessage.get(status) || "");
-
-            if (status === "OK") {
+            if (!migrateResult.errorMessage) {
                 if (!args.adminEmail) {
                     logger.info(`Add --admin-email='admin@example.com' to notify the administrator`);
                 }
+
+                if (!args.post) {
+                    logger.info(`Add --post to save changes`);
+                }
+
+                if (!args.csvPath) {
+                    logger.info(`Add --csv-path to generate a csv report`);
+                }
+
                 process.exit(0);
             } else {
+                logger.info(migrateResult.errorMessage);
                 process.exit(1);
             }
         },
