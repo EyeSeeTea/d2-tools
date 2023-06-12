@@ -269,7 +269,7 @@ yarn start users migrate \
   --template-path='email.json'
 ```
 
-Only generate a csv report with users to update without persisting changes:
+Only generate a csv report without persisting changes:
 
 ```bash
 yarn start users migrate \
