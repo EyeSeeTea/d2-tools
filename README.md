@@ -241,7 +241,7 @@ Copy email to username:
 $ yarn start users migrate \
   --url='http://USER:PASSWORD@HOST:PORT' \
   --from='email' \
-  --to='userCredentials.username' \
+  --to='username' \
   --post
 ```
 
@@ -252,7 +252,7 @@ yarn start users migrate \
   --url='http://USER:PASSWORD@HOST:PORT' \
   --send-notification \
   --from='email' \
-  --to='userCredentials.username' \
+  --to='username' \
   --template-path='email.json' \
   --post
 ```
@@ -265,7 +265,7 @@ yarn start users migrate \
   --admin-email="admin@example.com" \
   --send-notification \
   --from='email' \
-  --to='userCredentials.username' \
+  --to='username' \
   --template-path='email.json'
 ```
 
@@ -275,7 +275,7 @@ Only generate a csv report with users to update without persisting changes:
 yarn start users migrate \
   --url='http://USER:PASSWORD@HOST:PORT' \
   --from='email' \
-  --to='userCredentials.username' \
+  --to='username' \
   --csv-path='./users.csv'
 ```
 
