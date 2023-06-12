@@ -3,8 +3,11 @@ import { D2Api } from "@eyeseetea/d2-api/2.36";
 import { Async } from "domain/entities/Async";
 import { Id } from "domain/entities/Base";
 import { UserRepository } from "domain/repositories/UserRepository";
-import { User, UserMigrate } from "domain/entities/User";
+import { User, UserAttribute } from "domain/entities/User";
 import { MigrationResult } from "domain/entities/UserMigrateStatus";
+import { getInChunks } from "./dhis2-utils";
+
+const userCredentialsFields = { username: true, disabled: true };
 
 export class UserD2Repository implements UserRepository {
     constructor(private api: D2Api) {}
@@ -65,35 +68,42 @@ export class UserD2Repository implements UserRepository {
             .value();
     }
 
-    async updateUserName(
-        fromProperty: string,
-        toProperty: string,
-        usersToUpdate: UserMigrate[]
-    ): Async<MigrationResult> {
-        const { users } = await this.api.metadata
-            .get({
-                users: {
-                    fields: {
-                        $owner: true,
-                    },
-                    filter: {
-                        id: {
-                            in: usersToUpdate.map(u => u.id),
+    async saveAll(users: User[], from: UserAttribute, to: UserAttribute): Async<MigrationResult> {
+        const usersToSave = await getInChunks(
+            users.map(u => u.id),
+            async userIds => {
+                return this.api.metadata
+                    .get({
+                        users: {
+                            fields: {
+                                $owner: true,
+                            },
+                            filter: {
+                                id: {
+                                    in: userIds,
+                                },
+                            },
                         },
-                    },
-                },
-            })
-            .getData();
-
-        const postUsers = users.map(d2User => {
-            const fromValue = _.get(d2User, fromProperty);
-            const userUpdated = _.set(d2User, toProperty, fromValue);
-            return userUpdated;
-        });
+                    })
+                    .getData()
+                    .then(res => {
+                        const postUsers = res.users.map(d2User => {
+                            const fromValue = _.get(d2User, from.value);
+                            const userUpdated = _.set(d2User, to.value, fromValue);
+                            return userUpdated;
+                        });
+                        return postUsers;
+                    })
+                    .catch(() => {
+                        console.error(`Error getting users ${userIds.join(",")}`);
+                        return [];
+                    });
+            }
+        );
 
         const userUpdate = this.api.metadata.post(
             {
-                users: postUsers,
+                users: usersToSave,
             },
             {
                 importStrategy: "UPDATE",
@@ -116,14 +126,14 @@ export class UserD2Repository implements UserRepository {
         };
     }
 
-    async getAll(): Async<UserMigrate[]> {
+    async getAll(): Async<User[]> {
         const { users } = await this.api.metadata
             .get({
                 users: {
                     fields: {
                         id: true,
                         email: true,
-                        userCredentials: { username: true, disabled: true },
+                        userCredentials: userCredentialsFields,
                     },
                 },
             })
@@ -132,9 +142,7 @@ export class UserD2Repository implements UserRepository {
         return users.map(d2User => {
             return {
                 id: d2User.id,
-                userCredentials: {
-                    username: d2User.userCredentials?.username,
-                },
+                username: d2User.userCredentials?.username,
                 email: d2User.email,
                 disabled: d2User.userCredentials?.disabled,
             };

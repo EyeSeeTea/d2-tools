@@ -5,11 +5,10 @@ export type User = {
     id: Id;
     username: string;
     email: Email;
+    disabled?: boolean;
 };
 
-export type UserMigrate = Pick<User, "id" | "email"> & {
-    userCredentials: {
-        username: string;
-    };
-    disabled?: boolean;
+export type UserAttribute = {
+    key: "email" | "username";
+    value: "email" | "userCredentials.username";
 };

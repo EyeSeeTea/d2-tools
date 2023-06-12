@@ -7,7 +7,7 @@ import { Async } from "domain/entities/Async";
 import { MigrationResult } from "domain/entities/UserMigrateStatus";
 import { Email, Attachment } from "domain/entities/Notification";
 import { promiseMap } from "data/dhis2-utils";
-import { UserMigrate } from "domain/entities/User";
+import { User, UserAttribute } from "domain/entities/User";
 
 export type MigrateOptions = {
     from: string;
@@ -29,6 +29,17 @@ function readJson(path: string): Promise<EmailTemplate> {
     return jsonfile.readFile(path);
 }
 
+const userAllowedAttributes: UserAttribute[] = [
+    {
+        key: "email",
+        value: "email",
+    },
+    {
+        key: "username",
+        value: "userCredentials.username",
+    },
+];
+
 export class MigrateUserNameUseCase {
     constructor(
         private userRepository: UserRepository,
@@ -36,66 +47,32 @@ export class MigrateUserNameUseCase {
     ) {}
 
     async execute(options: MigrateOptions): Async<MigrationResult> {
+        const fromAttribute = userAllowedAttributes.find(a => a.key === options.from);
+        const toAttribute = userAllowedAttributes.find(a => a.key === options.to);
+
+        if (!fromAttribute || !toAttribute) {
+            throw Error("Attribute not supported");
+        }
+
         const users = await this.userRepository.getAll();
-        const usersToUpdate = users.filter(u => {
-            const fromValue = _.get(u, options.from);
-            const toValue = _.get(u, options.to);
-            return fromValue !== toValue && u.disabled === false;
+        const nonDisabledUsers = users.filter(user => {
+            const { fromValue, toValue } = this.getValueFromProperties(user, fromAttribute, toAttribute);
+            return fromValue !== toValue && user.disabled === false;
         });
 
         if (options.csvPath) {
-            const csvWriter = createObjectCsvWriter({
-                path: options.csvPath,
-                header: [
-                    {
-                        id: "id",
-                        title: "ID",
-                    },
-                    {
-                        id: options.from,
-                        title: options.from,
-                    },
-                    {
-                        id: options.to,
-                        title: options.to,
-                    },
-                ],
-            });
-            await csvWriter.writeRecords(this.parseToCsv(usersToUpdate, options));
+            await this.generateCsvReport(options, nonDisabledUsers, fromAttribute, toAttribute);
         }
 
         if (options.post) {
-            const migrateResult = await this.userRepository.updateUserName(
-                options.from,
-                options.to,
-                usersToUpdate
+            const migrateResult = await this.userRepository.saveAll(
+                nonDisabledUsers,
+                fromAttribute,
+                toAttribute
             );
 
-            if (options.sendNotification && migrateResult.errorMessage) {
-                const emailContent = await readJson(options.emailPathTemplate);
-                const template = _.template(emailContent.body);
-                const attachments = (emailContent.attachments || []).map(
-                    (path): Attachment => ({
-                        type: "file",
-                        path: path,
-                    })
-                );
-
-                await promiseMap(usersToUpdate, user =>
-                    this.notificationsRepository.send({
-                        recipients: [user.email],
-                        bcc: options.adminEmail ? [options.adminEmail] : undefined,
-                        subject: emailContent.subject,
-                        body: {
-                            type: "html",
-                            contents: template({
-                                from: _.get(user, options.from),
-                                to: _.get(user, options.to),
-                            }),
-                        },
-                        attachments,
-                    })
-                );
+            if (options.sendNotification && !migrateResult.errorMessage) {
+                await this.sendNotifications(options, nonDisabledUsers, fromAttribute, toAttribute);
             }
 
             return migrateResult;
@@ -110,13 +87,79 @@ export class MigrateUserNameUseCase {
         };
     }
 
-    private parseToCsv(users: UserMigrate[], options: MigrateOptions) {
+    private parseToCsv(users: User[], from: UserAttribute, to: UserAttribute) {
         return users.map(user => {
+            const { fromValue, toValue } = this.getValueFromProperties(user, from, to);
             return {
                 id: user.id,
-                [options.from]: _.get(user, options.from),
-                [options.to]: _.get(user, options.to),
+                [from.key]: fromValue,
+                [to.key]: toValue,
             };
         });
+    }
+
+    private async generateCsvReport(
+        options: MigrateOptions,
+        users: User[],
+        from: UserAttribute,
+        to: UserAttribute
+    ) {
+        const csvWriter = createObjectCsvWriter({
+            path: options.csvPath,
+            header: [
+                {
+                    id: "id",
+                    title: "ID",
+                },
+                {
+                    id: options.from,
+                    title: options.from,
+                },
+                {
+                    id: options.to,
+                    title: options.to,
+                },
+            ],
+        });
+        await csvWriter.writeRecords(this.parseToCsv(users, from, to));
+    }
+
+    private async sendNotifications(
+        options: MigrateOptions,
+        users: User[],
+        from: UserAttribute,
+        to: UserAttribute
+    ) {
+        const emailContent = await readJson(options.emailPathTemplate);
+        const template = _.template(emailContent.body);
+        const attachments = (emailContent.attachments || []).map(
+            (path): Attachment => ({
+                type: "file",
+                path: path,
+            })
+        );
+
+        await promiseMap(users, user => {
+            const { fromValue, toValue } = this.getValueFromProperties(user, from, to);
+            return this.notificationsRepository.send({
+                recipients: [user.email],
+                bcc: options.adminEmail ? [options.adminEmail] : undefined,
+                subject: emailContent.subject,
+                body: {
+                    type: "html",
+                    contents: template({
+                        from: fromValue,
+                        to: toValue,
+                    }),
+                },
+                attachments,
+            });
+        });
+    }
+
+    private getValueFromProperties(user: User, from: UserAttribute, to: UserAttribute) {
+        const fromValue = user[from.key];
+        const toValue = user[to.key];
+        return { fromValue, toValue };
     }
 }
