@@ -171,6 +171,19 @@ $ yarn start events move-to-org-unit \
   --post
 ```
 
+### Update events which met the condition
+
+```
+yarn start events update-events \
+--url='http://USER:PASSWORD@HOST:PORT' \
+--event-ids='event_id_1,event_id_2,event_id_3' \
+--data-element-id='data_element_id' \
+--condition='true' \
+--new-value='' \
+--csv-path='./events.csv' \
+--post
+```
+
 ## Data values
 
 ### Dangling data values
