@@ -9,6 +9,7 @@ import logger from "utils/log";
 import { getId, Id } from "domain/entities/Base";
 import { Result } from "domain/entities/Result";
 import { Timestamp } from "domain/entities/Date";
+import { promiseMap } from "./dhis2-utils";
 
 export class ProgramEventsD2Repository implements ProgramEventsRepository {
     constructor(private api: D2Api) {}
@@ -50,6 +51,7 @@ export class ProgramEventsD2Repository implements ProgramEventsRepository {
                 dataElementId: dv.dataElement,
                 value: dv.value,
                 storedBy: dv.storedBy,
+                lastUpdated: dv.lastUpdated,
             })),
         }));
     }
@@ -74,6 +76,7 @@ export class ProgramEventsD2Repository implements ProgramEventsRepository {
                     dataElement: dv.dataElementId,
                     value: dv.value,
                     storedBy: dv.storedBy,
+                    lastUpdated: dv.lastUpdated,
                 })),
             };
         });
@@ -130,7 +133,7 @@ const eventFields = [
     "eventDate",
     "dueDate",
     "trackedEntityInstance",
-    "dataValues[dataElement,value,storedBy]",
+    "dataValues[dataElement,value,storedBy,lastUpdated]",
 ];
 
 interface D2Event {
@@ -148,19 +151,27 @@ interface D2Event {
 type EventToPost = EventsPostRequest["events"][number] & { event: Id; dueDate: Timestamp };
 
 async function importEvents(api: D2Api, events: EventToPost[], params?: EventsPostParams): Async<Result> {
-    if (_.isEmpty(events)) {
-        return { type: "success", message: "No events to post" };
-    } else {
-        const res = await api.events.post(params || {}, { events }).getData();
+    if (_.isEmpty(events)) return { type: "success", message: "No events to post" };
+
+    const resList = await promiseMap(_.chunk(events, 100), async eventsGroup => {
+        const res = await api.events.post(params || {}, { events: eventsGroup }).getData();
 
         if (res.response.status === "SUCCESS") {
             const message = JSON.stringify(
                 _.pick(res.response, ["status", "imported", "updated", "deleted", "ignored"])
             );
-            return { type: "success", message };
+            logger.info(`Post events OK: ${message}`);
+            return true;
         } else {
             const message = JSON.stringify(res.response, null, 4);
-            return { type: "error", message };
+            logger.info(`Post events ERROR: ${message}`);
+            return false;
         }
-    }
+    });
+
+    const isSuccess = _.every(resList);
+
+    return isSuccess
+        ? { type: "success", message: `${events.length} posted` }
+        : { type: "error", message: "Error posting events" };
 }
