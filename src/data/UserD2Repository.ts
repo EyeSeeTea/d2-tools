@@ -101,21 +101,14 @@ export class UserD2Repository implements UserRepository {
             }
         );
 
-        const userUpdate = this.api.metadata.post(
-            {
-                users: usersToSave,
-            },
-            {
-                importStrategy: "UPDATE",
-            }
-        );
+        const userUpdate = this.api.metadata.post({ users: usersToSave }, { importStrategy: "UPDATE" });
 
         const userUpdateResponse = await userUpdate.response();
         const errorMessage = userUpdateResponse.data.typeReports
             .flatMap(x => x.objectReports)
             .flatMap(x => x.errorReports)
             .map(x => x.message)
-            .join(". ");
+            .join("\n");
 
         return {
             errorMessage: errorMessage,
