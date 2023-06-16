@@ -58,7 +58,7 @@ export class MigrateUserNameUseCase {
         const users = await this.userRepository.getAll();
         const usersToChange = users.filter(user => {
             const { fromValue, toValue } = this.getValueFromProperties(user, fromAttribute, toAttribute);
-            return fromValue !== toValue && user.disabled === false;
+            return fromValue && fromValue !== toValue && user.disabled === false;
         });
 
         logger.debug(`Users: ${users.length}`);
