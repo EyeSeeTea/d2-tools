@@ -1,7 +1,5 @@
-export type MigrationResult = {
-    stats: {
-        ignored: number;
-        updated: number;
-    };
+export type Stats = {
+    ignored: number;
+    updated: number;
     errorMessage: string;
 };

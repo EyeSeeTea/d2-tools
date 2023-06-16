@@ -8,7 +8,5 @@ export type User = {
     disabled?: boolean;
 };
 
-export type UserAttribute = {
-    key: "email" | "username";
-    value: "email" | "userCredentials.username";
-};
+export type UserAttribute = Pick<User, "email" | "username">;
+export const mappedAttributes: Array<keyof UserAttribute> = ["email", "username"];

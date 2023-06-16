@@ -3,8 +3,8 @@ import { D2Api } from "@eyeseetea/d2-api/2.36";
 import { Async } from "domain/entities/Async";
 import { Id } from "domain/entities/Base";
 import { UserRepository } from "domain/repositories/UserRepository";
-import { User, UserAttribute } from "domain/entities/User";
-import { MigrationResult } from "domain/entities/UserMigrateStatus";
+import { User } from "domain/entities/User";
+import { Stats } from "domain/entities/UserMigrateStatus";
 import { getInChunks } from "./dhis2-utils";
 
 const userCredentialsFields = { username: true, disabled: true };
@@ -68,40 +68,51 @@ export class UserD2Repository implements UserRepository {
             .value();
     }
 
-    async saveAll(users: User[], from: UserAttribute, to: UserAttribute): Async<MigrationResult> {
-        const usersToSave = await getInChunks(
-            users.map(u => u.id),
-            async userIds => {
-                return this.api.metadata
-                    .get({
-                        users: {
-                            fields: {
-                                $owner: true,
-                            },
-                            filter: {
-                                id: {
-                                    in: userIds,
-                                },
+    async saveAll(users: User[]): Async<Stats> {
+        const userIds = users.map(user => user.id);
+        const usersToSave = await getInChunks(userIds, async userIds => {
+            return this.api.metadata
+                .get({
+                    users: {
+                        fields: {
+                            $owner: true,
+                        },
+                        filter: {
+                            id: {
+                                in: userIds,
                             },
                         },
-                    })
-                    .getData()
-                    .then(res => {
-                        const postUsers = res.users.map(d2User => {
-                            const fromValue = _.get(d2User, from.value);
-                            const userUpdated = _.set(d2User, to.value, fromValue);
-                            return userUpdated;
-                        });
-                        return postUsers;
-                    })
-                    .catch(() => {
-                        console.error(`Error getting users ${userIds.join(",")}`);
-                        return [];
-                    });
-            }
-        );
+                    },
+                })
+                .getData()
+                .then(res => {
+                    const postUsers = users.map(user => {
+                        const existingUser = res.users.find(d2User => d2User.id === user.id);
+                        if (!existingUser)
+                            return {
+                                ...user,
+                                userCredentials: {
+                                    username: user.username,
+                                },
+                            };
 
-        const userUpdate = this.api.metadata.post({ users: usersToSave }, { importStrategy: "UPDATE" });
+                        return {
+                            ...existingUser,
+                            userCredentials: {
+                                ...existingUser.userCredentials,
+                                username: user.username,
+                            },
+                        };
+                    });
+                    return _(postUsers).compact().value();
+                })
+                .catch(() => {
+                    console.error(`Error getting users ${userIds.join(",")}`);
+                    return [];
+                });
+        });
+
+        const userUpdate = this.api.metadata.post({ users: usersToSave });
 
         const userUpdateResponse = await userUpdate.response();
         const errorMessage = userUpdateResponse.data.typeReports
@@ -110,12 +121,12 @@ export class UserD2Repository implements UserRepository {
             .map(x => x.message)
             .join("\n");
 
+        console.log(JSON.stringify(userUpdateResponse, null, 2));
+
         return {
             errorMessage: errorMessage,
-            stats: {
-                ignored: userUpdateResponse.data.stats.ignored,
-                updated: userUpdateResponse.data.stats.updated,
-            },
+            ignored: userUpdateResponse.data.stats.ignored,
+            updated: userUpdateResponse.data.stats.updated,
         };
     }
 
