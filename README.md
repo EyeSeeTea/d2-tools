@@ -284,7 +284,7 @@ yarn start users migrate \
 ```json
 {
     "subject": "DHIS2 username migration",
-    "body": "<h1>Your username was updated from ${from} to ${to}<h1>",
+    "body": "<h1>Your username was updated from ${oldValue} to ${newValue}<h1>",
     "attachments": ["path_to_file.txt"]
 }
 ```

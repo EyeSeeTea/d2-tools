@@ -6,6 +6,8 @@ export type User = {
     username: string;
     email: Email;
     disabled?: boolean;
+    firstName?: string;
+    surname?: string;
 };
 
 export type UserAttribute = Pick<User, "email" | "username">;

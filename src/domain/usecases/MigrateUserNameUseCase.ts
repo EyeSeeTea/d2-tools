@@ -4,7 +4,7 @@ import { createObjectCsvWriter } from "csv-writer";
 import { NotificationsRepository } from "domain/repositories/NotificationsRepository";
 import { UserRepository } from "domain/repositories/UserRepository";
 import { Async } from "domain/entities/Async";
-import { Stats } from "domain/entities/UserMigrateStatus";
+import { Stats } from "domain/entities/Stats";
 import { Email, Attachment } from "domain/entities/Notification";
 import { promiseMap } from "data/dhis2-utils";
 import { mappedAttributes, User, UserAttribute } from "domain/entities/User";
@@ -30,6 +30,8 @@ function readJson(path: string): Promise<EmailTemplate> {
     return jsonfile.readFile(path);
 }
 
+type UserAttributeKey = keyof UserAttribute;
+
 export class MigrateUserNameUseCase {
     constructor(
         private userRepository: UserRepository,
@@ -45,47 +47,45 @@ export class MigrateUserNameUseCase {
         }
 
         const users = await this.userRepository.getAll();
-        const usersToChange = users
-            .filter(user => {
-                const { fromValue, toValue } = this.getValueFromProperties(user, fromAttribute, toAttribute);
-                return (
-                    fromValue && fromValue.toLowerCase() !== toValue.toLowerCase() && user.disabled === false
-                );
-            })
-            .map(user => {
-                const { fromValue } = this.getValueFromProperties(user, fromAttribute, toAttribute);
-                return {
-                    ...user,
-                    [toAttribute]: fromValue,
-                };
-            });
+        const nonDisabledUsers = users.filter(user => {
+            const { fromValue, toValue } = this.getValueFromProperties(user, fromAttribute, toAttribute);
+            return fromValue && fromValue.toLowerCase() !== toValue.toLowerCase() && user.disabled === false;
+        });
+
+        const usersToChange = nonDisabledUsers.map(user => {
+            const { fromValue } = this.getValueFromProperties(user, fromAttribute, toAttribute);
+            return {
+                ...user,
+                [toAttribute]: fromValue,
+            };
+        });
 
         logger.debug(`Users: ${users.length}`);
         logger.debug(`Users to change: ${usersToChange.length}`);
 
         if (options.csvPath) {
-            await this.generateCsvReport(options, usersToChange, fromAttribute, toAttribute);
+            await this.generateCsvReport(options, nonDisabledUsers, fromAttribute, toAttribute);
         }
 
         if (options.post) {
-            const newUser: User = {
-                id: "l26khC7cbCy",
-                email: "new@user.com",
-                username: "new@user.com",
-                disabled: false,
-            };
-            usersToChange.push(newUser);
             const migrateResult = await this.userRepository.saveAll(usersToChange);
 
-            if (options.sendNotification && !migrateResult.errorMessage) {
-                await this.sendNotifications(options, usersToChange, fromAttribute, toAttribute);
+            if (options.sendNotification) {
+                const onlySuccessUsers = _.differenceWith(
+                    nonDisabledUsers,
+                    migrateResult.usersWithError,
+                    (user, userError) => user.id === userError
+                );
+                await this.sendNotifications(options, onlySuccessUsers, fromAttribute, toAttribute);
             }
 
             return migrateResult;
         }
 
         return {
+            usersWithError: [],
             errorMessage: "",
+            created: 0,
             ignored: 0,
             updated: 0,
         };
@@ -94,6 +94,7 @@ export class MigrateUserNameUseCase {
     private parseToCsv(users: User[], from: keyof UserAttribute, to: keyof UserAttribute) {
         return users.map(user => {
             const { fromValue, toValue } = this.getValueFromProperties(user, from, to);
+
             return {
                 id: user.id,
                 [from]: fromValue,
@@ -105,8 +106,8 @@ export class MigrateUserNameUseCase {
     private async generateCsvReport(
         options: MigrateOptions,
         users: User[],
-        from: keyof UserAttribute,
-        to: keyof UserAttribute
+        from: UserAttributeKey,
+        to: UserAttributeKey
     ) {
         const csvWriter = createObjectCsvWriter({
             path: options.csvPath,
@@ -133,8 +134,8 @@ export class MigrateUserNameUseCase {
     private async sendNotifications(
         options: MigrateOptions,
         users: User[],
-        from: keyof UserAttribute,
-        to: keyof UserAttribute
+        from: UserAttributeKey,
+        to: UserAttributeKey
     ) {
         const emailContent = await readJson(options.emailPathTemplate);
         const template = _.template(emailContent.body);
@@ -163,7 +164,7 @@ export class MigrateUserNameUseCase {
         });
     }
 
-    private getValueFromProperties(user: User, from: keyof UserAttribute, to: keyof UserAttribute) {
+    private getValueFromProperties(user: User, from: UserAttributeKey, to: UserAttributeKey) {
         const fromValue = user[from];
         const toValue = user[to];
         return { fromValue, toValue };

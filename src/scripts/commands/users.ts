@@ -71,6 +71,10 @@ export function getCommand() {
             logger.info(`Migrate results: ${JSON.stringify(migrateResult)}`);
 
             if (!migrateResult.errorMessage) {
+                if (!args.sendNotification) {
+                    logger.info(`Add --send-notifiction to notify every user affected`);
+                }
+
                 if (!args.adminEmail) {
                     logger.info(`Add --admin-email='admin@example.com' to notify the administrator`);
                 }

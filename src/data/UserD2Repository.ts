@@ -4,7 +4,7 @@ import { Async } from "domain/entities/Async";
 import { Id } from "domain/entities/Base";
 import { UserRepository } from "domain/repositories/UserRepository";
 import { User } from "domain/entities/User";
-import { Stats } from "domain/entities/UserMigrateStatus";
+import { Stats } from "domain/entities/Stats";
 import { getInChunks } from "./dhis2-utils";
 
 const userCredentialsFields = { username: true, disabled: true };
@@ -69,8 +69,8 @@ export class UserD2Repository implements UserRepository {
     }
 
     async saveAll(users: User[]): Async<Stats> {
-        const userIds = users.map(user => user.id);
-        const usersToSave = await getInChunks(userIds, async userIds => {
+        const userToSaveIds = users.map(user => user.id);
+        const stats = await getInChunks<Stats>(userToSaveIds, async userIds => {
             return this.api.metadata
                 .get({
                     users: {
@@ -86,25 +86,55 @@ export class UserD2Repository implements UserRepository {
                 })
                 .getData()
                 .then(res => {
-                    const postUsers = users.map(user => {
-                        const existingUser = res.users.find(d2User => d2User.id === user.id);
-                        if (!existingUser)
+                    const postUsers = userIds.map(userId => {
+                        const existingD2User = res.users.find(d2User => d2User.id === userId);
+                        const user = users.find(user => user.id === userId);
+                        if (!user) {
+                            throw Error("Cannot find user");
+                        }
+                        if (!existingD2User)
                             return {
                                 ...user,
+                                firstName: user.firstName,
+                                surname: user.surname,
                                 userCredentials: {
                                     username: user.username,
                                 },
                             };
 
                         return {
-                            ...existingUser,
+                            ...existingD2User,
                             userCredentials: {
-                                ...existingUser.userCredentials,
+                                ...existingD2User.userCredentials,
                                 username: user.username,
                             },
                         };
                     });
                     return _(postUsers).compact().value();
+                })
+                .then(usersToSave => {
+                    return this.api.metadata.post({ users: usersToSave }).response();
+                })
+                .then(responses => {
+                    const userIdsWithErrors = responses.data.typeReports
+                        .flatMap(tr => tr.objectReports)
+                        .flatMap(or => or.uid);
+
+                    const errorMessage = responses.data.typeReports
+                        .flatMap(x => x.objectReports)
+                        .flatMap(x => x.errorReports)
+                        .map(x => x.message)
+                        .join("\n");
+
+                    return [
+                        {
+                            usersWithError: userIdsWithErrors,
+                            errorMessage,
+                            created: responses.data.stats.created,
+                            ignored: responses.data.stats.ignored,
+                            updated: responses.data.stats.updated,
+                        },
+                    ];
                 })
                 .catch(() => {
                     console.error(`Error getting users ${userIds.join(",")}`);
@@ -112,22 +142,24 @@ export class UserD2Repository implements UserRepository {
                 });
         });
 
-        const userUpdate = this.api.metadata.post({ users: usersToSave });
-
-        const userUpdateResponse = await userUpdate.response();
-        const errorMessage = userUpdateResponse.data.typeReports
-            .flatMap(x => x.objectReports)
-            .flatMap(x => x.errorReports)
-            .map(x => x.message)
-            .join("\n");
-
-        console.log(JSON.stringify(userUpdateResponse, null, 2));
-
-        return {
-            errorMessage: errorMessage,
-            ignored: userUpdateResponse.data.stats.ignored,
-            updated: userUpdateResponse.data.stats.updated,
-        };
+        return stats.reduce(
+            (acum, stat) => {
+                return {
+                    usersWithError: [...acum.usersWithError, ...stat.usersWithError],
+                    errorMessage: `${acum.errorMessage}${stat.errorMessage}`,
+                    created: acum.created + stat.created,
+                    ignored: acum.ignored + stat.ignored,
+                    updated: acum.updated + stat.updated,
+                };
+            },
+            {
+                usersWithError: [],
+                errorMessage: "",
+                created: 0,
+                ignored: 0,
+                updated: 0,
+            }
+        );
     }
 
     async getAll(): Async<User[]> {
@@ -138,6 +170,8 @@ export class UserD2Repository implements UserRepository {
                         id: true,
                         email: true,
                         userCredentials: userCredentialsFields,
+                        firstName: true,
+                        surname: true,
                     },
                 },
             })
@@ -149,6 +183,8 @@ export class UserD2Repository implements UserRepository {
                 username: d2User.userCredentials?.username,
                 email: d2User.email,
                 disabled: d2User.userCredentials?.disabled,
+                firstName: d2User.firstName,
+                surname: d2User.surname,
             };
         });
     }
