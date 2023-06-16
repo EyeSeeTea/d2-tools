@@ -8,6 +8,7 @@ import { MigrationResult } from "domain/entities/UserMigrateStatus";
 import { Email, Attachment } from "domain/entities/Notification";
 import { promiseMap } from "data/dhis2-utils";
 import { User, UserAttribute } from "domain/entities/User";
+import logger from "utils/log";
 
 export type MigrateOptions = {
     from: string;
@@ -55,24 +56,27 @@ export class MigrateUserNameUseCase {
         }
 
         const users = await this.userRepository.getAll();
-        const nonDisabledUsers = users.filter(user => {
+        const usersToChange = users.filter(user => {
             const { fromValue, toValue } = this.getValueFromProperties(user, fromAttribute, toAttribute);
             return fromValue !== toValue && user.disabled === false;
         });
 
+        logger.debug(`Users: ${users.length}`);
+        logger.debug(`Users to change: ${usersToChange.length}`);
+
         if (options.csvPath) {
-            await this.generateCsvReport(options, nonDisabledUsers, fromAttribute, toAttribute);
+            await this.generateCsvReport(options, usersToChange, fromAttribute, toAttribute);
         }
 
         if (options.post) {
             const migrateResult = await this.userRepository.saveAll(
-                nonDisabledUsers,
+                usersToChange,
                 fromAttribute,
                 toAttribute
             );
 
             if (options.sendNotification && !migrateResult.errorMessage) {
-                await this.sendNotifications(options, nonDisabledUsers, fromAttribute, toAttribute);
+                await this.sendNotifications(options, usersToChange, fromAttribute, toAttribute);
             }
 
             return migrateResult;
@@ -121,6 +125,8 @@ export class MigrateUserNameUseCase {
                 },
             ],
         });
+
+        logger.debug(`Generate report: ${options.csvPath}`);
         await csvWriter.writeRecords(this.parseToCsv(users, from, to));
     }
 

@@ -68,7 +68,7 @@ export function getCommand() {
                 notificationsRepository
             ).execute(args);
 
-            logger.info(JSON.stringify(migrateResult.stats, null, " "));
+            logger.info(`Migrate results: ${JSON.stringify(migrateResult.stats)}`);
 
             if (!migrateResult.errorMessage) {
                 if (!args.adminEmail) {
@@ -85,7 +85,7 @@ export function getCommand() {
 
                 process.exit(0);
             } else {
-                logger.info(migrateResult.errorMessage);
+                logger.info(`Error: ${migrateResult.errorMessage}`);
                 process.exit(1);
             }
         },
