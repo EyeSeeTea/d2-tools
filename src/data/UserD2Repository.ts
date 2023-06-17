@@ -95,8 +95,6 @@ export class UserD2Repository implements UserRepository {
                         if (!existingD2User)
                             return {
                                 ...user,
-                                firstName: user.firstName,
-                                surname: user.surname,
                                 userCredentials: {
                                     username: user.username,
                                 },
@@ -110,7 +108,7 @@ export class UserD2Repository implements UserRepository {
                             },
                         };
                     });
-                    return _(postUsers).compact().value();
+                    return postUsers;
                 })
                 .then(usersToSave => {
                     return this.api.metadata.post({ users: usersToSave }).response();
