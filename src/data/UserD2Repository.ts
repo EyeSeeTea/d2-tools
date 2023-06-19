@@ -94,17 +94,25 @@ export class UserD2Repository implements UserRepository {
                         }
                         if (!existingD2User)
                             return {
-                                ...user,
+                                id: user.id,
+                                firstName: user.firstName,
+                                surname: user.surname,
+                                email: user.email,
                                 userCredentials: {
                                     username: user.username,
+                                    disabled: user.disabled,
                                 },
                             };
 
                         return {
                             ...existingD2User,
+                            firstName: user.firstName,
+                            surname: user.surname,
+                            email: user.email,
                             userCredentials: {
                                 ...existingD2User.userCredentials,
                                 username: user.username,
+                                disabled: user.disabled,
                             },
                         };
                     });
