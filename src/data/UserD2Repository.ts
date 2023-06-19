@@ -108,14 +108,16 @@ export class UserD2Repository implements UserRepository {
                     return postUsers;
                 })
                 .then(usersToSave => {
-                    return this.api.metadata.post({ users: usersToSave }).response();
+                    return this.api.metadata
+                        .post({ users: usersToSave })
+                        .response()
+                        .then(response => {
+                            return { usersToSave, response };
+                        });
                 })
-                .then(responses => {
-                    const userIdsWithErrors = responses.data.typeReports
-                        .flatMap(tr => tr.objectReports)
-                        .flatMap(or => or.uid);
-
-                    const errorMessage = responses.data.typeReports
+                .then(result => {
+                    const response = result.response.data;
+                    const errorMessage = response.typeReports
                         .flatMap(x => x.objectReports)
                         .flatMap(x => x.errorReports)
                         .map(x => x.message)
@@ -123,11 +125,17 @@ export class UserD2Repository implements UserRepository {
 
                     return [
                         {
-                            usersWithError: userIdsWithErrors,
+                            usersSkipped:
+                                response.status === "ERROR"
+                                    ? _(result.usersToSave)
+                                          .map(user => user.id)
+                                          .compact()
+                                          .value()
+                                    : [],
                             errorMessage,
-                            created: responses.data.stats.created,
-                            ignored: responses.data.stats.ignored,
-                            updated: responses.data.stats.updated,
+                            created: response.stats.created,
+                            ignored: response.stats.ignored,
+                            updated: response.stats.updated,
                         },
                     ];
                 })
@@ -140,7 +148,7 @@ export class UserD2Repository implements UserRepository {
         return stats.reduce(
             (acum, stat) => {
                 return {
-                    usersWithError: [...acum.usersWithError, ...stat.usersWithError],
+                    usersSkipped: [...acum.usersSkipped, ...stat.usersSkipped],
                     errorMessage: `${acum.errorMessage}${stat.errorMessage}`,
                     created: acum.created + stat.created,
                     ignored: acum.ignored + stat.ignored,
@@ -148,7 +156,7 @@ export class UserD2Repository implements UserRepository {
                 };
             },
             {
-                usersWithError: [],
+                usersSkipped: [],
                 errorMessage: "",
                 created: 0,
                 ignored: 0,
