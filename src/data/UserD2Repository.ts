@@ -92,25 +92,14 @@ export class UserD2Repository implements UserRepository {
                         if (!user) {
                             throw Error("Cannot find user");
                         }
-                        if (!existingD2User)
-                            return {
-                                id: user.id,
-                                firstName: user.firstName,
-                                surname: user.surname,
-                                email: user.email,
-                                userCredentials: {
-                                    username: user.username,
-                                    disabled: user.disabled,
-                                },
-                            };
 
                         return {
-                            ...existingD2User,
+                            ...(existingD2User || {}),
                             firstName: user.firstName,
                             surname: user.surname,
                             email: user.email,
                             userCredentials: {
-                                ...existingD2User.userCredentials,
+                                ...(existingD2User?.userCredentials || {}),
                                 username: user.username,
                                 disabled: user.disabled,
                             },
