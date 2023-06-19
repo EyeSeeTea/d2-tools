@@ -95,6 +95,7 @@ export class UserD2Repository implements UserRepository {
 
                         return {
                             ...(existingD2User || {}),
+                            id: user.id,
                             firstName: user.firstName,
                             surname: user.surname,
                             email: user.email,
@@ -126,12 +127,7 @@ export class UserD2Repository implements UserRepository {
                     return [
                         {
                             usersSkipped:
-                                response.status === "ERROR"
-                                    ? _(result.usersToSave)
-                                          .map(user => user.id)
-                                          .compact()
-                                          .value()
-                                    : [],
+                                response.status === "ERROR" ? result.usersToSave.map(user => user.id) : [],
                             errorMessage,
                             created: response.stats.created,
                             ignored: response.stats.ignored,
