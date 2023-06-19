@@ -23,12 +23,12 @@ export class UpdateEventDataValueUseCase {
         const eventsWithDvInCondition = this.getEventsInCondition(eventMetadata, options);
 
         if (options.csvPath) {
-            console.debug(`Generate report: ${options.csvPath}`);
+            logger.debug(`Generate report: ${options.csvPath}`);
             await this.generateCsvReport(eventMetadata, options);
         }
 
         if (options.post) {
-            console.debug(`Events to change: ${eventsWithDvInCondition.length}`);
+            logger.debug(`Events to change: ${eventsWithDvInCondition.length}`);
             const stats = await this.eventRepository.saveAll(eventsWithDvInCondition);
             return stats;
         }
