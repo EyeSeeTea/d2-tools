@@ -145,7 +145,6 @@ export class ProgramEventsD2Repository implements ProgramEventsRepository {
         } else {
             return {
                 type: "success",
-                message: "No events to post",
             };
         }
     }
