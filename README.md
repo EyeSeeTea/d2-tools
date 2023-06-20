@@ -176,6 +176,7 @@ $ yarn start events move-to-org-unit \
 ```
 yarn start events update-events \
 --url='http://USER:PASSWORD@HOST:PORT' \
+--root-org-unit='org-unit-id'
 --event-ids='event_id_1,event_id_2,event_id_3' \
 --data-element-id='data_element_id' \
 --condition='true' \

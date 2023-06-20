@@ -1,13 +1,15 @@
 import _ from "lodash";
-import { createObjectCsvWriter } from "csv-writer";
 import { Async } from "domain/entities/Async";
 import { Id } from "domain/entities/Base";
-import { EventMetadata, Stats } from "domain/entities/Event";
-import { EventRepository } from "domain/repositories/EventRepository";
+import { Result } from "domain/entities/Result";
 import logger from "utils/log";
+import { EventExportSpreadsheetRepository } from "data/EventExportSpreadsheetRepository";
+import { ProgramEventsRepository } from "domain/repositories/ProgramEventsRepository";
+import { ProgramEvent } from "domain/entities/ProgramEvent";
 
 export type MigrateOptions = {
-    eventId: Id[];
+    eventIds: Id[];
+    rootOrgUnit: Id;
     dataElementId: Id;
     condition: string;
     newValue: string;
@@ -16,78 +18,47 @@ export type MigrateOptions = {
 };
 
 export class UpdateEventDataValueUseCase {
-    constructor(private eventRepository: EventRepository) {}
+    constructor(
+        private programEventsRepository: ProgramEventsRepository,
+        private eventExportSpreadsheetRepository: EventExportSpreadsheetRepository
+    ) {}
 
-    async execute(options: MigrateOptions): Async<Stats> {
-        const eventMetadata = await this.eventRepository.getByIds(options.eventId);
+    async execute(options: MigrateOptions): Async<Result> {
+        const eventMetadata = await this.programEventsRepository.get({
+            eventsIds: options.eventIds,
+            orgUnitsIds: [options.rootOrgUnit],
+            orgUnitMode: "DESCENDANTS",
+        });
+
         const eventsWithDvInCondition = this.getEventsInCondition(eventMetadata, options);
 
         if (options.csvPath) {
             logger.debug(`Generate report: ${options.csvPath}`);
-            await this.generateCsvReport(eventMetadata, options);
+            await this.eventExportSpreadsheetRepository.saveReport(eventsWithDvInCondition, options);
         }
 
         if (options.post) {
             logger.debug(`Events to change: ${eventsWithDvInCondition.length}`);
-            const stats = await this.eventRepository.saveAll(eventsWithDvInCondition);
-            return stats;
+            const result = await this.programEventsRepository.save(eventsWithDvInCondition);
+            return result;
+        } else {
+            return {
+                type: "success",
+            };
         }
-
-        return {
-            created: 0,
-            ignored: 0,
-            updated: 0,
-        };
     }
 
-    private async generateCsvReport(events: EventMetadata[], options: MigrateOptions) {
-        const csvWriter = createObjectCsvWriter({
-            path: options.csvPath,
-            header: [
-                {
-                    id: "event",
-                    title: "Event",
-                },
-                {
-                    id: "dataElement",
-                    title: "Data Element",
-                },
-                {
-                    id: "oldValue",
-                    title: "Old Value",
-                },
-                {
-                    id: "value",
-                    title: "New Value",
-                },
-            ],
-        });
-
-        const csvData = _(events)
-            .map(event => {
-                const dv = event.dataValues.find(dv => dv.dataElement === options.dataElementId);
-                if (!dv) return undefined;
-                return {
-                    event: event.event,
-                    dataElement: dv.dataElement,
-                    oldValue: dv.value,
-                    value: options.newValue,
-                };
-            })
-            .compact()
-            .filter(dv => dv.dataElement === options.dataElementId && dv.oldValue === options.condition)
-            .value();
-
-        await csvWriter.writeRecords(csvData);
-    }
-
-    private getEventsInCondition(events: EventMetadata[], options: MigrateOptions) {
-        const eventsWithDvInCondition = events
+    private getEventsInCondition(events: ProgramEvent[], options: MigrateOptions) {
+        const eventsInCondition = events
             .map(event => {
                 const onlyDvInCondition = event.dataValues.map(dv => {
                     return {
                         ...dv,
-                        value: dv.value === options.condition ? options.newValue : dv.value,
+                        oldValue: dv.value,
+                        value:
+                            dv.dataElementId === options.dataElementId && dv.value === options.condition
+                                ? options.newValue
+                                : dv.value,
                     };
                 });
                 return {
@@ -96,9 +67,12 @@ export class UpdateEventDataValueUseCase {
                 };
             })
             .filter(
-                event => event.dataValues.filter(dv => dv.dataElement === options.dataElementId).length > 0
+                event =>
+                    event.dataValues.filter(
+                        dv => dv.dataElementId === options.dataElementId && dv.value === options.newValue
+                    ).length > 0
             );
 
-        return eventsWithDvInCondition;
+        return eventsInCondition;
     }
 }

@@ -1,5 +1,5 @@
 import _ from "lodash";
-import { Event } from "@eyeseetea/d2-api/api/events";
+import { Event, EventsGetRequest, PaginatedEventsGetResponse } from "@eyeseetea/d2-api/api/events";
 import { Async } from "domain/entities/Async";
 import { ProgramEvent } from "domain/entities/ProgramEvent";
 import { GetOptions, ProgramEventsRepository } from "domain/repositories/ProgramEventsRepository";
@@ -7,8 +7,25 @@ import { D2Api, EventsPostRequest, EventsPostParams, Ref } from "types/d2-api";
 import { cartesianProduct } from "utils/array";
 import logger from "utils/log";
 import { getId, Id } from "domain/entities/Base";
-import { Result } from "domain/entities/Result";
+import { getStats, Result } from "domain/entities/Result";
 import { Timestamp } from "domain/entities/Date";
+import { getInChunks } from "./dhis2-utils";
+
+const eventFields = [
+    "event",
+    "status",
+    "orgUnit",
+    "orgUnitName",
+    "program",
+    "programStage",
+    "dataValues",
+    "eventDate",
+    "dueDate",
+    "trackedEntityInstance",
+    "dataValues[dataElement,value,storedBy,providedElsewhere]",
+];
+
+type EventsRequestWithFilter = EventsGetRequest & { fields: string; event: string[] };
 
 export class ProgramEventsD2Repository implements ProgramEventsRepository {
     constructor(private api: D2Api) {}
@@ -50,6 +67,7 @@ export class ProgramEventsD2Repository implements ProgramEventsRepository {
                 dataElementId: dv.dataElement,
                 value: dv.value,
                 storedBy: dv.storedBy,
+                providedElsewhere: dv.providedElsewhere,
             })),
         }));
     }
@@ -60,25 +78,75 @@ export class ProgramEventsD2Repository implements ProgramEventsRepository {
     }
 
     async save(events: ProgramEvent[]): Async<Result> {
-        const d2Events = events.map((event): EventToPost => {
-            return {
-                event: event.id,
-                program: event.program.id,
-                programStage: event.programStage.id,
-                trackedEntityInstance: event.trackedEntityInstanceId,
-                orgUnit: event.orgUnit.id,
-                status: event.status,
-                eventDate: event.date,
-                dueDate: event.dueDate,
-                dataValues: event.dataValues.map(dv => ({
-                    dataElement: dv.dataElementId,
-                    value: dv.value,
-                    storedBy: dv.storedBy,
-                })),
-            };
+        const eventsIdsToSave = events.map(event => event.id);
+        const eventsById = _(events)
+            .keyBy(event => event.id)
+            .value();
+
+        const resultsList = await getInChunks<Result>(eventsIdsToSave, async eventIds => {
+            return this.getEvents(eventIds)
+                .then(res => {
+                    const postEvents = eventIds.map(eventId => {
+                        const existingD2Event = res.events.find(d2Event => d2Event.event === eventId);
+                        const event = eventsById[eventId];
+                        if (!event) {
+                            throw Error("Cannot find event");
+                        }
+                        return {
+                            ...(existingD2Event || {}),
+                            event: event.id,
+                            program: event.program.id,
+                            programStage: event.programStage.id,
+                            orgUnit: event.orgUnit.id,
+                            status: event.status,
+                            dueDate: event.dueDate,
+                            eventDate: event.created,
+                            dataValues: event.dataValues.map(dv => {
+                                return {
+                                    dataElement: dv.dataElementId,
+                                    value: dv.value,
+                                    storedBy: dv.storedBy,
+                                    providedElsewhere: dv.providedElsewhere,
+                                };
+                            }),
+                        };
+                    });
+                    return postEvents;
+                })
+                .then(eventsToSave => {
+                    return importEvents(this.api, eventsToSave, { strategy: "CREATE_AND_UPDATE" });
+                })
+                .then(responses => {
+                    return [responses];
+                })
+                .catch(() => {
+                    const message = `Error getting events: ${eventIds.join(",")}`;
+                    console.error(message);
+                    return [
+                        {
+                            type: "error",
+                            message,
+                        },
+                    ];
+                });
         });
 
-        return importEvents(this.api, d2Events, { strategy: "CREATE_AND_UPDATE" });
+        if (resultsList.length > 0) {
+            const type =
+                resultsList.filter(result => result.type === "success").length > 0 ? "success" : "error";
+            const message = resultsList.map(result => result.message).join("");
+            const stats = getStats(resultsList.flatMap(result => result.stats || []));
+            return {
+                type,
+                message: message,
+                stats,
+            };
+        } else {
+            return {
+                type: "success",
+                message: "No events to post",
+            };
+        }
     }
 
     private async getD2Events(options: GetOptions): Promise<Event[]> {
@@ -106,7 +174,8 @@ export class ProgramEventsD2Repository implements ProgramEventsRepository {
                     page: page,
                     pageSize: 1_000,
                     fields: eventFields.join(","),
-                };
+                    event: options.eventsIds?.join(";"),
+                } as EventsRequestWithFilter;
                 logger.debug(`Get API events: ${JSON.stringify(getEventsOptions)}`);
                 const { pager, events } = await this.api.events.get(getEventsOptions).getData();
 
@@ -118,20 +187,18 @@ export class ProgramEventsD2Repository implements ProgramEventsRepository {
 
         return allEvents;
     }
-}
 
-const eventFields = [
-    "event",
-    "status",
-    "orgUnit",
-    "orgUnitName",
-    "program",
-    "dataValues",
-    "eventDate",
-    "dueDate",
-    "trackedEntityInstance",
-    "dataValues[dataElement,value,storedBy]",
-];
+    private getEvents(eventIds: Id[]): Async<PaginatedEventsGetResponse> {
+        return this.api.events
+            .get({
+                event: eventIds.join(";"),
+                fields: eventFields.join(","),
+                totalPages: true,
+                pageSize: 1e6,
+            } as EventsRequestWithFilter)
+            .getData();
+    }
+}
 
 interface D2Event {
     event: string;
@@ -152,15 +219,23 @@ async function importEvents(api: D2Api, events: EventToPost[], params?: EventsPo
         return { type: "success", message: "No events to post" };
     } else {
         const res = await api.events.post(params || {}, { events }).getData();
-
+        const stats = {
+            created: res.response.imported,
+            updated: res.response.updated,
+            ignored: res.response.ignored,
+        };
         if (res.response.status === "SUCCESS") {
             const message = JSON.stringify(
                 _.pick(res.response, ["status", "imported", "updated", "deleted", "ignored"])
             );
-            return { type: "success", message };
+            return {
+                type: "success",
+                message,
+                stats,
+            };
         } else {
             const message = JSON.stringify(res.response, null, 4);
-            return { type: "error", message };
+            return { type: "error", message, stats };
         }
     }
 }

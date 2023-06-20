@@ -5,8 +5,8 @@ import { getApiUrlOption, getD2Api, StringsSeparatedByCommas } from "scripts/com
 import { ProgramEventsD2Repository } from "data/ProgramEventsD2Repository";
 import { MoveEventsToOrgUnitUseCase } from "domain/usecases/MoveEventsToOrgUnitUseCase";
 import logger from "utils/log";
-import { EventD2Repository } from "data/EventD2Repository";
 import { UpdateEventDataValueUseCase } from "domain/usecases/UpdateEventDataValueUseCase";
+import { EventExportSpreadsheetRepository } from "data/EventExportSpreadsheetRepository";
 
 export function getCommand() {
     return subcommands({
@@ -57,10 +57,15 @@ const updateEventsDataValues = command({
     description: "Update events which met the condition",
     args: {
         url: getApiUrlOption(),
-        eventId: option({
+        eventIds: option({
             type: StringsSeparatedByCommas,
             long: "event-ids",
             description: "event id's separated by commas",
+        }),
+        rootOrgUnit: option({
+            type: string,
+            long: "root-org-unit",
+            description: "root organisation unit id",
         }),
         dataElementId: option({
             type: string,
@@ -91,8 +96,12 @@ const updateEventsDataValues = command({
     },
     handler: async args => {
         const api = getD2Api(args.url);
-        const eventRepository = new EventD2Repository(api);
-        const result = await new UpdateEventDataValueUseCase(eventRepository).execute(args);
+        const programEventsRepository = new ProgramEventsD2Repository(api);
+        const eventExportSpreadsheetRepository = new EventExportSpreadsheetRepository();
+        const result = await new UpdateEventDataValueUseCase(
+            programEventsRepository,
+            eventExportSpreadsheetRepository
+        ).execute(args);
 
         logger.info(`Result: ${JSON.stringify(result, null, 2)}`);
 
