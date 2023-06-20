@@ -7,9 +7,10 @@ import { D2Api, EventsPostRequest, EventsPostParams, Ref } from "types/d2-api";
 import { cartesianProduct } from "utils/array";
 import logger from "utils/log";
 import { getId, Id } from "domain/entities/Base";
-import { getStats, Result } from "domain/entities/Result";
+import { Result } from "domain/entities/Result";
 import { Timestamp } from "domain/entities/Date";
 import { getInChunks } from "./dhis2-utils";
+import { promiseMap } from "./dhis2-utils";
 
 const eventFields = [
     "event",
@@ -68,6 +69,7 @@ export class ProgramEventsD2Repository implements ProgramEventsRepository {
                 value: dv.value,
                 storedBy: dv.storedBy,
                 providedElsewhere: dv.providedElsewhere,
+                lastUpdated: dv.lastUpdated,
             })),
         }));
     }
@@ -107,6 +109,7 @@ export class ProgramEventsD2Repository implements ProgramEventsRepository {
                                     value: dv.value,
                                     storedBy: dv.storedBy,
                                     providedElsewhere: dv.providedElsewhere,
+                                    lastUpdated: dv.lastUpdated,
                                 };
                             }),
                         };
@@ -135,11 +138,9 @@ export class ProgramEventsD2Repository implements ProgramEventsRepository {
             const type =
                 resultsList.filter(result => result.type === "success").length > 0 ? "success" : "error";
             const message = resultsList.map(result => result.message).join("");
-            const stats = getStats(resultsList.flatMap(result => result.stats || []));
             return {
                 type,
                 message: message,
-                stats,
             };
         } else {
             return {
@@ -215,27 +216,26 @@ interface D2Event {
 type EventToPost = EventsPostRequest["events"][number] & { event: Id; dueDate: Timestamp };
 
 async function importEvents(api: D2Api, events: EventToPost[], params?: EventsPostParams): Async<Result> {
-    if (_.isEmpty(events)) {
-        return { type: "success", message: "No events to post" };
-    } else {
-        const res = await api.events.post(params || {}, { events }).getData();
-        const stats = {
-            created: res.response.imported,
-            updated: res.response.updated,
-            ignored: res.response.ignored,
-        };
+    if (_.isEmpty(events)) return { type: "success", message: "No events to post" };
+
+    const resList = await promiseMap(_.chunk(events, 100), async eventsGroup => {
+        const res = await api.events.post(params || {}, { events: eventsGroup }).getData();
         if (res.response.status === "SUCCESS") {
             const message = JSON.stringify(
                 _.pick(res.response, ["status", "imported", "updated", "deleted", "ignored"])
             );
-            return {
-                type: "success",
-                message,
-                stats,
-            };
+            logger.info(`Post events OK: ${message}`);
+            return true;
         } else {
             const message = JSON.stringify(res.response, null, 4);
-            return { type: "error", message, stats };
+            logger.info(`Post events ERROR: ${message}`);
+            return false;
         }
-    }
+    });
+
+    const isSuccess = _.every(resList);
+
+    return isSuccess
+        ? { type: "success", message: `${events.length} posted` }
+        : { type: "error", message: "Error posting events" };
 }
