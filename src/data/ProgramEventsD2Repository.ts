@@ -88,7 +88,7 @@ export class ProgramEventsD2Repository implements ProgramEventsRepository {
         const resultsList = await getInChunks<Result>(eventsIdsToSave, async eventIds => {
             return this.getEvents(eventIds)
                 .then(res => {
-                    const postEvents = eventIds.map(eventId => {
+                    const postEvents = eventIds.map((eventId): EventToPost => {
                         const existingD2Event = res.events.find(d2Event => d2Event.event === eventId);
                         const event = eventsById[eventId];
                         if (!event) {
@@ -102,7 +102,7 @@ export class ProgramEventsD2Repository implements ProgramEventsRepository {
                             orgUnit: event.orgUnit.id,
                             status: event.status,
                             dueDate: event.dueDate,
-                            eventDate: event.created,
+                            eventDate: event.date,
                             dataValues: event.dataValues.map(dv => {
                                 return {
                                     dataElement: dv.dataElementId,
