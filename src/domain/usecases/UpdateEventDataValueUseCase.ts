@@ -32,6 +32,8 @@ export class UpdateEventDataValueUseCase {
 
         const eventsWithDvInCondition = this.getEventsInCondition(eventMetadata, options);
 
+        logger.info(`Matching events: ${eventsWithDvInCondition.length}`);
+
         if (options.csvPath) {
             logger.debug(`Generate report: ${options.csvPath}`);
             await this.eventExportSpreadsheetRepository.saveReport(eventsWithDvInCondition, options);
