@@ -135,9 +135,9 @@ export class UserD2Repository implements UserRepository {
                         },
                     ];
                 })
-                .catch(() => {
+                .catch(err => {
                     const errorMessage = `Error getting users ${userIds.join(",")}`;
-                    console.error(errorMessage);
+                    console.error(errorMessage, err);
                     return [
                         {
                             usersSkipped: userIds,

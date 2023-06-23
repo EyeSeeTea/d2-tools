@@ -14,7 +14,8 @@ export type MigrateOptions = {
     from: string;
     to: Email;
     sendNotification: boolean;
-    adminEmail: Email;
+    adminEmails: Email[];
+    emailAdminPathTemplate: string;
     emailPathTemplate: string;
     post: boolean;
     csvPath: string;
@@ -140,26 +141,36 @@ export class MigrateUserNameUseCase {
         const emailContent = await readJson(options.emailPathTemplate);
         const template = _.template(emailContent.body);
         const attachments = (emailContent.attachments || []).map(
-            (path): Attachment => ({
-                type: "file",
-                path: path,
-            })
+            (path): Attachment => ({ type: "file", path: path })
         );
 
-        await promiseMap(users, user => {
+        const emailContentAdmin = await readJson(options.emailAdminPathTemplate);
+        const templateAdmin = _.template(emailContentAdmin.body);
+        const attachmentsAdmin = (emailContentAdmin.attachments || []).map(
+            (path): Attachment => ({ type: "file", path: path })
+        );
+
+        await promiseMap(users, async user => {
             const { fromValue, toValue } = this.getValueFromProperties(user, from, to);
-            return this.notificationsRepository.send({
+
+            const namespace = {
+                userId: user.id,
+                newValue: fromValue,
+                oldValue: toValue,
+            };
+
+            await this.notificationsRepository.send({
                 recipients: [user.email],
-                bcc: options.adminEmail ? [options.adminEmail] : undefined,
                 subject: emailContent.subject,
-                body: {
-                    type: "html",
-                    contents: template({
-                        newValue: fromValue,
-                        oldValue: toValue,
-                    }),
-                },
+                body: { type: "html", contents: template(namespace) },
                 attachments,
+            });
+
+            await this.notificationsRepository.send({
+                recipients: options.adminEmails,
+                subject: emailContentAdmin.subject,
+                body: { type: "html", contents: templateAdmin(namespace) },
+                attachments: attachmentsAdmin,
             });
         });
     }

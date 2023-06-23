@@ -1,7 +1,7 @@
 import _ from "lodash";
 import { command, option, subcommands, string, boolean, flag } from "cmd-ts";
 import { UserD2Repository } from "data/UserD2Repository";
-import { getApiUrlOption, getD2Api } from "scripts/common";
+import { StringsSeparatedByCommas, getApiUrlOption, getD2Api } from "scripts/common";
 import { MigrateUserNameUseCase } from "domain/usecases/MigrateUserNameUseCase";
 import { NotificationsEmailRepository } from "data/NotificationsEmailRepository";
 import logger from "utils/log";
@@ -28,18 +28,22 @@ export function getCommand() {
                 description:
                     "Sends an email with the information of the change to the affected user and the administrator",
             }),
-            adminEmail: option({
-                type: string,
+            adminEmails: option({
+                type: StringsSeparatedByCommas,
                 long: "admin-email",
                 description: "Administrator email to be notified as BCC",
-                defaultValue: () => "",
             }),
             emailPathTemplate: option({
                 type: string,
                 long: "template-path",
                 description:
                     "Path to the json file with email template information (body, subject, attachments). Required if you pass the --send-notification flag",
-                defaultValue: () => "",
+            }),
+            emailAdminPathTemplate: option({
+                type: string,
+                long: "template-admin-path",
+                description:
+                    "Path to the json file with email template information for admins. Required if you pass the --send-notification flag",
             }),
             post: flag({
                 long: "post",
@@ -75,7 +79,7 @@ export function getCommand() {
                     logger.info(`Add --send-notifiction to notify every user affected`);
                 }
 
-                if (!args.adminEmail) {
+                if (!args.adminEmails) {
                     logger.info(`Add --admin-email='admin@example.com' to notify the administrator`);
                 }
 
