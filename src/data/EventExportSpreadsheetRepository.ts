@@ -30,15 +30,15 @@ export class EventExportSpreadsheetRepository implements EventExportRepository {
         });
 
         const csvData = _(events)
-            .map(event => {
-                const dv = event.dataValues.find(dv => dv.dataElementId === options.dataElementId);
-                if (!dv) return undefined;
-                return {
-                    event: event.id,
-                    dataElement: dv.dataElementId,
-                    oldValue: dv.oldValue,
-                    value: options.newValue,
-                };
+            .flatMap(event => {
+                return event.dataValues
+                    .filter(dv => dv.dataElementId === options.dataElementId)
+                    .map(dv => ({
+                        event: event.id,
+                        dataElement: dv.dataElementId,
+                        oldValue: dv.oldValue,
+                        value: options.newValue,
+                    }));
             })
             .compact()
             .value();
