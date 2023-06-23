@@ -17,7 +17,7 @@ export function runCli() {
             translations: translations.getCommand(),
             datavalues: dataValues.getCommand(),
             notifications: notifications.getCommand(),
-            events: events.getCommand()
+            events: events.getCommand(),
         },
     });
 
