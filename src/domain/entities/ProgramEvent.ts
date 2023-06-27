@@ -38,6 +38,8 @@ export interface EventDataValue {
     dataElementId: Id;
     value: string;
     storedBy: Username;
+    oldValue?: string;
+    providedElsewhere?: boolean;
     lastUpdated: Timestamp;
 }
 
