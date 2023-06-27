@@ -244,3 +244,62 @@ $ yarn start notifications send-user-info-notification \
   --url='http://USER:PASSWORD@HOST:PORT' \
   usernames.csv emailContent.json
 ```
+
+## Users
+
+### Migrate user information from one attribute to another if they're different
+
+Copy email to username:
+
+```bash
+$ yarn start users migrate \
+  --url='http://USER:PASSWORD@HOST:PORT' \
+  --from='email' \
+  --to='username' \
+  --post
+```
+
+Send an email to the user:
+
+```bash
+yarn start users migrate \
+  --url='http://USER:PASSWORD@HOST:PORT' \
+  --send-notification \
+  --from='email' \
+  --to='username' \
+  --template-path='email.json' \
+  --post
+```
+
+Send an email both to the user and the administrator:
+
+```bash
+yarn start users migrate \
+  --url='http://USER:PASSWORD@HOST:PORT' \
+  --admin-email="admin@example.com" \
+  --send-notification \
+  --from='email' \
+  --to='username' \
+  --template-path='email.json' \
+  --template-admin-path='email_admin.json'
+```
+
+Only generate a csv report without persisting changes:
+
+```bash
+yarn start users migrate \
+  --url='http://USER:PASSWORD@HOST:PORT' \
+  --from='email' \
+  --to='username' \
+  --csv-path='./users.csv'
+```
+
+**email.json** must have the following structure:
+
+```json
+{
+    "subject": "DHIS2 user migration",
+    "body": "<h1>Your username was updated from ${oldValue} to ${newValue} (user ${userId})<h1>",
+    "attachments": ["path_to_file.txt"]
+}
+```

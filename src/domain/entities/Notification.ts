@@ -5,6 +5,7 @@ export interface Notification {
     subject: string;
     body: { type: "text"; contents: string } | { type: "html"; contents: string };
     attachments: Attachment[];
+    bcc?: Recipient[];
 }
 
 export type Recipient = Email | Id;
