@@ -266,7 +266,8 @@ yarn start users migrate \
   --send-notification \
   --from='email' \
   --to='username' \
-  --template-path='email.json'
+  --template-path='email.json' \
+  --template-admin-path='email_admin.json'
 ```
 
 Only generate a csv report without persisting changes:
@@ -283,8 +284,8 @@ yarn start users migrate \
 
 ```json
 {
-    "subject": "DHIS2 username migration",
-    "body": "<h1>Your username was updated from ${oldValue} to ${newValue}<h1>",
+    "subject": "DHIS2 user migration",
+    "body": "<h1>Your username was updated from ${oldValue} to ${newValue} (user ${userId})<h1>",
     "attachments": ["path_to_file.txt"]
 }
 ```
