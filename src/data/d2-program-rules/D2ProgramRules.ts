@@ -32,6 +32,7 @@ import {
 import { fromPairs, Maybe } from "utils/ts-utils";
 import { RunRulesOptions } from "domain/repositories/ProgramsRepository";
 import { HttpResponse } from "@eyeseetea/d2-api/api/common";
+import { getId } from "domain/entities/Base";
 
 export class D2ProgramRules {
     constructor(private api: D2Api) {
@@ -292,33 +293,13 @@ export class D2ProgramRules {
 
         log.info(`Get data for events program: [${program.id}] ${program.name}`);
 
-        const orgUnitsIdsFromOu: string[] | undefined[] = orgUnitsIds ? orgUnitsIds : [undefined];
+        const orgUnitsIdsFromOu = orgUnitsIds || [];
+        const orgUnitIdsFromGroups = await this.getOrgUnitIdsFromGroups(orgUnitGroupIds);
+        const orgUnitIds = _.concat(orgUnitsIdsFromOu, orgUnitIdsFromGroups);
+        const orgUnitsIter = _.isEmpty(orgUnitIds) ? [undefined] : orgUnitIds;
+        log.info(`Org unit IDs: ${orgUnitIds.join(", ") || "-"}`);
 
-        const orgUnitsIdsFromOug: string[] = [];
-
-        const fields = { organisationUnits: { id: true as const } as const };
-        if (orgUnitGroupIds) {
-            const { organisationUnitGroups } = await getData(
-                this.api.metadata.get({
-                    organisationUnitGroups: {
-                        fields,
-                        filter: { id: { in: orgUnitGroupIds } },
-                    },
-                })
-            );
-
-            const uidList: string[] = organisationUnitGroups
-                .map((orgunitgroup: any) => orgunitgroup.organisationUnits.map((ou: any) => ou.id).flat())
-                .flat();
-            uidList.forEach(uid => orgUnitsIdsFromOug.push(uid));
-            log.info(`Get ou ids: orgUnit=${orgUnitsIdsFromOug}`);
-        }
-        const orgUnitsFromGroups = orgUnitsIdsFromOug ? orgUnitsIdsFromOug : [];
-        let orgUnits = [...orgUnitsIdsFromOu, ...orgUnitsFromGroups];
-        if (orgUnits.length == 0) {
-            orgUnits = [undefined];
-        }
-        for (const orgUnit of orgUnits) {
+        for (const orgUnit of orgUnitsIter) {
             const data: Data = { events: [], teis: [] };
 
             await this.getPaginated(async page => {
@@ -401,6 +382,24 @@ export class D2ProgramRules {
 
             onEffects(eventEffects);
         }
+    }
+
+    private async getOrgUnitIdsFromGroups(orgUnitGroupIds: Maybe<Id[]>): Promise<Id[]> {
+        if (_.isEmpty(orgUnitGroupIds)) return [];
+
+        const res = await getData(
+            this.api.metadata.get({
+                organisationUnitGroups: {
+                    fields: { organisationUnits: { id: true } },
+                    filter: { id: { in: orgUnitGroupIds } },
+                },
+            })
+        );
+
+        return _(res.organisationUnitGroups)
+            .flatMap(orgUnitGroup => orgUnitGroup.organisationUnits)
+            .map(getId)
+            .value();
     }
 
     private async getEventEffectsForTrackerProgram(
