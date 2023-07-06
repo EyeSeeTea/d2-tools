@@ -1,5 +1,13 @@
 ## Setup
 
+The required node version is v16.14.0. Alternatively, you can run:
+
+```console
+shell:~$ nvm use
+```
+
+To build the script run:
+
 ```console
 shell:~$ yarn install
 shell:~$ yarn build
@@ -149,6 +157,34 @@ Expected format of `xlsx` file:
 -   Columns named `id`/`name`/`code` will be used to match the existing object in the database. No need to specify all of them.
 -   Translation columns should have the format: `field:localeName`. A DHIS2 Locale with that name should exist in the database. Example: `formName:French`.
 
+## Events
+
+### Move events from one orgunit to another
+
+Move events for program events (so no enrollments/TEIs move is supported):
+
+```
+$ yarn start events move-to-org-unit \
+  --url='http://USER:PASSWORD@HOST:POST' \
+  --from-orgunit-id=qs81OdIPwO9 \
+  --to-orgunit-id=ewiA4ufWiki \
+  --post
+```
+
+### Update events which met the condition
+
+```
+yarn start events update-events \
+--url='http://USER:PASSWORD@HOST:PORT' \
+--root-org-unit='org-unit-id'
+--event-ids='event_id_1,event_id_2,event_id_3' \
+--data-element-id='data_element_id' \
+--condition='true' \
+--new-value='' \
+--csv-path='./events.csv' \
+--post
+```
+
 ## Data values
 
 ### Dangling data values
@@ -156,7 +192,6 @@ Expected format of `xlsx` file:
 Get dangling data values and save them in a CSV file:
 
 ```
-$ yarn build
 $ yarn start datavalues get-dangling-values \
   --url='http://USER:PASSWORD@HOST:PORT' \
   --dataelementgroup-ids=OUwLDu1i5xa,SMkbYuGmadE \
@@ -197,3 +232,74 @@ $ yarn start programs get-duplicated-events \
 ```
 
 Add option `--post` to actually (soft) delete the events.
+
+## Notifications
+
+### Send user info email
+
+Send an email read from a JSON file to a list of users in a CSV file:
+
+```
+$ yarn start notifications send-user-info-notification \
+  --url='http://USER:PASSWORD@HOST:PORT' \
+  usernames.csv emailContent.json
+```
+
+## Users
+
+### Migrate user information from one attribute to another if they're different
+
+Copy email to username:
+
+```bash
+$ yarn start users migrate \
+  --url='http://USER:PASSWORD@HOST:PORT' \
+  --from='email' \
+  --to='username' \
+  --post
+```
+
+Send an email to the user:
+
+```bash
+yarn start users migrate \
+  --url='http://USER:PASSWORD@HOST:PORT' \
+  --send-notification \
+  --from='email' \
+  --to='username' \
+  --template-path='email.json' \
+  --post
+```
+
+Send an email both to the user and the administrator:
+
+```bash
+yarn start users migrate \
+  --url='http://USER:PASSWORD@HOST:PORT' \
+  --admin-email="admin@example.com" \
+  --send-notification \
+  --from='email' \
+  --to='username' \
+  --template-path='email.json' \
+  --template-admin-path='email_admin.json'
+```
+
+Only generate a csv report without persisting changes:
+
+```bash
+yarn start users migrate \
+  --url='http://USER:PASSWORD@HOST:PORT' \
+  --from='email' \
+  --to='username' \
+  --csv-path='./users.csv'
+```
+
+**email.json** must have the following structure:
+
+```json
+{
+    "subject": "DHIS2 user migration",
+    "body": "<h1>Your username was updated from ${oldValue} to ${newValue} (user ${userId})<h1>",
+    "attachments": ["path_to_file.txt"]
+}
+```

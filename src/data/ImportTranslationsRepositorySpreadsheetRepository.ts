@@ -16,12 +16,25 @@ const columnsMapping = {
     code: ["code"],
 };
 
+/* Spreadsheet with columns:
+
+    - type/kind: model (singular) -> example: dataElement
+    - id/uid
+    - code
+    - name
+    - FIELD1: LANGUAGE_NAME1
+    - FIELD2: LANGUAGE_NAME2
+    - ...
+
+    Spreadsheets starting with '!' will be skipped.
+*/
 export class ImportTranslationsRepositorySpreadsheetRepository implements ImportTranslationsRepository {
     async get(options: GetFieldTranslationsOptions): Async<FieldTranslations> {
         const { inputFile } = options;
         const spreadsheet = await new SpreadsheetXlsxDataSource().read({ inputFile, skipHidden: false });
 
         return _(spreadsheet.sheets)
+            .reject(sheet => sheet.name.startsWith("!"))
             .flatMap((sheet): FieldTranslations => {
                 return _(sheet.rows)
                     .map((row, rowIndex) => this.fromRow(row, rowIndex, `${sheet.name}:${rowIndex}`, options))

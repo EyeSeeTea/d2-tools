@@ -16,6 +16,7 @@ import { RunProgramRulesUseCase } from "domain/usecases/RunProgramRulesUseCase";
 import { GetDuplicatedEventsUseCase, orgUnitModes } from "domain/usecases/GetDuplicatedEventsUseCase";
 import { ProgramEventsD2Repository } from "data/ProgramEventsD2Repository";
 import { ProgramEventsExportCsvRepository } from "data/ProgramEventsExportCsvRepository";
+import { DeleteProgramDataValuesUseCase } from "domain/usecases/DeleteProgramDataValuesUseCase";
 
 export function getCommand() {
     return subcommands({
@@ -25,6 +26,7 @@ export function getCommand() {
             import: importCmd,
             "run-program-rules": runProgramRulesCmd,
             "get-duplicated-events": getDuplicatedEventsCmd,
+            "delete-data-values": deleteDataValuesCmd,
         },
     });
 }
@@ -194,5 +196,77 @@ const getDuplicatedEventsCmd = command({
         const options = _.omit(args, ["url"]);
 
         new GetDuplicatedEventsUseCase(eventsRepository, eventsExportRepository).execute(options);
+    },
+});
+
+const orgUnitsIdsArg = option({
+    type: StringsSeparatedByCommas,
+    long: "org-units-ids",
+    description: "List of organisation units (comma-separated)",
+});
+
+const orgUnitModeArg = option({
+    type: optional(choiceOf(orgUnitModes)),
+    long: "org-unit-mode",
+    description: `Orgunit mode: ${orgUnitModes.join(", ")}`,
+});
+
+const startDateArg = option({
+    type: optional(string),
+    long: "start-date",
+    description: "Start date",
+});
+
+const endDateArg = option({
+    type: optional(string),
+    long: "end-date",
+    description: "End date",
+});
+
+const dataElementIdsInclude = option({
+    type: optional(StringsSeparatedByCommas),
+    long: "include-data-elements-ids",
+    description: "List of data elements to include (comma-separated)",
+});
+
+const dataElementIdsExclude = option({
+    type: optional(StringsSeparatedByCommas),
+    long: "exclude-data-elements-ids",
+    description: "List of data elements to include (comma-separated)",
+});
+
+const deleteDataValuesCmd = command({
+    name: "Duplicated events",
+    description: "Detect and delete duplicated events for event/tracker programs",
+    args: {
+        ...getApiUrlOptions(),
+        programIds: programIdsOptions,
+        orgUnitsIds: orgUnitsIdsArg,
+        orgUnitMode: orgUnitModeArg,
+        startDate: startDateArg,
+        endDate: endDateArg,
+        dataElementsIdsInclude: dataElementIdsInclude,
+        dataElementsIdsExclude: dataElementIdsExclude,
+        saveBackup: option({
+            type: optional(string),
+            long: "save-backup",
+            description: "Save backup to JSON file",
+        }),
+        savePayload: option({
+            type: optional(string),
+            long: "save-payload",
+            description: "Save payload to JSON file",
+        }),
+        post: flag({
+            long: "post",
+            description: "Delete data values",
+        }),
+    },
+    handler: async args => {
+        const api = getD2ApiFromArgs(args);
+        const eventsRepository = new ProgramEventsD2Repository(api);
+        const options = _.omit(args, ["url"]);
+
+        new DeleteProgramDataValuesUseCase(eventsRepository).execute(options);
     },
 });

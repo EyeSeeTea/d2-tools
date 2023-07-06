@@ -5,6 +5,9 @@ import * as datasets from "./commands/datasets";
 import * as programs from "./commands/programs";
 import * as translations from "./commands/translations";
 import * as dataValues from "./commands/dataValues";
+import * as notifications from "./commands/notifications";
+import * as events from "./commands/events";
+import * as users from "./commands/users";
 
 export function runCli() {
     const cliSubcommands = subcommands({
@@ -14,6 +17,9 @@ export function runCli() {
             programs: programs.getCommand(),
             translations: translations.getCommand(),
             datavalues: dataValues.getCommand(),
+            notifications: notifications.getCommand(),
+            events: events.getCommand(),
+            users: users.getCommand(),
         },
     });
 

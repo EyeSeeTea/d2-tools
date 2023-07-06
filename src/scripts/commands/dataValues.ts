@@ -9,6 +9,7 @@ import { DataSetsD2Repository } from "data/DataSetsD2Repository";
 import { PostDanglingValuesUseCase } from "domain/usecases/PostDanglingValuesUseCase";
 import { DanglingDataValuesCsvRepository } from "data/DanglingDataValuesCsvRepository";
 import { NotificationsEmailRepository } from "data/NotificationsEmailRepository";
+import { UserD2Repository } from "data/UserD2Repository";
 
 export function getCommand() {
     return subcommands({
@@ -118,7 +119,7 @@ const getDanglingValuesCmd = command({
         notify: option({
             type: optional(StringsSeparatedByCommas),
             long: "notify-email",
-            description: "Send report to email recipients (comma-separated)",
+            description: "Send report to emails/userId/userGroupIds (comma-separated)",
         }),
         outputFile: positional({
             type: string,
@@ -132,12 +133,14 @@ const getDanglingValuesCmd = command({
         const dataValuesRepository = new DataValuesD2Repository(api);
         const danglingDataValuesRepository = new DanglingDataValuesCsvRepository();
         const notificationsRepository = new NotificationsEmailRepository();
+        const recipientRepository = new UserD2Repository(api);
 
         new GetDanglingValuesUseCase(
             dataSetsRepository,
             dataValuesRepository,
             danglingDataValuesRepository,
-            notificationsRepository
+            notificationsRepository,
+            recipientRepository
         ).execute(args);
     },
 });
