@@ -32,6 +32,7 @@ import {
 import { fromPairs, Maybe } from "utils/ts-utils";
 import { RunRulesOptions } from "domain/repositories/ProgramsRepository";
 import { HttpResponse } from "@eyeseetea/d2-api/api/common";
+import { getId } from "domain/entities/Base";
 
 export class D2ProgramRules {
     constructor(private api: D2Api) {
@@ -288,13 +289,17 @@ export class D2ProgramRules {
         onEffects: (eventEffects: EventEffect[]) => void
     ): Promise<void> {
         const { program, metadata } = options;
-        const { startDate, endDate, orgUnitsIds, programRulesIds } = runOptions;
+        const { startDate, endDate, orgUnitsIds, orgUnitGroupIds, programRulesIds } = runOptions;
 
         log.info(`Get data for events program: [${program.id}] ${program.name}`);
 
-        const orgUnits = orgUnitsIds ? orgUnitsIds : [undefined];
+        const orgUnitsIdsFromOu = orgUnitsIds || [];
+        const orgUnitIdsFromGroups = await this.getOrgUnitIdsFromGroups(orgUnitGroupIds);
+        const orgUnitIds = _.concat(orgUnitsIdsFromOu, orgUnitIdsFromGroups);
+        const orgUnitsIter = _.isEmpty(orgUnitIds) ? [undefined] : orgUnitIds;
+        log.info(`Org unit IDs: ${orgUnitIds.join(", ") || "-"}`);
 
-        for (const orgUnit of orgUnits) {
+        for (const orgUnit of orgUnitsIter) {
             const data: Pick<Data, "events"> = { events: [] };
 
             await this.getPaginated(async page => {
@@ -372,6 +377,24 @@ export class D2ProgramRules {
 
             onEffects(eventEffects);
         }
+    }
+
+    private async getOrgUnitIdsFromGroups(orgUnitGroupIds: Maybe<Id[]>): Promise<Id[]> {
+        if (_.isEmpty(orgUnitGroupIds)) return [];
+
+        const res = await getData(
+            this.api.metadata.get({
+                organisationUnitGroups: {
+                    fields: { organisationUnits: { id: true } },
+                    filter: { id: { in: orgUnitGroupIds } },
+                },
+            })
+        );
+
+        return _(res.organisationUnitGroups)
+            .flatMap(orgUnitGroup => orgUnitGroup.organisationUnits)
+            .map(getId)
+            .value();
     }
 
     private async getEventEffectsForTrackerProgram(
