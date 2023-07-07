@@ -1,5 +1,6 @@
 import { Async } from "domain/entities/Async";
 import { Id } from "domain/entities/Base";
+import { Timestamp } from "domain/entities/Date";
 import { ProgramExport } from "domain/entities/ProgramExport";
 
 export interface ProgramsRepository {
@@ -10,10 +11,13 @@ export interface ProgramsRepository {
 
 export interface RunRulesOptions {
     programIds: Id[];
+    teiId?: Id;
     programRulesIds?: Id[];
     orgUnitsIds?: Id[];
-    startDate?: string;
-    endDate?: string;
+    orgUnitGroupIds?: Id[];
+    startDate?: Timestamp;
+    endDate?: Timestamp;
     reportPath?: string;
     post: boolean;
+    payloadPath?: string;
 }

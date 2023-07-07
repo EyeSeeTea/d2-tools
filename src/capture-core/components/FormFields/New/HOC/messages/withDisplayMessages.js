@@ -1,0 +1,135 @@
+//
+import * as React from "react";
+import { CircularLoader } from "@dhis2/ui";
+import { withStyles } from "@material-ui/core/styles";
+import classNames from "classnames";
+import isObject from "d2-utilizr/lib/isObject";
+
+const styles = theme => ({
+    base: {
+        paddingTop: 10,
+    },
+    error: {
+        color: theme.palette.error.main,
+        fontSize: theme.typography.pxToRem(14),
+    },
+    warning: {
+        color: theme.palette.warning.dark,
+        fontSize: theme.typography.pxToRem(14),
+    },
+    info: {
+        color: "green",
+        fontSize: theme.typography.pxToRem(14),
+    },
+    validating: {
+        color: theme.palette.grey.dark,
+        fontSize: theme.typography.pxToRem(14),
+    },
+    validatingContainer: {
+        display: "flex",
+        alignItems: "center",
+        color: theme.palette.grey.dark,
+    },
+    validatingIndicator: {
+        fontSize: 12,
+        marginTop: 1,
+        marginRight: 4,
+    },
+});
+
+const messageTypes = {
+    error: "error",
+    warning: "warning",
+    info: "info",
+    validating: "validating",
+};
+
+const getDisplayMessagesHOC = InnerComponent =>
+    class DisplayMessagesHOC extends React.Component {
+        static createMessageElement(text, baseClass, messageClass, validatorClasses, type) {
+            if (type === messageTypes.validating) {
+                return (
+                    <div className={baseClass}>
+                        <div className={validatorClasses.container}>
+                            <div className={validatorClasses.indicator}>
+                                <CircularLoader small />
+                            </div>
+                            <div className={messageClass}>{text}</div>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div data-test="error-message" className={classNames(baseClass, messageClass)}>
+                    {!Array.isArray(text)
+                        ? text
+                        : text.map(message => (
+                              <span>
+                                  {message}
+                                  <br />
+                              </span>
+                          ))}
+                </div>
+            );
+        }
+
+        convertMessage = (message, messageType) => {
+            if (isObject(message) && !React.isValidElement(message)) {
+                return {
+                    innerMessage: { message, messageType },
+                };
+            }
+
+            const { classes } = this.props;
+            return {
+                element: DisplayMessagesHOC.createMessageElement(
+                    message,
+                    classes.base,
+                    classes[messageType],
+                    {
+                        container: classes.validatingContainer,
+                        indicator: classes.validatingIndicator,
+                    },
+                    messageType
+                ),
+            };
+        };
+
+        getMessage(errorMessage, warningMessage, infoMessage, validatingMessage) {
+            let message = {};
+
+            if (validatingMessage) {
+                message = this.convertMessage(validatingMessage, messageTypes.validating);
+            } else if (errorMessage) {
+                message = this.convertMessage(errorMessage, messageTypes.error);
+            } else if (warningMessage) {
+                message = this.convertMessage(warningMessage, messageTypes.warning);
+            } else if (infoMessage) {
+                message = this.convertMessage(infoMessage, messageTypes.info);
+            }
+
+            return message;
+        }
+
+        render() {
+            const { classes, errorMessage, warningMessage, infoMessage, validatingMessage, ...passOnProps } =
+                this.props;
+
+            const message = this.getMessage(errorMessage, warningMessage, infoMessage, validatingMessage);
+
+            const calculatedMessageProps = message.innerMessage
+                ? { innerMessage: message.innerMessage }
+                : null;
+            return (
+                <div>
+                    {/* $FlowFixMe[cannot-spread-inexact] automated comment */}
+                    <InnerComponent {...calculatedMessageProps} {...passOnProps} />
+                    {message.element}
+                </div>
+            );
+        }
+    };
+
+export const withDisplayMessages = () => InnerComponent =>
+    withStyles(styles)(getDisplayMessagesHOC(InnerComponent));

@@ -1,0 +1,2 @@
+//
+export { storeTrackedEntityAttributes } from "./storeTrackedEntityAttributes";

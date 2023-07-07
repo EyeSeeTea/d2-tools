@@ -1,0 +1,139 @@
+//
+/* eslint-disable complexity */
+/* eslint-disable no-underscore-dangle */
+import { EventProgram, TrackerProgram, CategoryCombination } from "../../../../metaData";
+import { getUserStorageController } from "../../../../storageControllers";
+import { userStores } from "../../../../storageControllers/stores";
+import { SearchGroupFactory } from "../../../common/factory";
+import { buildIcon } from "../../../common/helpers";
+import { EnrollmentFactory } from "../enrollment";
+import { DataElementFactory } from "../enrollment/DataElementFactory";
+import { ProgramStageFactory } from "../programStage";
+import { CategoryFactory } from "../category";
+
+export class ProgramFactory {
+    constructor(
+        cachedOptionSets,
+        cachedRelationshipTypes,
+        cachedTrackedEntityAttributes,
+        cachedTrackedEntityTypes,
+        cachedCategories,
+        trackedEntityTypeCollection,
+        locale
+    ) {
+        this.trackedEntityTypeCollection = trackedEntityTypeCollection;
+        this.programStageFactory = new ProgramStageFactory({
+            cachedOptionSets,
+            cachedRelationshipTypes,
+            locale,
+        });
+        this.enrollmentFactory = new EnrollmentFactory({
+            cachedTrackedEntityAttributes,
+            cachedOptionSets,
+            cachedTrackedEntityTypes,
+            trackedEntityTypeCollection,
+            locale,
+        });
+        this.searchGroupFactory = new SearchGroupFactory({
+            cachedTrackedEntityAttributes,
+            cachedOptionSets,
+            locale,
+        });
+        this.dataElementFactory = new DataElementFactory({
+            cachedTrackedEntityAttributes,
+            cachedOptionSets,
+            locale,
+        });
+        this.categoryFactory = new CategoryFactory(cachedCategories);
+    }
+
+    _buildCategories(cachedProgramCategories) {
+        return new Map(
+            cachedProgramCategories.map(cachedProgramCategory => [
+                cachedProgramCategory.id,
+                this.categoryFactory.build(cachedProgramCategory),
+            ])
+        );
+    }
+
+    _buildCategoryCombination(cachedCategoryCombination) {
+        if (
+            !(
+                cachedCategoryCombination &&
+                !cachedCategoryCombination.isDefault &&
+                cachedCategoryCombination.categories &&
+                cachedCategoryCombination.categories.length > 0
+            )
+        ) {
+            return null;
+        }
+
+        return new CategoryCombination(o => {
+            o.name = cachedCategoryCombination.displayName;
+            o.id = cachedCategoryCombination.id;
+            o.categories =
+                // $FlowFixMe
+                this._buildCategories(cachedCategoryCombination.categories, this.cachedCategories);
+        });
+    }
+
+    async _buildProgramAttributes(cachedProgramTrackedEntityAttributes) {
+        const attributePromises = cachedProgramTrackedEntityAttributes.map(async ptea => {
+            // $FlowFixMe[incompatible-call] automated comment
+            const dataElement = await this.dataElementFactory.build(ptea);
+            return dataElement;
+        });
+
+        const attributes = await Promise.all(attributePromises);
+        return attributes;
+    }
+
+    async build(cachedProgram) {
+        let program;
+        if (cachedProgram.programType === "WITHOUT_REGISTRATION") {
+            program = new EventProgram(o => {
+                o.id = cachedProgram.id;
+                o.access = cachedProgram.access;
+                o.name = cachedProgram.displayName;
+                o.shortName = cachedProgram.displayShortName;
+                o.categoryCombination = this._buildCategoryCombination(cachedProgram.categoryCombo);
+            });
+            const d2Stage = cachedProgram.programStages && cachedProgram.programStages[0];
+            program.stage = await this.programStageFactory.build(d2Stage, program.id);
+        } else {
+            program = new TrackerProgram(o => {
+                o.id = cachedProgram.id;
+                o.access = cachedProgram.access;
+                o.name = cachedProgram.displayName;
+                o.shortName = cachedProgram.displayShortName;
+                // $FlowFixMe
+                o.trackedEntityType = this.trackedEntityTypeCollection.get(cachedProgram.trackedEntityTypeId);
+            });
+
+            if (cachedProgram.programTrackedEntityAttributes) {
+                program.searchGroups = await this.searchGroupFactory.build(
+                    cachedProgram.programTrackedEntityAttributes,
+                    cachedProgram.minAttributesRequiredToSearch
+                );
+
+                // $FlowFixMe
+                program.attributes = await this._buildProgramAttributes(
+                    cachedProgram.programTrackedEntityAttributes
+                );
+            }
+
+            // $FlowFixMe
+            await cachedProgram.programStages.asyncForEach(async cachedProgramStage => {
+                program.addStage(await this.programStageFactory.build(cachedProgramStage, program.id));
+            });
+
+            program.enrollment = await this.enrollmentFactory.build(cachedProgram, program.searchGroups);
+        }
+        program.organisationUnits = (
+            await getUserStorageController().get(userStores.ORGANISATION_UNITS_BY_PROGRAM, program.id)
+        )?.organisationUnits;
+        program.icon = buildIcon(cachedProgram.style);
+
+        return program;
+    }
+}

@@ -1,0 +1,37 @@
+//
+import * as React from "react";
+import { TextFilter } from "./TextFilter.component";
+
+export class TextFilterManager extends React.Component {
+    static calculateDefaultState(filter) {
+        return {
+            value: filter && filter.value ? filter.value : undefined,
+        };
+    }
+
+    constructor(props) {
+        super(props);
+        this.state = TextFilterManager.calculateDefaultState(this.props.filter);
+    }
+
+    handleCommitValue = value => {
+        this.setState({
+            value,
+        });
+        this.props.handleCommitValue && this.props.handleCommitValue();
+    };
+
+    render() {
+        const { filter, filterTypeRef, ...passOnProps } = this.props;
+
+        return (
+            // $FlowFixMe[cannot-spread-inexact] automated comment
+            <TextFilter
+                value={this.state.value}
+                ref={filterTypeRef}
+                onCommitValue={this.handleCommitValue}
+                {...passOnProps}
+            />
+        );
+    }
+}
