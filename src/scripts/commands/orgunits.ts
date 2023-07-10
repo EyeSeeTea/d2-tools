@@ -2,9 +2,11 @@
 // The generated sql files can be run for example with: d2-docker run-sql <file>
 
 import _ from "lodash";
-import fs from "fs";
 import { command, subcommands, flag, option, optional, string } from "cmd-ts";
 import { HierarchyLevel, OrgUnitPath } from "scripts/common";
+import { GenerateDeleteOrgUnitsActionUseCase } from "domain/usecases/GenerateDeleteOrgUnitsActionUseCase";
+import { OrgUnitActionSqlRepository } from "data/OrgUnitActionSqlRepository";
+import { OrgUnitAction } from "domain/OrgUnitAction";
 
 export function getCommand() {
     const removeCommand = command({
@@ -37,23 +39,10 @@ export function getCommand() {
                 process.exit(1);
             }
 
-            const whereCondition = ([] as Array<string>)
-                .concat(
-                    args.level !== undefined ? [`hierarchylevel > ${args.level}`] : [],
-                    args.path !== undefined ? [`path LIKE '${args.path}/%'`] : []
-                )
-                .join(" AND ");
-
-            const sqlTemplate = fs.readFileSync("./src/data/remove_orgunits.template.sql", "utf8");
-            const sqlCommands = _.template(sqlTemplate)({ whereCondition });
-
-            if (args.outputFile) {
-                safeWrite(args.outputFile, sqlCommands, args.overwrite);
-            } else {
-                process.stdout.write(sqlCommands);
-            }
-
-            console.debug("Note: The DHIS2 instance must be restarted after the SQL has been applied")
+            const orgUnitActionRepository = new OrgUnitActionSqlRepository();
+            const action: OrgUnitAction = { type: "delete", ..._.pick(args, ["level", "path"]) };
+            new GenerateDeleteOrgUnitsActionUseCase(orgUnitActionRepository).execute(action, args);
+            console.debug("The DHIS2 instance must be restarted after the SQL has been execute");
             process.exit(0);
         },
     });
@@ -64,15 +53,4 @@ export function getCommand() {
             remove: removeCommand,
         },
     });
-}
-
-// Write to outputFile the given string str, unless the file exists.
-function safeWrite(outputFile: string, str: string, overwrite: boolean) {
-    if (!fs.existsSync(outputFile) || overwrite) {
-        fs.writeFileSync(outputFile, str);
-        console.debug(`Written: ${outputFile}`);
-    } else {
-        console.error(`ERROR. Output file already exists: ${outputFile}`);
-        console.error("Use --overwrite if you want to overwrite it anyway.");
-    }
 }
