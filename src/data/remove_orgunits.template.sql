@@ -91,6 +91,7 @@ DELETE FROM programinstance                  WHERE programinstanceid       IN (S
 DELETE FROM trackedentityattributevalue      WHERE trackedentityinstanceid IN (SELECT * FROM rm_trackedentityinstance);
 DELETE FROM trackedentityattributevalueaudit WHERE trackedentityinstanceid IN (SELECT * FROM rm_trackedentityinstance);
 DELETE FROM trackedentityprogramowner        WHERE organisationunitid      IN (SELECT * FROM orgs);
+DELETE FROM trackedentityinstance            WHERE organisationunitid      IN (SELECT * FROM orgs);
 DELETE FROM trackedentityinstance            WHERE trackedentityinstanceid IN (SELECT * FROM rm_trackedentityinstance);
 
 DELETE FROM interpretationuseraccesses       WHERE interpretationid        IN (SELECT * FROM rm_interpretation);
@@ -119,6 +120,7 @@ DELETE FROM minmaxdataelement                    WHERE sourceid                I
 DELETE FROM organisationunitattributevalues      WHERE organisationunitid      IN (SELECT * FROM orgs);
 DELETE FROM orgunitgroupmembers                  WHERE organisationunitid      IN (SELECT * FROM orgs);
 DELETE FROM program_organisationunits            WHERE organisationunitid      IN (SELECT * FROM orgs);
+DELETE FROM programownershiphistory              WHERE trackedentityinstanceid IN (SELECT * FROM rm_trackedentityinstance);
 DELETE FROM programownershiphistory              WHERE organisationunitid      IN (SELECT * FROM orgs);
 DELETE FROM reporttable_organisationunits        WHERE organisationunitid      IN (SELECT * FROM orgs);
 DELETE FROM userdatavieworgunits                 WHERE organisationunitid      IN (SELECT * FROM orgs);
