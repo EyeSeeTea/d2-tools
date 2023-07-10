@@ -9,13 +9,12 @@ import _ from "lodash";
 
 export class OrgUnitActionSqlRepository implements OrgUnitActionRepository {
     async save(action: OrgUnitAction, options: OrgUnitActionRepositoryDeleteOptions): Async<void> {
-        const whereCondition = ([] as Array<string>)
-            .concat(
-                action.level !== undefined ? [`hierarchylevel > ${action.level}`] : [],
-                action.path !== undefined ? [`path LIKE '${action.path}/%'`] : []
-            )
-            .join(" AND ");
+        const conditions = [
+            action.level !== undefined ? `hierarchylevel > ${action.level}` : undefined,
+            action.path !== undefined ? `path LIKE '${action.path}/%'` : undefined,
+        ];
 
+        const whereCondition = _(conditions).compact().join(" AND ");
         const sqlTemplate = fs.readFileSync("./src/data/remove_orgunits.template.sql", "utf8");
         const sqlCommands = _.template(sqlTemplate)({ whereCondition });
 

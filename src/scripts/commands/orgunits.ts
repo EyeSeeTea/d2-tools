@@ -42,7 +42,7 @@ export function getCommand() {
             const orgUnitActionRepository = new OrgUnitActionSqlRepository();
             const action: OrgUnitAction = { type: "delete", ..._.pick(args, ["level", "path"]) };
             new GenerateDeleteOrgUnitsActionUseCase(orgUnitActionRepository).execute(action, args);
-            console.debug("The DHIS2 instance must be restarted after the SQL has been execute");
+            process.stderr.write("Restart the DHIS2 instance after the SQL is applied\n");
             process.exit(0);
         },
     });
