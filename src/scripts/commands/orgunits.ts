@@ -53,6 +53,7 @@ export function getCommand() {
                 process.stdout.write(sqlCommands);
             }
 
+            console.debug("Note: The DHIS2 instance must be restarted after the SQL has been applied")
             process.exit(0);
         },
     });
@@ -69,7 +70,7 @@ export function getCommand() {
 function safeWrite(outputFile: string, str: string, overwrite: boolean) {
     if (!fs.existsSync(outputFile) || overwrite) {
         fs.writeFileSync(outputFile, str);
-        console.log(`Written: ${outputFile}`);
+        console.debug(`Written: ${outputFile}`);
     } else {
         console.error(`ERROR. Output file already exists: ${outputFile}`);
         console.error("Use --overwrite if you want to overwrite it anyway.");
