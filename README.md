@@ -120,7 +120,31 @@ shell:~$ yarn start datasets compare \
 DiMntK7qKZQ - Z3tlf5sqWiK: equal
 ```
 
-### Copy the organisation units from a data set to one or more datasets:
+## Organisation Units
+
+The output SQL file (`remove_orgunits.sql` for example) can be executed against
+a running [d2-docker](https://github.com/eyeSeeTea/d2-docker) instance with
+`d2-docker run-sql remove_orgunits.sql`.
+
+### Create an SQL file to remove any orgunit below the country level
+
+```console
+shell:~$ node dist/index.js orgunits remove \
+    --level 3 \
+    --output-file remove_country_subunits.sql
+```
+
+### Create an SQL file to remove all org subunits of Canada
+
+```console
+shell:~$ node dist/index.js orgunits remove \
+    --path /H8RixfF8ugH/wP2zKq0dDpw/AJBfDthkySs \
+    --output-file remove_canada_subunits.sql
+```
+
+where `/H8RixfF8ugH/wP2zKq0dDpw/AJBfDthkySs` would be the dhis2 path of Canada.
+
+### Copy the organisation units from a data set to one or more datasets
 
 ```console
 shell:~$ yarn start datasets copy-org-units \
