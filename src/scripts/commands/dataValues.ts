@@ -1,5 +1,5 @@
 import _ from "lodash";
-import { command, string, subcommands, option, positional, optional, flag } from "cmd-ts";
+import { command, string, subcommands, option, positional, optional, flag, number, oneOf } from "cmd-ts";
 
 import { getApiUrlOption, getD2Api, StringsSeparatedByCommas } from "scripts/common";
 import { DataValuesD2Repository } from "data/DataValuesD2Repository";
@@ -10,6 +10,12 @@ import { PostDanglingValuesUseCase } from "domain/usecases/PostDanglingValuesUse
 import { DanglingDataValuesCsvRepository } from "data/DanglingDataValuesCsvRepository";
 import { NotificationsEmailRepository } from "data/NotificationsEmailRepository";
 import { UserD2Repository } from "data/UserD2Repository";
+import { SendNotificationDataValuesUseCase } from "domain/usecases/SendNotificationDataValuesUseCase";
+import { OrgUnitD2Repository } from "data/OrgUnitD2Repository";
+import { DataSetExecutionD2Repository } from "data/DataSetExecutionD2Repository";
+import { SettingsD2Repository } from "data/SettingsD2Repository";
+import { SettingsJsonRepository } from "data/SettingsJsonRepository";
+import { DataSetExecutionJsonRepository } from "data/DataSetExecutionJsonRepository";
 
 export function getCommand() {
     return subcommands({
@@ -18,6 +24,7 @@ export function getCommand() {
             revert: revertCmd,
             "get-dangling-values": getDanglingValuesCmd,
             "post-dangling-values": postDanglingValuesCmd,
+            "monitoring-values": monitoringDataValues,
         },
     });
 }
@@ -166,5 +173,85 @@ const postDanglingValuesCmd = command({
         const dataValuesRepository = new DataValuesD2Repository(api);
         const danglingDataValuesRepository = new DanglingDataValuesCsvRepository();
         new PostDanglingValuesUseCase(dataValuesRepository, danglingDataValuesRepository).execute(args);
+    },
+});
+
+const monitoringDataValues = command({
+    name: "monitoring-values",
+    description:
+        "Monitoring data values and sending an email depending on how long has passed since the last Updated",
+    args: {
+        url: getApiUrlOption(),
+        storage: option({
+            type: oneOf(["datastore", "json"]),
+            long: "storage",
+            description: "datastore or json",
+        }),
+        dataStoreNameSpace: option({
+            type: string,
+            long: "datastore-namespace",
+            defaultValue: () => "namespace to be used ",
+        }),
+        jsonSettingsPath: option({
+            type: string,
+            long: "json-settings-path",
+            description: "Path to json file that contains the dataset settings",
+            defaultValue: () => "",
+        }),
+        jsonExecutionsPath: option({
+            type: string,
+            long: "json-executions-path",
+            description: "Path to json file that contains the dataset executions information",
+            defaultValue: () => "",
+        }),
+        emailPathTemplate: option({
+            type: string,
+            long: "email-path-template",
+            description: "Path to the json file with email template information",
+        }),
+        sendEmailAfterMinutes: option({
+            type: number,
+            long: "send-email-after-minutes",
+            description: "Number of minutes to wait before sending the email notification. Default to 5",
+            defaultValue: () => 5,
+        }),
+    },
+    handler: async args => {
+        if (args.storage === "json" && (!args.jsonSettingsPath || !args.jsonExecutionsPath)) {
+            throw Error(
+                "--json-settings-path and --json-executions-path args are required for storage 'json'"
+            );
+        }
+
+        if (args.storage === "datastore" && !args.dataStoreNameSpace) {
+            throw Error("--datastore-key is required for datastore 'storage'");
+        }
+
+        const isDataStoreStorage = args.storage === "datastore";
+
+        const api = getD2Api(args.url);
+        const dataSetsRepository = new DataSetsD2Repository(api);
+        const dataValuesRepository = new DataValuesD2Repository(api);
+        const orgUnitRepository = new OrgUnitD2Repository(api);
+        const userRepository = new UserD2Repository(api);
+        const notificationsRepository = new NotificationsEmailRepository();
+
+        const settingsRepository = isDataStoreStorage
+            ? new SettingsD2Repository(api)
+            : new SettingsJsonRepository();
+
+        const dataStoreRepository = isDataStoreStorage
+            ? new DataSetExecutionD2Repository(api)
+            : new DataSetExecutionJsonRepository();
+
+        new SendNotificationDataValuesUseCase(
+            dataSetsRepository,
+            dataValuesRepository,
+            orgUnitRepository,
+            dataStoreRepository,
+            userRepository,
+            notificationsRepository,
+            settingsRepository
+        ).execute(args);
     },
 });

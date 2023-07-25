@@ -7,6 +7,7 @@ export interface DataSetsRepository {
     post(data: DataSetMetadata): Promise<OUCopyResult>;
     getComparableDataSets(ids: Id[]): Promise<Record<Id, DataSetToCompare>>;
     getSchema(): object;
+    getBy(values: string[]): Promise<DataSet[]>;
 }
 
 export type OUCopyResult = "OK" | "ERROR" | "NO_CHANGE";

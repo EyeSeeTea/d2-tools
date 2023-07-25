@@ -71,20 +71,44 @@ export class DataSetsD2Repository implements DataSetsRepository {
     getSchema(): object {
         return dataSetSchema;
     }
+
+    async getBy(values: string[]): Promise<DataSet[]> {
+        const metadata$ = this.api.metadata.get({
+            dataSets: {
+                fields,
+                filter: { identifiable: { in: values } },
+            },
+        });
+
+        const { dataSets } = await metadata$.getData();
+        return dataSets.map(dataSet => {
+            return {
+                id: dataSet.id,
+                name: dataSet.name,
+                code: dataSet.code,
+                categoryCombo: dataSet.categoryCombo,
+                dataInputPeriods: dataSet.dataInputPeriods,
+                dataSetElements: dataSet.dataSetElements,
+                organisationUnits: dataSet.organisationUnits,
+            };
+        });
+    }
 }
 
 const fields = {
     $owner: true,
     id: true,
     name: true,
+    code: true,
     categoryCombo: { id: true, categoryOptionCombos: { id: true, name: true } },
     dataSetElements: {
         dataElement: {
             id: true,
+            name: true,
             categoryCombo: { id: true, categoryOptionCombos: { id: true } },
         },
         categoryCombo: { id: true, categoryOptionCombos: { id: true } },
     },
     dataInputPeriods: { period: { id: true } },
-    organisationUnits: { id: true },
+    organisationUnits: { id: true, name: true },
 } as const;

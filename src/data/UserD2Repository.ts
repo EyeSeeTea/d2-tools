@@ -5,7 +5,7 @@ import { Id } from "domain/entities/Base";
 import { UserRepository } from "domain/repositories/UserRepository";
 import { User } from "domain/entities/User";
 import { Stats } from "domain/entities/Stats";
-import { getInChunks } from "./dhis2-utils";
+import { getInChunks, promiseMap } from "./dhis2-utils";
 
 const userCredentialsFields = { username: true, disabled: true };
 
@@ -195,5 +195,60 @@ export class UserD2Repository implements UserRepository {
                 surname: d2User.surname,
             };
         });
+    }
+
+    async getFromGroup(values: string[]): Async<User[]> {
+        const response = await this.api.metadata
+            .get({
+                userGroups: {
+                    fields: {
+                        id: true,
+                        users: true,
+                    },
+                    filter: {
+                        identifiable: {
+                            in: values,
+                        },
+                    },
+                },
+            })
+            .getData();
+
+        const userGroup = response.userGroups[0];
+        if (userGroup) {
+            const ids = userGroup.users.map(user => user.id);
+            const users = await promiseMap(_(ids).chunk(50).value(), async userIds => {
+                const response = await this.api.metadata
+                    .get({
+                        users: {
+                            filter: {
+                                id: {
+                                    in: userIds,
+                                },
+                            },
+                            fields: {
+                                id: true,
+                                email: true,
+                                userCredentials: {
+                                    username: true,
+                                },
+                            },
+                        },
+                    })
+                    .getData();
+
+                return response.users.map(d2User => {
+                    return {
+                        id: d2User.id,
+                        email: d2User.email,
+                        username: d2User.userCredentials.username,
+                    };
+                });
+            });
+
+            return _(users).flatten().value();
+        }
+
+        return [];
     }
 }

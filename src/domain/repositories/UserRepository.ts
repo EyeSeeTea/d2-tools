@@ -8,4 +8,5 @@ export interface UserRepository {
     getByUsernames(usernames: string[]): Async<User[]>;
     saveAll(users: User[]): Async<Stats>;
     getAll(): Async<User[]>;
+    getFromGroup(values: string[]): Async<User[]>;
 }

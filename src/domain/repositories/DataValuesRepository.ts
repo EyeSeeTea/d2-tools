@@ -21,6 +21,7 @@ export interface DataValuesSelector {
     startDate?: string;
     endDate?: string;
     limit?: number;
+    lastUpdated?: string;
 }
 
 export type DataValueAuditsSelector = Pick<DataValuesSelector, "dataSetIds" | "orgUnitIds" | "periods">;

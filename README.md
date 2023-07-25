@@ -257,6 +257,33 @@ $ yarn start programs get-duplicated-events \
 
 Add option `--post` to actually (soft) delete the events.
 
+### Email notification for data values
+
+Monitoring DataValues and sending an email depending on how long has passed since the last updated.
+
+Using json as a storage:
+
+```
+yarn start datavalues monitoring-values \
+--url='http://USER:PASSWORD@localhost:8080' \
+--storage=json \
+--json-settings-path=./settings.json \
+--json-executions-path=./executions.json \
+--email-path-template=./email.json \
+--send-email-after-minutes=5
+```
+
+Using dhis datastore as a storage:
+
+```
+yarn start datavalues monitoring-values \
+--url='http://USER:PASSWORD@localhost:8080' \
+--storage=datastore \
+--datastore-namespace=d2-notifications \
+--email-path-template=./email.json \
+--send-email-after-minutes=5
+```
+
 ## Notifications
 
 ### Send user info email
