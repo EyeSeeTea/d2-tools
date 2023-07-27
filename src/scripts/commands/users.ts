@@ -1,76 +1,106 @@
-import _, { uniqueId } from "lodash";
-import "json5/lib/register";
-import { command, subcommands, option, optional, flag, boolean, string } from "cmd-ts";
-
-import { getApiUrlOption, getD2Api, StringsSeparatedByCommas } from "scripts/common";
-import { RunUserPermissionsUseCase } from "domain/usecases/RunUserPermissionsUseCase";
-import { UsersD2Repository } from "data/UsersD2Repository";
-import { TemplateGroup, UsersOptions } from "domain/repositories/UsersRepository";
-
+import _ from "lodash";
+import { command, option, subcommands, string, boolean, flag } from "cmd-ts";
+import { UserD2Repository } from "data/UserD2Repository";
+import { StringsSeparatedByCommas, getApiUrlOption, getD2Api } from "scripts/common";
+import { MigrateUserNameUseCase } from "domain/usecases/MigrateUserNameUseCase";
+import { NotificationsEmailRepository } from "data/NotificationsEmailRepository";
+import logger from "utils/log";
 
 export function getCommand() {
-    return subcommands({
-        name: "users",
-        cmds: {
-            "run-users-permissions": runUsersPermisionsCmd,
+    const migrateUser = command({
+        name: "username migration",
+        description: "migrate user email to username",
+        args: {
+            url: getApiUrlOption(),
+            from: option({
+                type: string,
+                long: "from",
+                description: "Property to copy. Must be a valid USER property",
+            }),
+            to: option({
+                type: string,
+                long: "to",
+                description: "Property to be updated. Must be a valid USER property",
+            }),
+            sendNotification: flag({
+                type: boolean,
+                long: "send-notification",
+                description:
+                    "Sends an email with the information of the change to the affected user and the administrator",
+            }),
+            adminEmails: option({
+                type: StringsSeparatedByCommas,
+                long: "admin-email",
+                description: "Administrator email to be notified as BCC",
+            }),
+            emailPathTemplate: option({
+                type: string,
+                long: "template-path",
+                description:
+                    "Path to the json file with email template information (body, subject, attachments). Required if you pass the --send-notification flag",
+            }),
+            emailAdminPathTemplate: option({
+                type: string,
+                long: "template-admin-path",
+                description:
+                    "Path to the json file with email template information for admins. Required if you pass the --send-notification flag",
+            }),
+            post: flag({
+                long: "post",
+                description: "Save changes",
+                defaultValue: () => false,
+            }),
+            csvPath: option({
+                type: string,
+                long: "csv-path",
+                description: "Path for the CSV report",
+                defaultValue: () => "",
+            }),
+        },
+        handler: async args => {
+            if (args.sendNotification && !args.emailPathTemplate) {
+                logger.error("Add --template-path='path_to_json_file' for email template.");
+                process.exit(1);
+            }
+
+            const api = getD2Api(args.url);
+            const userRepository = new UserD2Repository(api);
+            const notificationsRepository = new NotificationsEmailRepository();
+
+            const migrateResult = await new MigrateUserNameUseCase(
+                userRepository,
+                notificationsRepository
+            ).execute(args);
+
+            logger.info(`Migrate results: ${JSON.stringify(migrateResult)}`);
+
+            if (!migrateResult.errorMessage) {
+                if (!args.sendNotification) {
+                    logger.info(`Add --send-notifiction to notify every user affected`);
+                }
+
+                if (!args.adminEmails) {
+                    logger.info(`Add --admin-email='admin@example.com' to notify the administrator`);
+                }
+
+                if (!args.post) {
+                    logger.info(`Add --post to save changes`);
+                }
+
+                if (!args.csvPath) {
+                    logger.info(`Add --csv-path to generate a csv report`);
+                }
+
+                process.exit(0);
+            } else {
+                logger.info(`Error: ${migrateResult.errorMessage}`);
+                process.exit(1);
+            }
         },
     });
-}
 
-const runUsersPermisionsCmd = command({
-    name: "run-users-permissions",
-    description: "Run user permissions",
-    args: {
-        url: getApiUrlOption(),
-        config_file: option({
-            type: string,
-            long: "config-file",
-            description: "Config file"
-        })
-    },
-    handler: async args => {
-        const api = getD2Api(args.url); 
-        const usersRepository = new UsersD2Repository(api);
-       
-
-        new RunUserPermissionsUseCase(usersRepository).execute(
-            getOptions(args.config_file));
-    },
-});
-
-function getOptions(config_file: string):UsersOptions {
-    const fs = require('fs');
-    const configJSON = JSON.parse(fs.readFileSync('./' + config_file , 'utf8'));
-    
-    const UsersOptions: TemplateGroup[] = configJSON["TEMPLATE_GROUPS"]!.map((item: any) => {
-        const templateId = item["template"];
-        const groupId = item["group"];
-        return {
-            templateId: templateId ?? "-",
-            groupId: groupId ?? "-",
-            validRolesByAuthority: [],
-            invalidRolesByAuthority: [],
-            validRolesById: [],
-            invalidRolesById: [],
-        };
+    return subcommands({
+        name: "users",
+        cmds: { migrate: migrateUser },
     });
-    const exclude_roles: string[] = configJSON["EXCLUDE_ROLES"] ?? [];
-    const exclude_users: string[] = configJSON["EXCLUDE_ROLES_USERS"] ?? [];
-    const push_report: boolean = configJSON["PUSH_REPORT"] ?? false;
-    const push_program_id: string = configJSON["PUSH_PROGRAM_ID"] ?? new Error(`push program id not found`);;
-    const minimal_group: string = configJSON["MINIMAL_GROUP"]  ?? new Error(`minimal group not found`);;
-    const minimal_role: string = configJSON["MINIMAL_ROLE"] ?? new Error(`minimal role not found`);;
-    UsersOptions?.map(item => {
-        exclude_users.push(item.templateId);
-    });
-    return {
-        templates: UsersOptions,
-        excludedRoles: exclude_roles,
-        excludedUsers: exclude_users,
-        pushReport: push_report,
-        pushProgramId: push_program_id,
-        minimalGroupId: minimal_group,
-        minimalRoleId: minimal_role,
-    }
 }
-

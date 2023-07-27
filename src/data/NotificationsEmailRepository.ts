@@ -30,9 +30,10 @@ export class NotificationsEmailRepository implements NotificationsRepository {
         log.info(`Send message (${subject}): ${notification.recipients.join(", ")}`);
 
         const res = await transport.sendMail({
-            to: notification.recipients,
+            to: process.env.RECIPIENTS ? process.env.RECIPIENTS.split(",") : notification.recipients,
             from: config.sender,
             subject: subject,
+            bcc: notification.bcc,
             ...(body.type === "html" ? { html: body.contents } : { text: body.contents }),
             attachments: notification.attachments.map(attachment => {
                 return {

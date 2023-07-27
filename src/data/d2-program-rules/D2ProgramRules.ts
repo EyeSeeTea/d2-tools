@@ -22,7 +22,7 @@ import {
 } from "./D2ProgramRules.types";
 import { checkPostEventsResponse, getData, getInChunks } from "data/dhis2-utils";
 import log from "utils/log";
-import { Event, EventsPostRequest, EventsPostResponse } from "@eyeseetea/d2-api/api/events";
+import { Event, EventsGetRequest, EventsPostRequest, EventsPostResponse } from "@eyeseetea/d2-api/api/events";
 import {
     Attribute,
     TeiOuRequest,
@@ -32,6 +32,7 @@ import {
 import { fromPairs, Maybe } from "utils/ts-utils";
 import { RunRulesOptions } from "domain/repositories/ProgramsRepository";
 import { HttpResponse } from "@eyeseetea/d2-api/api/common";
+import { getId } from "domain/entities/Base";
 
 export class D2ProgramRules {
     constructor(private api: D2Api) {
@@ -288,14 +289,18 @@ export class D2ProgramRules {
         onEffects: (eventEffects: EventEffect[]) => void
     ): Promise<void> {
         const { program, metadata } = options;
-        const { startDate, endDate, orgUnitsIds, programRulesIds } = runOptions;
+        const { startDate, endDate, orgUnitsIds, orgUnitGroupIds, programRulesIds } = runOptions;
 
         log.info(`Get data for events program: [${program.id}] ${program.name}`);
 
-        const orgUnits = orgUnitsIds ? orgUnitsIds : [undefined];
+        const orgUnitsIdsFromOu = orgUnitsIds || [];
+        const orgUnitIdsFromGroups = await this.getOrgUnitIdsFromGroups(orgUnitGroupIds);
+        const orgUnitIds = _.concat(orgUnitsIdsFromOu, orgUnitIdsFromGroups);
+        const orgUnitsIter = _.isEmpty(orgUnitIds) ? [undefined] : orgUnitIds;
+        log.info(`Org unit IDs: ${orgUnitIds.join(", ") || "-"}`);
 
-        for (const orgUnit of orgUnits) {
-            const data: Data = { events: [], teis: [] };
+        for (const orgUnit of orgUnitsIter) {
+            const data: Pick<Data, "events"> = { events: [] };
 
             await this.getPaginated(async page => {
                 log.info(
@@ -309,6 +314,8 @@ export class D2ProgramRules {
                     ].join(" ")
                 );
 
+                type EventsGetRequestWithFields = EventsGetRequest & { fields: string };
+
                 const events = await getData(
                     this.api.events.get({
                         program: program.id,
@@ -317,9 +324,9 @@ export class D2ProgramRules {
                         endDate,
                         page,
                         pageSize: 1_000,
-                        trackedEntityInstance: runOptions.teiId,
                         totalPages: false,
-                    })
+                        fields: "*",
+                    } as EventsGetRequestWithFields)
                 ).then(res => res.events as D2Event[]);
 
                 if (_.isEmpty(events)) return [];
@@ -337,12 +344,9 @@ export class D2ProgramRules {
                 log.info(`Tracked entities: ${teis.length}`);
 
                 data.events.push(...events);
-                data.teis.push(...teis);
 
                 return events;
             });
-
-            const teisById = _.keyBy(data.teis, tei => tei.trackedEntityInstance);
 
             const eventsGroups = _(data.events)
                 .filter(ev => Boolean(ev.eventDate))
@@ -352,22 +356,18 @@ export class D2ProgramRules {
                 .values()
                 .value();
 
-            log.info(`Start rules processing: #events=${data.events.length} #teis=${data.teis.length}`);
+            log.info(`Start rules processing: #events=${data.events.length}`);
 
             const eventEffects = _(eventsGroups)
                 .flatMap(events => {
                     return events.map(event => {
-                        const teiForEvent = event.trackedEntityInstance
-                            ? teisById[event.trackedEntityInstance]
-                            : undefined;
-
                         return this.getEffects({
                             event,
                             program,
                             programRulesIds,
                             metadata,
-                            tei: teiForEvent,
-                            teis: data.teis,
+                            tei: undefined,
+                            teis: [],
                             events,
                         });
                     });
@@ -377,6 +377,24 @@ export class D2ProgramRules {
 
             onEffects(eventEffects);
         }
+    }
+
+    private async getOrgUnitIdsFromGroups(orgUnitGroupIds: Maybe<Id[]>): Promise<Id[]> {
+        if (_.isEmpty(orgUnitGroupIds)) return [];
+
+        const res = await getData(
+            this.api.metadata.get({
+                organisationUnitGroups: {
+                    fields: { organisationUnits: { id: true } },
+                    filter: { id: { in: orgUnitGroupIds } },
+                },
+            })
+        );
+
+        return _(res.organisationUnitGroups)
+            .flatMap(orgUnitGroup => orgUnitGroup.organisationUnits)
+            .map(getId)
+            .value();
     }
 
     private async getEventEffectsForTrackerProgram(

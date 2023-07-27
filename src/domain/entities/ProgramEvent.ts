@@ -30,10 +30,17 @@ export interface ProgramEventToSave {
 
 type EventStatus = "ACTIVE" | "COMPLETED" | "VISITED" | "SCHEDULED" | "OVERDUE" | "SKIPPED";
 
+export const orgUnitModes = ["SELECTED", "CHILDREN", "DESCENDANTS"] as const;
+
+export type OrgUnitMode = typeof orgUnitModes[number];
+
 export interface EventDataValue {
     dataElementId: Id;
     value: string;
     storedBy: Username;
+    oldValue?: string;
+    providedElsewhere?: boolean;
+    lastUpdated: Timestamp;
 }
 
 export class DuplicatedProgramEvents {

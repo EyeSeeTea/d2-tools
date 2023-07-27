@@ -120,7 +120,31 @@ shell:~$ yarn start datasets compare \
 DiMntK7qKZQ - Z3tlf5sqWiK: equal
 ```
 
-### Copy the organisation units from a data set to one or more datasets:
+## Organisation Units
+
+The output SQL file (`remove_orgunits.sql` for example) can be executed against
+a running [d2-docker](https://github.com/eyeSeeTea/d2-docker) instance with
+`d2-docker run-sql remove_orgunits.sql`.
+
+### Create an SQL file to remove any orgunit below the country level
+
+```console
+shell:~$ node dist/index.js orgunits remove \
+    --level 3 \
+    --output-file remove_country_subunits.sql
+```
+
+### Create an SQL file to remove all org subunits of Canada
+
+```console
+shell:~$ node dist/index.js orgunits remove \
+    --path /H8RixfF8ugH/wP2zKq0dDpw/AJBfDthkySs \
+    --output-file remove_canada_subunits.sql
+```
+
+where `/H8RixfF8ugH/wP2zKq0dDpw/AJBfDthkySs` would be the dhis2 path of Canada.
+
+### Copy the organisation units from a data set to one or more datasets
 
 ```console
 shell:~$ yarn start datasets copy-org-units \
@@ -169,6 +193,20 @@ $ yarn start events move-to-org-unit \
   --from-orgunit-id=qs81OdIPwO9 \
   --to-orgunit-id=ewiA4ufWiki \
   --post
+```
+
+### Update events which met the condition
+
+```
+yarn start events update-events \
+--url='http://USER:PASSWORD@HOST:PORT' \
+--root-org-unit='org-unit-id'
+--event-ids='event_id_1,event_id_2,event_id_3' \
+--data-element-id='data_element_id' \
+--condition='true' \
+--new-value='' \
+--csv-path='./events.csv' \
+--post
 ```
 
 ## Data values
@@ -229,4 +267,63 @@ Send an email read from a JSON file to a list of users in a CSV file:
 $ yarn start notifications send-user-info-notification \
   --url='http://USER:PASSWORD@HOST:PORT' \
   usernames.csv emailContent.json
+```
+
+## Users
+
+### Migrate user information from one attribute to another if they're different
+
+Copy email to username:
+
+```bash
+$ yarn start users migrate \
+  --url='http://USER:PASSWORD@HOST:PORT' \
+  --from='email' \
+  --to='username' \
+  --post
+```
+
+Send an email to the user:
+
+```bash
+yarn start users migrate \
+  --url='http://USER:PASSWORD@HOST:PORT' \
+  --send-notification \
+  --from='email' \
+  --to='username' \
+  --template-path='email.json' \
+  --post
+```
+
+Send an email both to the user and the administrator:
+
+```bash
+yarn start users migrate \
+  --url='http://USER:PASSWORD@HOST:PORT' \
+  --admin-email="admin@example.com" \
+  --send-notification \
+  --from='email' \
+  --to='username' \
+  --template-path='email.json' \
+  --template-admin-path='email_admin.json'
+```
+
+Only generate a csv report without persisting changes:
+
+```bash
+yarn start users migrate \
+  --url='http://USER:PASSWORD@HOST:PORT' \
+  --from='email' \
+  --to='username' \
+  --csv-path='./users.csv'
+```
+
+**email.json** must have the following structure:
+
+```json
+{
+    "subject": "DHIS2 user migration",
+    "body": "<h1>Your username was updated from ${oldValue} to ${newValue} (user ${userId})<h1>",
+    "attachments": ["path_to_file.txt"]
+}
 ```
