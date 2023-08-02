@@ -16,3 +16,8 @@ export function indexById<T extends Ref>(objs: T[]): Record<Id, T> {
 export function getId<Obj extends Ref>(obj: Obj): Id {
     return obj.id;
 }
+
+type Code = string;
+type Name = string;
+
+export type Identifiable = Id | Code | Name;

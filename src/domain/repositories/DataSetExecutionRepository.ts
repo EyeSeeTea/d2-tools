@@ -1,8 +1,8 @@
 import { Async } from "domain/entities/Async";
-import { NotificationStore } from "domain/usecases/SendNotificationDataValuesUseCase";
-import { SettingsOptions } from "./SettingsRepository";
+import { SettingsOptions } from "domain/entities/Settings";
+import { DataSetExecution } from "domain/usecases/SendNotificationDataValuesUseCase";
 
 export interface DataSetExecutionRepository {
-    get(options: SettingsOptions): Async<NotificationStore | undefined>;
-    save(value: NotificationStore, options: SettingsOptions): Async<void>;
+    get(options: SettingsOptions): Async<DataSetExecution | undefined>;
+    save(value: DataSetExecution, options: SettingsOptions): Async<void>;
 }

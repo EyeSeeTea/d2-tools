@@ -12,9 +12,10 @@ import { UserRepository } from "domain/repositories/UserRepository";
 import { NotificationsRepository } from "domain/repositories/NotificationsRepository";
 import { DataValue } from "domain/entities/DataValue";
 import { User } from "domain/entities/User";
-import { Path } from "domain/entities/Base";
+import { Identifiable, Path } from "domain/entities/Base";
 import { Async } from "domain/entities/Async";
-import { Settings, SettingsRepository } from "domain/repositories/SettingsRepository";
+import { SettingsRepository } from "domain/repositories/SettingsRepository";
+import { MonitoringConfig, Settings } from "domain/entities/Settings";
 
 type EmailTemplate = {
     subject: string;
@@ -26,13 +27,11 @@ export type NotificationDetail = {
     lastUpdated: string;
 };
 
-export type NotificationStore = Record<string, NotificationDetail>;
+export type DataSetExecution = Record<string, NotificationDetail>;
 
 type OptionsUseCase = {
-    storage: string;
-    jsonSettingsPath: string;
-    jsonExecutionsPath: string;
-    dataStoreNameSpace: string;
+    settingsPath: string;
+    executionsPath: string;
     emailPathTemplate: string;
     sendEmailAfterMinutes: number;
 };
@@ -42,35 +41,18 @@ export class SendNotificationDataValuesUseCase {
         private dataSetsRepository: DataSetsRepository,
         private dataValuesRepository: DataValuesRepository,
         private orgUnitRepository: OrgUnitRepository,
-        private dataSetStoreRepository: DataSetExecutionRepository,
+        private dataSetExecutionRepository: DataSetExecutionRepository,
         private userRepository: UserRepository,
         private notificationsRepository: NotificationsRepository,
         private settingsRepository: SettingsRepository
     ) {}
 
     async execute(options: OptionsUseCase) {
-        const settings = await this.settingsRepository.get({
-            namespace: options.dataStoreNameSpace,
-            path: options.jsonSettingsPath,
-        });
+        const settings = await this.getSettings(options);
         const dataSetKeys = Object.keys(settings.dataSets);
-
-        const orgUnitIds = _(dataSetKeys)
-            .map(key => {
-                const monitoring = settings.dataSets[key]?.monitoring.filter(m => m.enable);
-                return _(monitoring)
-                    .map(m => m.orgUnit)
-                    .flatten()
-                    .value();
-            })
-            .flatten()
-            .value();
-
-        const dataSets = await this.dataSetsRepository.getBy(dataSetKeys);
-        const orgUnits = await this.orgUnitRepository.get(orgUnitIds);
-        const dataSetStore = await this.dataSetStoreRepository.get({
-            path: options.jsonExecutionsPath,
-            namespace: options.dataStoreNameSpace,
+        const { dataSets, orgUnits } = await this.getOrgUnitAndDataSets(dataSetKeys, settings);
+        const dataSetStore = await this.dataSetExecutionRepository.get({
+            path: options.executionsPath,
         });
 
         const dataSetExecutions = this.getDataSetsExecutions(
@@ -81,10 +63,20 @@ export class SendNotificationDataValuesUseCase {
             dataSetStore
         );
 
-        if (_.isEmpty(dataSetStore)) {
+        if (!dataSetStore) {
             await this.saveExecutions(dataSetExecutions, options);
         }
 
+        await this.startExecutions(dataSetExecutions, dataSets, settings, options, orgUnits);
+    }
+
+    private async startExecutions(
+        dataSetExecutions: DataSetExecution,
+        dataSets: DataSet[],
+        settings: Settings,
+        options: OptionsUseCase,
+        orgUnits: OrgUnit[]
+    ) {
         await promiseMap(_(dataSetExecutions).keys().value(), async key => {
             const execution = dataSetExecutions[key];
             if (!execution) return false;
@@ -92,6 +84,8 @@ export class SendNotificationDataValuesUseCase {
             if (!orgUnitId || !dataSetId || !period) {
                 throw Error("Cannot found org unit, dataset or period in execution");
             }
+            log.debug("------------------------");
+            log.debug(`Starting execution: ${key}`);
 
             const dataValues = await this.dataValuesRepository.get({
                 includeDeleted: false,
@@ -100,10 +94,19 @@ export class SendNotificationDataValuesUseCase {
                 periods: [period],
                 lastUpdated: execution.lastUpdated,
             });
-            log.debug(`Getting ${dataValues.length} datavalues for execution: ${key}`);
+            log.debug(`Getting ${dataValues.length} datavalues for execution`);
 
-            const userGroup = this.getDataSetConfig(dataSets, dataSetId, settings)?.userGroup;
-            if (this.diffSinceLastUpdate(dataValues) >= options.sendEmailAfterMinutes && userGroup) {
+            const usersGroups = this.getUsersGroupsFromSettings(
+                dataSets,
+                dataSetId,
+                settings,
+                orgUnits,
+                orgUnitId,
+                period
+            );
+
+            const diffSinceLastUpdate = this.diffSinceLastUpdate(dataValues);
+            if (diffSinceLastUpdate && diffSinceLastUpdate >= options.sendEmailAfterMinutes && usersGroups) {
                 const dataValuesWithOldValue = await this.getOldDataValues(
                     dataSetId,
                     orgUnitId,
@@ -111,8 +114,12 @@ export class SendNotificationDataValuesUseCase {
                     dataValues
                 );
 
-                const users = await this.getUsersToNotify(dataValues, userGroup);
-                log.debug(`Sending email to ${users.length} users in group ${userGroup}`);
+                log.debug(
+                    `${dataValuesWithOldValue.length} datavalues are going to be included in the email`
+                );
+
+                const users = await this.getUsersToNotify(dataValues, usersGroups);
+                log.debug(`Sending email to ${users.length} users from groups ${usersGroups.join(", ")}`);
 
                 const { body, subject } = await this.generateEmailTemplate(
                     dataSets,
@@ -127,8 +134,70 @@ export class SendNotificationDataValuesUseCase {
                 await this.sendEmailToUsersInGroup(users, subject, body);
 
                 await this.saveExecutionsWithEmail(execution, dataSetExecutions, key, options);
-                log.debug(`Executions saved: ${key}`);
+                log.debug("Executions saved");
             }
+            log.debug(`End of execution ${key}\n`);
+        });
+    }
+
+    private getUsersGroupsFromSettings(
+        dataSets: DataSet[],
+        dataSetId: string,
+        settings: Settings,
+        orgUnits: OrgUnit[],
+        orgUnitId: string,
+        period: string
+    ) {
+        const dataSetConfig = this.getDataSetConfig(dataSets, dataSetId, settings);
+        const orgUnit = orgUnits.find(ou => ou.id === orgUnitId);
+        const dsConfigIndex = dataSetConfig?.find(x =>
+            x.monitoring.some(
+                x =>
+                    x.period === period &&
+                    (x.orgUnit === orgUnit?.id || x.orgUnit === orgUnit?.name || x.orgUnit === orgUnit?.code)
+            )
+        );
+
+        const usersGroups = dsConfigIndex?.usersGroups;
+        if (!usersGroups) {
+            log.debug(
+                `Unable to find users groups in settings for execution ${dataSetId}-${orgUnitId}-${period}`
+            );
+        }
+        return usersGroups;
+    }
+
+    private async getOrgUnitAndDataSets(
+        dataSetKeys: string[],
+        settings: Settings
+    ): Async<{
+        orgUnits: OrgUnit[];
+        dataSets: DataSet[];
+    }> {
+        const orgUnitIds = _(dataSetKeys)
+            .map(key => {
+                const allMonitoring = _(settings.dataSets[key])
+                    .map(ds => ds.monitoring)
+                    .flatten()
+                    .value();
+                const monitoring = allMonitoring.filter(m => m.enable);
+                return _(monitoring)
+                    .map(m => m.orgUnit)
+                    .flatten()
+                    .value();
+            })
+            .flatten()
+            .value();
+        log.debug("Getting datasets and org units...");
+        const dataSets = await this.dataSetsRepository.getByIdentifiables(dataSetKeys);
+        const orgUnits = await this.orgUnitRepository.getByIdentifiables(orgUnitIds);
+        log.debug(`Found ${dataSets.length} datasets and ${orgUnits.length} org units in settings`);
+        return { dataSets, orgUnits };
+    }
+
+    private async getSettings(options: OptionsUseCase): Async<Settings> {
+        return this.settingsRepository.get({
+            path: options.settingsPath,
         });
     }
 
@@ -140,7 +209,7 @@ export class SendNotificationDataValuesUseCase {
         dataValuesWithOldValue: DataValue[],
         options: OptionsUseCase,
         period: string | undefined
-    ) {
+    ): Async<EmailTemplate> {
         const dataSetInfo = dataSets.find(ds => ds.id === dataSetId);
         const dataSetName = dataSetInfo?.name || "";
         const orgUnit = orgUnits.find(ou => ou.id === orgUnitId);
@@ -170,10 +239,9 @@ export class SendNotificationDataValuesUseCase {
         return { body, subject };
     }
 
-    private async saveExecutions(dataSetExecutions: NotificationStore, options: OptionsUseCase) {
-        await this.dataSetStoreRepository.save(dataSetExecutions, {
-            path: options.jsonExecutionsPath,
-            namespace: options.dataStoreNameSpace,
+    private async saveExecutions(dataSetExecutions: DataSetExecution, options: OptionsUseCase): Async<void> {
+        await this.dataSetExecutionRepository.save(dataSetExecutions, {
+            path: options.executionsPath,
         });
     }
 
@@ -182,13 +250,18 @@ export class SendNotificationDataValuesUseCase {
         settings: Settings,
         dataSets: DataSet[],
         orgUnits: OrgUnit[],
-        dataSetStore: NotificationStore | undefined
-    ) {
+        dataSetStore: DataSetExecution | undefined
+    ): DataSetExecution {
         const keys = _(dataSetKeys)
             .map(dataSetKey => {
                 const dataSetDetails = settings.dataSets[dataSetKey];
                 if (dataSetDetails) {
-                    return _(dataSetDetails.monitoring)
+                    const allMonitoring = _(settings.dataSets[dataSetKey])
+                        .map(ds => ds.monitoring)
+                        .flatten()
+                        .value();
+
+                    return _(allMonitoring)
                         .filter(m => m.enable)
                         .map(monitor => {
                             const dataSet = dataSets.find(
@@ -221,17 +294,19 @@ export class SendNotificationDataValuesUseCase {
             .value();
 
         const currentDate = new Date().toISOString();
-        const dataSetExecutions = keys.reduce<NotificationStore>((acum, key) => {
-            const storeInfo = dataSetStore ? dataSetStore[key] : undefined;
-            return {
-                ...acum,
-                [key]: {
-                    lastDateSentEmail: storeInfo?.lastDateSentEmail || "",
-                    lastUpdated: storeInfo?.lastUpdated || currentDate,
-                },
-            };
-        }, {});
-        return dataSetExecutions;
+        return _(keys)
+            .map(key => {
+                const storeInfo = dataSetStore ? dataSetStore[key] : undefined;
+                return [
+                    key,
+                    {
+                        lastDateSentEmail: storeInfo?.lastDateSentEmail || "",
+                        lastUpdated: storeInfo?.lastUpdated || currentDate,
+                    },
+                ] as [string, NotificationDetail];
+            })
+            .fromPairs()
+            .value();
     }
 
     private async getOldDataValues(
@@ -239,7 +314,8 @@ export class SendNotificationDataValuesUseCase {
         orgUnitId: string,
         period: string,
         dataValues: DataValue[]
-    ) {
+    ): Async<DataValue[]> {
+        log.debug("Getting audit datavalues...");
         const auditValues = await this.dataValuesRepository.getAudits({
             dataSetIds: [dataSetId],
             orgUnitIds: [orgUnitId],
@@ -262,7 +338,11 @@ export class SendNotificationDataValuesUseCase {
         return dataValuesWithOldValue;
     }
 
-    private getDataSetConfig(dataSets: DataSet[], dataSetId: string, settings: Settings) {
+    private getDataSetConfig(
+        dataSets: DataSet[],
+        dataSetId: string,
+        settings: Settings
+    ): MonitoringConfig[] | undefined {
         const dataSet = dataSets.find(dataSet => dataSet.id === dataSetId);
         if (!dataSet) {
             throw Error(`Cannot find dataset: ${dataSetId}`);
@@ -276,37 +356,26 @@ export class SendNotificationDataValuesUseCase {
 
     private async saveExecutionsWithEmail(
         execution: NotificationDetail,
-        dataSetExecutions: NotificationStore,
+        dataSetExecutions: DataSetExecution,
         key: string,
         options: OptionsUseCase
-    ) {
+    ): Async<void> {
         const dateEmailSent = new Date().toISOString();
         execution.lastDateSentEmail = dateEmailSent;
         execution.lastUpdated = dateEmailSent;
         log.debug(`Email sent ${dateEmailSent}`);
-
-        await this.saveExecutions(
-            {
-                ...dataSetExecutions,
-                [key]: {
-                    ...execution,
-                },
-            },
-            options
-        );
+        await this.saveExecutions({ ...dataSetExecutions, [key]: execution }, options);
     }
 
-    private async sendEmailToUsersInGroup(users: User[], subject: string, body: string) {
-        await promiseMap(users, async user => {
-            await this.notificationsRepository.send({
-                attachments: [],
-                subject,
-                body: {
-                    contents: body,
-                    type: "html",
-                },
-                recipients: [user.email],
-            });
+    private async sendEmailToUsersInGroup(users: User[], subject: string, body: string): Async<void> {
+        await this.notificationsRepository.send({
+            attachments: [],
+            subject,
+            body: {
+                contents: body,
+                type: "html",
+            },
+            recipients: users.map(user => user.email),
         });
     }
 
@@ -314,17 +383,18 @@ export class SendNotificationDataValuesUseCase {
         return jsonfile.readFile(path);
     }
 
-    private async getUsersToNotify(dataValues: DataValue[], userGroup: string) {
+    private async getUsersToNotify(dataValues: DataValue[], userGroup: Identifiable[]): Async<User[]> {
         const editorUsers = _(dataValues)
             .map(dv => dv.storedBy)
             .uniq()
             .value();
 
-        const usersInGroup = await this.userRepository.getFromGroup([userGroup]);
+        const usersInGroup = await this.userRepository.getFromGroupByIdentifiables(userGroup);
+        log.debug(`Excluding editors users: ${editorUsers.join(", ")}`);
         return usersInGroup.filter(user => !editorUsers.includes(user.username));
     }
 
-    private diffSinceLastUpdate(dataValues: DataValue[]) {
+    private diffSinceLastUpdate(dataValues: DataValue[]): number | undefined {
         if (dataValues.length > 0) {
             const lastDeUpdated = _(dataValues).maxBy(dv => dv.lastUpdated);
             if (lastDeUpdated) {
@@ -333,13 +403,14 @@ export class SendNotificationDataValuesUseCase {
                     new Date(lastDeUpdated.lastUpdated),
                     currentDate
                 );
+                log.debug(`${diffInMinutes} minutes has passed from the last datavalue update`);
                 return diffInMinutes;
             }
         }
-        return -1;
+        return undefined;
     }
 
-    private getDifferenceInMinutes(date1: Date, date2: Date) {
+    private getDifferenceInMinutes(date1: Date, date2: Date): number {
         const diffInMilliseconds = Math.abs(date2.getTime() - date1.getTime());
         const minutes = Math.floor(((diffInMilliseconds % 86400000) % 3600000) / 60000);
         return minutes;

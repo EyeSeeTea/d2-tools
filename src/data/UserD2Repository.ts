@@ -1,7 +1,7 @@
 import _ from "lodash";
 import { D2Api } from "@eyeseetea/d2-api/2.36";
 import { Async } from "domain/entities/Async";
-import { Id } from "domain/entities/Base";
+import { Id, Identifiable } from "domain/entities/Base";
 import { UserRepository } from "domain/repositories/UserRepository";
 import { User } from "domain/entities/User";
 import { Stats } from "domain/entities/Stats";
@@ -197,7 +197,7 @@ export class UserD2Repository implements UserRepository {
         });
     }
 
-    async getFromGroup(values: string[]): Async<User[]> {
+    async getFromGroupByIdentifiables(values: Identifiable[]): Async<User[]> {
         const response = await this.api.metadata
             .get({
                 userGroups: {
@@ -214,9 +214,13 @@ export class UserD2Repository implements UserRepository {
             })
             .getData();
 
-        const userGroup = response.userGroups[0];
-        if (userGroup) {
-            const ids = userGroup.users.map(user => user.id);
+        const allUsers = _(response.userGroups)
+            .map(ug => ug.users)
+            .flatten()
+            .value();
+
+        if (allUsers.length > 0) {
+            const ids = allUsers.map(user => user.id);
             const users = await promiseMap(_(ids).chunk(50).value(), async userIds => {
                 const response = await this.api.metadata
                     .get({

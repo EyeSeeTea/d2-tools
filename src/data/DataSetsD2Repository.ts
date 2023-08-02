@@ -4,6 +4,7 @@ import { D2Api, Id, PostOptions } from "types/d2-api";
 import { dataSetSchema } from "./DataSetSchema";
 import { DataSet, DataSetMetadata, DataSetToCompare } from "domain/entities/DataSet";
 import { runMetadata } from "./dhis2-utils";
+import { Identifiable } from "domain/entities/Base";
 
 export class DataSetsD2Repository implements DataSetsRepository {
     constructor(private api: D2Api) {}
@@ -72,7 +73,7 @@ export class DataSetsD2Repository implements DataSetsRepository {
         return dataSetSchema;
     }
 
-    async getBy(values: string[]): Promise<DataSet[]> {
+    async getByIdentifiables(values: Identifiable[]): Promise<DataSet[]> {
         const metadata$ = this.api.metadata.get({
             dataSets: {
                 fields,
@@ -81,17 +82,7 @@ export class DataSetsD2Repository implements DataSetsRepository {
         });
 
         const { dataSets } = await metadata$.getData();
-        return dataSets.map(dataSet => {
-            return {
-                id: dataSet.id,
-                name: dataSet.name,
-                code: dataSet.code,
-                categoryCombo: dataSet.categoryCombo,
-                dataInputPeriods: dataSet.dataInputPeriods,
-                dataSetElements: dataSet.dataSetElements,
-                organisationUnits: dataSet.organisationUnits,
-            };
-        });
+        return dataSets;
     }
 }
 

@@ -1,6 +1,7 @@
 import fs from "fs";
 import { Async } from "domain/entities/Async";
-import { Settings, SettingsOptions, SettingsRepository } from "domain/repositories/SettingsRepository";
+import { SettingsRepository } from "domain/repositories/SettingsRepository";
+import { Settings, SettingsOptions } from "domain/entities/Settings";
 
 export class SettingsJsonRepository implements SettingsRepository {
     get(options: SettingsOptions): Async<Settings> {

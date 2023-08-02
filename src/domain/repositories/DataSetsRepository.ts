@@ -1,5 +1,5 @@
+import { Id, Identifiable } from "domain/entities/Base";
 import { DataSet, DataSetMetadata, DataSetToCompare } from "domain/entities/DataSet";
-import { Id } from "types/d2-api";
 
 export interface DataSetsRepository {
     get(ids: Id[]): Promise<Record<Id, DataSet>>;
@@ -7,7 +7,7 @@ export interface DataSetsRepository {
     post(data: DataSetMetadata): Promise<OUCopyResult>;
     getComparableDataSets(ids: Id[]): Promise<Record<Id, DataSetToCompare>>;
     getSchema(): object;
-    getBy(values: string[]): Promise<DataSet[]>;
+    getByIdentifiables(values: Identifiable[]): Promise<DataSet[]>;
 }
 
 export type OUCopyResult = "OK" | "ERROR" | "NO_CHANGE";

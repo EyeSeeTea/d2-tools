@@ -17,6 +17,8 @@ import { SettingsD2Repository } from "data/SettingsD2Repository";
 import { SettingsJsonRepository } from "data/SettingsJsonRepository";
 import { DataSetExecutionJsonRepository } from "data/DataSetExecutionJsonRepository";
 
+const SEND_EMAIL_AFTER_MINUTES = 5;
+
 export function getCommand() {
     return subcommands({
         name: "datavalues",
@@ -179,7 +181,7 @@ const postDanglingValuesCmd = command({
 const monitoringDataValues = command({
     name: "monitoring-values",
     description:
-        "Monitoring data values and sending an email depending on how long has passed since the last Updated",
+        "Notify data value changes and sending an email depending on how long has passed since the last updated",
     args: {
         url: getApiUrlOption(),
         storage: option({
@@ -187,22 +189,15 @@ const monitoringDataValues = command({
             long: "storage",
             description: "datastore or json",
         }),
-        dataStoreNameSpace: option({
+        settingsPath: option({
             type: string,
-            long: "datastore-namespace",
-            defaultValue: () => "namespace to be used ",
-        }),
-        jsonSettingsPath: option({
-            type: string,
-            long: "json-settings-path",
+            long: "settings-path",
             description: "Path to json file that contains the dataset settings",
-            defaultValue: () => "",
         }),
-        jsonExecutionsPath: option({
+        executionsPath: option({
             type: string,
-            long: "json-executions-path",
+            long: "executions-path",
             description: "Path to json file that contains the dataset executions information",
-            defaultValue: () => "",
         }),
         emailPathTemplate: option({
             type: string,
@@ -212,29 +207,19 @@ const monitoringDataValues = command({
         sendEmailAfterMinutes: option({
             type: number,
             long: "send-email-after-minutes",
-            description: "Number of minutes to wait before sending the email notification. Default to 5",
-            defaultValue: () => 5,
+            description: `Number of minutes to wait before sending the email notification. Default to ${SEND_EMAIL_AFTER_MINUTES}`,
+            defaultValue: () => SEND_EMAIL_AFTER_MINUTES,
         }),
     },
     handler: async args => {
-        if (args.storage === "json" && (!args.jsonSettingsPath || !args.jsonExecutionsPath)) {
-            throw Error(
-                "--json-settings-path and --json-executions-path args are required for storage 'json'"
-            );
-        }
-
-        if (args.storage === "datastore" && !args.dataStoreNameSpace) {
-            throw Error("--datastore-key is required for datastore 'storage'");
-        }
-
-        const isDataStoreStorage = args.storage === "datastore";
-
         const api = getD2Api(args.url);
         const dataSetsRepository = new DataSetsD2Repository(api);
         const dataValuesRepository = new DataValuesD2Repository(api);
         const orgUnitRepository = new OrgUnitD2Repository(api);
         const userRepository = new UserD2Repository(api);
         const notificationsRepository = new NotificationsEmailRepository();
+
+        const isDataStoreStorage = args.storage === "datastore";
 
         const settingsRepository = isDataStoreStorage
             ? new SettingsD2Repository(api)
