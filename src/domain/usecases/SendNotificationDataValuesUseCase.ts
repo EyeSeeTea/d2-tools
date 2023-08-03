@@ -51,19 +51,13 @@ export class SendNotificationDataValuesUseCase {
         const settings = await this.getSettings(options);
         const dataSetKeys = Object.keys(settings.dataSets);
         const { dataSets, orgUnits } = await this.getOrgUnitAndDataSets(dataSetKeys, settings);
-        const dataSetStore = await this.dataSetExecutionRepository.get({
+        const dataSetExecution = await this.dataSetExecutionRepository.get({
             path: options.executionsPath,
         });
 
-        const dataSetExecutions = this.getDataSetsExecutions(
-            dataSetKeys,
-            settings,
-            dataSets,
-            orgUnits,
-            dataSetStore
-        );
+        const dataSetExecutions = this.getDataSetsExecutions(settings, dataSets, orgUnits, dataSetExecution);
 
-        if (!dataSetStore) {
+        if (!dataSetExecution) {
             await this.saveExecutions(dataSetExecutions, options);
         }
 
@@ -246,12 +240,12 @@ export class SendNotificationDataValuesUseCase {
     }
 
     private getDataSetsExecutions(
-        dataSetKeys: string[],
         settings: Settings,
         dataSets: DataSet[],
         orgUnits: OrgUnit[],
         dataSetStore: DataSetExecution | undefined
     ): DataSetExecution {
+        const dataSetKeys = Object.keys(settings.dataSets);
         const keys = _(dataSetKeys)
             .map(dataSetKey => {
                 const dataSetDetails = settings.dataSets[dataSetKey];

@@ -181,7 +181,7 @@ const postDanglingValuesCmd = command({
 const monitoringDataValues = command({
     name: "monitoring-values",
     description:
-        "Notify data value changes and sending an email depending on how long has passed since the last updated",
+        "Notify data value changes and send an email depending on how long has passed since the last updated",
     args: {
         url: getApiUrlOption(),
         storage: option({

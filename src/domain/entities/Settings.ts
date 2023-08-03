@@ -18,11 +18,3 @@ export type MonitoringConfig = {
 export type Settings = {
     dataSets: Record<Id, MonitoringConfig[]>;
 };
-
-export function extractNameSpaceAndKeyFromPath(path: string): [string, string] {
-    const [namespace, key] = path.split(".");
-    if (!namespace || !key) {
-        throw Error(`Unable to get namespace and key from ${path}`);
-    }
-    return [namespace, key];
-}

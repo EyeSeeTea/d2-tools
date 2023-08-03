@@ -215,44 +215,41 @@ export class UserD2Repository implements UserRepository {
             .getData();
 
         const allUsers = _(response.userGroups)
-            .map(ug => ug.users)
-            .flatten()
+            .flatMap(ug => ug.users)
             .value();
 
-        if (allUsers.length > 0) {
-            const ids = allUsers.map(user => user.id);
-            const users = await promiseMap(_(ids).chunk(50).value(), async userIds => {
-                const response = await this.api.metadata
-                    .get({
-                        users: {
-                            filter: {
-                                id: {
-                                    in: userIds,
-                                },
-                            },
-                            fields: {
-                                id: true,
-                                email: true,
-                                userCredentials: {
-                                    username: true,
-                                },
+        if (allUsers.length === 0) return [];
+
+        const ids = allUsers.map(user => user.id);
+        const users = await promiseMap(_.chunk(ids, 50), async userIds => {
+            const response = await this.api.metadata
+                .get({
+                    users: {
+                        filter: {
+                            id: {
+                                in: userIds,
                             },
                         },
-                    })
-                    .getData();
+                        fields: {
+                            id: true,
+                            email: true,
+                            userCredentials: {
+                                username: true,
+                            },
+                        },
+                    },
+                })
+                .getData();
 
-                return response.users.map(d2User => {
-                    return {
-                        id: d2User.id,
-                        email: d2User.email,
-                        username: d2User.userCredentials.username,
-                    };
-                });
+            return response.users.map(d2User => {
+                return {
+                    id: d2User.id,
+                    email: d2User.email,
+                    username: d2User.userCredentials.username,
+                };
             });
+        });
 
-            return _(users).flatten().value();
-        }
-
-        return [];
+        return _(users).flatten().value();
     }
 }
