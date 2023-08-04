@@ -1,5 +1,5 @@
 import { Async } from "domain/entities/Async";
-import { Id } from "domain/entities/Base";
+import { Id, Identifiable } from "domain/entities/Base";
 import { User } from "domain/entities/User";
 import { Stats } from "domain/entities/Stats";
 
@@ -8,4 +8,5 @@ export interface UserRepository {
     getByUsernames(usernames: string[]): Async<User[]>;
     saveAll(users: User[]): Async<Stats>;
     getAll(): Async<User[]>;
+    getFromGroupByIdentifiables(values: Identifiable[]): Async<User[]>;
 }
