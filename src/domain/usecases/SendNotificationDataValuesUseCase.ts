@@ -362,14 +362,16 @@ export class SendNotificationDataValuesUseCase {
     }
 
     private async sendEmailToUsersInGroup(users: User[], subject: string, body: string): Async<void> {
-        await this.notificationsRepository.send({
-            attachments: [],
-            subject,
-            body: {
-                contents: body,
-                type: "html",
-            },
-            recipients: users.map(user => user.email),
+        await promiseMap(users, async user => {
+            await this.notificationsRepository.send({
+                attachments: [],
+                subject,
+                body: {
+                    contents: body,
+                    type: "html",
+                },
+                recipients: [user.email],
+            });
         });
     }
 
