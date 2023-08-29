@@ -152,7 +152,7 @@ export class SendNotificationDataValuesUseCase {
             )
         );
 
-        const usersGroups = dsConfigIndex?.usersGroups;
+        const usersGroups = dsConfigIndex?.userGroups;
         if (!usersGroups) {
             log.debug(
                 `Unable to find users groups in settings for execution ${dataSetId}-${orgUnitId}-${period}`

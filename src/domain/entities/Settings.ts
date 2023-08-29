@@ -11,7 +11,7 @@ export type DataSetMonitoring = {
 };
 
 export type MonitoringConfig = {
-    usersGroups: Identifiable[];
+    userGroups: Identifiable[];
     monitoring: DataSetMonitoring[];
 };
 
