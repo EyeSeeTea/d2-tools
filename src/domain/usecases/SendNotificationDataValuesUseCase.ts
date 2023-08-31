@@ -16,6 +16,8 @@ import { Identifiable, Path } from "domain/entities/Base";
 import { Async } from "domain/entities/Async";
 import { SettingsRepository } from "domain/repositories/SettingsRepository";
 import { MonitoringConfig, Settings } from "domain/entities/Settings";
+import { TimeZoneRepository } from "domain/repositories/TimeZoneRepository";
+import { DateTime } from "luxon";
 
 type EmailTemplate = {
     subject: string;
@@ -34,6 +36,7 @@ type OptionsUseCase = {
     executionsPath: string;
     emailPathTemplate: string;
     sendEmailAfterMinutes: number;
+    timeZone: string;
 };
 
 export class SendNotificationDataValuesUseCase {
@@ -44,24 +47,39 @@ export class SendNotificationDataValuesUseCase {
         private dataSetExecutionRepository: DataSetExecutionRepository,
         private userRepository: UserRepository,
         private notificationsRepository: NotificationsRepository,
-        private settingsRepository: SettingsRepository
+        private settingsRepository: SettingsRepository,
+        private timeZoneRepository: TimeZoneRepository
     ) {}
 
     async execute(options: OptionsUseCase) {
         const settings = await this.getSettings(options);
         const dataSetKeys = Object.keys(settings.dataSets);
+        const { timeZoneIANACode: timeZone } = options.timeZone
+            ? { timeZoneIANACode: options.timeZone }
+            : await this.timeZoneRepository.get();
+        const currentDate = DateTime.local().setZone(timeZone).toISO();
+        log.debug(`Server Date: ${currentDate} - ${timeZone}`);
+        if (!currentDate) {
+            throw Error(`Could not get server date from timezone ${timeZone}`);
+        }
         const { dataSets, orgUnits } = await this.getOrgUnitAndDataSets(dataSetKeys, settings);
         const dataSetExecution = await this.dataSetExecutionRepository.get({
             path: options.executionsPath,
         });
 
-        const dataSetExecutions = this.getDataSetsExecutions(settings, dataSets, orgUnits, dataSetExecution);
+        const dataSetExecutions = this.getDataSetsExecutions(
+            settings,
+            dataSets,
+            orgUnits,
+            dataSetExecution,
+            currentDate
+        );
 
         if (!dataSetExecution) {
             await this.saveExecutions(dataSetExecutions, options);
         }
 
-        await this.startExecutions(dataSetExecutions, dataSets, settings, options, orgUnits);
+        await this.startExecutions(dataSetExecutions, dataSets, settings, options, orgUnits, timeZone);
     }
 
     private async startExecutions(
@@ -69,7 +87,8 @@ export class SendNotificationDataValuesUseCase {
         dataSets: DataSet[],
         settings: Settings,
         options: OptionsUseCase,
-        orgUnits: OrgUnit[]
+        orgUnits: OrgUnit[],
+        timeZone: string
     ) {
         await promiseMap(_(dataSetExecutions).keys().value(), async key => {
             const execution = dataSetExecutions[key];
@@ -127,7 +146,14 @@ export class SendNotificationDataValuesUseCase {
 
                 await this.sendEmailToUsersInGroup(users, subject, body);
 
-                await this.saveExecutionsWithEmail(execution, dataSetExecutions, key, options);
+                await this.saveExecutionsWithEmail(
+                    execution,
+                    dataSetExecutions,
+                    key,
+                    options,
+                    dataValues,
+                    timeZone
+                );
                 log.debug("Executions saved");
             }
             log.debug(`End of execution ${key}\n`);
@@ -243,7 +269,8 @@ export class SendNotificationDataValuesUseCase {
         settings: Settings,
         dataSets: DataSet[],
         orgUnits: OrgUnit[],
-        dataSetStore: DataSetExecution | undefined
+        dataSetStore: DataSetExecution | undefined,
+        currentDate: string
     ): DataSetExecution {
         const dataSetKeys = Object.keys(settings.dataSets);
         const keys = _(dataSetKeys)
@@ -286,8 +313,6 @@ export class SendNotificationDataValuesUseCase {
             .compact()
             .flatten()
             .value();
-
-        const currentDate = new Date().toISOString();
         return _(keys)
             .map(key => {
                 const storeInfo = dataSetStore ? dataSetStore[key] : undefined;
@@ -352,12 +377,21 @@ export class SendNotificationDataValuesUseCase {
         execution: NotificationDetail,
         dataSetExecutions: DataSetExecution,
         key: string,
-        options: OptionsUseCase
+        options: OptionsUseCase,
+        dataValues: DataValue[],
+        timeZone: string
     ): Async<void> {
-        const dateEmailSent = new Date().toISOString();
-        execution.lastDateSentEmail = dateEmailSent;
-        execution.lastUpdated = dateEmailSent;
-        log.debug(`Email sent ${dateEmailSent}`);
+        const lastDeUpdated = _(dataValues).maxBy(dv => dv.lastUpdated);
+        if (!lastDeUpdated) return undefined;
+
+        const lastUpdated = new Date(lastDeUpdated.lastUpdated);
+        lastUpdated.setMilliseconds(lastUpdated.getMilliseconds() + 1);
+        execution.lastUpdated = lastUpdated.toISOString();
+
+        const currentDate = DateTime.local().setZone(timeZone).toISO();
+        execution.lastDateSentEmail = currentDate || "";
+        log.debug(`Email sent: ${execution.lastDateSentEmail}`);
+        log.debug(`Next Execution Date: ${execution.lastUpdated}`);
         await this.saveExecutions({ ...dataSetExecutions, [key]: execution }, options);
     }
 

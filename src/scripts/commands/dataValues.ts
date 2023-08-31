@@ -16,6 +16,7 @@ import { DataSetExecutionD2Repository } from "data/DataSetExecutionD2Repository"
 import { SettingsD2Repository } from "data/SettingsD2Repository";
 import { SettingsJsonRepository } from "data/SettingsJsonRepository";
 import { DataSetExecutionJsonRepository } from "data/DataSetExecutionJsonRepository";
+import { TimeZoneD2Repository } from "data/TimeZoneD2Repository";
 
 const SEND_EMAIL_AFTER_MINUTES = 5;
 
@@ -210,6 +211,12 @@ const monitoringDataValues = command({
             description: `Number of minutes to wait before sending the email notification. Default to ${SEND_EMAIL_AFTER_MINUTES}`,
             defaultValue: () => SEND_EMAIL_AFTER_MINUTES,
         }),
+        timeZone: option({
+            type: string,
+            long: "timezone",
+            description: "IANA time zone code. Example: Etc/UTC, Europe/Madrid",
+            defaultValue: () => "",
+        }),
     },
     handler: async args => {
         const api = getD2Api(args.url);
@@ -218,6 +225,7 @@ const monitoringDataValues = command({
         const orgUnitRepository = new OrgUnitD2Repository(api);
         const userRepository = new UserD2Repository(api);
         const notificationsRepository = new NotificationsEmailRepository();
+        const timeZoneRepository = new TimeZoneD2Repository(api);
 
         const isDataStoreStorage = args.storage === "datastore";
 
@@ -236,7 +244,8 @@ const monitoringDataValues = command({
             dataStoreRepository,
             userRepository,
             notificationsRepository,
-            settingsRepository
+            settingsRepository,
+            timeZoneRepository
         ).execute(args);
     },
 });
