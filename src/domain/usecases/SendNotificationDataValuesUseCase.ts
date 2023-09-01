@@ -67,13 +67,7 @@ export class SendNotificationDataValuesUseCase {
             path: options.executionsPath,
         });
 
-        const dataSetExecutions = this.getDataSetsExecutions(
-            settings,
-            dataSets,
-            orgUnits,
-            dataSetExecution,
-            currentDate
-        );
+        const dataSetExecutions = this.getDataSetsExecutions(settings, dataSets, orgUnits, dataSetExecution);
 
         if (!dataSetExecution) {
             await this.saveExecutions(dataSetExecutions, options);
@@ -100,12 +94,24 @@ export class SendNotificationDataValuesUseCase {
             log.debug("------------------------");
             log.debug(`Starting execution: ${key}`);
 
+            const lastUpdatedDateTimeLocal = DateTime.fromISO(execution.lastUpdated, {
+                zone: timeZone,
+            }).toISO({
+                includeOffset: false,
+            });
+            if (!lastUpdatedDateTimeLocal) {
+                throw Error(`Cannot get local time: ${execution.lastUpdated}-${timeZone}`);
+            }
+
             const dataValues = await this.dataValuesRepository.get({
                 includeDeleted: false,
                 dataSetIds: [dataSetId],
                 orgUnitIds: [orgUnitId],
                 periods: [period],
-                lastUpdated: execution.lastUpdated,
+                // Forcing this date to act like UTC because
+                // /api/dataValueSets return incorrect
+                // values if you include real offset
+                lastUpdated: `${lastUpdatedDateTimeLocal}Z`,
             });
             log.debug(`Getting ${dataValues.length} datavalues for execution`);
 
@@ -269,8 +275,7 @@ export class SendNotificationDataValuesUseCase {
         settings: Settings,
         dataSets: DataSet[],
         orgUnits: OrgUnit[],
-        dataSetStore: DataSetExecution | undefined,
-        currentDate: string
+        dataSetStore: DataSetExecution | undefined
     ): DataSetExecution {
         const dataSetKeys = Object.keys(settings.dataSets);
         const keys = _(dataSetKeys)
@@ -320,7 +325,7 @@ export class SendNotificationDataValuesUseCase {
                     key,
                     {
                         lastDateSentEmail: storeInfo?.lastDateSentEmail || "",
-                        lastUpdated: storeInfo?.lastUpdated || currentDate,
+                        lastUpdated: storeInfo?.lastUpdated || new Date().toISOString(),
                     },
                 ] as [string, NotificationDetail];
             })
