@@ -6,18 +6,20 @@ import { DataSetsRepository } from "domain/repositories/DataSetsRepository";
 import { OrgUnitRepository } from "domain/repositories/OrgUnitRepository";
 import { DataSet } from "domain/entities/DataSet";
 import { OrgUnit } from "domain/entities/OrgUnit";
-import { DataSetExecutionRepository } from "domain/repositories/DataSetExecutionRepository";
+import { ExecutionRepository } from "domain/repositories/ExecutionRepository";
 import { promiseMap } from "data/dhis2-utils";
 import { UserRepository } from "domain/repositories/UserRepository";
 import { NotificationsRepository } from "domain/repositories/NotificationsRepository";
 import { DataValue } from "domain/entities/DataValue";
 import { User } from "domain/entities/User";
-import { Identifiable, Path } from "domain/entities/Base";
+import { Id, Identifiable, Path } from "domain/entities/Base";
 import { Async } from "domain/entities/Async";
 import { SettingsRepository } from "domain/repositories/SettingsRepository";
-import { MonitoringConfig, Settings } from "domain/entities/Settings";
+import { DataElementMonitoring, MonitoringConfig, Settings } from "domain/entities/Settings";
 import { TimeZoneRepository } from "domain/repositories/TimeZoneRepository";
 import { DateTime } from "luxon";
+
+const emptyDeExecution = { dataElementsExecutions: undefined, dataSets: [], users: [] };
 
 type EmailTemplate = {
     subject: string;
@@ -27,14 +29,18 @@ type EmailTemplate = {
 export type NotificationDetail = {
     lastDateSentEmail: string;
     lastUpdated: string;
+    settings?: DataElementMonitoring;
 };
 
-export type DataSetExecution = Record<string, NotificationDetail>;
+type ExecutionType = "dataSets" | "dataElements";
+export type Execution = Record<ExecutionType, ExecutionInfo | undefined>;
+export type ExecutionInfo = Record<string, NotificationDetail>;
 
 type OptionsUseCase = {
     settingsPath: string;
     executionsPath: string;
-    emailPathTemplate: string;
+    emailDsPathTemplate: string;
+    emailDePathTemplate: string;
     sendEmailAfterMinutes: number;
     timeZone: string;
 };
@@ -44,7 +50,7 @@ export class SendNotificationDataValuesUseCase {
         private dataSetsRepository: DataSetsRepository,
         private dataValuesRepository: DataValuesRepository,
         private orgUnitRepository: OrgUnitRepository,
-        private dataSetExecutionRepository: DataSetExecutionRepository,
+        private executionRepository: ExecutionRepository,
         private userRepository: UserRepository,
         private notificationsRepository: NotificationsRepository,
         private settingsRepository: SettingsRepository,
@@ -52,40 +58,294 @@ export class SendNotificationDataValuesUseCase {
     ) {}
 
     async execute(options: OptionsUseCase) {
-        const settings = await this.getSettings(options);
-        const dataSetKeys = Object.keys(settings.dataSets);
         const { timeZoneIANACode: timeZone } = options.timeZone
             ? { timeZoneIANACode: options.timeZone }
             : await this.timeZoneRepository.get();
         const currentDate = DateTime.local().setZone(timeZone).toISO();
-        log.debug(`Server Date: ${currentDate} - ${timeZone}`);
         if (!currentDate) {
             throw Error(`Could not get server date from timezone ${timeZone}`);
         }
-        const { dataSets, orgUnits } = await this.getOrgUnitAndDataSets(dataSetKeys, settings);
-        const dataSetExecution = await this.dataSetExecutionRepository.get({
+        log.debug(`Server Date: ${currentDate} - ${timeZone}`);
+
+        const settings = await this.getSettings(options);
+        const execution = await this.executionRepository.get({
             path: options.executionsPath,
         });
 
-        const dataSetExecutions = this.getDataSetsExecutions(settings, dataSets, orgUnits, dataSetExecution);
+        const {
+            dataElementsExecutions,
+            users,
+            dataSets: dataElementsDataSets,
+        } = await this.getDataElementExecutions({ dataElementExecution: execution?.dataElements, settings });
 
-        if (!dataSetExecution) {
-            await this.saveExecutions(dataSetExecutions, options);
+        const { dataSetExecutions, dataSets, orgUnits } = await this.getDataSetsExecutions(
+            settings,
+            execution?.dataSets
+        );
+
+        const executionsToSave = { dataSets: dataSetExecutions, dataElements: dataElementsExecutions };
+        await this.saveExecutions(executionsToSave, options);
+
+        if (dataSetExecutions) {
+            await this.startDataSetExecutions(
+                executionsToSave,
+                dataSets,
+                settings,
+                options,
+                orgUnits,
+                timeZone
+            );
         }
 
-        await this.startExecutions(dataSetExecutions, dataSets, settings, options, orgUnits, timeZone);
+        if (dataElementsExecutions) {
+            await this.startDataElementsExecutions({
+                executions: executionsToSave,
+                dataSets: dataElementsDataSets,
+                options,
+                timeZone,
+                users,
+            });
+        }
     }
 
-    private async startExecutions(
-        dataSetExecutions: DataSetExecution,
+    private async getDataElementExecutions({
+        dataElementExecution,
+        settings,
+    }: {
+        dataElementExecution: ExecutionInfo | undefined;
+        settings: Settings;
+    }): Async<{ dataElementsExecutions: ExecutionInfo | undefined; dataSets: DataSet[]; users: User[] }> {
+        if (!settings.dataElements) return emptyDeExecution;
+        const enabledDataElements = settings.dataElements.filter(setting => setting.enabled);
+        if (enabledDataElements.length === 0) return emptyDeExecution;
+        const dataSetsCodes = enabledDataElements.map(setting => setting.dataSet);
+        const userCodes = enabledDataElements.flatMap(setting => setting.users);
+        const dataSets = await this.dataSetsRepository.getByIdentifiables(dataSetsCodes);
+        const users = await this.userRepository.getByIdentifiables(userCodes);
+
+        const dataElementKeyExecutions = enabledDataElements.map(dataElementSetting => {
+            const dataSetIdentifiable = dataElementSetting.dataSet;
+            const dataSet = dataSets.find(
+                dataSet =>
+                    dataSet.id === dataSetIdentifiable ||
+                    dataSet.code === dataSetIdentifiable ||
+                    dataSet.name === dataSetIdentifiable
+            );
+
+            if (!dataSet) throw Error(`Cannot found dataset: ${dataSetIdentifiable}`);
+            const usersIds = dataElementSetting.users.map(userIdentifiable => {
+                const userInfo = users.find(user => user.id === userIdentifiable);
+                if (!userInfo) throw Error(`Cannot found user: ${userIdentifiable}`);
+                return userInfo.id;
+            });
+
+            return [`${dataSet.id}-${usersIds.join(".")}`, dataElementSetting] as [
+                string,
+                DataElementMonitoring
+            ];
+        });
+
+        const dataElementsExecutions = _(dataElementKeyExecutions)
+            .map(([key, settings]) => {
+                const storeInfo = dataElementExecution ? dataElementExecution[key] : undefined;
+                return [
+                    key,
+                    {
+                        lastDateSentEmail: storeInfo?.lastDateSentEmail || "",
+                        lastUpdated: storeInfo?.lastUpdated || new Date().toISOString(),
+                        settings,
+                    },
+                ] as [string, NotificationDetail];
+            })
+            .fromPairs()
+            .value();
+
+        return { dataElementsExecutions, dataSets, users };
+    }
+
+    private async startDataElementsExecutions({
+        dataSets,
+        executions,
+        users,
+        timeZone,
+        options,
+    }: {
+        dataSets: DataSet[];
+        executions: Execution;
+        users: User[];
+        timeZone: string;
+        options: OptionsUseCase;
+    }): Async<void> {
+        const dataElementsExecutions = executions.dataElements;
+        if (!dataElementsExecutions) return undefined;
+        await promiseMap(_(dataElementsExecutions).keys().value(), async key => {
+            const execution = dataElementsExecutions[key];
+            if (!execution) return false;
+            const [dataSetId, usersKeys] = key.split("-");
+            if (!dataSetId || !usersKeys) {
+                throw Error("Cannot found dataset or users in DataElement execution");
+            }
+            log.debug("------------------------");
+            log.debug(`Starting DataElement execution: ${key}`);
+
+            const dataSetInfo = dataSets.find(dataSet => dataSet.id === dataSetId);
+            if (!dataSetInfo) throw Error(`Cannot found dataset ${dataSetId}`);
+
+            const dataElementsInfo = execution.settings?.dataElements.map(dataElement => {
+                const deInfo = dataSetInfo.dataSetElements.find(
+                    de =>
+                        de.dataElement.id === dataElement ||
+                        de.dataElement.name === dataElement ||
+                        de.dataElement.code === dataElement
+                );
+                if (!deInfo) throw Error(`Cannot found dataElement: ${dataElement}`);
+                return deInfo.dataElement;
+            });
+
+            const dataElementsIds = _(dataElementsInfo)
+                .map(de => de.id)
+                .value();
+
+            const currentUsers = _(execution.settings?.users)
+                .map(userId => {
+                    const user = users.find(user => user.id === userId);
+                    if (!user) return undefined;
+                    return user;
+                })
+                .compact()
+                .value();
+
+            const lastUpdatedDateTimeLocal = this.getLocalTimeFromDateString(execution.lastUpdated, timeZone);
+            const orgUnitIds = _(currentUsers)
+                .flatMap(user => user.orgUnits || [])
+                .map(ou => ou.id)
+                .value();
+
+            const dataValues = await this.getDataValues(
+                [dataSetId],
+                orgUnitIds,
+                undefined,
+                lastUpdatedDateTimeLocal,
+                true,
+                dataElementsIds
+            );
+
+            const diffSinceLastUpdate = this.diffSinceLastUpdate(dataValues);
+            if (
+                diffSinceLastUpdate &&
+                diffSinceLastUpdate >= options.sendEmailAfterMinutes &&
+                execution.settings?.users
+            ) {
+                const dataValuesWithOldValue = await this.getOldDataValues(
+                    dataValues,
+                    [dataSetId],
+                    undefined,
+                    undefined,
+                    dataElementsIds
+                );
+
+                const { subject, body } = await this.generateDataElementTemplate(
+                    dataValuesWithOldValue,
+                    dataSetInfo,
+                    options
+                );
+
+                await this.sendEmailToUsersInGroup(users, subject, body);
+
+                await this.saveExecutionsWithEmail(
+                    execution,
+                    executions,
+                    key,
+                    options,
+                    dataValues,
+                    timeZone,
+                    "dataElements"
+                );
+            }
+        });
+    }
+
+    private async generateDataElementTemplate(
+        dataValuesWithOldValue: DataValue[],
+        dataSetInfo: DataSet,
+        options: OptionsUseCase
+    ) {
+        const dataValuesWithDeName = _(dataValuesWithOldValue)
+            .map(dataValue => {
+                const dataElementName = dataSetInfo.dataSetElements.find(
+                    de => de.dataElement.id === dataValue.dataElement
+                )?.dataElement.name;
+
+                const orgUnit = dataSetInfo.organisationUnits.find(ou => ou.id === dataValue.orgUnit);
+
+                return {
+                    ...dataValue,
+                    name: dataElementName,
+                    orgUnitName: orgUnit?.name || "",
+                };
+            })
+            .compact()
+            .value();
+
+        const dataTemplate = {
+            dataSetName: dataSetInfo.name,
+            orgUnitName: "",
+            period: "",
+            dataValues: dataValuesWithDeName,
+        };
+        const emailTemplate = await this.getEmailTemplate(options.emailDePathTemplate);
+        return this.parseEmailContent(emailTemplate, dataTemplate);
+    }
+
+    private async getDataValues(
+        dataSetIds: Id[],
+        orgUnitIds: Id[],
+        periods: string[] | undefined,
+        lastUpdated: string,
+        includeChildren: boolean = false,
+        excludeDataElements: Id[] | undefined
+    ): Async<DataValue[]> {
+        const dataValues = await this.dataValuesRepository.get({
+            includeDeleted: false,
+            dataSetIds,
+            orgUnitIds,
+            children: includeChildren,
+            periods,
+            // Forcing this date to act like UTC because
+            // /api/dataValueSets return incorrect
+            // values if you include real offset
+            lastUpdated: `${lastUpdated}Z`,
+        });
+        const filterDataValues = excludeDataElements
+            ? dataValues.filter(dv => excludeDataElements.includes(dv.dataElement))
+            : dataValues;
+        log.debug(`Getting ${filterDataValues.length} datavalues for execution`);
+        return filterDataValues;
+    }
+
+    private getLocalTimeFromDateString(date: string, timeZone: string) {
+        const lastUpdatedDateTimeLocal = DateTime.fromISO(date, {
+            zone: timeZone,
+        }).toISO({
+            includeOffset: false,
+        });
+        if (!lastUpdatedDateTimeLocal) {
+            throw Error(`Cannot get local time: ${date}-${timeZone}`);
+        }
+        return lastUpdatedDateTimeLocal;
+    }
+
+    private async startDataSetExecutions(
+        executions: Execution,
         dataSets: DataSet[],
         settings: Settings,
         options: OptionsUseCase,
         orgUnits: OrgUnit[],
         timeZone: string
     ) {
+        const dataSetExecutions = executions.dataSets;
         await promiseMap(_(dataSetExecutions).keys().value(), async key => {
-            const execution = dataSetExecutions[key];
+            const execution = dataSetExecutions ? dataSetExecutions[key] : undefined;
             if (!execution) return false;
             const [dataSetId, orgUnitId, period] = key.split("-");
             if (!orgUnitId || !dataSetId || !period) {
@@ -94,26 +354,16 @@ export class SendNotificationDataValuesUseCase {
             log.debug("------------------------");
             log.debug(`Starting execution: ${key}`);
 
-            const lastUpdatedDateTimeLocal = DateTime.fromISO(execution.lastUpdated, {
-                zone: timeZone,
-            }).toISO({
-                includeOffset: false,
-            });
-            if (!lastUpdatedDateTimeLocal) {
-                throw Error(`Cannot get local time: ${execution.lastUpdated}-${timeZone}`);
-            }
+            const lastUpdatedDateTimeLocal = this.getLocalTimeFromDateString(execution.lastUpdated, timeZone);
 
-            const dataValues = await this.dataValuesRepository.get({
-                includeDeleted: false,
-                dataSetIds: [dataSetId],
-                orgUnitIds: [orgUnitId],
-                periods: [period],
-                // Forcing this date to act like UTC because
-                // /api/dataValueSets return incorrect
-                // values if you include real offset
-                lastUpdated: `${lastUpdatedDateTimeLocal}Z`,
-            });
-            log.debug(`Getting ${dataValues.length} datavalues for execution`);
+            const dataValues = await this.getDataValues(
+                [dataSetId],
+                [orgUnitId],
+                [period],
+                lastUpdatedDateTimeLocal,
+                false,
+                undefined
+            );
 
             const usersGroups = this.getUsersGroupsFromSettings(
                 dataSets,
@@ -127,10 +377,10 @@ export class SendNotificationDataValuesUseCase {
             const diffSinceLastUpdate = this.diffSinceLastUpdate(dataValues);
             if (diffSinceLastUpdate && diffSinceLastUpdate >= options.sendEmailAfterMinutes && usersGroups) {
                 const dataValuesWithOldValue = await this.getOldDataValues(
-                    dataSetId,
-                    orgUnitId,
-                    period,
-                    dataValues
+                    dataValues,
+                    [dataSetId],
+                    [orgUnitId],
+                    [period]
                 );
 
                 log.debug(
@@ -154,11 +404,12 @@ export class SendNotificationDataValuesUseCase {
 
                 await this.saveExecutionsWithEmail(
                     execution,
-                    dataSetExecutions,
+                    executions,
                     key,
                     options,
                     dataValues,
-                    timeZone
+                    timeZone,
+                    "dataSets"
                 );
                 log.debug("Executions saved");
             }
@@ -251,33 +502,29 @@ export class SendNotificationDataValuesUseCase {
             };
         });
 
-        const emailTemplate = await this.getEmailTemplate(options.emailPathTemplate);
+        const emailTemplate = await this.getEmailTemplate(options.emailDsPathTemplate);
         const dataTemplate = {
             dataSetName,
             period,
             orgUnitName,
             dataValues: dataValuesWithDeName,
         };
-        const subjectTemplate = _.template(emailTemplate.subject);
-        const bodyTemplate = _.template(emailTemplate.body);
-        const subject = subjectTemplate(dataTemplate);
-        const body = bodyTemplate(dataTemplate);
-        return { body, subject };
+        return this.parseEmailContent(emailTemplate, dataTemplate);
     }
 
-    private async saveExecutions(dataSetExecutions: DataSetExecution, options: OptionsUseCase): Async<void> {
-        await this.dataSetExecutionRepository.save(dataSetExecutions, {
-            path: options.executionsPath,
-        });
+    private async saveExecutions(executions: Execution, options: OptionsUseCase): Async<void> {
+        await this.executionRepository.save(executions, { path: options.executionsPath });
     }
 
-    private getDataSetsExecutions(
+    private async getDataSetsExecutions(
         settings: Settings,
-        dataSets: DataSet[],
-        orgUnits: OrgUnit[],
-        dataSetStore: DataSetExecution | undefined
-    ): DataSetExecution {
+        dataSetExecution: ExecutionInfo | undefined
+    ): Async<{ dataSetExecutions: ExecutionInfo | undefined; dataSets: DataSet[]; orgUnits: OrgUnit[] }> {
+        if (!settings.dataSets) return { dataSetExecutions: undefined, dataSets: [], orgUnits: [] };
+
         const dataSetKeys = Object.keys(settings.dataSets);
+        const { dataSets, orgUnits } = await this.getOrgUnitAndDataSets(dataSetKeys, settings);
+
         const keys = _(dataSetKeys)
             .map(dataSetKey => {
                 const dataSetDetails = settings.dataSets[dataSetKey];
@@ -318,9 +565,10 @@ export class SendNotificationDataValuesUseCase {
             .compact()
             .flatten()
             .value();
-        return _(keys)
+
+        const dataSetExecutions = _(keys)
             .map(key => {
-                const storeInfo = dataSetStore ? dataSetStore[key] : undefined;
+                const storeInfo = dataSetExecution ? dataSetExecution[key] : undefined;
                 return [
                     key,
                     {
@@ -331,26 +579,32 @@ export class SendNotificationDataValuesUseCase {
             })
             .fromPairs()
             .value();
+
+        return { dataSetExecutions, dataSets, orgUnits };
     }
 
     private async getOldDataValues(
-        dataSetId: string,
-        orgUnitId: string,
-        period: string,
-        dataValues: DataValue[]
+        dataValues: DataValue[],
+        dataSetIds?: string[],
+        orgUnitIds?: string[],
+        periods?: string[],
+        dataElements?: string[]
     ): Async<DataValue[]> {
         log.debug("Getting audit datavalues...");
         const auditValues = await this.dataValuesRepository.getAudits({
-            dataSetIds: [dataSetId],
-            orgUnitIds: [orgUnitId],
-            periods: [period],
+            dataSetIds,
+            orgUnitIds,
+            periods,
+            dataElements,
         });
 
         const dataValuesWithOldValue = dataValues.map(dv => {
             const auditValuesByDe = auditValues.filter(
                 auditValue =>
                     auditValue.dataElement.id === dv.dataElement &&
-                    auditValue.categoryOptionCombo.id === dv.categoryOptionCombo
+                    auditValue.categoryOptionCombo.id === dv.categoryOptionCombo &&
+                    auditValue.period.id === dv.period &&
+                    auditValue.organisationUnit.id === dv.orgUnit
             );
 
             const latestAuditValue = _(auditValuesByDe).first();
@@ -380,11 +634,12 @@ export class SendNotificationDataValuesUseCase {
 
     private async saveExecutionsWithEmail(
         execution: NotificationDetail,
-        dataSetExecutions: DataSetExecution,
+        executions: Execution,
         key: string,
         options: OptionsUseCase,
         dataValues: DataValue[],
-        timeZone: string
+        timeZone: string,
+        typeExecution: "dataSets" | "dataElements"
     ): Async<void> {
         const lastDeUpdated = _(dataValues).maxBy(dv => dv.lastUpdated);
         if (!lastDeUpdated) return undefined;
@@ -397,7 +652,19 @@ export class SendNotificationDataValuesUseCase {
         execution.lastDateSentEmail = currentDate || "";
         log.debug(`Email sent: ${execution.lastDateSentEmail}`);
         log.debug(`Next Execution Date: ${execution.lastUpdated}`);
-        await this.saveExecutions({ ...dataSetExecutions, [key]: execution }, options);
+        await this.saveExecutions(
+            {
+                ...executions,
+                [typeExecution]: {
+                    ...executions.dataElements,
+                    [key]: {
+                        lastDateSentEmail: execution.lastDateSentEmail,
+                        lastUpdated: execution.lastUpdated,
+                    },
+                },
+            },
+            options
+        );
     }
 
     private async sendEmailToUsersInGroup(users: User[], subject: string, body: string): Async<void> {
@@ -449,5 +716,21 @@ export class SendNotificationDataValuesUseCase {
         const diffInMilliseconds = Math.abs(date2.getTime() - date1.getTime());
         const minutes = Math.floor(((diffInMilliseconds % 86400000) % 3600000) / 60000);
         return minutes;
+    }
+
+    private parseEmailContent(
+        emailTemplate: EmailTemplate,
+        dataTemplate: {
+            dataSetName: string;
+            period: string | undefined;
+            orgUnitName: string;
+            dataValues: DataValue[];
+        }
+    ) {
+        const subjectTemplate = _.template(emailTemplate.subject);
+        const bodyTemplate = _.template(emailTemplate.body);
+        const subject = subjectTemplate(dataTemplate);
+        const body = bodyTemplate(dataTemplate);
+        return { body, subject };
     }
 }

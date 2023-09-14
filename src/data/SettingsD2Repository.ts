@@ -2,7 +2,7 @@ import { D2Api } from "types/d2-api";
 import { Async } from "domain/entities/Async";
 import { SettingsRepository } from "domain/repositories/SettingsRepository";
 import { Settings, SettingsOptions } from "domain/entities/Settings";
-import { extractNamespaceAndKeyFromPath } from "./DataSetExecutionD2Repository";
+import { extractNamespaceAndKeyFromPath } from "./ExecutionD2Repository";
 
 export class SettingsD2Repository implements SettingsRepository {
     constructor(private api: D2Api) {}

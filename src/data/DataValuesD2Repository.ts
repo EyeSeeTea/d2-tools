@@ -81,6 +81,7 @@ export class DataValuesD2Repository implements DataValuesRepository {
             ds: options.dataSetIds,
             ou: options.orgUnitIds,
             pe: options.periods,
+            de: options.dataElements,
             pageSize: 1e6,
         });
 

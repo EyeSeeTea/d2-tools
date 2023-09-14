@@ -12,10 +12,10 @@ import { NotificationsEmailRepository } from "data/NotificationsEmailRepository"
 import { UserD2Repository } from "data/UserD2Repository";
 import { SendNotificationDataValuesUseCase } from "domain/usecases/SendNotificationDataValuesUseCase";
 import { OrgUnitD2Repository } from "data/OrgUnitD2Repository";
-import { DataSetExecutionD2Repository } from "data/DataSetExecutionD2Repository";
+import { ExecutionD2Repository } from "data/ExecutionD2Repository";
 import { SettingsD2Repository } from "data/SettingsD2Repository";
 import { SettingsJsonRepository } from "data/SettingsJsonRepository";
-import { DataSetExecutionJsonRepository } from "data/DataSetExecutionJsonRepository";
+import { ExecutionJsonRepository } from "data/DataSetExecutionJsonRepository";
 import { TimeZoneD2Repository } from "data/TimeZoneD2Repository";
 
 const SEND_EMAIL_AFTER_MINUTES = 5;
@@ -200,10 +200,15 @@ const monitoringDataValues = command({
             long: "executions-path",
             description: "Path to json file that contains the dataset executions information",
         }),
-        emailPathTemplate: option({
+        emailDsPathTemplate: option({
             type: string,
-            long: "email-path-template",
-            description: "Path to the json file with email template information",
+            long: "email-ds-path-template",
+            description: "Path to the json file with dataSet email template information",
+        }),
+        emailDePathTemplate: option({
+            type: string,
+            long: "email-de-path-template",
+            description: "Path to the json file with dataElement email template information",
         }),
         sendEmailAfterMinutes: option({
             type: number,
@@ -234,8 +239,8 @@ const monitoringDataValues = command({
             : new SettingsJsonRepository();
 
         const dataStoreRepository = isDataStoreStorage
-            ? new DataSetExecutionD2Repository(api)
-            : new DataSetExecutionJsonRepository();
+            ? new ExecutionD2Repository(api)
+            : new ExecutionJsonRepository();
 
         new SendNotificationDataValuesUseCase(
             dataSetsRepository,

@@ -252,4 +252,36 @@ export class UserD2Repository implements UserRepository {
 
         return _(users).flatten().value();
     }
+
+    async getByIdentifiables(values: Identifiable[]): Async<User[]> {
+        const { users } = await this.api.metadata
+            .get({
+                users: {
+                    fields: {
+                        id: true,
+                        email: true,
+                        userCredentials: { username: true },
+                        dataViewOrganisationUnits: {
+                            id: true,
+                            name: true,
+                            code: true,
+                        },
+                    },
+                    filter: {
+                        id: {
+                            in: values,
+                        },
+                    },
+                },
+            })
+            .getData();
+
+        return users.map(d2User => {
+            return {
+                ...d2User,
+                username: d2User.userCredentials.username,
+                orgUnits: d2User.dataViewOrganisationUnits,
+            };
+        });
+    }
 }

@@ -269,7 +269,8 @@ yarn start datavalues monitoring-values \
 --storage=json \
 --settings-path=./settings.json \
 --executions-path=./executions.json \
---email-path-template=./email.json \
+--email-ds-path-template=./dataset-email-template.json \
+--email-de-path-template=./dataelement-email-template.json \
 --send-email-after-minutes=5
 ```
 
@@ -281,7 +282,8 @@ yarn start datavalues monitoring-values \
 --storage=datastore \
 --settings-path=d2-notifications.settings \
 --executions-path=d2-notifications.executions \
---email-path-template=./email.json \
+--email-ds-path-template=./dataset-email-template.json \
+--email-de-path-template=./dataelement-email-template.json \
 --send-email-after-minutes=5
 ```
 
