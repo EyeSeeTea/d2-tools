@@ -41,8 +41,13 @@ export class LoadingPlanHarRepository implements LoadingPlanRepository {
             maxRedirects: 0,
             validateStatus: status => status < 400,
         };
+        console.debug(`Get auth cookies: ${JSON.stringify(config)}`);
 
         const res = await axios2.request(config);
+        const location: string | undefined = res.headers["location"];
+        if (location && location.match(/failed/)) {
+            throw new Error(`Login failed: ${config.data} -> location=${location}`);
+        }
         const cookie = res.headers["set-cookie"]?.[0].split(";")[0] || "";
         console.debug(`Cookie from server: ${cookie}`);
         this.cookie = cookie;
@@ -64,13 +69,13 @@ export class LoadingPlanHarRepository implements LoadingPlanRepository {
         const initialTime = new Date(initialEntry.startedDateTime).getTime() / 1000;
 
         const entryGroups = _(entries)
-            .map((entry, idx) => ({
+            .map((entry, idx): Entry & { index: number } => ({
                 ...entry,
                 index: idx,
                 time: new Date(entry.startedDateTime).getTime() / 1000,
             }))
             .groupBy(entry => {
-                return Math.floor(entry.time * 100); // Group by 0.1secs windows
+                return Math.floor(entry.time * 100); // Group by 0.1-sec windows
             })
             .values()
             .value();
@@ -82,11 +87,14 @@ export class LoadingPlanHarRepository implements LoadingPlanRepository {
                 const harElapsed = time - initialTime;
                 const clockElapsed = (new Date().getTime() - initialClock) / 1000;
                 const toWait = harElapsed - clockElapsed;
-                await wait(toWait);
-                const res = await parallelPromisesAll(entriesGroup, entry =>
+                if (toWait > 0) {
+                    console.debug(`Wait: ${toWait}`);
+                    await wait(toWait);
+                }
+
+                return parallelPromisesAll(entriesGroup, entry =>
                     this.runEntry(entry, entry.index, entries.length, options)
                 );
-                return res;
             })
         );
 
@@ -95,8 +103,7 @@ export class LoadingPlanHarRepository implements LoadingPlanRepository {
             .sum();
 
         const errorCount = _(results)
-            .map(result => result.status)
-            .reject(isSuccessStatus)
+            .filter(result => result.isError)
             .size();
 
         const elapsedTime = new Date().getTime() - startTime.getTime();
@@ -131,11 +138,13 @@ export class LoadingPlanHarRepository implements LoadingPlanRepository {
             : {};
 
         const responseWasCached = entry.response.status === 0;
-        if (responseWasCached) return { status: 0, time: 0 };
+        if (responseWasCached) return { status: 0, time: 0, isError: false };
 
         const headers0 = _(request.headers)
             .map(header =>
-                header.name.startsWith(":") ? null : ([header.name, header.value] as [string, string])
+                header.name.startsWith(":") || header.name == "Host"
+                    ? undefined
+                    : ([header.name, header.value] as [string, string])
             )
             .compact()
             .value();
@@ -155,6 +164,7 @@ export class LoadingPlanHarRepository implements LoadingPlanRepository {
 
         const config = _.merge({}, baseConfig, postParams);
         const startTime = new Date();
+
         const res = await axios2.request(config).catch(err => {
             console.error("Axios error", err);
             return null;
@@ -164,14 +174,22 @@ export class LoadingPlanHarRepository implements LoadingPlanRepository {
         const resInfo = `[${res?.status || "UNKNOWN"}] ${config.method} ${url}`;
         console.debug(`[request-response:${index + 1}/${total}] ` + resInfo);
 
-        if (!res || ![200, 201, 304, 404].includes(res.status)) {
+        const isSuccess =
+            [0, 200, 201, 304, 404, 409].includes(res?.status || 0) ||
+            request.url.includes("files/script") ||
+            request.url.includes("staticContent");
+
+        if (!isSuccess) {
             const data = { request, response: { status: res?.status, data: res?.data } };
-            console.debug(`Request unsuccessful`, JSON.stringify(data, null, 4));
+            console.debug(
+                `Request unsuccessful: ${request.method} ${request.url} (${res?.status})`,
+                JSON.stringify(data, null, 4)
+            );
         }
         if (!res) {
-            return { status: 400, time: requestTime };
+            return { status: 400, time: requestTime, isError: !isSuccess };
         } else {
-            return { status: res.status, time: requestTime };
+            return { status: res.status, time: requestTime, isError: !isSuccess };
         }
     }
 }
@@ -197,10 +215,6 @@ async function sequentialPromises<In, Out>(
     return output;
 }
 
-function isSuccessStatus(status: number) {
-    return status < 400;
-}
-
 function wait(secs: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, 1000 * secs));
 }
@@ -208,4 +222,5 @@ function wait(secs: number): Promise<void> {
 interface RunEntryResult {
     status: number;
     time: number;
+    isError: boolean;
 }

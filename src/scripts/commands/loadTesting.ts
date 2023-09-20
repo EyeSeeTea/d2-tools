@@ -1,4 +1,4 @@
-import { Options, RunLoadingPlanUseCase } from "../../domain/usecases/RunLoadingPlanUseCase";
+import { RunLoadingPlanUseCase } from "../../domain/usecases/RunLoadingPlanUseCase";
 import { LoadingPlanHarRepository } from "../../data/LoadingPlanHarRepository";
 import _ from "lodash";
 import { command, option, subcommands, restPositionals, string } from "cmd-ts";
@@ -50,12 +50,12 @@ export function getCommand() {
             baseUrl: option({
                 type: string,
                 long: "base-url",
-                description: "Base URL for requuests",
+                description: "Base URL for requests",
             }),
             plansJsonFile: option({
                 type: string,
                 long: "plans-json",
-                description: "Base URL for requuests",
+                description: "JSON containing load plans",
             }),
             authStr: option({
                 type: string,
@@ -70,18 +70,18 @@ export function getCommand() {
         },
         handler: async args => {
             const { harsFolder, harUrl, baseUrl, authStr, plansJsonFile, planIds } = args;
-            const [username = "admin", password = "district"] = authStr.split(":");
+            const [username = "", password = ""] = authStr.split(":");
+
+            const repo = new LoadingPlanHarRepository({ harsFolder, harUrl });
             // TODO: LoadingPlanRepository + LoadingPlanJsonFileRepository (with fs+Codec)
             const plans = JSON.parse(fs.readFileSync(plansJsonFile, "utf8")) as LoadingPlan[];
-            const options: Options = {
+
+            await new RunLoadingPlanUseCase(repo).execute({
                 url: baseUrl,
                 planIdsToRun: planIds,
                 auth: { username, password },
                 plans: plans,
-            };
-            const repo = new LoadingPlanHarRepository({ harsFolder, harUrl });
-
-            await new RunLoadingPlanUseCase(repo).execute(options);
+            });
         },
     });
 
