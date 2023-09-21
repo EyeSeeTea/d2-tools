@@ -1,4 +1,5 @@
 import fs from "fs";
+import * as Parallel from "async-parallel";
 import https from "https";
 import path from "path";
 import _ from "lodash";
@@ -20,9 +21,9 @@ interface RepoOptions {
 }
 
 const axios2 = axios.create({
-    //timeout: 600 * 1000,
     //keepAlive pools and reuses TCP connections, so it's faster
     httpsAgent: new https.Agent({ keepAlive: true }),
+    //timeout: 600 * 1000,
     //maxRedirects: 10,
 });
 
@@ -55,47 +56,24 @@ export class LoadingPlanHarRepository implements LoadingPlanRepository {
 
     async run(plan: LoadingPlan, options: Options): Promise<RunHarResult> {
         const har = this.loadHar(plan);
-        const entries = har.log.entries.filter(
-            entry =>
-                !(entry.request.url.includes("login.action") && entry.request.method === "POST") &&
-                entry.request.url.startsWith(this.options.harUrl) &&
-                (entry.request.url.match(/https?:\/\//g) || []).length < 2
-        );
+        const entries = har.log.entries
+            .filter(
+                entry =>
+                    !(entry.request.url.includes("login.action") && entry.request.method === "POST") &&
+                    entry.request.url.startsWith(this.options.harUrl) &&
+                    (entry.request.url.match(/https?:\/\//g) || []).length < 2
+            )
+            .map((entry, index) => ({ ...entry, index }));
 
         const startTime = new Date();
         const initialEntry = har.log.entries[0];
         if (!initialEntry) throw new Error("No initial entry");
-        const initialClock = new Date().getTime();
-        const initialTime = new Date(initialEntry.startedDateTime).getTime() / 1000;
 
-        const entryGroups = _(entries)
-            .map((entry, idx): Entry & { index: number } => ({
-                ...entry,
-                index: idx,
-                time: new Date(entry.startedDateTime).getTime() / 1000,
-            }))
-            .groupBy(entry => {
-                return Math.floor(entry.time * 10); // Group by 0.1-sec windows
-            })
-            .values()
-            .value();
-
-        const results = _.flatten(
-            await sequentialPromises(entryGroups, async entriesGroup => {
-                const time = entriesGroup[0]?.time;
-                if (!time) throw new Error();
-                const harElapsed = time - initialTime;
-                const clockElapsed = (new Date().getTime() - initialClock) / 1000;
-                const toWait = harElapsed - clockElapsed;
-                if (toWait > 0) {
-                    console.debug(`Wait: ${toWait}`);
-                    await wait(toWait);
-                }
-
-                return parallelPromisesAll(entriesGroup, entry =>
-                    this.runEntry(entry, entry.index, entries.length, options)
-                );
-            })
+        const concurrentRequests = 10;
+        const results = await Parallel.map(
+            entries,
+            entry => this.runEntry(entry, entry.index, entries.length, options),
+            concurrentRequests
         );
 
         const requestsTime = _(results)
@@ -195,28 +173,7 @@ export class LoadingPlanHarRepository implements LoadingPlanRepository {
     }
 }
 
-async function parallelPromisesAll<In, Out>(
-    inputValues: In[],
-    mapper: (value: In, index: number) => Promise<Out>
-): Promise<Out[]> {
-    return Promise.all(inputValues.map(mapper));
-}
-
-async function sequentialPromises<In, Out>(
-    inputValues: In[],
-    mapper: (value: In, index: number) => Promise<Out>
-): Promise<Out[]> {
-    const output: Out[] = [];
-    let index = 0;
-    for (const inputValue of inputValues) {
-        const res = await mapper(inputValue, index);
-        output.push(res);
-        index++;
-    }
-    return output;
-}
-
-function wait(secs: number): Promise<void> {
+export function wait(secs: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, 1000 * secs));
 }
 

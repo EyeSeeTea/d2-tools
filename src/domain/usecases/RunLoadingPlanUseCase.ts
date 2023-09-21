@@ -22,6 +22,7 @@ export class RunLoadingPlanUseCase {
         const { windowTimeSecs, users } = execution;
 
         console.debug(`Plan: ${plan.id} - window=${windowTimeSecs} secs - users=${users}`);
+        const initialTime = new Date().getTime();
 
         const startTimes = _(0)
             .range(Math.ceil(users))
@@ -46,11 +47,13 @@ export class RunLoadingPlanUseCase {
 
         const requestsTime = _.sum(results.map(result => result.totalTime));
         const meanPlanTime = requestsTime / results.length;
+        const planTotalTime = (new Date().getTime() - initialTime) / 1000;
 
         console.debug(
             [
                 `Plan-results: ${plan.id} - window=${windowTimeSecs} secs - users=${users}`,
-                `mean-time=${meanPlanTime.toFixed(1)} secs`,
+                `totalTime=${planTotalTime.toFixed(1)} secs`,
+                `meanTime=${meanPlanTime.toFixed(1)} secs`,
                 `errors=${errorCount}/${totalRequest} (${errorsPercent} %)`,
             ].join(" | ")
         );

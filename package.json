@@ -17,6 +17,7 @@
     "dependencies": {
         "@eyeseetea/d2-api": "^1.11.0",
         "@types/json-diff": "^0.7.0",
+        "async-parallel": "^1.2.3",
         "cmd-ts": "^0.10.0",
         "csv-reader": "^1.0.8",
         "csv-writer": "^1.6.0",
