@@ -75,7 +75,7 @@ export class LoadingPlanHarRepository implements LoadingPlanRepository {
                 time: new Date(entry.startedDateTime).getTime() / 1000,
             }))
             .groupBy(entry => {
-                return Math.floor(entry.time * 100); // Group by 0.1-sec windows
+                return Math.floor(entry.time * 10); // Group by 0.1-sec windows
             })
             .values()
             .value();
@@ -165,6 +165,7 @@ export class LoadingPlanHarRepository implements LoadingPlanRepository {
         const config = _.merge({}, baseConfig, postParams);
         const startTime = new Date();
 
+        console.debug(`[request:${index + 1}/${total}] ${config.method} ${config.url}`);
         const res = await axios2.request(config).catch(err => {
             console.error("Axios error", err);
             return null;
