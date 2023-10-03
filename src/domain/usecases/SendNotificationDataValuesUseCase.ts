@@ -352,7 +352,7 @@ export class SendNotificationDataValuesUseCase {
                 throw Error("Cannot found org unit, dataset or period in execution");
             }
             log.debug("------------------------");
-            log.debug(`Starting execution: ${key}`);
+            log.debug(`Starting DataSet execution: ${key}`);
 
             const lastUpdatedDateTimeLocal = this.getLocalTimeFromDateString(execution.lastUpdated, timeZone);
 
@@ -713,9 +713,9 @@ export class SendNotificationDataValuesUseCase {
     }
 
     private getDifferenceInMinutes(date1: Date, date2: Date): number {
-        const diffInMilliseconds = Math.abs(date2.getTime() - date1.getTime());
-        const minutes = Math.floor(((diffInMilliseconds % 86400000) % 3600000) / 60000);
-        return minutes;
+        const end = DateTime.fromISO(date2.toISOString());
+        const start = DateTime.fromISO(date1.toISOString());
+        return Math.floor(end.diff(start, "minutes").minutes);
     }
 
     private parseEmailContent(
