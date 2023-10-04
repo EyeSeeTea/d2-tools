@@ -299,6 +299,47 @@ $ yarn start notifications send-user-info-notification \
   usernames.csv emailContent.json
 ```
 
+## Load testing
+
+Save a HAR file in a browser (Chrome: Developer Tools -> Network tab -> Export HAR) with the desired scenario to test. Then create a configuration file with the scenarios:
+
+```json
+[
+    {
+        "id": "dashboard",
+        "executions": [{ "windowTimeSecs": 300, "users": 1 }],
+        "name": "dashboard.har"
+    },
+    {
+        "id": "all",
+        "executions": [
+            { "windowTimeSecs": 300, "users": 1 },
+            { "windowTimeSecs": 300, "users": 10 }
+        ],
+        "name": "all.har"
+    }
+]
+```
+
+And run the scenarios against the same or a different DHIS2 instance:
+
+```shell
+$ yarn start loadTesting run \
+  --plans-json=plans.json \
+  --hars-folder="." \
+  --har-url="https://dhis2.ocg.msf.org" \
+  --base-url="https://dhis2-test-elca.ocg.msf.org" \
+  --auth='USER:PASSWORD' \
+  dashboard all
+```
+
+Check results in the output:
+
+```
+Plan-results: all - window=300 secs - users=1  | totalTime=35.6 secs | meanTime=35.1 secs  | errors=0/612 (0.00 %)
+Plan-results: all - window=300 secs - users=10 | totalTime=106.0 secs | meanTime=77.9 secs | errors=154/6120 (2.52 %)
+```
+
 ## Users
 
 ### Migrate user information from one attribute to another if they're different
