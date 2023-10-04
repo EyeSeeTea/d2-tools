@@ -9,4 +9,5 @@ export interface UserRepository {
     saveAll(users: User[]): Async<Stats>;
     getAll(): Async<User[]>;
     getFromGroupByIdentifiables(values: Identifiable[]): Async<User[]>;
+    getByIdentifiables(values: Id[]): Async<User[]>;
 }

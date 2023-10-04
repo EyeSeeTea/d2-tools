@@ -17,4 +17,12 @@ export type MonitoringConfig = {
 
 export type Settings = {
     dataSets: Record<Id, MonitoringConfig[]>;
+    dataElements: DataElementMonitoring[];
+};
+
+export type DataElementMonitoring = {
+    dataElements: Identifiable[];
+    dataSet: Identifiable;
+    users: Identifiable[];
+    enabled: boolean;
 };

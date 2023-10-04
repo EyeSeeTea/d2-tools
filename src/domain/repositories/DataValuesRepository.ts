@@ -22,6 +22,10 @@ export interface DataValuesSelector {
     endDate?: string;
     limit?: number;
     lastUpdated?: string;
+    dataElements?: Id[];
 }
 
-export type DataValueAuditsSelector = Pick<DataValuesSelector, "dataSetIds" | "orgUnitIds" | "periods">;
+export type DataValueAuditsSelector = Pick<
+    DataValuesSelector,
+    "dataSetIds" | "orgUnitIds" | "periods" | "dataElements"
+>;
