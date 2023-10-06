@@ -1,59 +1,132 @@
 {
-	"TEMPLATE_GROUPS": [{
-			"group": "UfhhwZK73Lg",
-			"groupname": "WIDP IT team",
-			"template": "cNtWc18LXBS",
-			"username": "widp_it_team.template"
-		},
-		{
-			"group": "L5dlGQ4m5av",
-			"groupname": "WIDP User Manager",
-			"template": "Q2e3xq4hRCj",
-			"username": "widp_manager.template"
-		},
-		{
-			"group": "sCjEPgiOhP1",
-			"groupname": "WIDP admins",
-			"template": "kxaP3vUEnJn",
-			"username": "widp_admins.template"
-		},
-		{
-			"group": "e5NqEzmd8Ql",
-			"groupname": "WIDP external developers",
-			"template": "FnkRtcOGOVQ",
-			"username": "widp_external_developers.template"
-		},
-		{
-			"group": "UmSnxmr4LE0",
-			"groupname": "WIDP Users",
-			"template": "WT6QkP45vEC",
-			"username": "widp_user.template"
-		}
-	],
-	"EXCLUDE_ROLES": [{
-		"id": "byLnQNR1v1B",
-		"name": "App - Leprosy WER Report"
-	}, {
-		"id": "x0TtjEsq92c",
-		"name": "METADATSYNC - CONF"
-	}, {
-		"id": "Plo3cWpmp0P",
-		"name": "METADATASYNC - EXECUTOR"
-	}],
-	"EXCLUDE_ROLES_USERS": [{
-		"username": "ryan",
-		"group": "u72gB0R6bT6",
-		"groupname": "App - Datastore"
-	}],
-	"PUSH_PROGRAM_ID": {
-		"id": "tBI5HRoOMUz"
-	},
-	"MINIMAL_ROLE": {
-		"id": "ROLEUmSnxmr4LE0",
-		"name": "Backend access"
-	},,
-        "MINIMAL_GROUP": {
-                "id": "UmSnxmr4LE0",
-		"name": "WIDP Users"
+    "URL": {
+        "username": "",
+        "password": "",
+        "server": "localhost:8080",
+        "prefix": "http://"
+    },
+    "TEMPLATE_GROUPS": [
+        {
+            "group": "UfhhwZK73Lg",
+            "groupname": "WIDP IT team",
+            "template": "cNtWc18LXBS",
+            "username": "widp_it_team.template"
+        },
+        {
+            "group": "L5dlGQ4m5av",
+            "groupname": "WIDP User Manager",
+            "template": "Q2e3xq4hRCj",
+            "username": "widp_manager.template"
+        },
+        {
+            "group": "sCjEPgiOhP1",
+            "groupname": "WIDP admins",
+            "template": "kxaP3vUEnJn",
+            "username": "widp_admins.template"
+        },
+        {
+            "group": "e5NqEzmd8Ql",
+            "groupname": "WIDP external developers",
+            "template": "FnkRtcOGOVQ",
+            "username": "widp_external_developers.template"
+        },
+        {
+            "group": "UmSnxmr4LE0",
+            "groupname": "WIDP Users",
+            "template": "WT6QkP45vEC",
+            "username": "widp_user.template"
         }
+    ],
+    "EXCLUDE_USERS": [
+        { "id": "kD52FGwJgDF", "name": "idelcano" },
+        {
+            "id": "WT6QkP45vEC",
+            "name": "widp_user.template"
+        },
+        {
+            "id": "FnkRtcOGOVQ",
+            "name": "widp_external_developers.template"
+        },
+        {
+            "id": "kxaP3vUEnJn",
+            "name": "widp_admins.template"
+        },
+        {
+            "id": "Q2e3xq4hRCj",
+            "name": "widp_manager.template"
+        },
+        {
+            "id": "cNtWc18LXBS",
+            "name": "widp_it_team.template"
+        }
+    ],
+    "EXCLUDE_ROLES": [
+        {
+            "id": "byLnQNR1v1B",
+            "name": "App - Leprosy WER Report"
+        },
+        {
+            "id": "x0TtjEsq92c",
+            "name": "METADATSYNC - CONF"
+        },
+        {
+            "id": "Plo3cWpmp0P",
+            "name": "METADATASYNC - EXECUTOR"
+        }
+    ],
+    "EXCLUDE_ROLES_BY_USERS": [
+        {
+            "username": "ryan",
+            "userid": "YdBcEIZpRHo",
+            "roleid": "u72gB0R6bT6",
+            "rolename": "App - Datastore"
+        },
+        {
+            "userid": "qHKSCtqDl3I",
+            "username": "teena.kunjumen",
+            "roleid": "u72gB0R6bT6",
+            "rolename": "App - Datastore"
+        }
+    ],
+    "EXCLUDE_ROLES_BY_GROUPS": [
+        {
+            "groupname": "MAL_Malaria access",
+            "groupid": "ZXEVDM9XRea",
+            "rolename": "App - Malaria Country Profile app",
+            "roleid": "IOk1HXX2U8i"
+        },
+        {
+            "groupname": "AMR-AMC access",
+            "groupid": "Ph7PPRKnFRG",
+            "rolename": "App - GLASS",
+            "roleid": "IOk1HXX2U8i"
+        },
+        {
+            "groupname": "UHCW Data entry",
+            "groupid": "UKNHk297YX2",
+            "rolename": "UHPCW - APP",
+            "roleid": "QlygjdBBXyK"
+        }
+    ],
+    "EXCLUDE_ROLES_BY_ROLE": [
+        {
+            "activeroleid": "ZmHw3OB9UMU",
+            "activerolename": "App - Bulk Load",
+            "ignoreroleid": "HiFNFHaOWz5",
+            "ignorerolename": "Export metadata"
+        }
+    ],
+    "PUSH_PROGRAM_ID": {
+        "id": "tBI5HRoOMUz",
+        "name": "ADMIN_Users_Check(Event)"
+    },
+    "MINIMAL_ROLE": {
+        "id": "vOLtPCt8WeB",
+        "name": "Backend access"
+    },
+    "MINIMAL_GROUP": {
+        "id": "UmSnxmr4LE0",
+        "name": "WIDP Users"
+    },
+    "PUSH_REPORT": true
 }
