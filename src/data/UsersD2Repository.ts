@@ -23,8 +23,23 @@ import * as CsvWriter from "csv-writer";
 const dataelement_invalid_users_count_code = "ADMIN_invalid_Users_1_Events";
 //users with invald roles based on the upper level of the template group
 const dataelement_invalid_roles_count_code = "ADMIN_invalid_Roles_Users_2_Events";
-const dataelement_invalid_users_file_code = "ADMIN_invalid_Users_file_3_Events";
-const dataelement_invalid_roles_file_code = "ADMIN_invalid_Roles_Users_file_4_Events";
+const dataelement_users_pushed_code = "ADMIN_user_pushed_control_Events";
+const dataelement_file_invalid_users_file_code = "ADMIN_invalid_Users_file_resource_backup_3_Events";
+const dataelement_file_valid_users_file_code = "ADMIN_valid_Users_file_resource_backup_4_Events";
+
+const date = new Date()
+    .toLocaleString()
+    .replace(" ", "-")
+    .replace(":", "-")
+    .replace(":", "-")
+    .replace("/", "-")
+    .replace("/", "-")
+    .replace("\\", "-");
+const csvErrorFilename = `${date}-users-bakkup`;
+const filenameErrorOnPush = `${date}-users-push-error`;
+const csvPushedFilename = `${date}-users-pushed`;
+const filenameUsersPushed = `${date}-users-pushed`;
+const filenameUserBackup = `${date}-users-update-backup`;
 
 type Users = { users: User[] };
 type Programs = { programs: Program[] };
@@ -34,7 +49,7 @@ type UserRoleAuthorities = { userRoles: UserRoleAuthority[] };
 type UserResponse = { status: string; typeReports: object[] };
 
 export class UsersD2Repository implements UsersRepository {
-    constructor(private api: D2Api) { }
+    constructor(private api: D2Api) {}
 
     async checkPermissions(options: UsersOptions): Promise<Async<void>> {
         const {
@@ -43,7 +58,16 @@ export class UsersD2Repository implements UsersRepository {
             pushProgramId: pushProgramId,
             minimalGroupId: minimalGroupId,
             minimalRoleId: minimalRoleId,
+            excludedRoles: excludedRoles,
+            excludedUsers: excludedUsers,
+            excludedRolesByRole: excludedRolesByRole,
+            excludedRolesByUser: excludedRolesByUser,
+            excludedRolesByGroup: excludedRolesByGroup,
         } = options;
+
+        const excludedUsersIds = excludedUsers.map(item => {
+            return item.id;
+        });
 
         const userTemplateIds = templateGroups.map(template => {
             return template.templateId;
@@ -52,15 +76,22 @@ export class UsersD2Repository implements UsersRepository {
         const allUserTemplates = await this.getUsers(userTemplateIds);
 
         const userRoles: UserRoleAuthority[] = await this.getAllUserRoles(options);
-        const validateRoles = userRoles.filter(role => {
+        const validateAuthInRoles = userRoles.filter(role => {
             return role.authorities.length == 0;
         });
 
-        if (validateRoles.length > 0) {
-            validateRoles.forEach(role => {
+        if (validateAuthInRoles.length > 0) {
+            validateAuthInRoles.forEach(role => {
                 log.error(`Role ${role.id} - ${role.name} has no authorities`);
             });
-            throw new Error("Roles with no authorities are not allowed");
+
+            validateAuthInRoles.forEach(role => {
+                if (role.id in excludedRoles) {
+                    throw new Error(
+                        "Roles with no authorities are not allowed. Fix them in the server or add in the ignore list"
+                    );
+                }
+            });
         }
 
         templateGroups.map(item => {
@@ -77,13 +108,15 @@ export class UsersD2Repository implements UsersRepository {
                     });
                 })
             );
-
             const validRolesByAuthority: UserRoleAuthority[] = _.compact(
                 userRoles.map(role => {
                     const authorities = role.authorities.filter(authority => {
                         if (templateAutorities.indexOf(authority) >= 0) return authority;
                     });
-                    if (authorities.length == role.authorities.length) {
+                    if (
+                        authorities.length === role.authorities.length &&
+                        authorities.every(element => role.authorities.includes(element))
+                    ) {
                         return role;
                     }
                 })
@@ -94,7 +127,7 @@ export class UsersD2Repository implements UsersRepository {
                     const authorities = role.authorities.filter(authority => {
                         if (templateAutorities.indexOf(authority) == -1) return authority;
                     });
-                    if (authorities.length == role.authorities.length) {
+                    if (authorities.length > 0) {
                         return role;
                     }
                 })
@@ -123,31 +156,36 @@ export class UsersD2Repository implements UsersRepository {
 
         //fix users without any group
 
-        const allUsersGroupCheck = await this.getAllUsers(options);
-        const userIdWithoutGroups: IdItem[] = _.compact(allUsersGroupCheck.map(user => {
-            const templateGroupMatch = templateGroups.find(template => {
-                return user.userGroups.some(
-                    userGroup => userGroup != undefined && template.groupId == userGroup.id
-                );
-            });
+        const allUsersGroupCheck = await this.getAllUsers(excludedUsersIds);
+        const userIdWithoutGroups: IdItem[] = _.compact(
+            allUsersGroupCheck.map(user => {
+                const templateGroupMatch = templateGroups.find(template => {
+                    return user.userGroups.some(
+                        userGroup => userGroup != undefined && template.groupId == userGroup.id
+                    );
+                });
 
-            if (templateGroupMatch == undefined) {
-                //template not found -> all roles are invalid except the minimal role
-                log.error(
-                    `Warning: User don't have groups ${user.id} - ${user.name} adding to minimal group  ${minimalGroupId}`
-                );
-                const id: IdItem = { id: user.id };
-                return id
-            }
-        }));
+                if (templateGroupMatch == undefined) {
+                    //template not found -> all roles are invalid except the minimal role
+                    log.error(
+                        `Warning: User don't have groups ${user.id} - ${user.name} adding to minimal group  ${minimalGroupId}`
+                    );
+                    const id: IdItem = { id: user.id };
+                    return id;
+                }
+            })
+        );
 
+        //Push users without group fix
         if (userIdWithoutGroups.length > 0) {
-            const minimalUserGroup = await this.getGroups([minimalGroupId]);
+            const minimalUserGroup = await this.getGroups([minimalGroupId.id]);
             await this.pushUsersToGroup(minimalUserGroup, userIdWithoutGroups);
         }
+
         //fix user roles based on its groups
-        debugger
-        const allUsers = await this.getAllUsers(options);
+        debugger;
+        const allUsers = await this.getAllUsers(excludedUsersIds);
+
         const userinfo: UserRes[] = _.compact(
             allUsers.map(user => {
                 const templateGroupMatch = templateGroups.find(template => {
@@ -163,22 +201,19 @@ export class UsersD2Repository implements UsersRepository {
                 });
 
                 if (templateGroupMatch == undefined) {
-                    const templateGroupMatch = templateGroups.find(template => {
-                        return template.groupId == minimalGroupId;
-                    });
                     //template not found -> all roles are invalid except the minimal role
                     log.error(
                         `Warning: User don't have groups ${user.id} - ${user.name} error adding to minimal group  ${minimalGroupId}`
                     );
-                    throw new Error("User" + user.username + " don't have valid groups");
+                    throw new Error("User: " + user.username + " don't have valid groups");
                 } else if (user.userCredentials.userRoles === undefined) {
                     const fixedUser = JSON.parse(JSON.stringify(user));
-                    fixedUser.userCredentials.userRoles = [{ id: minimalRoleId }];
+                    fixedUser.userCredentials.userRoles = [{ id: minimalRoleId.id }];
                     fixedUser.userRoles = [{ id: minimalRoleId }];
                     const userInfoRes: UserRes = {
                         user: user,
                         fixedUser: fixedUser,
-                        validUserRoles: [{ id: minimalRoleId }],
+                        validUserRoles: [{ id: minimalRoleId.id }],
                         actionRequired: true,
                         invalidUserRoles: [],
                         userNameTemplate: "User don't have roles",
@@ -201,19 +236,52 @@ export class UsersD2Repository implements UsersRepository {
                         _.isEqual
                     );
 
+                    const allExceptionsToBeIgnoredByUser: string[] = _.compact(
+                        excludedRolesByUser.flatMap(item => {
+                            if (item.userid == user.id) return item.roleid;
+                        })
+                    );
+
+                    const allExceptionsToBeIgnoredByGroup: string[] = _.compact(
+                        excludedRolesByGroup.flatMap(itemexception => {
+                            const exist = user.userGroups.some(item => {
+                                return item.id === itemexception.groupid;
+                            });
+                            if (exist) {
+                                return itemexception.roleid;
+                            } else {
+                                return [];
+                            }
+                        })
+                    );
+
+                    const allExceptionsToBeIgnoredByRole: string[] = _.compact(
+                        excludedRolesByRole.flatMap(item => {
+                            if (item.activeroleid in user.userRoles) return item.ignoreroleid;
+                        })
+                    );
+                    const allValidRolesSingleListWithExceptions = _.concat(
+                        allValidRolesSingleList,
+                        allExceptionsToBeIgnoredByRole,
+                        allExceptionsToBeIgnoredByUser,
+                        allExceptionsToBeIgnoredByGroup
+                    );
                     //the invalid roles are the ones that are not in the valid roles
                     const allInvalidRolesSingleListFixed = allInValidRolesSingleList?.filter(item => {
-                        return allValidRolesSingleList.indexOf(item) == -1;
+                        return allValidRolesSingleListWithExceptions.indexOf(item) == -1;
                     });
                     //fill the valid roles in the user  against all the possible valid roles
                     const userValidRoles = user.userCredentials.userRoles.filter(userRole => {
-                        return JSON.stringify(allValidRolesSingleList).indexOf(userRole.id) >= 0;
+                        return (
+                            JSON.stringify(allValidRolesSingleListWithExceptions).indexOf(userRole.id) >= 0
+                        );
                     });
+
                     //fill the invalid roles in the user against all the possible invalid roles
                     const userInvalidRoles = user.userCredentials.userRoles.filter(userRole => {
                         return (
-                            JSON.stringify(allValidRolesSingleList).indexOf(userRole.id) == -1 &&
-                            JSON.stringify(allInvalidRolesSingleListFixed).indexOf(userRole.id) >= 0
+                            JSON.stringify(allValidRolesSingleListWithExceptions).indexOf(userRole.id) ==
+                                -1 && JSON.stringify(allInvalidRolesSingleListFixed).indexOf(userRole.id) >= 0
                         );
                     });
                     /* 
@@ -259,7 +327,6 @@ export class UsersD2Repository implements UsersRepository {
         );
 
         //return userInfoRes
-        debugger
         const date = new Date()
             .toLocaleString()
             .replace(" ", "-")
@@ -273,47 +340,92 @@ export class UsersD2Repository implements UsersRepository {
 
         //users with action required
         const usersToBeFixed = userinfo.filter(item => item.actionRequired);
-        //save errors in user configs
-        debugger
-        if (usersToBeFixed.length > 0) {
-            log.info(usersToBeFixed.length + " users will be fixed")
-            if (pushReport) {
-                const response = await pushReportToDhis(
-                    usersWithErrorsInGroups,
-                    usersToBeFixed,
-                    this.api,
-                    pushProgramId
-                );
-                log.info(JSON.stringify(response?.typeReports ?? ""));
-            }
-            saveInJsonFormat(JSON.stringify({ usersWithErrors: usersWithErrorsInGroups }, null, 4), `${date}-users-errors1`);
-            saveInCsv(usersWithErrorsInGroups, `${date}-users-errors2`);
-        }
 
         const userActionRequired = userinfo.filter(item => item.actionRequired);
+        //save errors in user configs
+        debugger;
+        if (usersToBeFixed.length > 0) {
+            log.info(usersToBeFixed.length + " users will be fixed");
 
-        //Push users to dhis2
+            log.info(usersToBeFixed.length + " users will be pushed");
+            if (userActionRequired.length > 0) {
+                const userToPost: User[] = userActionRequired.map(item => {
+                    return item.fixedUser;
+                });
+                const response = await pushUsers(userToPost, this.api);
 
-        log.info(usersToBeFixed.length + " users will be pushed")
-        if (userActionRequired.length > 0) {
-            await pushUsers(userActionRequired, this.api);
+                log.info(`Saving report: ${response.status}`);
+                log.info(`Saving report: ${response.typeReports}`);
+                if (response.status !== "OK") {
+                    if (pushReport) {
+                        const response = await pushReportToDhis(
+                            usersWithErrorsInGroups.length.toString(),
+                            usersToBeFixed.length.toString(),
+                            "false",
+                            this.api,
+                            pushProgramId.id
+                        );
+                        debugger;
+                        //recovery from response
+                        const eventid = "adasd";
+                        //recovery eventid
+                        //Push users to dhis2
+                        if (response) {
+                            await saveUserErrors(userActionRequired, response, eventid);
+                        }
+
+                        //todo
+                        //push files atached to eventid
+                    } else {
+                        if (pushReport) {
+                            const response = await pushReportToDhis(
+                                usersWithErrorsInGroups.length.toString(),
+                                usersToBeFixed.length.toString(),
+                                "true",
+                                this.api,
+                                pushProgramId.id
+                            );
+                            debugger;
+                            //recovery from response
+                            const eventid = "adasd";
+
+                            saveUserChangesBakup(usersToBeFixed, eventid);
+                            saveInJsonFormat(
+                                JSON.stringify({ usersWithErrors: usersWithErrorsInGroups }, null, 4),
+                                `${date}-groups-pushed`
+                            );
+                            saveInCsv(usersWithErrorsInGroups, `${date}-groups-pushed`);
+
+                            if (response) {
+                                await saveUserErrors(userActionRequired, response, eventid);
+                            }
+                            //todo
+                            //push files atached to eventid
+                            //Push users to dhis2
+                            log.info(JSON.stringify(response?.typeReports ?? ""));
+                        }
+                    }
+                }
+            }
         }
     }
-    async pushUsersToGroup(minimalUserGroup: UserGroup[], userIdWithoutGroups: (IdItem)[]) {
+
+    async pushUsersToGroup(minimalUserGroup: UserGroup[], userIdWithoutGroups: IdItem[]) {
         if (userIdWithoutGroups != undefined && userIdWithoutGroups.length > 0) {
             minimalUserGroup[0]?.users.push(...userIdWithoutGroups);
             try {
                 const response = await this.api.models.userGroups.put(minimalUserGroup[0]!).getData();
-                response.status == "OK" ? log.info("Users added to minimal group") : log.error("Error adding users to minimal group");
-                log.info(JSON.stringify(response.response))
+                response.status == "OK"
+                    ? log.info("Users added to minimal group")
+                    : log.error("Error adding users to minimal group");
+                log.info(JSON.stringify(response.response));
 
                 return response.status;
-            } catch (errror) {
-                console.debug(errror);
+            } catch (error) {
+                console.debug(error);
                 return "ERROR";
             }
         }
-
     }
 
     async getAllUserRoles(options: UsersOptions): Promise<UserRoleAuthority[]> {
@@ -323,6 +435,7 @@ export class UsersD2Repository implements UsersRepository {
             const responses = await this.api
                 .get<UserRoleAuthorities>(`/userRoles.json?paging=false&fields=id,name,authorities`)
                 .getData();
+            log.info("ok");
             return responses.userRoles;
         } else {
             const responses = await this.api
@@ -338,6 +451,7 @@ export class UsersD2Repository implements UsersRepository {
     }
 
     private async getUsers(userIds: string[]): Promise<User[]> {
+        debugger;
         log.info(`Get metadata: All users IDS: ${userIds.join(", ")}`);
 
         const responses = await this.api
@@ -354,19 +468,19 @@ export class UsersD2Repository implements UsersRepository {
             .get<UserGroups>(
                 `/userGroups?filter=id:in:[${groupsIds.join(
                     ","
-                )}]&fields=id,created,lastUpdated,name,users&paging=false.json`
+                )}]&fields=id,created,lastUpdated,name,users,*&paging=false.json`
             )
             .getData();
 
         return responses["userGroups"];
     }
 
-    private async getAllUsers(options: UsersOptions): Promise<User[]> {
-        log.info(`Get metadata: All users: ${options.excludedUsers.join(", ")}`);
+    private async getAllUsers(excludedUsers: string[]): Promise<User[]> {
+        log.info(`Get metadata: All users except: ${excludedUsers.join(",")}`);
 
         const responses = await this.api
             .get<Users>(
-                `/users.json?paging=false&fields=*,userCredentials[*]&filter=id:!in:[${options.excludedUsers.join(
+                `/users.json?paging=false&fields=*,userCredentials[*]&filter=id:!in:[${excludedUsers.join(
                     ","
                 )}]`
             )
@@ -376,12 +490,9 @@ export class UsersD2Repository implements UsersRepository {
     }
 }
 
-async function pushUsers(userActionRequired: UserRes[], api: D2Api) {
+async function pushUsers(userToPost: User[], api: D2Api) {
     log.info("Push users to dhis2");
 
-    const userToPost: User[] = userActionRequired.map(item => {
-        return item.fixedUser;
-    });
     const usersReadyToPost: Users = { users: userToPost };
     const response: UserResponse = await api
         .post<UserResponse>("/metadata", { async: false }, usersReadyToPost)
@@ -393,7 +504,6 @@ async function pushUsers(userActionRequired: UserRes[], api: D2Api) {
                 return { status: "ERROR", typeReports: [] };
             }
         });
-    saveResult(userActionRequired, response);
     return response;
 }
 
@@ -450,42 +560,36 @@ async function saveInCsv(users: UserRes[], filepath: string) {
     await csvWriter.writeRecords(records);
 }
 
-async function saveResult(userActionRequired: UserRes[], response: UserResponse) {
-    const date = new Date().toLocaleString().replace(" ", "-").replace(":", "-").replace(":", "-").replace("/", "-").replace("/", "-").replace("\\", "-");
-
+async function saveUserChangesBakup(userActionRequired: UserRes[], eventid: string) {
     const userToPost: User[] = userActionRequired.map(item => {
         return item.fixedUser;
     });
     const userBeforePost: User[] = userActionRequired.map(item => {
         return item.user;
     });
-    const csvErrorFilename = `${date}-users-push-error4`;
-    const jsonUserFilename = `${date}-users-push-error5`;
-    const csvPushedFilename = `${date}-users-pushed6`;
-    const jsonUserPushedFilename = `${date}-users-pushed7`;
-    const jsonUserPushedBackupFilename = `${date}-users-pushed-backup8`;
-    debugger
-    if (response.status !== "OK") {
-        debugger
-        log.info(`Saving report: ${response.status}`);
-        log.info(`Saving report: ${response.typeReports}`);
-        log.error(`Save errors in csv: `);
-        await saveInCsv(userActionRequired, `${csvErrorFilename}`);
-        log.error(`Save jsons on import error: ${jsonUserFilename}`);
-        saveInJsonFormat(JSON.stringify({ response, userToPost }, null, 4), jsonUserFilename);
-    } else {
-        log.error(`Save pushed users details in csv: ${csvPushedFilename}`);
-        await saveInCsv(userActionRequired, `${csvPushedFilename}`);
-        log.error(`Save pushed users: ${jsonUserPushedFilename}`);
-        saveInJsonFormat(JSON.stringify({ response, userToPost }, null, 4), jsonUserPushedFilename);
-        log.error(`Save backup of users: ${jsonUserPushedBackupFilename}`);
-        saveInJsonFormat(JSON.stringify({ response, userBeforePost }, null, 4), jsonUserPushedBackupFilename);
-    }
+    debugger;
+    log.error(`Save pushed users details in csv: ${csvPushedFilename}`);
+    await saveInCsv(userActionRequired, `${csvPushedFilename}`);
+    log.error(`Save pushed users: ${filenameUsersPushed}`);
+    await saveInJsonFormat(JSON.stringify({ userToPost }, null, 4), filenameUsersPushed);
+    log.error(`Save backup of users: ${filenameUserBackup}`);
+    await saveInJsonFormat(JSON.stringify({ userBeforePost }, null, 4), filenameUserBackup);
+}
+
+async function saveUserErrors(userActionRequired: UserRes[], response: UserResponse, eventid: string) {
+    const userToPost: User[] = userActionRequired.map(item => {
+        return item.fixedUser;
+    });
+    log.error(`Save jsons on import error: ${filenameErrorOnPush}`);
+    await saveInJsonFormat(JSON.stringify({ response, userToPost }, null, 4), filenameErrorOnPush);
+    log.error(`Save errors in csv: `);
+    await saveInCsv(userActionRequired, `${csvErrorFilename}`);
 }
 
 function saveInJsonFormat(content: string, file: string) {
     fs.writeFileSync(file + ".json", content);
     log.info(`Json saved in ${file}`);
+    return file;
 }
 
 async function getProgram(api: D2Api, programUid: string): Promise<Program[]> {
@@ -505,21 +609,25 @@ async function getProgram(api: D2Api, programUid: string): Promise<Program[]> {
     }
     )
     .getData();  */
+    debugger;
     return responses.programs;
 }
 
 async function pushReportToDhis(
-    usersWithErrors: UserRes[],
-    usersToBeFixed: UserRes[],
+    usersWithErrors: string,
+    usersToBeFixed: string,
+    usersfixed: string,
     api: D2Api,
     pushProgramId: string
 ) {
     log.info(`Create and Pushing report to DHIS2`);
+    debugger;
     const responseProgram = await getProgram(api, pushProgramId);
 
     const programs = responseProgram[0] ?? undefined;
 
     if (programs === undefined) {
+        debugger;
         log.error(`Program ${pushProgramId} not found`);
         return;
     }
@@ -528,11 +636,14 @@ async function pushReportToDhis(
     const orgunitstring = JSON.stringify(programs.organisationUnits[0]);
     const orgUnit: { id: string } = JSON.parse(orgunitstring);
     const orgUnitId: string = orgUnit.id;
+    debugger;
     if (programStage === undefined) {
+        debugger;
         log.error(`Programstage ${pushProgramId} not found`);
         return;
     }
     if (orgUnitId === undefined) {
+        debugger;
         log.error(`Organisation Unit ${pushProgramId} not found`);
         return;
     }
@@ -552,21 +663,25 @@ async function pushReportToDhis(
         dataElements: dataElements,
         orgUnitId: orgUnitId,
     };
-
+    filenameUsersPushed;
+    filenameUserBackup;
     const dataValues: EventDataValue[] = program.dataElements.map(item => {
         switch (item.code) {
             case dataelement_invalid_users_count_code:
-                return { dataElement: item.id, value: usersWithErrors.length };
+                return { dataElement: item.id, value: usersWithErrors };
             case dataelement_invalid_roles_count_code:
-                return { dataElement: item.id, value: usersToBeFixed.length };
-            case dataelement_invalid_users_file_code:
-                return { dataElement: item.id, value: JSON.stringify(usersWithErrors) };
-            case dataelement_invalid_roles_file_code:
-                return { dataElement: item.id, value: JSON.stringify(usersToBeFixed) };
+                return { dataElement: item.id, value: usersToBeFixed };
+            case dataelement_users_pushed_code:
+                return { dataElement: item.id, value: usersfixed };
+            case dataelement_file_valid_users_file_code:
+            //     return { dataElement: item.id, value: filenameUsersPushed };
+            // case dataelement_file_invalid_users_file_code:
+            //     return { dataElement: item.id, value: filenameUserBackup };
             default:
                 return { dataElement: "", value: "" };
         }
     });
+    debugger;
     if (dataValues.length == 0) {
         log.info(`No data elements found`);
         return;
@@ -574,6 +689,7 @@ async function pushReportToDhis(
     log.info("Push report");
     log.info(JSON.stringify(dataValues));
     //todo fix push, change dataelements to only add a count of errors.
+    debugger;
     const response: UserResponse = await api
         .post<UserResponse>(
             "/tracker",
@@ -604,6 +720,6 @@ async function pushReportToDhis(
             }
         });
     log.info(response.status);
-
+    debugger;
     return response;
 }

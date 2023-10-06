@@ -16,12 +16,41 @@ export interface TemplateGroup {
     name?: string;
 }
 
+export interface RolesByRoles {
+    activeroleid: string;
+    activerolename: string;
+    ignoreroleid: string;
+    ignorerolename: string;
+}
+
+export interface RolesByUser {
+    userid: string;
+    username: string;
+    roleid: string;
+    rolename: string;
+}
+
+export interface RolesByGroup {
+    groupid: string;
+    groupname: string;
+    roleid: string;
+    rolename: string;
+}
+
+export interface Item {
+    id: string;
+    name: string;
+}
 export interface UsersOptions {
     templates: TemplateGroup[];
-    excludedRoles: string[];
-    excludedUsers: string[];
+    excludedRoles: Item[];
+    excludedUsers: Item[];
+    excludedRolesByUser: RolesByUser[];
+    excludedRolesByGroup: RolesByGroup[];
+    excludedRolesByRole: RolesByRoles[];
     pushReport: boolean;
-    pushProgramId: string;
-    minimalGroupId: string;
-    minimalRoleId: string;
+    pushProgramId: Item;
+    minimalGroupId: Item;
+    minimalRoleId: Item;
+    apiurl: string;
 }
