@@ -614,21 +614,6 @@ async-parallel@^1.2.3:
   resolved "https://registry.yarnpkg.com/async-parallel/-/async-parallel-1.2.3.tgz#0b90550aeffb7a365d8cee881eb0618f656a3450"
   integrity sha512-FWKFY4Gk8lNobUdjTY7rOjk30yfCdzQ1nbNX/dWV94RaAlBa0clGYGqXORYjdYRaylq+HDyIDzq6smVu2L0P1g==
 
-async-pool@^0.2.6:
-  version "0.2.6"
-  resolved "https://registry.yarnpkg.com/async-pool/-/async-pool-0.2.6.tgz#cd683e947800b7a9bc9b558cc39c5222dac4e6a6"
-  integrity sha512-CekNjHTUjLkKZVcYLm1CjYa4Uu10Q7TKMKUaYXuXlFLs+UzqHsxQjaY0s+qgoVnZwI6+f0T5FMH5XFwx8yZ8ZA==
-  dependencies:
-    bluebird "^2.9.14"
-    logger-facade-nodejs "0.0.3"
-
-async-promise-pool@^1.0.6:
-  version "1.0.6"
-  resolved "https://registry.yarnpkg.com/async-promise-pool/-/async-promise-pool-1.0.6.tgz#eea75c1bd4cef05225d5d1835b68b6ccb88ae595"
-  integrity sha512-44DZ4fOHtnioeblfWNgf2EoOFTf0B72t/j4vY4ZnG+3AcWOkQKaByUfDhZUz647zBZFvlGEBvJgbJJyg/lTWZw==
-  dependencies:
-    babel-runtime "^6.26.0"
-
 async@^2.6.2:
   version "2.6.3"
   resolved "https://registry.yarnpkg.com/async/-/async-2.6.3.tgz#d72625e2344a3656e3a3ad4fa749fa83299d82ff"
@@ -659,14 +644,6 @@ axios@0.19.2:
   dependencies:
     follow-redirects "1.5.10"
 
-babel-runtime@^6.26.0:
-  version "6.26.0"
-  resolved "https://registry.yarnpkg.com/babel-runtime/-/babel-runtime-6.26.0.tgz#965c7058668e82b55d7bfe04ff2337bc8b5647fe"
-  integrity sha512-ITKNuq2wKlW1fJg9sSW52eepoYgZBggvOAHC0u/CYu/qxQ9EVzThCgR69BnSXLHjy2f7SY5zaQ4yt7H9ZVxY2g==
-  dependencies:
-    core-js "^2.4.0"
-    regenerator-runtime "^0.11.0"
-
 balanced-match@^1.0.0:
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/balanced-match/-/balanced-match-1.0.2.tgz#e83e3a7e3f300b34cb9d87f615fa0cbf357690ee"
@@ -676,11 +653,6 @@ binary-extensions@^2.0.0:
   version "2.2.0"
   resolved "https://registry.yarnpkg.com/binary-extensions/-/binary-extensions-2.2.0.tgz#75f502eeaf9ffde42fc98829645be4ea76bd9e2d"
   integrity sha512-jDctJ/IVQbZoJykoeHbhXpOlNBqGNcwXJKJog42E5HDPUwQTSdjCHdihjj0DlnheQ7blbT6dHOafNAiS8ooQKA==
-
-bluebird@^2.9.14:
-  version "2.11.0"
-  resolved "https://registry.yarnpkg.com/bluebird/-/bluebird-2.11.0.tgz#534b9033c022c9579c56ba3b3e5a5caafbb650e1"
-  integrity sha512-UfFSr22dmHPQqPP9XWHRhq+gWnHCYguQGkXQlbyPtW5qTnhFWA8/iXg765tH0cAjy7l/zPJ1aBTO0g5XgA7kvQ==
 
 body-parser@1.19.2:
   version "1.19.2"
@@ -968,11 +940,6 @@ cookie@0.4.2:
   version "0.4.2"
   resolved "https://registry.yarnpkg.com/cookie/-/cookie-0.4.2.tgz#0e41f24de5ecf317947c82fc789e06a884824432"
   integrity sha512-aSWTXFzaKWkvHO1Ny/s+ePFpvKsPnjc551iI41v3ny/ow6tBG5Vd+FuqGNhh1LxOmVzOlGUriIlOaokOvhaStA==
-
-core-js@^2.4.0:
-  version "2.6.12"
-  resolved "https://registry.yarnpkg.com/core-js/-/core-js-2.6.12.tgz#d9333dfa7b065e347cc5682219d6f690859cc2ec"
-  integrity sha512-Kb2wC0fvsWfQrgk8HU5lW6U/Lcs8+9aaYcy4ZFc6DDlo4nZ7n70dEgE5rtR0oG6ufKDUnrwfWL1mXR5ljDatrQ==
 
 crc-32@~1.2.0, crc-32@~1.2.1:
   version "1.2.2"
@@ -2518,11 +2485,6 @@ log4js@^4.5.1:
     rfdc "^1.1.4"
     streamroller "^1.0.6"
 
-logger-facade-nodejs@0.0.3:
-  version "0.0.3"
-  resolved "https://registry.yarnpkg.com/logger-facade-nodejs/-/logger-facade-nodejs-0.0.3.tgz#01638b978091fff4862083e7a6697e8e5a55165c"
-  integrity sha512-ynRqB5UetaPo3FVurQ2fMrcyxQCy5VhQVO12ramlK3cRrvUPCAKUw2k9+SkEIzNzc/KIjucDmqUDpwtaENj0hg==
-
 loglevel@^1.8.0:
   version "1.8.0"
   resolved "https://registry.yarnpkg.com/loglevel/-/loglevel-1.8.0.tgz#e7ec73a57e1e7b419cb6c6ac06bf050b67356114"
@@ -3149,11 +3111,6 @@ rechoir@^0.7.0:
   dependencies:
     resolve "^1.9.0"
 
-regenerator-runtime@^0.11.0:
-  version "0.11.1"
-  resolved "https://registry.yarnpkg.com/regenerator-runtime/-/regenerator-runtime-0.11.1.tgz#be05ad7f9bf7d22e056f9726cee5017fbf19e2e9"
-  integrity sha512-MguG95oij0fC3QV3URf4V2SDYGJhJnJGqvIIgdECeODCT98wSWDAJ94SSuVpYQUoTcGUIL6L4yNB7j1DFFHSBg==
-
 regenerator-runtime@^0.13.4:
   version "0.13.9"
   resolved "https://registry.yarnpkg.com/regenerator-runtime/-/regenerator-runtime-0.13.9.tgz#8925742a98ffd90814988d7566ad30ca3b263b52"
@@ -3558,11 +3515,6 @@ timers-ext@^0.1.7:
   dependencies:
     es5-ext "~0.10.46"
     next-tick "1"
-
-tiny-async-pool@^2.1.0:
-  version "2.1.0"
-  resolved "https://registry.yarnpkg.com/tiny-async-pool/-/tiny-async-pool-2.1.0.tgz#3ec126568c18a7916912fb9fbecf812337ec6b84"
-  integrity sha512-ltAHPh/9k0STRQqaoUX52NH4ZQYAJz24ZAEwf1Zm+HYg3l9OXTWeqWKyYsHu40wF/F0rxd2N2bk5sLvX2qlSvg==
 
 to-readable-stream@^1.0.0:
   version "1.0.0"

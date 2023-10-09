@@ -74,7 +74,7 @@ export class MigrateUserNameUseCase {
             if (options.sendNotification) {
                 const onlySuccessUsers = _.differenceWith(
                     nonDisabledUsers,
-                    migrateResult.usersSkipped,
+                    migrateResult.recordsSkipped,
                     (user, userError) => user.id === userError
                 );
                 await this.sendNotifications(options, onlySuccessUsers, fromAttribute, toAttribute);
@@ -84,7 +84,7 @@ export class MigrateUserNameUseCase {
         }
 
         return {
-            usersSkipped: [],
+            recordsSkipped: [],
             errorMessage: "",
             created: 0,
             ignored: 0,

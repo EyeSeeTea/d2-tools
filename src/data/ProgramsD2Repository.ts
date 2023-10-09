@@ -3,15 +3,29 @@ import fs from "fs";
 import { Async } from "domain/entities/Async";
 import { Id } from "domain/entities/Base";
 import { ProgramExport } from "domain/entities/ProgramExport";
-import { ProgramsRepository, RunRulesOptions } from "domain/repositories/ProgramsRepository";
+import {
+    MoveProgramAttributeOptions,
+    ProgramsRepository,
+    RunRulesOptions,
+} from "domain/repositories/ProgramsRepository";
 import { D2Api } from "types/d2-api";
 import log from "utils/log";
-import { promiseMap, runMetadata } from "./dhis2-utils";
+import { getInChunks, promiseMap, runMetadata } from "./dhis2-utils";
 import { D2ProgramRules } from "./d2-program-rules/D2ProgramRules";
+import { Stats } from "domain/entities/Stats";
+import { ProgramAttributes } from "domain/entities/ProgramAttributes";
 
 type MetadataRes = { date: string } & { [k: string]: Array<{ id: string }> };
 
 type TrackerDataKey = "events" | "enrollments" | "trackedEntities";
+
+const initialStats = {
+    recordsSkipped: [],
+    errorMessage: "",
+    created: 0,
+    ignored: 0,
+    updated: 0,
+};
 
 export class ProgramsD2Repository implements ProgramsRepository {
     constructor(private api: D2Api) {}
@@ -87,20 +101,109 @@ export class ProgramsD2Repository implements ProgramsRepository {
         return d2ProgramRules.run(options);
     }
 
+    async getAll(options: MoveProgramAttributeOptions): Async<ProgramAttributes[]> {
+        const trackedEntities = await this.getFromTracker<D2TrackedEntity>("trackedEntities", {
+            orgUnitIds: undefined,
+            programIds: [options.programId],
+        });
+
+        return trackedEntities.map(tei => {
+            return {
+                id: tei.trackedEntity,
+                orgUnit: tei.orgUnit,
+                trackedEntityType: tei.trackedEntityType,
+                attributes: tei.attributes.map(attribute => {
+                    return {
+                        attribute: attribute.attribute,
+                        value: attribute.value,
+                        storedBy: attribute.storedBy,
+                    };
+                }),
+                programId: options.programId,
+            };
+        });
+    }
+
+    async saveAttributes(programs: ProgramAttributes[]): Async<Stats> {
+        if (programs.length === 0)
+            return { created: 0, ignored: 0, updated: 0, errorMessage: "", recordsSkipped: [] };
+        const teisToFetch = programs.map(program => program.id);
+        const programsIds = _(programs)
+            .map(program => program.programId)
+            .uniq()
+            .value();
+
+        const programsByKey = _(programs)
+            .keyBy(tei => tei.id)
+            .value();
+
+        const stats = await getInChunks<Stats>(teisToFetch, async teiIds => {
+            const trackedEntities = await this.getFromTracker<D2TrackedEntity>("trackedEntities", {
+                orgUnitIds: undefined,
+                programIds: programsIds,
+                trackedEntity: teiIds.join(";"),
+            });
+
+            const teisToSave = trackedEntities.map(tei => {
+                const currentProgram = programsByKey[tei.trackedEntity];
+                if (!currentProgram) throw Error(`Cannot find program: ${tei.trackedEntity}`);
+                const attributes = currentProgram?.attributes || tei.attributes;
+
+                return {
+                    trackedEntity: currentProgram?.id,
+                    orgUnit: tei.orgUnit,
+                    trackedEntityType: tei.trackedEntityType,
+                    attributes,
+                };
+            });
+
+            const response = await this.postTracker("trackedEntities", teisToSave);
+
+            return _(response)
+                .map(item => {
+                    const isError = item.status === "ERROR";
+                    return {
+                        created: item.stats.created,
+                        updated: item.stats.updated,
+                        ignored: item.stats.ignored,
+                        errorMessage: isError ? item.status : "",
+                        recordsSkipped: isError ? teisToSave.map(tei => tei.trackedEntity) : [],
+                    };
+                })
+                .value();
+        });
+
+        return stats.reduce((acum, stat) => {
+            return {
+                recordsSkipped: [...acum.recordsSkipped, ...stat.recordsSkipped],
+                errorMessage: `${acum.errorMessage}${stat.errorMessage}`,
+                created: acum.created + stat.created,
+                ignored: acum.ignored + stat.ignored,
+                updated: acum.updated + stat.updated,
+            };
+        }, initialStats);
+    }
+
     /* Private */
 
-    private async postTracker(key: TrackerDataKey, objects: object[]) {
+    private async postTracker(key: TrackerDataKey, objects: object[]): Async<TrackerResponse[]> {
         const total = objects.length;
         log.info(`Import data: ${key} - Total: ${total}`);
         let page = 1;
         const chunkSize = 100;
+        const result = [];
 
         for (const objectsGroup of _.chunk(objects, chunkSize)) {
             const initial = (page - 1) * chunkSize;
             log.debug(`Import data (${objectsGroup.length}): ${key} (offset: ${initial})`);
-            await this.postTrackerData({ [key]: objectsGroup }, { payloadId: `${key}-${initial}` });
+            const trackerResponse = await this.postTrackerData(
+                { [key]: objectsGroup },
+                { payloadId: `${key}-${initial}` }
+            );
+            result.push(trackerResponse);
             page++;
         }
+        return result;
     }
 
     private async postTrackerData(data: object, options: { payloadId: string }): Async<TrackerResponse> {
@@ -111,7 +214,11 @@ export class ProgramsD2Repository implements ProgramsRepository {
                 if (err?.response?.data) {
                     return err.response.data as TrackerResponse;
                 } else {
-                    return { status: "ERROR", typeReports: [] };
+                    return {
+                        status: "ERROR",
+                        typeReports: [],
+                        stats: initialStats,
+                    };
                 }
             });
         log.debug(`Status: ${response.status}`);
@@ -128,10 +235,15 @@ export class ProgramsD2Repository implements ProgramsRepository {
 
     private async getFromTracker<T>(
         apiPath: string,
-        options: { programIds: string[]; orgUnitIds: string[] | undefined; fields?: string }
+        options: {
+            programIds: string[];
+            orgUnitIds: string[] | undefined;
+            fields?: string;
+            trackedEntity?: string | undefined;
+        }
     ): Promise<T[]> {
         const output = [];
-        const { programIds, orgUnitIds, fields = "*" } = options;
+        const { programIds, orgUnitIds, fields = "*", trackedEntity } = options;
 
         for (const programId of programIds) {
             let page = 1;
@@ -149,6 +261,7 @@ export class ProgramsD2Repository implements ProgramsRepository {
                         orgUnit: orgUnitIds?.join(";"),
                         fields: fields,
                         program: programId,
+                        trackedEntity,
                     })
                     .getData();
 
@@ -166,7 +279,11 @@ export class ProgramsD2Repository implements ProgramsRepository {
     }
 }
 
-type TrackerResponse = { status: string; typeReports: object[] };
+type TrackerResponse = {
+    status: string;
+    typeReports: object[];
+    stats: Stats;
+};
 
 interface D2ProgramExport {
     metadata: object;
@@ -185,6 +302,14 @@ interface D2Enrollment {
 }
 
 interface D2TrackedEntity {
-    trackedEntity: string;
-    attributes: object[];
+    trackedEntity: Id;
+    orgUnit: Id;
+    trackedEntityType: Id;
+    attributes: D2TeiAttribute[];
 }
+
+type D2TeiAttribute = {
+    attribute: Id;
+    value: string;
+    storedBy: string;
+};

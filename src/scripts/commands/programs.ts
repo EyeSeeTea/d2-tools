@@ -17,6 +17,7 @@ import { GetDuplicatedEventsUseCase, orgUnitModes } from "domain/usecases/GetDup
 import { ProgramEventsD2Repository } from "data/ProgramEventsD2Repository";
 import { ProgramEventsExportCsvRepository } from "data/ProgramEventsExportCsvRepository";
 import { DeleteProgramDataValuesUseCase } from "domain/usecases/DeleteProgramDataValuesUseCase";
+import { MoveProgramAttributeUseCase } from "domain/usecases/MoveProgramAttributeUseCase";
 
 export function getCommand() {
     return subcommands({
@@ -27,6 +28,7 @@ export function getCommand() {
             "run-program-rules": runProgramRulesCmd,
             "get-duplicated-events": getDuplicatedEventsCmd,
             "delete-data-values": deleteDataValuesCmd,
+            "move-attribute": moveAttribute,
         },
     });
 }
@@ -196,6 +198,33 @@ const getDuplicatedEventsCmd = command({
         const options = _.omit(args, ["url"]);
 
         new GetDuplicatedEventsUseCase(eventsRepository, eventsExportRepository).execute(options);
+    },
+});
+
+const moveAttribute = command({
+    name: "move-attribute",
+    handler: args => {
+        const api = getD2Api(args.url);
+        const programsRepository = new ProgramsD2Repository(api);
+        new MoveProgramAttributeUseCase(programsRepository).execute(args);
+    },
+    args: {
+        ...getApiUrlOptions(),
+        programId: option({
+            type: string,
+            long: "program-id",
+            description: "Program ID",
+        }),
+        fromAttributeId: option({
+            type: string,
+            long: "from-attribute-id",
+            description: "Attribute ID",
+        }),
+        toAttributeId: option({
+            type: string,
+            long: "to-attribute-id",
+            description: "Attribute ID",
+        }),
     },
 });
 

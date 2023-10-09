@@ -1,7 +1,7 @@
 import { Id } from "./Base";
 
 export type Stats = {
-    usersSkipped: Id[];
+    recordsSkipped: Id[];
     created: number;
     ignored: number;
     updated: number;
