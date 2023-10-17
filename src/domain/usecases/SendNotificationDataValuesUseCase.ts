@@ -302,7 +302,7 @@ export class SendNotificationDataValuesUseCase {
         orgUnitIds: Id[],
         periods: string[] | undefined,
         lastUpdated: string,
-        includeChildren: boolean = false,
+        includeChildren: boolean,
         excludeDataElements: Id[] | undefined
     ): Async<DataValue[]> {
         const dataValues = await this.dataValuesRepository.get({

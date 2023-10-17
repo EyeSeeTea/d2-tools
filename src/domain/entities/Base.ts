@@ -17,7 +17,7 @@ export function getId<Obj extends Ref>(obj: Obj): Id {
     return obj.id;
 }
 
-type Code = string;
-type Name = string;
+export type Code = string;
+export type Name = string;
 
 export type Identifiable = Id | Code | Name;
