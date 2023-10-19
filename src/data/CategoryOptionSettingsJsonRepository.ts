@@ -1,5 +1,5 @@
 import { Codec } from "purify-ts";
-import { string, array, optional, record } from "purify-ts/Codec";
+import { string, array, optional, record, oneOf, exactly } from "purify-ts/Codec";
 import { Async } from "domain/entities/Async";
 import { Path } from "domain/entities/Base";
 import { CategoryOptionSettings } from "domain/entities/CategoryOptionSettings";
@@ -15,7 +15,10 @@ const GroupPermissionSettingCodec = Codec.interface({
     value: string,
 });
 
+const PermissionImportModeCodec = oneOf([exactly("append"), exactly("overwrite")]);
+
 const PermissionSettingCodec = Codec.interface({
+    permissionImportMode: PermissionImportModeCodec,
     public: optional(PublicPermissionSettingCodec),
     groups: optional(array(GroupPermissionSettingCodec)),
 });

@@ -1,7 +1,6 @@
 import { Async } from "domain/entities/Async";
-import { Path } from "domain/entities/Base";
-import { CategoryOption } from "domain/entities/CategoryOption";
+import { CategoryOptionSpreadsheet } from "domain/entities/CategoryOptionSpreadsheet";
 
 export interface CategoryOptionSpreadsheetRepository {
-    saveReport(categoryOptions: CategoryOption[], reportPath: Path): Async<void>;
+    saveReport(options: CategoryOptionSpreadsheet): Async<void>;
 }

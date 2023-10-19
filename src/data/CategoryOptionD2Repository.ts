@@ -47,7 +47,7 @@ export class CategoryOptionD2Repository implements CategoryOptionRepository {
                     ...(existingD2CatOption ? existingD2CatOption.sharing : {}),
                     public: categoryOption.permissions.find(permission => permission.type === "public")
                         ?.value,
-                    userGroups: _.merge({}, existingD2CatOption?.sharing?.userGroups, permissionsGroupsByKey),
+                    userGroups: permissionsGroupsByKey,
                 };
 
                 return {
