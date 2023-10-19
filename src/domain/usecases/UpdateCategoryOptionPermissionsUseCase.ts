@@ -51,7 +51,7 @@ export class UpdateCategoryOptionPermissionsUseCase {
             userGroupsByName
         );
 
-        // await this.saveCategoryOptions(catOptionsWithFilters);
+        await this.saveCategoryOptions(catOptionsWithFilters);
 
         if (options.csvPath) {
             this.generateReport(catOptionsWithFilters, options.csvPath, settings, userGroupsByName);
