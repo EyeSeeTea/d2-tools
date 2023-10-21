@@ -2,7 +2,7 @@ import _ from "lodash";
 import { D2Api, MetadataPick, TypeReport } from "types/d2-api";
 import { Async } from "domain/entities/Async";
 import { CategoryOptionParams, CategoryOptionRepository } from "domain/repositories/CategoryOptionRepository";
-import { CategoryOption, GroupPermission, PublicPermission } from "domain/entities/CategoryOption";
+import { CategoryOption, GroupPermission } from "domain/entities/CategoryOption";
 import { getId, Id } from "domain/entities/Base";
 import { getInChunks } from "./dhis2-utils";
 import { Stats } from "domain/entities/Stats";
@@ -45,8 +45,7 @@ export class CategoryOptionD2Repository implements CategoryOptionRepository {
 
                 const newSharing = {
                     ...(existingD2CatOption ? existingD2CatOption.sharing : {}),
-                    public: categoryOption.permissions.find(permission => permission.type === "public")
-                        ?.value,
+                    public: categoryOption.publicPermission,
                     userGroups: permissionsGroupsByKey,
                 };
 
@@ -132,10 +131,10 @@ export class CategoryOptionD2Repository implements CategoryOptionRepository {
 
     private buildCategoryOption(result: D2CategoryOption[]) {
         return result.map((d2CategoryOption): CategoryOption => {
-            const publicPermission: PublicPermission = {
-                type: "public",
-                value: d2CategoryOption.sharing.public,
-            };
+            // const publicPermission: PublicPermission = {
+            //     type: "public",
+            //     value: d2CategoryOption.sharing.public,
+            // };
 
             const groupPermissionsValues = _.values(d2CategoryOption.sharing.userGroups) as D2IdAccess[];
 
@@ -153,7 +152,8 @@ export class CategoryOptionD2Repository implements CategoryOptionRepository {
                 id: d2CategoryOption.id,
                 name: d2CategoryOption.name,
                 code: d2CategoryOption.code || "",
-                permissions: [publicPermission, ...groupPermissions],
+                permissions: groupPermissions,
+                publicPermission: d2CategoryOption.publicAccess,
             });
         });
     }

@@ -1,11 +1,6 @@
 import _ from "lodash";
 import { Async } from "domain/entities/Async";
-import {
-    CategoryOption,
-    GroupPermission,
-    PublicPermission,
-    Permission,
-} from "domain/entities/CategoryOption";
+import { CategoryOption, GroupPermission, Permission } from "domain/entities/CategoryOption";
 import { CategoryOptionRepository } from "domain/repositories/CategoryOptionRepository";
 import { Maybe } from "utils/ts-utils";
 import logger from "utils/log";
@@ -14,9 +9,7 @@ import { promiseMap } from "data/dhis2-utils";
 import {
     CategoryOptionSettings,
     GroupPermissionSetting,
-    PermissionImportMode,
     PermissionSetting,
-    PublicPermissionSetting,
     RegularExpresionValue,
 } from "domain/entities/CategoryOptionSettings";
 import { Name, Path } from "domain/entities/Base";
@@ -81,11 +74,7 @@ export class UpdateCategoryOptionPermissionsUseCase {
                             const groupsMatch = this.getMatchUserGroups(settingValue, userGroupsByName);
                             if (groupsMatch.length === 0) return undefined;
                         }
-                        return this.updatePermissions(
-                            catOption,
-                            allNewPermissions,
-                            settingValue.permissionImportMode
-                        );
+                        return this.updatePermissions(catOption, allNewPermissions, settingValue);
                     })
                     .compact()
                     .value();
@@ -124,10 +113,7 @@ export class UpdateCategoryOptionPermissionsUseCase {
                     stats.recordsSkipped,
                     (catOption, skipId) => catOption.id === skipId
                 );
-                return {
-                    ...catOptionsWithFilter,
-                    categoryOptions: onlySuccessCatOptions,
-                };
+                return { ...catOptionsWithFilter, categoryOptions: onlySuccessCatOptions };
             } else {
                 logger.info(
                     `${catOptionsWithFilter.categoryOptions.length} category options found with filter: ${catOptionsWithFilter.filter}`
@@ -147,24 +133,7 @@ export class UpdateCategoryOptionPermissionsUseCase {
     }
 
     private getPermissionsFromSettings(settingValue: PermissionSetting, userGroupsByName: UserGroupsByName) {
-        const publicPermissionFromSettings = settingValue.public
-            ? this.generatePublicPermissions(settingValue.public)
-            : [];
-
-        const groupsPermissionsFromSettings = settingValue.groups
-            ? this.generateGroupPermissions(settingValue.groups, userGroupsByName)
-            : [];
-
-        return [...publicPermissionFromSettings, ...groupsPermissionsFromSettings];
-    }
-
-    private generatePublicPermissions(publicSetting: PublicPermissionSetting): PublicPermission[] {
-        return [
-            {
-                type: "public",
-                value: publicSetting.value,
-            },
-        ];
+        return this.generateGroupPermissions(settingValue.groups || [], userGroupsByName);
     }
 
     private generateGroupPermissions(
@@ -178,12 +147,7 @@ export class UpdateCategoryOptionPermissionsUseCase {
                     logger.debug(`Cannot find user group with name ${groupSetting.filter}`);
                     return undefined;
                 }
-                return {
-                    type: "groups",
-                    id: userGroup.id,
-                    name: userGroup.name,
-                    value: groupSetting.value,
-                };
+                return { type: "groups", id: userGroup.id, name: userGroup.name, value: groupSetting.value };
             })
             .compact()
             .value();
@@ -192,12 +156,13 @@ export class UpdateCategoryOptionPermissionsUseCase {
     private updatePermissions(
         catOption: CategoryOption,
         allNewPermissions: Permission[],
-        importMode: PermissionImportMode
+        setting: PermissionSetting
     ): CategoryOption {
         return {
             ...catOption,
+            publicPermission: setting.public ? setting.public.value : catOption.publicPermission,
             permissions:
-                importMode === "overwrite"
+                setting.permissionImportMode === "overwrite" && setting.groups
                     ? allNewPermissions
                     : _(allNewPermissions).unionBy(catOption.permissions, "id").value(),
         };
