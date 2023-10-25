@@ -403,7 +403,7 @@ export class D2ProgramRules {
         onEffects: (eventEffects: EventEffect[]) => void
     ): Promise<void> {
         const { program, metadata } = options;
-        const { startDate, endDate, orgUnitsIds, programRulesIds } = runOptions;
+        const { startDate, endDate, orgUnitsIds, programRulesIds, teiId } = runOptions;
 
         log.info(`Get data for tracker program: [${program.id}] ${program.name}`);
         let page = 1;
@@ -437,6 +437,7 @@ export class D2ProgramRules {
                     ...orgUnitsFilter,
                     fields: "*,enrollments[events]",
                     programStartDate: startDate,
+                    trackedEntityInstance: teiId,
                     programEndDate: endDate,
                     totalPages: true,
                     page: page,
