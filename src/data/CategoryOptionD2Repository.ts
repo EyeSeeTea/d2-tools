@@ -2,7 +2,7 @@ import _ from "lodash";
 import { D2Api, MetadataPick, TypeReport } from "types/d2-api";
 import { Async } from "domain/entities/Async";
 import { CategoryOptionParams, CategoryOptionRepository } from "domain/repositories/CategoryOptionRepository";
-import { CategoryOption, GroupPermission } from "domain/entities/CategoryOption";
+import { CategoryOption, GroupPermission, UserPermission } from "domain/entities/CategoryOption";
 import { getId, Id } from "domain/entities/Base";
 import { getInChunks } from "./dhis2-utils";
 import { Stats } from "domain/entities/Stats";
@@ -41,12 +41,14 @@ export class CategoryOptionD2Repository implements CategoryOptionRepository {
                     throw Error("Cannot find category option");
                 }
 
-                const permissionsGroupsByKey = this.buildUserGroupsFromPermissions(categoryOption);
+                const { permissionsGroupsByKey, permissionsUsersByKey } =
+                    this.buildUserGroupsFromPermissions(categoryOption);
 
                 const newSharing = {
                     ...(existingD2CatOption ? existingD2CatOption.sharing : {}),
                     public: categoryOption.publicPermission,
                     userGroups: permissionsGroupsByKey,
+                    users: permissionsUsersByKey,
                 };
 
                 return {
@@ -99,21 +101,37 @@ export class CategoryOptionD2Repository implements CategoryOptionRepository {
         );
     }
 
-    private buildUserGroupsFromPermissions(categoryOption: CategoryOption): Record<Id, D2IdAccess> {
+    private buildUserGroupsFromPermissions(categoryOption: CategoryOption): {
+        permissionsGroupsByKey: Record<Id, D2IdAccess>;
+        permissionsUsersByKey: Record<Id, D2IdAccess>;
+    } {
         const groupPermissions = _(categoryOption.permissions)
             .map(permission => {
                 if (permission.type !== "groups") return undefined;
-                return {
-                    displayName: permission.name,
-                    access: permission.value,
-                    id: permission.id,
-                };
+                return this.createPermission(permission);
+            })
+            .compact()
+            .value();
+
+        const userPermissions = _(categoryOption.permissions)
+            .map(permission => {
+                if (permission.type !== "users") return undefined;
+                return this.createPermission(permission);
             })
             .compact()
             .value();
 
         const permissionsGroupsByKey = _.keyBy(groupPermissions, "id");
-        return permissionsGroupsByKey;
+        const permissionsUsersByKey = _.keyBy(userPermissions, "id");
+        return { permissionsGroupsByKey, permissionsUsersByKey };
+    }
+
+    private createPermission(permission: GroupPermission | UserPermission) {
+        return {
+            displayName: permission.name,
+            access: permission.value,
+            id: permission.id,
+        };
     }
 
     private async getCategoryOptions(
@@ -131,28 +149,32 @@ export class CategoryOptionD2Repository implements CategoryOptionRepository {
 
     private buildCategoryOption(result: D2CategoryOption[]) {
         return result.map((d2CategoryOption): CategoryOption => {
-            // const publicPermission: PublicPermission = {
-            //     type: "public",
-            //     value: d2CategoryOption.sharing.public,
-            // };
-
             const groupPermissionsValues = _.values(d2CategoryOption.sharing.userGroups) as D2IdAccess[];
+            const userPermissionsValues = _.values(d2CategoryOption.sharing.users) as D2IdAccess[];
 
-            const groupPermissions = groupPermissionsValues.map(d2SharingGroup => {
-                const groupPermission: GroupPermission = {
+            const groupPermissions = groupPermissionsValues.map((d2SharingGroup): GroupPermission => {
+                return {
                     id: d2SharingGroup.id,
                     name: d2SharingGroup.displayName,
                     type: "groups",
                     value: d2SharingGroup.access,
                 };
-                return groupPermission;
+            });
+
+            const userPermissions = userPermissionsValues.map((d2UserAccess): UserPermission => {
+                return {
+                    id: d2UserAccess.id,
+                    name: d2UserAccess.displayName,
+                    type: "users",
+                    value: d2UserAccess.access,
+                };
             });
 
             return new CategoryOption({
                 id: d2CategoryOption.id,
                 name: d2CategoryOption.name,
                 code: d2CategoryOption.code || "",
-                permissions: groupPermissions,
+                permissions: [...groupPermissions, ...userPermissions],
                 publicPermission: d2CategoryOption.publicAccess,
             });
         });
@@ -178,6 +200,7 @@ const categoryOptionFields = {
     sharing: {
         public: true,
         userGroups: true,
+        users: true,
     },
     userGroupAccesses: {
         id: true,

@@ -1,8 +1,8 @@
 import { Code, Id, Name, NamedRef } from "./Base";
 
-export type PermissionType = "public" | "groups";
+export type PermissionType = "groups" | "users";
 export type UnixFilePermission = string;
-export type Permission = GroupPermission;
+export type Permission = GroupPermission | UserPermission;
 
 export interface CategoryOptionData extends NamedRef {
     code: Code;
@@ -17,6 +17,10 @@ export interface BasePermission {
 
 export interface GroupPermission extends BasePermission, NamedRef {
     type: "groups";
+}
+
+export interface UserPermission extends BasePermission, NamedRef {
+    type: "users";
 }
 
 export class CategoryOption {

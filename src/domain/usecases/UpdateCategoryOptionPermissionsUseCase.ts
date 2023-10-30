@@ -70,26 +70,12 @@ export class UpdateCategoryOptionPermissionsUseCase {
 
                 const catOptions = _(catOptionsFiltered)
                     .map(catOption => {
-                        if (settingValue.groups) {
-                            const groupsMatch = this.getMatchUserGroups(settingValue, userGroupsByName);
-                            if (groupsMatch.length === 0) return undefined;
-                        }
                         return this.updatePermissions(catOption, allNewPermissions, settingValue);
                     })
                     .compact()
                     .value();
 
                 return { filter: setting, categoryOptions: catOptions };
-            })
-            .compact()
-            .value();
-    }
-
-    private getMatchUserGroups(settingValue: PermissionSetting, userGroupsByName: UserGroupsByName) {
-        return _(settingValue.groups)
-            .map(group => {
-                const userGroup = userGroupsByName[group.filter.toLowerCase()];
-                return userGroup?.name;
             })
             .compact()
             .value();
@@ -162,7 +148,7 @@ export class UpdateCategoryOptionPermissionsUseCase {
             ...catOption,
             publicPermission: setting.public ? setting.public.value : catOption.publicPermission,
             permissions:
-                setting.permissionImportMode === "overwrite" && setting.groups
+                setting.permissionImportMode === "overwrite"
                     ? allNewPermissions
                     : _(allNewPermissions).unionBy(catOption.permissions, "id").value(),
         };
