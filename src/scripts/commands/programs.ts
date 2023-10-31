@@ -18,6 +18,7 @@ import { ProgramEventsD2Repository } from "data/ProgramEventsD2Repository";
 import { ProgramEventsExportCsvRepository } from "data/ProgramEventsExportCsvRepository";
 import { DeleteProgramDataValuesUseCase } from "domain/usecases/DeleteProgramDataValuesUseCase";
 import { MoveProgramAttributeUseCase } from "domain/usecases/MoveProgramAttributeUseCase";
+import { TrackedEntityD2Repository } from "data/TrackedEntityD2Repository";
 
 export function getCommand() {
     return subcommands({
@@ -205,8 +206,8 @@ const moveAttribute = command({
     name: "move-attribute",
     handler: args => {
         const api = getD2Api(args.url);
-        const programsRepository = new ProgramsD2Repository(api);
-        new MoveProgramAttributeUseCase(programsRepository).execute(args);
+        const trackedEntityRepository = new TrackedEntityD2Repository(api);
+        new MoveProgramAttributeUseCase(trackedEntityRepository).execute(args);
     },
     args: {
         ...getApiUrlOptions(),

@@ -1,30 +1,37 @@
 import _ from "lodash";
 import { Async } from "domain/entities/Async";
-import { MoveProgramAttributeOptions, ProgramsRepository } from "domain/repositories/ProgramsRepository";
 import logger from "utils/log";
-import { Attribute } from "domain/entities/ProgramAttributes";
+import { AttributeValue, TrackedEntity } from "domain/entities/TrackedEntity";
 import { Maybe } from "utils/ts-utils";
+import {
+    TrackedEntityFilterParams,
+    TrackedEntityRepository,
+} from "domain/repositories/TrackedEntityRepository";
 
 export class MoveProgramAttributeUseCase {
-    constructor(private programRepository: ProgramsRepository) {}
+    constructor(private trackedEntityRepository: TrackedEntityRepository) {}
 
-    async execute(options: MoveProgramAttributeOptions): Async<void> {
-        const teis = await this.programRepository.getAll(options);
+    async execute(options: TrackedEntityFilterParams): Async<void> {
+        const teis = await this.trackedEntityRepository.getAll(options);
 
         const teisWithCopyValues = _(teis)
-            .map(tei => {
-                const fromAttribute = tei.attributes.find(attr => attr.attribute === options.fromAttributeId);
+            .map((tei): Maybe<TrackedEntity> => {
+                const fromAttribute = tei.attributes.find(
+                    attr => attr.attributeId === options.fromAttributeId
+                );
                 if (!fromAttribute) return undefined;
-                const toAttribute = tei.attributes.find(attr => attr.attribute === options.toAttributeId);
+                const toAttribute = tei.attributes.find(attr => attr.attributeId === options.toAttributeId);
+
+                const attributes = this.generateAttributes(tei.attributes, fromAttribute, toAttribute);
 
                 return {
                     ...tei,
                     attributes: toAttribute
-                        ? this.generateAttributes(tei.attributes, fromAttribute, toAttribute)
+                        ? attributes
                         : [
-                              ...this.generateAttributes(tei.attributes, fromAttribute, toAttribute),
+                              ...attributes,
                               {
-                                  attribute: options.toAttributeId,
+                                  attributeId: options.toAttributeId,
                                   value: fromAttribute.value,
                                   storedBy: fromAttribute.storedBy,
                               },
@@ -35,18 +42,18 @@ export class MoveProgramAttributeUseCase {
             .value();
 
         logger.info(`TEIS to modify: ${teisWithCopyValues.length}`);
-        const stats = await this.programRepository.saveAttributes(teisWithCopyValues);
+        const stats = await this.trackedEntityRepository.saveAttributes(teisWithCopyValues);
         logger.info(JSON.stringify(stats, null, 4));
     }
 
     private getAttributeValue(
-        attribute: Attribute,
-        fromAttribute: Attribute,
-        toAttribute: Maybe<Attribute>
+        attribute: AttributeValue,
+        fromAttribute: AttributeValue,
+        toAttribute: Maybe<AttributeValue>
     ): string {
-        if (attribute.attribute === fromAttribute.attribute) {
+        if (attribute.attributeId === fromAttribute.attributeId) {
             return "";
-        } else if (attribute.attribute === toAttribute?.attribute) {
+        } else if (attribute.attributeId === toAttribute?.attributeId) {
             return fromAttribute.value;
         } else {
             return attribute.value;
@@ -54,10 +61,10 @@ export class MoveProgramAttributeUseCase {
     }
 
     private generateAttributes(
-        attributes: Attribute[],
-        fromAttribute: Attribute,
-        toAttribute: Maybe<Attribute>
-    ): Attribute[] {
+        attributes: AttributeValue[],
+        fromAttribute: AttributeValue,
+        toAttribute: Maybe<AttributeValue>
+    ): AttributeValue[] {
         return attributes.map(attribute => {
             return {
                 ...attribute,

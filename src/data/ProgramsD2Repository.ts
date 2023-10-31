@@ -3,17 +3,12 @@ import fs from "fs";
 import { Async } from "domain/entities/Async";
 import { Id } from "domain/entities/Base";
 import { ProgramExport } from "domain/entities/ProgramExport";
-import {
-    MoveProgramAttributeOptions,
-    ProgramsRepository,
-    RunRulesOptions,
-} from "domain/repositories/ProgramsRepository";
+import { ProgramsRepository, RunRulesOptions } from "domain/repositories/ProgramsRepository";
 import { D2Api } from "types/d2-api";
 import log from "utils/log";
-import { getInChunks, promiseMap, runMetadata } from "./dhis2-utils";
+import { promiseMap, runMetadata } from "./dhis2-utils";
 import { D2ProgramRules } from "./d2-program-rules/D2ProgramRules";
 import { Stats } from "domain/entities/Stats";
-import { ProgramAttributes } from "domain/entities/ProgramAttributes";
 
 type MetadataRes = { date: string } & { [k: string]: Array<{ id: string }> };
 
@@ -101,92 +96,9 @@ export class ProgramsD2Repository implements ProgramsRepository {
         return d2ProgramRules.run(options);
     }
 
-    async getAll(options: MoveProgramAttributeOptions): Async<ProgramAttributes[]> {
-        const trackedEntities = await this.getFromTracker<D2TrackedEntity>("trackedEntities", {
-            orgUnitIds: undefined,
-            programIds: [options.programId],
-        });
-
-        return trackedEntities.map(tei => {
-            return {
-                id: tei.trackedEntity,
-                orgUnit: tei.orgUnit,
-                trackedEntityType: tei.trackedEntityType,
-                attributes: tei.attributes.map(attribute => {
-                    return {
-                        attribute: attribute.attribute,
-                        value: attribute.value,
-                        storedBy: attribute.storedBy,
-                    };
-                }),
-                programId: options.programId,
-            };
-        });
-    }
-
-    async saveAttributes(programs: ProgramAttributes[]): Async<Stats> {
-        if (programs.length === 0)
-            return { created: 0, ignored: 0, updated: 0, errorMessage: "", recordsSkipped: [] };
-        const teisToFetch = programs.map(program => program.id);
-        const programsIds = _(programs)
-            .map(program => program.programId)
-            .uniq()
-            .value();
-
-        const programsByKey = _(programs)
-            .keyBy(tei => tei.id)
-            .value();
-
-        const stats = await getInChunks<Stats>(teisToFetch, async teiIds => {
-            const trackedEntities = await this.getFromTracker<D2TrackedEntity>("trackedEntities", {
-                orgUnitIds: undefined,
-                programIds: programsIds,
-                trackedEntity: teiIds.join(";"),
-            });
-
-            const teisToSave = trackedEntities.map(tei => {
-                const currentProgram = programsByKey[tei.trackedEntity];
-                if (!currentProgram) throw Error(`Cannot find program: ${tei.trackedEntity}`);
-                const attributes = currentProgram?.attributes || tei.attributes;
-
-                return {
-                    trackedEntity: currentProgram?.id,
-                    orgUnit: tei.orgUnit,
-                    trackedEntityType: tei.trackedEntityType,
-                    attributes,
-                };
-            });
-
-            const response = await this.postTracker("trackedEntities", teisToSave);
-
-            return _(response)
-                .map(item => {
-                    const isError = item.status === "ERROR";
-                    return {
-                        created: item.stats.created,
-                        updated: item.stats.updated,
-                        ignored: item.stats.ignored,
-                        errorMessage: isError ? item.status : "",
-                        recordsSkipped: isError ? teisToSave.map(tei => tei.trackedEntity) : [],
-                    };
-                })
-                .value();
-        });
-
-        return stats.reduce((acum, stat) => {
-            return {
-                recordsSkipped: [...acum.recordsSkipped, ...stat.recordsSkipped],
-                errorMessage: `${acum.errorMessage}${stat.errorMessage}`,
-                created: acum.created + stat.created,
-                ignored: acum.ignored + stat.ignored,
-                updated: acum.updated + stat.updated,
-            };
-        }, initialStats);
-    }
-
     /* Private */
 
-    private async postTracker(key: TrackerDataKey, objects: object[]): Async<TrackerResponse[]> {
+    async postTracker(key: TrackerDataKey, objects: object[]): Async<TrackerResponse[]> {
         const total = objects.length;
         log.info(`Import data: ${key} - Total: ${total}`);
         let page = 1;
@@ -206,7 +118,7 @@ export class ProgramsD2Repository implements ProgramsRepository {
         return result;
     }
 
-    private async postTrackerData(data: object, options: { payloadId: string }): Async<TrackerResponse> {
+    async postTrackerData(data: object, options: { payloadId: string }): Async<TrackerResponse> {
         const response: TrackerResponse = await this.api
             .post<TrackerResponse>("/tracker", { async: false }, data)
             .getData()
@@ -233,7 +145,7 @@ export class ProgramsD2Repository implements ProgramsRepository {
         }
     }
 
-    private async getFromTracker<T>(
+    async getFromTracker<T>(
         apiPath: string,
         options: {
             programIds: string[];
@@ -301,7 +213,7 @@ interface D2Enrollment {
     trackedEntity: string;
 }
 
-interface D2TrackedEntity {
+export interface D2TrackedEntity {
     trackedEntity: Id;
     orgUnit: Id;
     trackedEntityType: Id;
