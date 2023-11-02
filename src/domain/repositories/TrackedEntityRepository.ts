@@ -5,7 +5,7 @@ import { TrackedEntity } from "domain/entities/TrackedEntity";
 
 export interface TrackedEntityRepository {
     getAll(params: TrackedEntityFilterParams): Async<TrackedEntity[]>;
-    saveAttributes(programs: TrackedEntity[]): Async<Stats>;
+    save(trackedEntities: TrackedEntity[]): Async<Stats>;
 }
 
 export type TrackedEntityFilterParams = {

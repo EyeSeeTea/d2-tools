@@ -42,7 +42,7 @@ export class MoveProgramAttributeUseCase {
             .value();
 
         logger.info(`TEIS to modify: ${teisWithCopyValues.length}`);
-        const stats = await this.trackedEntityRepository.saveAttributes(teisWithCopyValues);
+        const stats = await this.trackedEntityRepository.save(teisWithCopyValues);
         logger.info(JSON.stringify(stats, null, 4));
     }
 

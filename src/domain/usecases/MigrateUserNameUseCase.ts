@@ -83,13 +83,7 @@ export class MigrateUserNameUseCase {
             return migrateResult;
         }
 
-        return {
-            recordsSkipped: [],
-            errorMessage: "",
-            created: 0,
-            ignored: 0,
-            updated: 0,
-        };
+        return Stats.empty();
     }
 
     private parseToCsv(users: User[], from: keyof UserAttribute, to: keyof UserAttribute) {
