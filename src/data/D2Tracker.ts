@@ -29,7 +29,7 @@ export class D2Tracker {
         return result;
     }
 
-    async postTrackerData(data: object, options: { payloadId: string }): Async<TrackerResponse> {
+    private async postTrackerData(data: object, options: { payloadId: string }): Async<TrackerResponse> {
         const response: TrackerResponse = await this.api
             .post<TrackerResponse>("/tracker", { async: false }, data)
             .getData()
