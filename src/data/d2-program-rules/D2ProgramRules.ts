@@ -22,14 +22,14 @@ import {
 } from "./D2ProgramRules.types";
 import { checkPostEventsResponse, getData, getInChunks } from "data/dhis2-utils";
 import log from "utils/log";
-import { Event, EventsGetRequest, EventsPostRequest, EventsPostResponse } from "@eyeseetea/d2-api/api/events";
+import { D2Event as Event, EventsPostRequest, EventsPostResponse } from "@eyeseetea/d2-api/api/events";
 import {
     Attribute,
     TeiOuRequest,
     TeiPostResponse,
     TrackedEntityInstance,
 } from "@eyeseetea/d2-api/api/trackedEntityInstances";
-import { fromPairs, Maybe } from "utils/ts-utils";
+import { assert, fromPairs, Maybe } from "utils/ts-utils";
 import { RunRulesOptions } from "domain/repositories/ProgramsRepository";
 import { HttpResponse } from "@eyeseetea/d2-api/api/common";
 import { getId } from "domain/entities/Base";
@@ -314,8 +314,6 @@ export class D2ProgramRules {
                     ].join(" ")
                 );
 
-                type EventsGetRequestWithFields = EventsGetRequest & { fields: string };
-
                 const events = await getData(
                     this.api.events.get({
                         program: program.id,
@@ -325,8 +323,9 @@ export class D2ProgramRules {
                         page,
                         pageSize: 1_000,
                         totalPages: false,
-                        fields: "*",
-                    } as EventsGetRequestWithFields)
+                        trackedEntityInstance: runOptions.teiId,
+                        fields: { $all: true },
+                    })
                 ).then(res => res.events as D2Event[]);
 
                 if (_.isEmpty(events)) return [];
