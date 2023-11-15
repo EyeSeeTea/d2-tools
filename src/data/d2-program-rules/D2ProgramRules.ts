@@ -46,25 +46,29 @@ export class D2ProgramRules {
 
         const metadata = await this.getMetadata(options);
         const allActions: UpdateAction[] = [];
+        let index = 1;
 
         await this.getEventEffects(metadata, options, async eventEffects => {
             const actions = this.getActions(eventEffects, metadata);
+
             const eventsCurrent = _.flatMap(eventEffects, eventEffect => eventEffect.events);
             const eventsById = _.keyBy(eventsCurrent, event => event.event);
             const eventsUpdated = this.getUpdatedEvents(actions, eventsById);
-
             const eventsWithChanges = diff(eventsUpdated, eventsCurrent);
 
             const teisCurrent = _.compact(eventEffects.map(eventEffect => eventEffect.tei));
             const teisUpdated: TrackedEntityInstance[] = this.getUpdatedTeis(teisCurrent, actions);
             const teisWithChanges = diff(teisUpdated, teisCurrent);
+
             log.info(`Changes: events=${eventsWithChanges.length}, teis=${teisWithChanges.length}`);
 
-            if (options.payloadPath) {
-                const payload = { events: eventsWithChanges, trackedEntityInstances: teisWithChanges };
-                fs.writeFileSync(options.payloadPath, JSON.stringify(payload, null, 4));
-                log.info(`Payload saved: ${options.payloadPath}`);
-            }
+            this.savePayloads(options, {
+                index: index,
+                eventsCurrent,
+                eventsWithChanges,
+                teisCurrent,
+                teisWithChanges,
+            });
 
             if (post) {
                 log.info("POST changes");
@@ -73,10 +77,56 @@ export class D2ProgramRules {
             }
 
             allActions.push(...actions);
+            index++;
         });
 
         if (reportPath) {
             await this.saveReport(reportPath, allActions);
+        }
+    }
+
+    savePayloads(
+        rulesOptions: RunRulesOptions,
+        options: {
+            index: number;
+            eventsCurrent: D2Event[];
+            eventsWithChanges: D2EventToPost[];
+            teisCurrent: TrackedEntityInstance[];
+            teisWithChanges: TrackedEntityInstance[];
+        }
+    ) {
+        const { index, eventsCurrent, eventsWithChanges, teisCurrent, teisWithChanges } = options;
+
+        if (rulesOptions.payloadPath) {
+            const payloadPath = rulesOptions.payloadPath.replace("%i", index.toString().padStart(3, "0"));
+
+            if (rulesOptions.backup) {
+                const backupPath = payloadPath.replace(".json", "-backup.json");
+
+                const backupPayload = {
+                    events: _(eventsCurrent)
+                        .keyBy(ev => ev.event)
+                        .at(eventsWithChanges.map(ev => assert(ev.event)))
+                        .compact()
+                        .value(),
+                    trackedEntityInstances: _(teisCurrent)
+                        .keyBy(ev => ev.trackedEntityInstance)
+                        .at(teisWithChanges.map(ev => assert(ev.trackedEntityInstance)))
+                        .compact()
+                        .value(),
+                };
+
+                fs.writeFileSync(backupPath, JSON.stringify(backupPayload, null, 4));
+                log.info(`Backup saved: ${backupPath}`);
+            }
+
+            const payload = {
+                events: eventsWithChanges,
+                trackedEntityInstances: teisWithChanges,
+            };
+
+            fs.writeFileSync(payloadPath, JSON.stringify(payload, null, 4));
+            log.info(`Payload saved: ${payloadPath}`);
         }
     }
 
@@ -271,6 +321,8 @@ export class D2ProgramRules {
         options: RunRulesOptions,
         onEffects: (eventEffects: EventEffect[]) => void
     ): Async<void> {
+        console.debug(`Programs: ${metadata.programs.map(getId).join(", ")}`);
+
         for (const program of metadata.programs) {
             switch (program.programType) {
                 case "WITHOUT_REGISTRATION":
