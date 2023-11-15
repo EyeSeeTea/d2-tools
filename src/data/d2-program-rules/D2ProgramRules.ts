@@ -203,7 +203,7 @@ export class D2ProgramRules {
         eventEffect: EventEffect,
         metadata: Metadata
     ): UpdateAction[] {
-        const { program, event, events, tei } = eventEffect;
+        const { program, event, tei } = eventEffect;
 
         switch (effect.type) {
             case "ASSIGN":
@@ -211,12 +211,9 @@ export class D2ProgramRules {
 
                 switch (effect.targetDataType) {
                     case "dataElement":
-                        return _(events)
-                            .map(event =>
-                                getUpdateActionEvent(metadata, program, event, effect.id, effect.value)
-                            )
-                            .compact()
-                            .value();
+                        return _.compact([
+                            getUpdateActionEvent(metadata, program, event, effect.id, effect.value),
+                        ]);
                     case "trackedEntityAttribute":
                         if (!tei) {
                             log.error("No TEI to assign effect to");
