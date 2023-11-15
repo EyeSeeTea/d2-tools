@@ -458,7 +458,7 @@ export class D2ProgramRules {
 
         log.info(`Get data for tracker program: [${program.id}] ${program.name}`);
         let page = 1;
-        const pageSize = 1000;
+        const pageSize = 100;
         let total: Maybe<{ pages: number; count: number }>;
 
         const base = { program, programRulesIds, metadata };
@@ -468,6 +468,7 @@ export class D2ProgramRules {
                 [
                     "Get TEIs:",
                     `program=${program.id}`,
+                    `programRules=${programRulesIds?.join(", ")}`,
                     `enrollment-startDate=${startDate}`,
                     `enrollment-endDate=${endDate}`,
                     `page-size=${pageSize}`,
@@ -484,18 +485,21 @@ export class D2ProgramRules {
             const res = await getData(
                 this.api.trackedEntityInstances.get({
                     program: program.id,
-                    order: "created:asc",
+                    order: "id:asc",
                     ...orgUnitsFilter,
                     fields: "*,enrollments[events]",
                     programStartDate: startDate,
                     programEndDate: endDate,
+                    trackedEntityInstance: runOptions.teiId,
                     totalPages: true,
                     page: page,
                     pageSize: pageSize,
                 })
             );
 
-            const teis = res.trackedEntityInstances as unknown as TeiWithEvents[];
+            const teis = (res.trackedEntityInstances as unknown as TeiWithEvents[]).filter(
+                tei => !runOptions.teiId || runOptions.teiId === tei.trackedEntityInstance
+            );
             const pager = res.pager;
             total = { pages: pager.pageCount, count: pager.total };
 
