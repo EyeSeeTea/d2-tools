@@ -24,6 +24,7 @@ export class DataValuesD2Repository implements DataValuesRepository {
             startDate: options.startDate,
             endDate: options.endDate,
             limit: options.limit,
+            lastUpdated: options.lastUpdated,
         });
 
         const res = await res$.getData();
@@ -80,6 +81,7 @@ export class DataValuesD2Repository implements DataValuesRepository {
             ds: options.dataSetIds,
             ou: options.orgUnitIds,
             pe: options.periods,
+            de: options.dataElements,
             pageSize: 1e6,
         });
 

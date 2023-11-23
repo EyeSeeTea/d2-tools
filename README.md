@@ -257,6 +257,36 @@ $ yarn start programs get-duplicated-events \
 
 Add option `--post` to actually (soft) delete the events.
 
+### Email notification for data values
+
+Notify data values changes and sending an email depending on how long has passed since the last updated.
+
+Using json as a storage:
+
+```
+yarn start datavalues monitoring-values \
+--url='http://USER:PASSWORD@localhost:8080' \
+--storage=json \
+--settings-path=./settings.json \
+--executions-path=./executions.json \
+--email-ds-path-template=./dataset-email-template.json \
+--email-de-path-template=./dataelement-email-template.json \
+--send-email-after-minutes=5
+```
+
+Using dhis datastore as a storage:
+
+```
+yarn start datavalues monitoring-values \
+--url='http://USER:PASSWORD@localhost:8080' \
+--storage=datastore \
+--settings-path=d2-notifications.settings \
+--executions-path=d2-notifications.executions \
+--email-ds-path-template=./dataset-email-template.json \
+--email-de-path-template=./dataelement-email-template.json \
+--send-email-after-minutes=5
+```
+
 ## Notifications
 
 ### Send user info email
@@ -267,6 +297,47 @@ Send an email read from a JSON file to a list of users in a CSV file:
 $ yarn start notifications send-user-info-notification \
   --url='http://USER:PASSWORD@HOST:PORT' \
   usernames.csv emailContent.json
+```
+
+## Load testing
+
+Save a HAR file in a browser (Chrome: Developer Tools -> Network tab -> Export HAR) with the desired scenario to test. Then create a configuration file with the scenarios:
+
+```json
+[
+    {
+        "id": "dashboard",
+        "executions": [{ "windowTimeSecs": 300, "users": 1 }],
+        "name": "dashboard.har"
+    },
+    {
+        "id": "all",
+        "executions": [
+            { "windowTimeSecs": 300, "users": 1 },
+            { "windowTimeSecs": 300, "users": 10 }
+        ],
+        "name": "all.har"
+    }
+]
+```
+
+And run the scenarios against the same or a different DHIS2 instance:
+
+```shell
+$ yarn start loadTesting run \
+  --plans-json=plans.json \
+  --hars-folder="." \
+  --har-url="https://dhis2.ocg.msf.org" \
+  --base-url="https://dhis2-test-elca.ocg.msf.org" \
+  --auth='USER:PASSWORD' \
+  dashboard all
+```
+
+Check results in the output:
+
+```
+Plan-results: all - window=300 secs - users=1  | totalTime=35.6 secs | meanTime=35.1 secs  | errors=0/612 (0.00 %)
+Plan-results: all - window=300 secs - users=10 | totalTime=106.0 secs | meanTime=77.9 secs | errors=154/6120 (2.52 %)
 ```
 
 ## Users
