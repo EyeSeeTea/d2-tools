@@ -24,11 +24,8 @@ export function runCli() {
             notifications: notifications.getCommand(),
             events: events.getCommand(),
             users: users.getCommand(),
-<<<<<<< HEAD
             userspermissions: userpermissions.getCommand(),
-=======
             loadTesting: loadTesting.getCommand(),
->>>>>>> development
         },
     });
 

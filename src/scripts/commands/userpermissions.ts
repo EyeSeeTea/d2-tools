@@ -26,7 +26,7 @@ export function getCommand() {
 
 const runUsersPermisionsCmd = command({
     name: "run-users-permissions",
-    description: "Run user permissions",
+    description: "Run user permissions, a --config-file must be provided",
     args: {
         config_file: option({
             type: string,
