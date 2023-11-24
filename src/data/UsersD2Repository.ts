@@ -1,4 +1,4 @@
-import _ from "lodash";
+import _, { get } from "lodash";
 import { Async } from "domain/entities/Async";
 import { D2Api } from "types/d2-api";
 import log from "utils/log";
@@ -18,9 +18,12 @@ import {
     UserRoleAuthority,
 } from "./d2-users/D2Users.types";
 import * as CsvWriter from "csv-writer";
+import { getUid } from "utils/uid";
+import { FileUploadParameters, Files } from "@eyeseetea/d2-api/api/files";
+import logger from "utils/log";
 
 //users without template group
-const dataelement_invalid_users_count_code = "ADMIN_invalid_Users_1_Events";
+const dataelement_invalid_users_count_code = "ADMIN_invalid_Groups_1_Events";
 //users with invald roles based on the upper level of the template group
 const dataelement_invalid_roles_count_code = "ADMIN_invalid_Roles_Users_2_Events";
 const dataelement_users_pushed_code = "ADMIN_user_pushed_control_Events";
@@ -334,6 +337,7 @@ export class UsersD2Repository implements UsersRepository {
             .replace("/", "-")
             .replace("/", "-")
             .replace("\\", "-");
+        const eventUid = getUid(date);
 
         //users without user groups
         const usersWithErrorsInGroups = userinfo.filter(item => item.undefinedUserGroups);
@@ -353,57 +357,54 @@ export class UsersD2Repository implements UsersRepository {
                     return item.fixedUser;
                 });
                 const response = await pushUsers(userToPost, this.api);
-
-                log.info(`Saving report: ${response.status}`);
+                const result = response?.status ?? "null";
+                log.info(`Saving report: ${result}`);
                 log.info(`Saving report: ${response.typeReports}`);
-                if (response.status !== "OK") {
-                    if (pushReport) {
-                        const response = await pushReportToDhis(
-                            usersWithErrorsInGroups.length.toString(),
-                            usersToBeFixed.length.toString(),
-                            "false",
-                            this.api,
-                            pushProgramId.id
-                        );
-                        debugger;
-                        //recovery from response
-                        const eventid = "adasd";
-                        //recovery eventid
-                        //Push users to dhis2
-                        if (response) {
-                            await saveUserErrors(userActionRequired, response, eventid);
-                        }
+                if (pushReport) {
+                    //recovery from response
+                    const eventid = getUid(date);
+                    log.debug(eventid);
 
-                        //todo
-                        //push files atached to eventid
-                    } else {
-                        if (pushReport) {
-                            const response = await pushReportToDhis(
-                                usersWithErrorsInGroups.length.toString(),
-                                usersToBeFixed.length.toString(),
-                                "true",
-                                this.api,
-                                pushProgramId.id
-                            );
-                            debugger;
-                            //recovery from response
-                            const eventid = "adasd";
+                    const userFixed: User[] = userActionRequired.map(item => {
+                        return item.fixedUser;
+                    });
+                    const userBackup: User[] = userActionRequired.map(item => {
+                        return item.user;
+                    });
+                    const userFixedId = await trysave(
+                        JSON.stringify(userFixed),
+                        filenameUsersPushed,
+                        this.api
+                    );
+                    const userBackupId = await trysave(
+                        JSON.stringify(userBackup),
+                        filenameUserBackup,
+                        this.api
+                    );
+                    debugger;
+                    saveUserChangesBakup(usersToBeFixed, eventid);
+                    saveInJsonFormat(
+                        JSON.stringify({ usersWithErrors: usersWithErrorsInGroups }, null, 4),
+                        `${date}-groups-pushed`
+                    );
+                    saveInCsv(usersWithErrorsInGroups, `${date}-groups-pushed`);
 
-                            saveUserChangesBakup(usersToBeFixed, eventid);
-                            saveInJsonFormat(
-                                JSON.stringify({ usersWithErrors: usersWithErrorsInGroups }, null, 4),
-                                `${date}-groups-pushed`
-                            );
-                            saveInCsv(usersWithErrorsInGroups, `${date}-groups-pushed`);
+                    const response = await pushReportToDhis(
+                        usersWithErrorsInGroups.length.toString(),
+                        usersToBeFixed.length.toString(),
+                        status,
+                        userFixedId,
+                        userBackupId,
+                        this.api,
+                        pushProgramId.id,
+                        eventUid
+                    );
+                    debugger;
+                    //recovery eventid
+                    //Push users to dhis2
 
-                            if (response) {
-                                await saveUserErrors(userActionRequired, response, eventid);
-                            }
-                            //todo
-                            //push files atached to eventid
-                            //Push users to dhis2
-                            log.info(JSON.stringify(response?.typeReports ?? ""));
-                        }
+                    if (response) {
+                        await saveUserErrors(userActionRequired, response, eventUid);
                     }
                 }
             }
@@ -427,6 +428,35 @@ export class UsersD2Repository implements UsersRepository {
             }
         }
     }
+
+    /*     public async save(file: File): Promise<FileId> {
+        const auth = this.api;
+        const t : FileUploadParameters;
+        this.api.files.saveFileResource(,"d");
+        const authHeaders: Record<string, string> = this.getAuthHeaders(auth);
+
+        const formdata = new FormData();
+        formdata.append("file", file);
+        formdata.append("filename", file.name);
+
+        const fetchOptions: RequestInit = {
+            method: "POST",
+            headers: { ...authHeaders },
+            body: formdata,
+            credentials: auth ? "omit" : ("include" as const),
+        };
+
+        const response = await fetch(new URL(`/api/fileResources`, this.instance.url).href, fetchOptions);
+        if (!response.ok) {
+            throw Error(
+                `An error has ocurred saving the resource file of the document '${file.name}' in ${this.instance.name}`
+            );
+        } else {
+            const apiResponse: SaveApiResponse = JSON.parse(await response.text());
+
+            return apiResponse.response.fileResource.id;
+        }
+    } */
 
     async getAllUserRoles(options: UsersOptions): Promise<UserRoleAuthority[]> {
         log.info(`Get metadata: All roles excluding ids: ${options.excludedRoles.join(", ")}`);
@@ -494,6 +524,7 @@ async function pushUsers(userToPost: User[], api: D2Api) {
     log.info("Push users to dhis2");
 
     const usersReadyToPost: Users = { users: userToPost };
+    debugger;
     const response: UserResponse = await api
         .post<UserResponse>("/metadata", { async: false }, usersReadyToPost)
         .getData()
@@ -504,6 +535,7 @@ async function pushUsers(userToPost: User[], api: D2Api) {
                 return { status: "ERROR", typeReports: [] };
             }
         });
+    debugger;
     return response;
 }
 
@@ -613,12 +645,41 @@ async function getProgram(api: D2Api, programUid: string): Promise<Program[]> {
     return responses.programs;
 }
 
+async function trysave(jsonString: string, name: string, api: D2Api): Promise<string> {
+    debugger;
+    const jsonBlob: Blob = new Blob([jsonString], { type: "application/json" });
+
+    debugger;
+    const uploadParams = {
+        name: name,
+        data: jsonBlob,
+    };
+
+    const files = new Files(api);
+    //try
+    //const response = files.upload(uploadParams).getData();
+    const form: FileUploadParameters = {
+        id: getUid(name),
+        name: "name",
+        data: jsonBlob,
+        ignoreDocument: true,
+    };
+    const response = files.upload(form).getData();
+    const fileresourceId = (await response).fileResourceId;
+    const documentId = (await response).fileResourceId;
+    logger.info("file resource" + fileresourceId);
+    logger.info("document" + documentId);
+    return documentId;
+}
 async function pushReportToDhis(
     usersWithErrors: string,
     usersToBeFixed: string,
-    usersfixed: string,
+    status: string,
+    userFixedFileResourceId: string,
+    userBackupFileResourceid: string,
     api: D2Api,
-    pushProgramId: string
+    pushProgramId: string,
+    eventUid: string
 ) {
     log.info(`Create and Pushing report to DHIS2`);
     debugger;
@@ -663,24 +724,24 @@ async function pushReportToDhis(
         dataElements: dataElements,
         orgUnitId: orgUnitId,
     };
-    filenameUsersPushed;
-    filenameUserBackup;
-    const dataValues: EventDataValue[] = program.dataElements.map(item => {
-        switch (item.code) {
-            case dataelement_invalid_users_count_code:
-                return { dataElement: item.id, value: usersWithErrors };
-            case dataelement_invalid_roles_count_code:
-                return { dataElement: item.id, value: usersToBeFixed };
-            case dataelement_users_pushed_code:
-                return { dataElement: item.id, value: usersfixed };
-            case dataelement_file_valid_users_file_code:
-            //     return { dataElement: item.id, value: filenameUsersPushed };
-            // case dataelement_file_invalid_users_file_code:
-            //     return { dataElement: item.id, value: filenameUserBackup };
-            default:
-                return { dataElement: "", value: "" };
-        }
-    });
+    const dataValues: EventDataValue[] = program.dataElements
+        .map(item => {
+            switch (item.code) {
+                case dataelement_invalid_users_count_code:
+                    return { dataElement: item.id, value: usersWithErrors };
+                case dataelement_invalid_roles_count_code:
+                    return { dataElement: item.id, value: usersToBeFixed };
+                case dataelement_file_invalid_users_file_code:
+                    return { dataElement: item.id, value: userFixedFileResourceId };
+                case dataelement_file_valid_users_file_code:
+                    return { dataElement: item.id, value: userBackupFileResourceid };
+                case dataelement_users_pushed_code:
+                    return { dataElement: item.id, value: status };
+                default:
+                    return { dataElement: "", value: "" };
+            }
+        })
+        .filter(dataValue => dataValue.dataElement !== "");
     debugger;
     if (dataValues.length == 0) {
         log.info(`No data elements found`);
@@ -699,6 +760,7 @@ async function pushReportToDhis(
             {
                 events: [
                     {
+                        event: eventUid,
                         program: program.id,
                         programStage: program.programStageId,
                         orgUnit: program.orgUnitId,
