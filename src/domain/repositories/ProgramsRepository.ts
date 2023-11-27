@@ -20,4 +20,5 @@ export interface RunRulesOptions {
     reportPath?: string;
     post: boolean;
     payloadPath?: string;
+    backup: boolean;
 }

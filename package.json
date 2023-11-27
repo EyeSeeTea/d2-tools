@@ -15,7 +15,7 @@
     "author": "EyeSeeTea <arnau@eyeseetea.com>",
     "license": "MIT",
     "dependencies": {
-        "@eyeseetea/d2-api": "^1.11.0",
+        "@eyeseetea/d2-api": "1.14.1-beta.1",
         "@types/json-diff": "^0.7.0",
         "async-parallel": "^1.2.3",
         "cmd-ts": "^0.10.0",
@@ -31,6 +31,7 @@
         "nodemailer": "^6.7.5",
         "random-seed": "^0.3.0",
         "simple-node-logger": "^21.8.12",
+        "socks-proxy-agent": "^8.0.2",
         "xlsx": "^0.18.5"
     },
     "devDependencies": {
