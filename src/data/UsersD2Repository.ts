@@ -645,9 +645,10 @@ async function getProgram(api: D2Api, programUid: string): Promise<Program[]> {
     return responses.programs;
 }
 
-async function trysave(jsonString: string, name: string, api: D2Api): Promise<string> {
+export async function trysave(jsonString: string, name: string, api: D2Api): Promise<string> {
     debugger;
-    const jsonBlob: Blob = new Blob([jsonString], { type: "application/json" });
+    //const jsonBlob: Blob = new Blob([jsonString], { type: "application/json" });
+    const jsonBlob = Buffer.from(jsonString, "utf-8");
 
     debugger;
     const uploadParams = {
@@ -664,9 +665,9 @@ async function trysave(jsonString: string, name: string, api: D2Api): Promise<st
         data: jsonBlob,
         ignoreDocument: true,
     };
-    const response = files.upload(form).getData();
-    const fileresourceId = (await response).fileResourceId;
-    const documentId = (await response).fileResourceId;
+    const response = await files.upload(form).getData();
+    const fileresourceId = response.fileResourceId;
+    const documentId = response.fileResourceId;
     logger.info("file resource" + fileresourceId);
     logger.info("document" + documentId);
     return documentId;

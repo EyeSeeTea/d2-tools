@@ -488,7 +488,6 @@ export class D2ProgramRules {
                     programStartDate: startDate,
                     trackedEntityInstance: teiId,
                     programEndDate: endDate,
-                    trackedEntityInstance: runOptions.teiId,
                     totalPages: true,
                     page: page,
                     pageSize: pageSize,
