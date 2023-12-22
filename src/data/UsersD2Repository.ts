@@ -2,7 +2,16 @@ import { Async } from "domain/entities/Async";
 import { D2Api } from "types/d2-api";
 import log from "utils/log";
 import fs from "fs";
-import { UsersOptions, UsersRepository } from "domain/repositories/UsersRepository";
+import {
+    Item,
+    RolesByGroup,
+    RolesByRoles,
+    RolesByUser,
+    TemplateGroup,
+    TemplateGroupWithAuthorities,
+    UsersOptions,
+    UsersRepository,
+} from "domain/repositories/UsersRepository";
 import {
     DataElement,
     EventDataValue,
@@ -14,6 +23,7 @@ import {
     User,
     UserGroup,
     UserRes,
+    UserRole,
     UserRoleAuthority,
 } from "./d2-users/D2Users.types";
 import * as CsvWriter from "csv-writer";
@@ -69,33 +79,163 @@ export class UsersD2Repository implements UsersRepository {
         const excludedUsersIds = excludedUsers.map(item => {
             return item.id;
         });
+        const userRoles: UserRoleAuthority[] = await this.getAllUserRoles(options);
+        log.info("Validating roles...");
+        this.validateAuths(userRoles, excludedRoles);
 
+        const completeTemplateGroups = await this.fillAuthorities(templateGroups, userRoles);
+
+        log.info("Validating users and groups...");
+        const allUsersGroupCheck = await this.getAllUsers(excludedUsersIds);
+
+        //Add the low level template group to the users without template group
+        await this.addLowLevelGroupToUsersWithoutTemplate(
+            completeTemplateGroups,
+            allUsersGroupCheck,
+            minimalGroupId
+        );
+
+        //fix user roles based on its groups
+        const allUsers = await this.getAllUsers(excludedUsersIds);
+
+        log.info("Processing users...");
+        this.validateUsers(allUsers, completeTemplateGroups, minimalGroupId.id);
+        const userinfo: UserRes[] = this.processUsers(
+            allUsers,
+            completeTemplateGroups,
+            excludedRolesByRole,
+            excludedRolesByGroup,
+            excludedRolesByUser,
+            minimalRoleId
+        );
+
+        log.info("Users processed. Starting push...");
+        //return userInfoRes
+        const date = new Date()
+            .toLocaleString()
+            .replace(" ", "-")
+            .replace(":", "-")
+            .replace("/", "-")
+            .replace("/", "-")
+            .replace("\\", "-");
+        const eventUid = getUid(date);
+
+        //users without user groups
+        const usersWithErrorsInGroups = userinfo.filter(item => item.undefinedUserGroups);
+
+        //users with action required
+        const usersToBeFixed = userinfo.filter(item => item.actionRequired);
+
+        const userActionRequired = userinfo.filter(item => item.actionRequired);
+        //save errors in user configs
+        if (usersToBeFixed.length > 0) {
+            log.info(usersToBeFixed.length + " users will be fixed");
+
+            log.info(usersToBeFixed.length + " users will be pushed");
+            if (userActionRequired.length > 0) {
+                const userToPost: User[] = userActionRequired.map(item => {
+                    return item.fixedUser;
+                });
+                const response = await pushUsers(userToPost, this.api);
+                const result = response?.status ?? "null";
+                log.info(`Saving report: ${result}`);
+                log.info(`Saving report: ${response.typeReports}`);
+                if (pushReport) {
+                    const eventid = getUid(date);
+                    log.info("Report event id:" + eventid);
+
+                    const userFixed: User[] = userActionRequired.map(item => {
+                        return item.fixedUser;
+                    });
+                    const userBackup: User[] = userActionRequired.map(item => {
+                        return item.user;
+                    });
+                    const userFixedId = await saveFileResource(
+                        JSON.stringify(userFixed),
+                        filenameUsersPushed,
+                        this.api
+                    );
+                    const userBackupId = await saveFileResource(
+                        JSON.stringify(userBackup),
+                        filenameUserBackup,
+                        this.api
+                    );
+
+                    saveUserChangesBakup(usersToBeFixed, eventid);
+                    saveInJsonFormat(
+                        JSON.stringify({ usersWithErrors: usersWithErrorsInGroups }, null, 4),
+                        `${date}-groups-pushed`
+                    );
+                    saveInCsv(usersWithErrorsInGroups, `${date}-groups-pushed`);
+
+                    const response = await pushReportToDhis(
+                        usersWithErrorsInGroups.length.toString(),
+                        usersToBeFixed.length.toString(),
+                        result,
+                        userFixedId,
+                        userBackupId,
+                        this.api,
+                        pushProgramId.id,
+                        eventUid
+                    );
+
+                    if (response?.status != "OK") {
+                        await saveUserErrors(userActionRequired, eventUid);
+                    }
+                }
+            }
+        }
+    }
+    private async addLowLevelGroupToUsersWithoutTemplate(
+        completeTemplateGroups: TemplateGroupWithAuthorities[],
+        allUsersGroupCheck: User[],
+        minimalGroupId: Item
+    ) {
+        const userIdWithoutGroups: IdItem[] = this.detectUserIdsWithoutGroups(
+            completeTemplateGroups,
+            allUsersGroupCheck,
+            minimalGroupId
+        );
+
+        log.info("Pushing fixed users without groups");
+        await this.pushUsersWithoutGroupsWithLowLevelGroup(userIdWithoutGroups, minimalGroupId);
+    }
+    detectUserIdsWithoutGroups(
+        completeTemplateGroups: TemplateGroupWithAuthorities[],
+        allUsersGroupCheck: User[],
+        minimalGroupId: Item
+    ): IdItem[] {
+        return _.compact(
+            allUsersGroupCheck.map(user => {
+                const templateGroupMatch = completeTemplateGroups.find(template => {
+                    return user.userGroups.some(
+                        userGroup => userGroup != undefined && template.group.id == userGroup.id
+                    );
+                });
+
+                if (templateGroupMatch == undefined) {
+                    //template not found -> all roles are invalid except the minimal role
+                    log.error(
+                        `Warning: User don't have groups ${user.id} - ${user.name} adding to minimal group  ${minimalGroupId}`
+                    );
+                    const id: IdItem = { id: user.id };
+                    return id;
+                }
+            })
+        );
+    }
+
+    private async fillAuthorities(
+        templateGroups: TemplateGroup[],
+        userRoles: UserRoleAuthority[]
+    ): Promise<TemplateGroupWithAuthorities[]> {
         const userTemplateIds = templateGroups.map(template => {
             return template.template.id;
         });
 
         const allUserTemplates = await this.getUsers(userTemplateIds);
-
-        const userRoles: UserRoleAuthority[] = await this.getAllUserRoles(options);
-        const validateAuthInRoles = userRoles.filter(role => {
-            return role.authorities.length == 0;
-        });
-
-        if (validateAuthInRoles.length > 0) {
-            validateAuthInRoles.forEach(role => {
-                log.error(`Role ${role.id} - ${role.name} has no authorities`);
-            });
-
-            validateAuthInRoles.forEach(role => {
-                if (role.id in excludedRoles) {
-                    throw new Error(
-                        "Roles with no authorities are not allowed. Fix them in the server or add in the ignore list"
-                    );
-                }
-            });
-        }
-
-        const completeTemplateGroups = templateGroups.map(item => {
+        //todo: I want to do const templatefilled = templateGroup.map(...) but it didnt work
+        const templateFilled: TemplateGroupWithAuthorities[] = templateGroups.map(item => {
             const user = allUserTemplates.find(template => {
                 return template.id == item.template.id;
             });
@@ -151,69 +291,148 @@ export class UsersD2Repository implements UsersRepository {
                 validRolesByAuthority: validRolesByAuthority ?? [],
                 invalidRolesByAuthority: invalidRolesByAuthority ?? [],
                 validRolesById: validRoles ?? [],
-                invalidRoles: invalidRoles ?? [],
+                invalidRolesById: invalidRoles ?? [],
             };
-            /*          todo remove this lines, not necessary   
-            item.username = allUserTemplates.find(template => {
-                return template.id == item.templateId;
-            })?.name; */
         });
+        return templateFilled;
+    }
 
-        //fix users without any group
+    private validateAuths(userRoles: UserRoleAuthority[], excludedRoles: Item[]) {
+        const rolesWithInvalidAuth = userRoles.filter(role => {
+            return role.authorities.length == 0;
+        });
+        if (rolesWithInvalidAuth.length > 0) {
+            rolesWithInvalidAuth.forEach(role => {
+                log.error(`Role ${role.id} - ${role.name} has no authorities`);
+            });
+            const excludedRoleIds = excludedRoles.map(excludeRole => {
+                return excludeRole.id;
+            });
+            const invalidRolesExcluded = rolesWithInvalidAuth.filter(role => {
+                return excludedRoleIds.includes(role.id);
+            });
+            if (rolesWithInvalidAuth.length - invalidRolesExcluded.length > 0) {
+                log.error(`Trying to process invalid roles`);
+                throw new Error(
+                    "Roles with no authorities are not allowed. Fix them in the server or add in the ignore list"
+                );
+            }
+        }
+    }
 
-        const allUsersGroupCheck = await this.getAllUsers(excludedUsersIds);
-        const userIdWithoutGroups: IdItem[] = _.compact(
-            allUsersGroupCheck.map(user => {
-                const templateGroupMatch = completeTemplateGroups.find(template => {
-                    return user.userGroups.some(
-                        userGroup => userGroup != undefined && template.group.id == userGroup.id
-                    );
-                });
+    async pushUsersToGroup(minimalUserGroup: UserGroup[], userIdWithoutGroups: IdItem[]) {
+        if (userIdWithoutGroups != undefined && userIdWithoutGroups.length > 0) {
+            minimalUserGroup[0]?.users.push(...userIdWithoutGroups);
+            try {
+                const response = await this.api.models.userGroups.put(minimalUserGroup[0]!).getData();
+                response.status == "OK"
+                    ? log.info("Users added to minimal group")
+                    : log.error("Error adding users to minimal group");
+                log.info(JSON.stringify(response.response));
 
-                if (templateGroupMatch == undefined) {
-                    //template not found -> all roles are invalid except the minimal role
-                    log.error(
-                        `Warning: User don't have groups ${user.id} - ${user.name} adding to minimal group  ${minimalGroupId}`
-                    );
-                    const id: IdItem = { id: user.id };
-                    return id;
-                }
-            })
-        );
+                return response.status;
+            } catch (error) {
+                console.debug(error);
+                return "ERROR";
+            }
+        }
+    }
 
-        //Push users without group fix
+    async getAllUserRoles(options: UsersOptions): Promise<UserRoleAuthority[]> {
+        log.info(`Get metadata: All roles excluding ids: ${options.excludedRoles.join(", ")}`);
+        const excludeRoles = options.excludedRoles;
+        if (excludeRoles.length == 0) {
+            const responses = await this.api
+                .get<UserRoleAuthorities>(`/userRoles.json?paging=false&fields=id,name,authorities`)
+                .getData();
+
+            return responses.userRoles;
+        } else {
+            const responses = await this.api
+                .get<UserRoleAuthorities>(
+                    `/userRoles.json?paging=false&fields=id,name,authorities&filter=id:!in:[${excludeRoles.join(
+                        ","
+                    )}]`
+                )
+                .getData();
+
+            return responses.userRoles;
+        }
+    }
+
+    private async getUsers(userIds: string[]): Promise<User[]> {
+        log.info(`Get metadata: All users IDS: ${userIds.join(", ")}`);
+
+        const responses = await this.api
+            .get<Users>(`/users?filter=id:in:[${userIds.join(",")}]&fields=*&paging=false.json`)
+            .getData();
+
+        return responses["users"];
+    }
+
+    private async getGroups(groupsIds: string[]): Promise<UserGroup[]> {
+        log.info(`Get metadata: All groups`);
+
+        const responses = await this.api
+            .get<UserGroups>(
+                `/userGroups?filter=id:in:[${groupsIds.join(
+                    ","
+                )}]&fields=id,created,lastUpdated,name,users,*&paging=false.json`
+            )
+            .getData();
+
+        return responses["userGroups"];
+    }
+
+    private async pushUsersWithoutGroupsWithLowLevelGroup(
+        userIdWithoutGroups: IdItem[],
+        minimalGroupId: Item
+    ) {
         if (userIdWithoutGroups.length > 0) {
             const minimalUserGroup = await this.getGroups([minimalGroupId.id]);
             await this.pushUsersToGroup(minimalUserGroup, userIdWithoutGroups);
         }
+    }
 
-        //fix user roles based on its groups
-        const allUsers = await this.getAllUsers(excludedUsersIds);
+    private async getAllUsers(excludedUsers: string[]): Promise<User[]> {
+        log.info(`Get metadata: All users except: ${excludedUsers.join(",")}`);
 
-        const userinfo: UserRes[] = _.compact(
+        const responses = await this.api
+            .get<Users>(
+                `/users.json?paging=false&fields=*,userCredentials[*]&filter=id:!in:[${excludedUsers.join(
+                    ","
+                )}]`
+            )
+            .getData();
+
+        return responses["users"];
+    }
+
+    private processUsers(
+        allUsers: User[],
+        completeTemplateGroups: TemplateGroupWithAuthorities[],
+        excludedRolesByRole: RolesByRoles[],
+        excludedRolesByGroup: RolesByGroup[],
+        excludedRolesByUser: RolesByUser[],
+        minimalRoleId: Item
+    ): UserRes[] {
+        const processedUsers = _.compact(
             allUsers.map(user => {
                 const templateGroupMatch = completeTemplateGroups.find(template => {
                     return user.userGroups.some(
                         userGroup => userGroup != undefined && template.group.id == userGroup.id
                     );
                 });
-
                 const AllGroupMatch = completeTemplateGroups.filter(template => {
                     return user.userGroups.some(
                         userGroup => userGroup != undefined && template.group.id == userGroup.id
                     );
                 });
 
-                if (templateGroupMatch == undefined) {
-                    //template not found -> all roles are invalid except the minimal role
-                    log.error(
-                        `Warning: User don't have groups ${user.id} - ${user.name} error adding to minimal group  ${minimalGroupId}`
-                    );
-                    throw new Error("User: " + user.username + " don't have valid groups");
-                } else if (user.userCredentials.userRoles === undefined) {
+                if (user.userCredentials.userRoles === undefined) {
                     const fixedUser = JSON.parse(JSON.stringify(user));
                     fixedUser.userCredentials.userRoles = [{ id: minimalRoleId.id }];
-                    fixedUser.userRoles = [{ id: minimalRoleId }];
+                    fixedUser.userRoles = [{ id: minimalRoleId.id }];
                     const userInfoRes: UserRes = {
                         user: user,
                         fixedUser: fixedUser,
@@ -235,7 +454,7 @@ export class UsersD2Repository implements UsersRepository {
                     );
                     const allInValidRolesSingleList: string[] = _.uniqWith(
                         AllGroupMatch.flatMap(item => {
-                            return item.invalidRoles;
+                            return item.invalidRolesById;
                         }),
                         _.isEqual
                     );
@@ -302,9 +521,9 @@ export class UsersD2Repository implements UsersRepository {
                             validUserRoles: userValidRoles,
                             actionRequired: userInvalidRoles.length > 0,
                             invalidUserRoles: userInvalidRoles,
-                            userNameTemplate: templateGroupMatch.template.name,
-                            templateIdTemplate: templateGroupMatch.template.id,
-                            groupIdTemplate: templateGroupMatch.group.id,
+                            userNameTemplate: templateGroupMatch!.template.name,
+                            templateIdTemplate: templateGroupMatch!.template.id,
+                            groupIdTemplate: templateGroupMatch!.group.id,
                             multipleUserGroups: AllGroupMatch.map(item => item.group.id),
                         };
                         return userInfoRes;
@@ -315,9 +534,9 @@ export class UsersD2Repository implements UsersRepository {
                             validUserRoles: userValidRoles,
                             actionRequired: userInvalidRoles.length > 0,
                             invalidUserRoles: userInvalidRoles,
-                            userNameTemplate: templateGroupMatch.template.name,
-                            templateIdTemplate: templateGroupMatch.template.id,
-                            groupIdTemplate: templateGroupMatch.group.id,
+                            userNameTemplate: templateGroupMatch!.template.name,
+                            templateIdTemplate: templateGroupMatch!.template.id,
+                            groupIdTemplate: templateGroupMatch!.group.id,
                         };
 
                         return userInfoRes;
@@ -325,194 +544,30 @@ export class UsersD2Repository implements UsersRepository {
                 }
             })
         );
+        return processedUsers;
+    }
 
-        //return userInfoRes
-        const date = new Date()
-            .toLocaleString()
-            .replace(" ", "-")
-            .replace(":", "-")
-            .replace("/", "-")
-            .replace("/", "-")
-            .replace("\\", "-");
-        const eventUid = getUid(date);
-
-        //users without user groups
-        const usersWithErrorsInGroups = userinfo.filter(item => item.undefinedUserGroups);
-
-        //users with action required
-        const usersToBeFixed = userinfo.filter(item => item.actionRequired);
-
-        const userActionRequired = userinfo.filter(item => item.actionRequired);
-        //save errors in user configs
-        if (usersToBeFixed.length > 0) {
-            log.info(usersToBeFixed.length + " users will be fixed");
-
-            log.info(usersToBeFixed.length + " users will be pushed");
-            if (userActionRequired.length > 0) {
-                const userToPost: User[] = userActionRequired.map(item => {
-                    return item.fixedUser;
-                });
-                const response = await pushUsers(userToPost, this.api);
-                const result = response?.status ?? "null";
-                log.info(`Saving report: ${result}`);
-                log.info(`Saving report: ${response.typeReports}`);
-                if (pushReport) {
-                    //recovery from response
-                    const eventid = getUid(date);
-                    log.debug(eventid);
-
-                    const userFixed: User[] = userActionRequired.map(item => {
-                        return item.fixedUser;
-                    });
-                    const userBackup: User[] = userActionRequired.map(item => {
-                        return item.user;
-                    });
-                    const userFixedId = await saveFileResource(
-                        JSON.stringify(userFixed),
-                        filenameUsersPushed,
-                        this.api
-                    );
-                    const userBackupId = await saveFileResource(
-                        JSON.stringify(userBackup),
-                        filenameUserBackup,
-                        this.api
-                    );
-
-                    saveUserChangesBakup(usersToBeFixed, eventid);
-                    saveInJsonFormat(
-                        JSON.stringify({ usersWithErrors: usersWithErrorsInGroups }, null, 4),
-                        `${date}-groups-pushed`
-                    );
-                    saveInCsv(usersWithErrorsInGroups, `${date}-groups-pushed`);
-
-                    const response = await pushReportToDhis(
-                        usersWithErrorsInGroups.length.toString(),
-                        usersToBeFixed.length.toString(),
-                        result,
-                        userFixedId,
-                        userBackupId,
-                        this.api,
-                        pushProgramId.id,
-                        eventUid
-                    );
-
-                    //Push users to dhis2
-                    if (response) {
-                        await saveUserErrors(userActionRequired, response, eventUid);
-                    }
-                }
+    private validateUsers(
+        allUsers: User[],
+        completeTemplateGroups: TemplateGroupWithAuthorities[],
+        minimalGroupId: string
+    ) {
+        allUsers.map(user => {
+            const templateGroupMatch = completeTemplateGroups.find(template => {
+                return user.userGroups.some(
+                    userGroup => userGroup != undefined && template.group.id == userGroup.id
+                );
+            });
+            if (templateGroupMatch == undefined) {
+                //template not found -> all roles are invalid except the minimal role
+                log.error(
+                    `Warning: User don't have groups ${user.id} - ${user.name} error adding to minimal group  ${minimalGroupId}`
+                );
+                throw new Error("User: " + user.username + " don't have valid groups");
             }
-        }
-    }
-
-    async pushUsersToGroup(minimalUserGroup: UserGroup[], userIdWithoutGroups: IdItem[]) {
-        if (userIdWithoutGroups != undefined && userIdWithoutGroups.length > 0) {
-            minimalUserGroup[0]?.users.push(...userIdWithoutGroups);
-            try {
-                const response = await this.api.models.userGroups.put(minimalUserGroup[0]!).getData();
-                response.status == "OK"
-                    ? log.info("Users added to minimal group")
-                    : log.error("Error adding users to minimal group");
-                log.info(JSON.stringify(response.response));
-
-                return response.status;
-            } catch (error) {
-                console.debug(error);
-                return "ERROR";
-            }
-        }
-    }
-
-    /*     public async save(file: File): Promise<FileId> {
-        const auth = this.api;
-        const t : FileUploadParameters;
-        this.api.files.saveFileResource(,"d");
-        const authHeaders: Record<string, string> = this.getAuthHeaders(auth);
-
-        const formdata = new FormData();
-        formdata.append("file", file);
-        formdata.append("filename", file.name);
-
-        const fetchOptions: RequestInit = {
-            method: "POST",
-            headers: { ...authHeaders },
-            body: formdata,
-            credentials: auth ? "omit" : ("include" as const),
-        };
-
-        const response = await fetch(new URL(`/api/fileResources`, this.instance.url).href, fetchOptions);
-        if (!response.ok) {
-            throw Error(
-                `An error has ocurred saving the resource file of the document '${file.name}' in ${this.instance.name}`
-            );
-        } else {
-            const apiResponse: SaveApiResponse = JSON.parse(await response.text());
-
-            return apiResponse.response.fileResource.id;
-        }
-    } */
-
-    async getAllUserRoles(options: UsersOptions): Promise<UserRoleAuthority[]> {
-        log.info(`Get metadata: All roles excluding ids: ${options.excludedRoles.join(", ")}`);
-        const excludeRoles = options.excludedRoles;
-        if (excludeRoles.length == 0) {
-            const responses = await this.api
-                .get<UserRoleAuthorities>(`/userRoles.json?paging=false&fields=id,name,authorities`)
-                .getData();
-            log.info("ok");
-            return responses.userRoles;
-        } else {
-            const responses = await this.api
-                .get<UserRoleAuthorities>(
-                    `/userRoles.json?paging=false&fields=id,name,authorities&filter=id:!in:[${excludeRoles.join(
-                        ","
-                    )}]`
-                )
-                .getData();
-
-            return responses.userRoles;
-        }
-    }
-
-    private async getUsers(userIds: string[]): Promise<User[]> {
-        log.info(`Get metadata: All users IDS: ${userIds.join(", ")}`);
-
-        const responses = await this.api
-            .get<Users>(`/users?filter=id:in:[${userIds.join(",")}]&fields=*&paging=false.json`)
-            .getData();
-
-        return responses["users"];
-    }
-
-    private async getGroups(groupsIds: string[]): Promise<UserGroup[]> {
-        log.info(`Get metadata: All groups`);
-
-        const responses = await this.api
-            .get<UserGroups>(
-                `/userGroups?filter=id:in:[${groupsIds.join(
-                    ","
-                )}]&fields=id,created,lastUpdated,name,users,*&paging=false.json`
-            )
-            .getData();
-
-        return responses["userGroups"];
-    }
-
-    private async getAllUsers(excludedUsers: string[]): Promise<User[]> {
-        log.info(`Get metadata: All users except: ${excludedUsers.join(",")}`);
-
-        const responses = await this.api
-            .get<Users>(
-                `/users.json?paging=false&fields=*,userCredentials[*]&filter=id:!in:[${excludedUsers.join(
-                    ","
-                )}]`
-            )
-            .getData();
-
-        return responses["users"];
+        });
     }
 }
-
 async function pushUsers(userToPost: User[], api: D2Api) {
     log.info("Push users to dhis2");
 
@@ -600,12 +655,12 @@ async function saveUserChangesBakup(userActionRequired: UserRes[], eventid: stri
     await saveInJsonFormat(JSON.stringify({ userBeforePost }, null, 4), filenameUserBackup);
 }
 
-async function saveUserErrors(userActionRequired: UserRes[], response: UserResponse, eventid: string) {
+async function saveUserErrors(userActionRequired: UserRes[], eventid: string) {
     const userToPost: User[] = userActionRequired.map(item => {
         return item.fixedUser;
     });
     log.error(`Save jsons on import error: ${filenameErrorOnPush}`);
-    await saveInJsonFormat(JSON.stringify({ response, userToPost }, null, 4), filenameErrorOnPush);
+    await saveInJsonFormat(JSON.stringify({ eventid, userToPost }, null, 4), filenameErrorOnPush);
     log.error(`Save errors in csv: `);
     await saveInCsv(userActionRequired, `${csvErrorFilename}`);
 }
