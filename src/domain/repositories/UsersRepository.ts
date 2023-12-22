@@ -9,8 +9,7 @@ export interface TemplateGroup {
     template: Item;
 }
 
-export interface TemplateGroupWithAuthorities {
-    templateGroup: TemplateGroup;
+export interface TemplateGroupWithAuthorities extends TemplateGroup {
     validRolesByAuthority: UserRoleAuthority[];
     invalidRolesByAuthority: UserRoleAuthority[];
     validRolesById: string[];
