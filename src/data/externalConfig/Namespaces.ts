@@ -18,7 +18,7 @@ export const Namespace = {
 
 export const NamespaceProperties: Record<string, string[]> = {
     [Namespace.CONFIG]: ["config"],
-    [Namespace.PUSH_REPORT]: ["push-report"],
+    [Namespace.PUSH_REPORT]: [],
     [Namespace.MINIMAL_GROUP]: [],
     [Namespace.MINIMAL_ROLE]: [],
     [Namespace.PUSH_PROGRAM_ID]: [],
