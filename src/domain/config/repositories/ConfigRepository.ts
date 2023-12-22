@@ -14,11 +14,5 @@ export interface ConfigRepositoryConstructor {
 }
 
 export interface ConfigRepository {
-    /*     getRolesByRoles(): Promise<ExcludeRoleByRole[]>;
-    getRolesByGroup(): Promise<ExcludeRoleByGroup[]>;
-    getRolesByUser(): Promise<ExcludeRoleByUser[]>;
-    getRoles(): Promise<ExcludeRoles[]>;
-    getUser(): Promise<ExcludeUsers[]>;
-    getTemplates(): Promise<TemplateGroups[]>; */
     getConfig(): Promise<UsersOptions>;
 }
