@@ -1,40 +1,35 @@
-import { Id } from "@eyeseetea/d2-api";
 import { UserRoleAuthority } from "data/d2-users/D2Users.types";
 import { Async } from "domain/entities/Async";
 
 export interface UsersRepository {
     checkPermissions(options: UsersOptions): Promise<Async<void>>;
 }
-
 export interface TemplateGroup {
-    templateId: Id;
-    groupId: Id;
+    group: Item;
+    template: Item;
+}
+
+export interface TemplateGroupWithAuthorities {
+    templateGroup: TemplateGroup;
     validRolesByAuthority: UserRoleAuthority[];
     invalidRolesByAuthority: UserRoleAuthority[];
     validRolesById: string[];
     invalidRolesById: string[];
-    name?: string;
 }
 
 export interface RolesByRoles {
-    activeroleid: string;
-    activerolename: string;
-    ignoreroleid: string;
-    ignorerolename: string;
+    active_role: Item;
+    ignore_role: Item;
 }
 
 export interface RolesByUser {
-    userid: string;
-    username: string;
-    roleid: string;
-    rolename: string;
+    role: Item;
+    user: Item;
 }
 
 export interface RolesByGroup {
-    groupid: string;
-    groupname: string;
-    roleid: string;
-    rolename: string;
+    role: Item;
+    group: Item;
 }
 
 export interface Item {
@@ -52,5 +47,8 @@ export interface UsersOptions {
     pushProgramId: Item;
     minimalGroupId: Item;
     minimalRoleId: Item;
+}
+
+export interface AuthOptions {
     apiurl: string;
 }

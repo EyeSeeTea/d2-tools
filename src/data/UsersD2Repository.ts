@@ -21,6 +21,7 @@ import * as CsvWriter from "csv-writer";
 import { getUid } from "utils/uid";
 import { FileUploadParameters, Files } from "@eyeseetea/d2-api/api/files";
 import logger from "utils/log";
+import { group } from "console";
 
 //users without template group
 const dataelement_invalid_users_count_code = "ADMIN_invalid_Groups_1_Events";
@@ -67,13 +68,13 @@ export class UsersD2Repository implements UsersRepository {
             excludedRolesByUser: excludedRolesByUser,
             excludedRolesByGroup: excludedRolesByGroup,
         } = options;
-
+        debugger;
         const excludedUsersIds = excludedUsers.map(item => {
             return item.id;
         });
 
         const userTemplateIds = templateGroups.map(template => {
-            return template.templateId;
+            return template.template.id;
         });
 
         const allUserTemplates = await this.getUsers(userTemplateIds);
@@ -97,9 +98,9 @@ export class UsersD2Repository implements UsersRepository {
             });
         }
 
-        templateGroups.map(item => {
+        const completeTemplateGroups = templateGroups.map(item => {
             const user = allUserTemplates.find(template => {
-                return template.id == item.templateId;
+                return template.id == item.template.id;
             });
             const templateAutorities = _.compact(
                 user?.userCredentials.userRoles.flatMap(role => {
@@ -147,14 +148,18 @@ export class UsersD2Repository implements UsersRepository {
                     return role.id;
                 })
             );
-
-            item.validRolesByAuthority = validRolesByAuthority ?? [];
-            item.invalidRolesByAuthority = invalidRolesByAuthority ?? [];
-            item.validRolesById = validRoles ?? [];
-            item.invalidRolesById = invalidRoles ?? [];
-            item.name = allUserTemplates.find(template => {
+            return {
+                group: item.group,
+                template: item.template,
+                validRolesByAuthority: validRolesByAuthority ?? [],
+                invalidRolesByAuthority: invalidRolesByAuthority ?? [],
+                validRolesById: validRoles ?? [],
+                invalidRoles: invalidRoles ?? [],
+            };
+            /*          todo remove this lines, not necessary   
+            item.username = allUserTemplates.find(template => {
                 return template.id == item.templateId;
-            })?.name;
+            })?.name; */
         });
 
         //fix users without any group
@@ -162,9 +167,9 @@ export class UsersD2Repository implements UsersRepository {
         const allUsersGroupCheck = await this.getAllUsers(excludedUsersIds);
         const userIdWithoutGroups: IdItem[] = _.compact(
             allUsersGroupCheck.map(user => {
-                const templateGroupMatch = templateGroups.find(template => {
+                const templateGroupMatch = completeTemplateGroups.find(template => {
                     return user.userGroups.some(
-                        userGroup => userGroup != undefined && template.groupId == userGroup.id
+                        userGroup => userGroup != undefined && template.group.id == userGroup.id
                     );
                 });
 
@@ -191,15 +196,15 @@ export class UsersD2Repository implements UsersRepository {
 
         const userinfo: UserRes[] = _.compact(
             allUsers.map(user => {
-                const templateGroupMatch = templateGroups.find(template => {
+                const templateGroupMatch = completeTemplateGroups.find(template => {
                     return user.userGroups.some(
-                        userGroup => userGroup != undefined && template.groupId == userGroup.id
+                        userGroup => userGroup != undefined && template.group.id == userGroup.id
                     );
                 });
 
-                const AllGroupMatch = templateGroups.filter(template => {
+                const AllGroupMatch = completeTemplateGroups.filter(template => {
                     return user.userGroups.some(
-                        userGroup => userGroup != undefined && template.groupId == userGroup.id
+                        userGroup => userGroup != undefined && template.group.id == userGroup.id
                     );
                 });
 
@@ -234,24 +239,24 @@ export class UsersD2Repository implements UsersRepository {
                     );
                     const allInValidRolesSingleList: string[] = _.uniqWith(
                         AllGroupMatch.flatMap(item => {
-                            return item.invalidRolesById;
+                            return item.invalidRoles;
                         }),
                         _.isEqual
                     );
 
                     const allExceptionsToBeIgnoredByUser: string[] = _.compact(
                         excludedRolesByUser.flatMap(item => {
-                            if (item.userid == user.id) return item.roleid;
+                            if (item.user.id == user.id) return item.role.id;
                         })
                     );
 
                     const allExceptionsToBeIgnoredByGroup: string[] = _.compact(
                         excludedRolesByGroup.flatMap(itemexception => {
                             const exist = user.userGroups.some(item => {
-                                return item.id === itemexception.groupid;
+                                return item.id === itemexception.group.id;
                             });
                             if (exist) {
-                                return itemexception.roleid;
+                                return itemexception.role.id;
                             } else {
                                 return [];
                             }
@@ -260,7 +265,7 @@ export class UsersD2Repository implements UsersRepository {
 
                     const allExceptionsToBeIgnoredByRole: string[] = _.compact(
                         excludedRolesByRole.flatMap(item => {
-                            if (item.activeroleid in user.userRoles) return item.ignoreroleid;
+                            if (item.active_role.id in user.userRoles) return item.ignore_role.id;
                         })
                     );
                     const allValidRolesSingleListWithExceptions = _.concat(
@@ -305,10 +310,10 @@ export class UsersD2Repository implements UsersRepository {
                             validUserRoles: userValidRoles,
                             actionRequired: userInvalidRoles.length > 0,
                             invalidUserRoles: userInvalidRoles,
-                            userNameTemplate: templateGroupMatch.name,
-                            templateIdTemplate: templateGroupMatch.templateId,
-                            groupIdTemplate: templateGroupMatch.groupId,
-                            multipleUserGroups: AllGroupMatch.map(item => item.groupId),
+                            userNameTemplate: templateGroupMatch.template.name,
+                            templateIdTemplate: templateGroupMatch.template.id,
+                            groupIdTemplate: templateGroupMatch.group.id,
+                            multipleUserGroups: AllGroupMatch.map(item => item.group.id),
                         };
                         return userInfoRes;
                     } else {
@@ -318,9 +323,9 @@ export class UsersD2Repository implements UsersRepository {
                             validUserRoles: userValidRoles,
                             actionRequired: userInvalidRoles.length > 0,
                             invalidUserRoles: userInvalidRoles,
-                            userNameTemplate: templateGroupMatch.name,
-                            templateIdTemplate: templateGroupMatch.templateId,
-                            groupIdTemplate: templateGroupMatch.groupId,
+                            userNameTemplate: templateGroupMatch.template.name,
+                            templateIdTemplate: templateGroupMatch.template.id,
+                            groupIdTemplate: templateGroupMatch.group.id,
                         };
 
                         return userInfoRes;

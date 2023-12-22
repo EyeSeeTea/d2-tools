@@ -6,6 +6,7 @@ import { getApiUrlOption, getD2Api, StringsSeparatedByCommas } from "scripts/com
 import { RunUserPermissionsUseCase } from "domain/usecases/RunUserPermissionsUseCase";
 import { UsersD2Repository } from "data/UsersD2Repository";
 import {
+    AuthOptions,
     Item,
     RolesByGroup,
     RolesByRoles,
@@ -14,6 +15,8 @@ import {
     UsersOptions,
 } from "domain/repositories/UsersRepository";
 import log from "utils/log";
+import { D2ExternalConfigRepository } from "data/D2ExternalConfigRepository";
+import { GetServerConfigUseCase } from "domain/config/usecases/GetServerConfigUseCase";
 
 export function getCommand() {
     return subcommands({
@@ -26,7 +29,8 @@ export function getCommand() {
 
 const runUsersPermisionsCmd = command({
     name: "run-users-permissions",
-    description: "Run user permissions, a --config-file must be provided",
+    description:
+        "Run user permissions, a --config-file must be provided (userspermissions run-users-permissions --config-file config.json)",
     args: {
         config_file: option({
             type: string,
@@ -35,16 +39,34 @@ const runUsersPermisionsCmd = command({
         }),
     },
     handler: async args => {
-        const userOptions = getOptions(args.config_file);
-        log.info(`Get metadata: All users IDS: ${userOptions.apiurl}`);
-        const api = getD2Api(userOptions.apiurl);
+        const auth = getAuthFromFile(args.config_file);
+        const api = getD2Api(auth.apiurl);
         const usersRepository = new UsersD2Repository(api);
-
-        new RunUserPermissionsUseCase(usersRepository).execute(userOptions);
+        const externalConfigRepository = new D2ExternalConfigRepository(api);
+        log.info(`Get config: ${auth.apiurl}`);
+        const config = await new GetServerConfigUseCase(externalConfigRepository).execute();
+        debugger;
+        log.info(`Run user permissions`);
+        new RunUserPermissionsUseCase(usersRepository).execute(config);
     },
 });
 
-function getOptions(config_file: string): UsersOptions {
+function getAuthFromFile(config_file: string): AuthOptions {
+    const fs = require("fs");
+    const configJSON = JSON.parse(fs.readFileSync("./" + config_file, "utf8"));
+
+    const apiurl: string =
+        configJSON["URL"]["prefix"] +
+        configJSON["URL"]["username"] +
+        ":" +
+        configJSON["URL"]["password"] +
+        "@" +
+        configJSON["URL"]["server"];
+    return {
+        apiurl: apiurl,
+    };
+}
+/* function getOptions(config_file: string): UsersOptions {
     const fs = require("fs");
     const configJSON = JSON.parse(fs.readFileSync("./" + config_file, "utf8"));
 
@@ -88,6 +110,6 @@ function getOptions(config_file: string): UsersOptions {
         pushProgramId: push_program_id,
         minimalGroupId: minimal_group,
         minimalRoleId: minimal_role,
-        apiurl: apiurl,
     };
 }
+ */
