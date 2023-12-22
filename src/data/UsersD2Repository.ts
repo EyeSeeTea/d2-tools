@@ -24,12 +24,12 @@ import logger from "utils/log";
 import { group } from "console";
 
 //users without template group
-const dataelement_invalid_users_count_code = "ADMIN_invalid_Groups_1_Events";
+const dataelement_invalid_users_count_code = "ADMIN_invalid_users_groups_count_1_Events";
 //users with invald roles based on the upper level of the template group
-const dataelement_invalid_roles_count_code = "ADMIN_invalid_Roles_Users_2_Events";
+const dataelement_invalid_roles_count_code = "ADMIN_invalid_users_roles_count_2_Events";
 const dataelement_users_pushed_code = "ADMIN_user_pushed_control_Events";
-const dataelement_file_invalid_users_file_code = "ADMIN_invalid_Users_file_resource_backup_3_Events";
-const dataelement_file_valid_users_file_code = "ADMIN_valid_Users_file_resource_backup_4_Events";
+const dataelement_file_invalid_users_file_code = "ADMIN_invalid_users_backup_3_Events";
+const dataelement_file_valid_users_file_code = "ADMIN_valid_users_backup_4_Events";
 
 const date = new Date()
     .toLocaleString()
@@ -42,8 +42,8 @@ const date = new Date()
 const csvErrorFilename = `${date}-users-bakkup`;
 const filenameErrorOnPush = `${date}-users-push-error`;
 const csvPushedFilename = `${date}-users-pushed`;
-const filenameUsersPushed = `${date}-users-pushed`;
-const filenameUserBackup = `${date}-users-update-backup`;
+const filenameUsersPushed = `${date}-users-pushed.json`;
+const filenameUserBackup = `${date}-users-update-backup.json`;
 
 type Users = { users: User[] };
 type Programs = { programs: Program[] };
@@ -376,12 +376,12 @@ export class UsersD2Repository implements UsersRepository {
                     const userBackup: User[] = userActionRequired.map(item => {
                         return item.user;
                     });
-                    const userFixedId = await trysave(
+                    const userFixedId = await saveFileResource(
                         JSON.stringify(userFixed),
                         filenameUsersPushed,
                         this.api
                     );
-                    const userBackupId = await trysave(
+                    const userBackupId = await saveFileResource(
                         JSON.stringify(userBackup),
                         filenameUserBackup,
                         this.api
@@ -397,7 +397,7 @@ export class UsersD2Repository implements UsersRepository {
                     const response = await pushReportToDhis(
                         usersWithErrorsInGroups.length.toString(),
                         usersToBeFixed.length.toString(),
-                        status,
+                        result,
                         userFixedId,
                         userBackupId,
                         this.api,
@@ -650,32 +650,22 @@ async function getProgram(api: D2Api, programUid: string): Promise<Program[]> {
     return responses.programs;
 }
 
-export async function trysave(jsonString: string, name: string, api: D2Api): Promise<string> {
-    debugger;
-    //const jsonBlob: Blob = new Blob([jsonString], { type: "application/json" });
+export async function saveFileResource(jsonString: string, name: string, api: D2Api): Promise<string> {
     const jsonBlob = Buffer.from(jsonString, "utf-8");
 
     debugger;
-    const uploadParams = {
-        name: name,
-        data: jsonBlob,
-    };
-
     const files = new Files(api);
-    //try
-    //const response = files.upload(uploadParams).getData();
+
     const form: FileUploadParameters = {
         id: getUid(name),
-        name: "name",
+        name: name,
         data: jsonBlob,
         ignoreDocument: true,
+        domain: "DATA_VALUE",
     };
-    const response = await files.upload(form).getData();
-    const fileresourceId = response.fileResourceId;
-    const documentId = response.fileResourceId;
-    logger.info("file resource" + fileresourceId);
-    logger.info("document" + documentId);
-    return documentId;
+    const response = await files.saveFileResource(form).getData();
+    const fileresourceId = response;
+    return fileresourceId;
 }
 async function pushReportToDhis(
     usersWithErrors: string,
@@ -787,7 +777,8 @@ async function pushReportToDhis(
                 return { status: "ERROR", typeReports: [] };
             }
         });
-    log.info(response.status);
+    log.info("Report sent status: " + response.status);
+    log.debug("Report info: " + response.typeReports);
     debugger;
     return response;
 }
