@@ -64,10 +64,9 @@ export class D2ExternalConfigRepository implements ConfigRepository {
     public async getConfig(): Promise<UsersOptions> {
         const config = await this.getObject<ConfigClient>(Namespace.CONFIG);
         if (config) {
-            debugger;
-            // Asumiendo que mapTemplates modifica config y debes retornar algo de tipo UsersOptions.
             const usersOptions = this.mapTemplates(config);
-            return usersOptions; // Asegúrate de que esto sea de tipo UsersOptions.
+            debugger;
+            return usersOptions;
         } else {
             log.warn("Errpr loading config from datastore");
             throw new Error("Error loading config from datastore");
