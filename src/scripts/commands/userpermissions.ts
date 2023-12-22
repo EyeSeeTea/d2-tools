@@ -1,19 +1,10 @@
-import _, { uniqueId } from "lodash";
 import "json5/lib/register";
-import { command, subcommands, option, optional, flag, boolean, string } from "cmd-ts";
+import { command, subcommands, option, string } from "cmd-ts";
 
-import { getApiUrlOption, getD2Api, StringsSeparatedByCommas } from "scripts/common";
+import { getD2Api } from "scripts/common";
 import { RunUserPermissionsUseCase } from "domain/usecases/RunUserPermissionsUseCase";
 import { UsersD2Repository } from "data/UsersD2Repository";
-import {
-    AuthOptions,
-    Item,
-    RolesByGroup,
-    RolesByRoles,
-    RolesByUser,
-    TemplateGroup,
-    UsersOptions,
-} from "domain/repositories/UsersRepository";
+import { AuthOptions } from "domain/repositories/UsersRepository";
 import log from "utils/log";
 import { D2ExternalConfigRepository } from "data/D2ExternalConfigRepository";
 import { GetServerConfigUseCase } from "domain/config/usecases/GetServerConfigUseCase";

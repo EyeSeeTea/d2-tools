@@ -1,13 +1,4 @@
-import { RolesByRoles, UsersOptions } from "domain/repositories/UsersRepository";
-import {
-    ConfigClient,
-    ExcludeRoleByGroup,
-    ExcludeRoleByRole,
-    ExcludeRoleByUser,
-    ExcludeRoles,
-    ExcludeUsers,
-    TemplateGroups,
-} from "../ConfigClient";
+import { UsersOptions } from "domain/repositories/UsersRepository";
 
 export interface ConfigRepositoryConstructor {
     new (): ConfigRepository;

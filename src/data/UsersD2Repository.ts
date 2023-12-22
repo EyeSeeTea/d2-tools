@@ -1,4 +1,3 @@
-import _, { get } from "lodash";
 import { Async } from "domain/entities/Async";
 import { D2Api } from "types/d2-api";
 import log from "utils/log";
@@ -20,8 +19,7 @@ import {
 import * as CsvWriter from "csv-writer";
 import { getUid } from "utils/uid";
 import { FileUploadParameters, Files } from "@eyeseetea/d2-api/api/files";
-import logger from "utils/log";
-import { group } from "console";
+import _ from "lodash";
 
 //users without template group
 const dataelement_invalid_users_count_code = "ADMIN_invalid_users_groups_count_1_Events";
@@ -49,7 +47,6 @@ type Users = { users: User[] };
 type Programs = { programs: Program[] };
 type UserGroups = { userGroups: UserGroup[] };
 type UserRoleAuthorities = { userRoles: UserRoleAuthority[] };
-
 type UserResponse = { status: string; typeReports: object[] };
 
 export class UsersD2Repository implements UsersRepository {
@@ -68,7 +65,7 @@ export class UsersD2Repository implements UsersRepository {
             excludedRolesByUser: excludedRolesByUser,
             excludedRolesByGroup: excludedRolesByGroup,
         } = options;
-        debugger;
+
         const excludedUsersIds = excludedUsers.map(item => {
             return item.id;
         });
@@ -191,7 +188,6 @@ export class UsersD2Repository implements UsersRepository {
         }
 
         //fix user roles based on its groups
-        debugger;
         const allUsers = await this.getAllUsers(excludedUsersIds);
 
         const userinfo: UserRes[] = _.compact(
@@ -292,10 +288,6 @@ export class UsersD2Repository implements UsersRepository {
                                 -1 && JSON.stringify(allInvalidRolesSingleListFixed).indexOf(userRole.id) >= 0
                         );
                     });
-                    /* 
-                    if (AllGroupMatch.length > 1) {
-                        debugger;
-                    } */
 
                     //clone user
                     const fixedUser = JSON.parse(JSON.stringify(user));
@@ -352,7 +344,6 @@ export class UsersD2Repository implements UsersRepository {
 
         const userActionRequired = userinfo.filter(item => item.actionRequired);
         //save errors in user configs
-        debugger;
         if (usersToBeFixed.length > 0) {
             log.info(usersToBeFixed.length + " users will be fixed");
 
@@ -386,7 +377,7 @@ export class UsersD2Repository implements UsersRepository {
                         filenameUserBackup,
                         this.api
                     );
-                    debugger;
+
                     saveUserChangesBakup(usersToBeFixed, eventid);
                     saveInJsonFormat(
                         JSON.stringify({ usersWithErrors: usersWithErrorsInGroups }, null, 4),
@@ -404,10 +395,8 @@ export class UsersD2Repository implements UsersRepository {
                         pushProgramId.id,
                         eventUid
                     );
-                    debugger;
-                    //recovery eventid
-                    //Push users to dhis2
 
+                    //Push users to dhis2
                     if (response) {
                         await saveUserErrors(userActionRequired, response, eventUid);
                     }
@@ -486,7 +475,6 @@ export class UsersD2Repository implements UsersRepository {
     }
 
     private async getUsers(userIds: string[]): Promise<User[]> {
-        debugger;
         log.info(`Get metadata: All users IDS: ${userIds.join(", ")}`);
 
         const responses = await this.api
@@ -529,7 +517,7 @@ async function pushUsers(userToPost: User[], api: D2Api) {
     log.info("Push users to dhis2");
 
     const usersReadyToPost: Users = { users: userToPost };
-    debugger;
+
     const response: UserResponse = await api
         .post<UserResponse>("/metadata", { async: false }, usersReadyToPost)
         .getData()
@@ -540,7 +528,6 @@ async function pushUsers(userToPost: User[], api: D2Api) {
                 return { status: "ERROR", typeReports: [] };
             }
         });
-    debugger;
     return response;
 }
 
@@ -604,7 +591,7 @@ async function saveUserChangesBakup(userActionRequired: UserRes[], eventid: stri
     const userBeforePost: User[] = userActionRequired.map(item => {
         return item.user;
     });
-    debugger;
+
     log.error(`Save pushed users details in csv: ${csvPushedFilename}`);
     await saveInCsv(userActionRequired, `${csvPushedFilename}`);
     log.error(`Save pushed users: ${filenameUsersPushed}`);
@@ -637,23 +624,13 @@ async function getProgram(api: D2Api, programUid: string): Promise<Program[]> {
             `/programs?filter=id:eq:${programUid}&fields=id,organisationUnits[id],programStages[id,programStageDataElements[id,dataElement[id,name,code]]&paging=false.json`
         )
         .getData();
-    /* 
-    const programs = await api.models.programs
-    .get({
-        fields: { id: true, organisationUnits: {id :true }, programStages: { id: true, programStageDataElements: { id:true, dataElement: { id:true, name:true, code:true } } }},
-        filter: { id: { eq: programUid } },
-        paging: false,
-    }
-    )
-    .getData();  */
-    debugger;
+
     return responses.programs;
 }
 
 export async function saveFileResource(jsonString: string, name: string, api: D2Api): Promise<string> {
     const jsonBlob = Buffer.from(jsonString, "utf-8");
 
-    debugger;
     const files = new Files(api);
 
     const form: FileUploadParameters = {
@@ -678,13 +655,11 @@ async function pushReportToDhis(
     eventUid: string
 ) {
     log.info(`Create and Pushing report to DHIS2`);
-    debugger;
     const responseProgram = await getProgram(api, pushProgramId);
 
     const programs = responseProgram[0] ?? undefined;
 
     if (programs === undefined) {
-        debugger;
         log.error(`Program ${pushProgramId} not found`);
         return;
     }
@@ -693,14 +668,13 @@ async function pushReportToDhis(
     const orgunitstring = JSON.stringify(programs.organisationUnits[0]);
     const orgUnit: { id: string } = JSON.parse(orgunitstring);
     const orgUnitId: string = orgUnit.id;
-    debugger;
+
     if (programStage === undefined) {
-        debugger;
         log.error(`Programstage ${pushProgramId} not found`);
         return;
     }
+
     if (orgUnitId === undefined) {
-        debugger;
         log.error(`Organisation Unit ${pushProgramId} not found`);
         return;
     }
@@ -738,7 +712,7 @@ async function pushReportToDhis(
             }
         })
         .filter(dataValue => dataValue.dataElement !== "");
-    debugger;
+
     if (dataValues.length == 0) {
         log.info(`No data elements found`);
         return;
@@ -746,7 +720,7 @@ async function pushReportToDhis(
     log.info("Push report");
     log.info(JSON.stringify(dataValues));
     //todo fix push, change dataelements to only add a count of errors.
-    debugger;
+
     const response: UserResponse = await api
         .post<UserResponse>(
             "/tracker",
@@ -779,6 +753,6 @@ async function pushReportToDhis(
         });
     log.info("Report sent status: " + response.status);
     log.debug("Report info: " + response.typeReports);
-    debugger;
+
     return response;
 }

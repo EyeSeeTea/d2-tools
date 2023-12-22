@@ -1,17 +1,9 @@
 import _ from "lodash";
 import { ConfigRepository } from "domain/config/repositories/ConfigRepository";
 import { D2Api } from "@eyeseetea/d2-api/2.36";
-import {
-    ConfigClient,
-    ExcludeRoleByGroup,
-    ExcludeRoleByRole,
-    ExcludeRoleByUser,
-    ExcludeRoles,
-    ExcludeUsers,
-    TemplateGroups,
-} from "domain/config/ConfigClient";
+import { ConfigClient } from "domain/config/ConfigClient";
 import { Namespace } from "./externalConfig/Namespaces";
-import { Item, UsersOptions } from "domain/repositories/UsersRepository";
+import { UsersOptions } from "domain/repositories/UsersRepository";
 import log from "utils/log";
 
 export class D2ExternalConfigRepository implements ConfigRepository {
@@ -21,41 +13,6 @@ export class D2ExternalConfigRepository implements ConfigRepository {
         this.api = api;
     }
 
-    /*     public async getRolesByRoles(): Promise<ExcludeRoleByRole[]> {
-        const config = await this.getConfig();
-        const excludeRoleByRole = ([] = config.excludeRoleByRole ?? []);
-        return excludeRoleByRole;
-    }
-
-    public async getRolesByGroup(): Promise<ExcludeRoleByGroup[]> {
-        const config = await this.getConfig();
-        const excludeRoleByGroup = ([] = config.excludeRoleByGroup ?? []);
-        return excludeRoleByGroup;
-    }
-
-    public async getRolesByUser(): Promise<ExcludeRoleByUser[]> {
-        const config = await this.getConfig();
-        const excludeRoleByUser = ([] = config.excludeRoleByUser ?? []);
-        return excludeRoleByUser;
-    }
-
-    public async getRoles(): Promise<ExcludeRoles[]> {
-        const config = await this.getConfig();
-        const excludeRoles = ([] = config.excludeRoles ?? []);
-        return excludeRoles;
-    }
-
-    public async getUser(): Promise<ExcludeUsers[]> {
-        const config = await this.getConfig();
-        const excludeUsers = ([] = config.excludeUsers ?? []);
-        return excludeUsers;
-    }
-
-    public async getTemplates(): Promise<TemplateGroups[]> {
-        const config = await this.getConfig();
-        const templateGroups = ([] = config.templateGroups ?? []);
-        return templateGroups;
-    } */
     private async getObject<T extends object>(key: string): Promise<T | undefined> {
         const value = await this.api.dataStore("d2-tools").get<T>(key).getData();
         return value;
@@ -65,10 +22,9 @@ export class D2ExternalConfigRepository implements ConfigRepository {
         const config = await this.getObject<ConfigClient>(Namespace.CONFIG);
         if (config) {
             const usersOptions = this.mapTemplates(config);
-            debugger;
             return usersOptions;
         } else {
-            log.warn("Errpr loading config from datastore");
+            log.warn("Error loading config from datastore");
             throw new Error("Error loading config from datastore");
         }
     }
@@ -87,18 +43,4 @@ export class D2ExternalConfigRepository implements ConfigRepository {
             pushProgramId: config[Namespace.PUSH_PROGRAM_ID],
         };
     }
-    /*     public mapTemplates(config: ConfigClient): UsersOptions {
-        return {
-            excludedRolesByRole: config.excludeRoleByRole,
-            excludedRolesByGroup: config.excludeRoleByGroup,
-            excludedRolesByUser: config.excludeRoleByUser,
-            excludedRoles: config.excludeRoles.roles,
-            excludedUsers: config.excludeUsers.users,
-            templates: config.templateGroups,
-            pushReport: config.pushReport,
-            minimalGroupId: config.minimalGroup,
-            minimalRoleId: config.minimalRole,
-            pushProgramId: config.pushProgram,
-        };
-    } */
 }
