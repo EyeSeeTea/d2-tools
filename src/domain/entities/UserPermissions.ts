@@ -8,6 +8,7 @@ export interface UserPermissionsDetails extends UserPermissionsCountResponse {
 
 export type UserPermissionsCountResponse = {
     invalidUsersCount: number;
+    listOfAffectedUsers: Item[];
     response: string;
 };
 

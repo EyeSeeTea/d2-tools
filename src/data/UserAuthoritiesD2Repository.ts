@@ -80,6 +80,7 @@ export class UserAuthoritiesD2Repository implements UserAuthoritiesRepository {
                 usersBackup: [],
                 usersFixed: [],
                 userProcessed: [],
+                listOfAffectedUsers: [],
             };
         } else {
             log.info(usersToBeFixed.length + " users will be fixed");
@@ -116,6 +117,9 @@ export class UserAuthoritiesD2Repository implements UserAuthoritiesRepository {
                 usersBackup: userBackup,
                 usersFixed: userToPost,
                 userProcessed: usersToBeFixed,
+                listOfAffectedUsers: usersToBeFixed.map(item => {
+                    return { id: item.fixedUser.id, name: item.fixedUser.username };
+                }),
             };
         }
     }
@@ -125,7 +129,7 @@ export class UserAuthoritiesD2Repository implements UserAuthoritiesRepository {
         allUsersGroupCheck: User[],
         minimalGroupId: Item
     ): Promise<UserPermissionsCountResponse> {
-        const userIdWithoutGroups: IdItem[] = this.detectUserIdsWithoutGroups(
+        const userIdWithoutGroups: Item[] = this.detectUserIdsWithoutGroups(
             completeTemplateGroups,
             allUsersGroupCheck,
             minimalGroupId
@@ -139,7 +143,7 @@ export class UserAuthoritiesD2Repository implements UserAuthoritiesRepository {
         completeTemplateGroups: TemplateGroupWithAuthorities[],
         allUsersGroupCheck: User[],
         minimalGroupId: Item
-    ): IdItem[] {
+    ): Item[] {
         return _.compact(
             allUsersGroupCheck.map(user => {
                 const templateGroupMatch = completeTemplateGroups.find(template => {
@@ -153,7 +157,7 @@ export class UserAuthoritiesD2Repository implements UserAuthoritiesRepository {
                     log.error(
                         `Warning: User don't have groups ${user.id} - ${user.name} adding to minimal group  ${minimalGroupId}`
                     );
-                    const id: IdItem = { id: user.id };
+                    const id: Item = { id: user.id, name: user.username };
                     return id;
                 }
             })
@@ -191,15 +195,24 @@ export class UserAuthoritiesD2Repository implements UserAuthoritiesRepository {
     }
 
     private async pushUsersWithoutGroupsWithLowLevelGroup(
-        userIdWithoutGroups: IdItem[],
+        userIdWithoutGroups: Item[],
         minimalGroupId: Item
     ): Promise<UserPermissionsCountResponse> {
         if (userIdWithoutGroups != undefined && userIdWithoutGroups.length > 0) {
             const minimalUserGroup = await this.getGroups([minimalGroupId.id]);
-            const response = await this.pushUsersToGroup(minimalUserGroup, userIdWithoutGroups);
-            return { response: response, invalidUsersCount: userIdWithoutGroups.length };
+            const response = await this.pushUsersToGroup(
+                minimalUserGroup,
+                userIdWithoutGroups.map(item => {
+                    return { id: item.id };
+                })
+            );
+            return {
+                response: response,
+                invalidUsersCount: userIdWithoutGroups.length,
+                listOfAffectedUsers: userIdWithoutGroups,
+            };
         } else {
-            return { response: "", invalidUsersCount: 0 };
+            return { response: "", invalidUsersCount: 0, listOfAffectedUsers: [] };
         }
     }
 

@@ -7,12 +7,14 @@ import log from "utils/log";
 import { EventDataValue, ProgramMetadata, User, UserRes } from "./d2-users/D2Users.types";
 import _ from "lodash";
 
-import { UserPermissionsCountResponse, UserPermissionsDetails } from "domain/entities/UserPermissions";
+import { Item, UserPermissionsCountResponse, UserPermissionsDetails } from "domain/entities/UserPermissions";
 import { getUid } from "utils/uid";
 import { UserPermissionReportRepository } from "domain/repositories/UserPermissionReportRepository";
 
-const dataelement_invalid_users_count_code = "ADMIN_invalid_users_groups_count_1_Events";
+const dataelement_invalid_users_groups_count_code = "ADMIN_invalid_users_groups_count_1_Events";
+const dataelement_invalid_users_groups_list_code = "ADMIN_invalid_users_groups_usernames_5_Events";
 const dataelement_invalid_roles_count_code = "ADMIN_invalid_users_roles_count_2_Events";
+const dataelement_invalid_roles_list_code = "ADMIN_invalid_users_roles_usernames_6_Events";
 const dataelement_users_pushed_code = "ADMIN_user_pushed_control_Events";
 const dataelement_file_invalid_users_file_code = "ADMIN_invalid_users_backup_3_Events";
 const dataelement_file_valid_users_file_code = "ADMIN_valid_users_backup_4_Events";
@@ -81,7 +83,9 @@ export class UserPermissionReportD2Repository implements UserPermissionReportRep
 
         const response = await this.pushReportToDhis(
             responseGroups.invalidUsersCount.toString(),
+            responseGroups.listOfAffectedUsers,
             responseRoles.usersFixed.length.toString(),
+            responseRoles.listOfAffectedUsers,
             responseRoles.response,
             userFixedId,
             userBackupId,
@@ -153,8 +157,10 @@ export class UserPermissionReportD2Repository implements UserPermissionReportRep
     }
 
     private async pushReportToDhis(
-        usersWithErrors: string,
-        usersToBeFixed: string,
+        userGroupsFixedCount: string,
+        usernamesGroupModified: Item[],
+        usersFixedRolesCount: string,
+        usernamesFixedRoles: Item[],
         status: string,
         userFixedFileResourceId: string,
         userBackupFileResourceid: string,
@@ -166,10 +172,28 @@ export class UserPermissionReportD2Repository implements UserPermissionReportRep
         const dataValues: EventDataValue[] = program.dataElements
             .map(item => {
                 switch (item.code) {
-                    case dataelement_invalid_users_count_code:
-                        return { dataElement: item.id, value: usersWithErrors };
+                    case dataelement_invalid_users_groups_count_code:
+                        return { dataElement: item.id, value: userGroupsFixedCount };
+                    case dataelement_invalid_users_groups_list_code:
+                        return {
+                            dataElement: item.id,
+                            value: usernamesGroupModified
+                                .map(item => {
+                                    return item.name + "(" + item.id + ")";
+                                })
+                                .join(","),
+                        };
                     case dataelement_invalid_roles_count_code:
-                        return { dataElement: item.id, value: usersToBeFixed };
+                        return { dataElement: item.id, value: usersFixedRolesCount };
+                    case dataelement_invalid_roles_list_code:
+                        return {
+                            dataElement: item.id,
+                            value: usernamesFixedRoles
+                                .map(item => {
+                                    return item.name + "(" + item.id + ")";
+                                })
+                                .join(","),
+                        };
                     case dataelement_file_invalid_users_file_code:
                         return { dataElement: item.id, value: userFixedFileResourceId };
                     case dataelement_file_valid_users_file_code:
