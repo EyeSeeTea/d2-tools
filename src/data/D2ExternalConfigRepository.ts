@@ -19,7 +19,7 @@ export class D2ExternalConfigRepository implements ConfigRepository {
     }
 
     public async getConfig(): Promise<UsersOptions> {
-        const config = await this.getObject<ConfigClient>(Namespace.CONFIG);
+        const config = await this.getObject<ConfigClient>(Namespace.USER_MONITORING);
         if (config) {
             const usersOptions = this.mapTemplates(config);
             return usersOptions;
@@ -29,6 +29,7 @@ export class D2ExternalConfigRepository implements ConfigRepository {
         }
     }
 
+    //for any reason the values aren't saved as ConfigClient, i must map it using the datastore namespaces
     public mapTemplates(config: any): UsersOptions {
         return {
             excludedRolesByRole: config[Namespace.EXCLUDE_ROLES_BY_ROLE],

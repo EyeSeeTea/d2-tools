@@ -3,7 +3,7 @@ export const constantPrefix = "D2-tools Storage";
 
 export type Namespace = typeof Namespace[keyof typeof Namespace];
 export const Namespace = {
-    CONFIG: "config",
+    USER_MONITORING: "user-monitoring",
     PUSH_REPORT: "PUSH_REPORT",
     MINIMAL_GROUP: "MINIMAL_GROUP",
     MINIMAL_ROLE: "MINIMAL_ROLE",
@@ -17,7 +17,7 @@ export const Namespace = {
 };
 
 export const NamespaceProperties: Record<string, string[]> = {
-    [Namespace.CONFIG]: ["config"],
+    [Namespace.USER_MONITORING]: ["user-monitoring"],
     [Namespace.PUSH_REPORT]: [],
     [Namespace.MINIMAL_GROUP]: [],
     [Namespace.MINIMAL_ROLE]: [],
