@@ -3,11 +3,13 @@ import { command, subcommands, option, string } from "cmd-ts";
 
 import { getD2Api } from "scripts/common";
 import { RunUserPermissionsUseCase } from "domain/usecases/RunUserPermissionsUseCase";
-import { UserAuthoritiesD2Repository } from "data/UsersAuthoritiesD2Repository";
-import { AuthOptions } from "domain/repositories/UsersRepository";
 import log from "utils/log";
 import { D2ExternalConfigRepository } from "data/D2ExternalConfigRepository";
 import { GetServerConfigUseCase } from "domain/config/usecases/GetServerConfigUseCase";
+import { UserPermissionMetadataD2Repository } from "data/UserPermissionMetadataD2Repository";
+import { UserPermissionReportD2Repository } from "data/UserPermissionReportD2Repository";
+import { UserAuthoritiesD2Repository } from "data/UserAuthoritiesD2Repository";
+import { AuthOptions } from "domain/entities/UserPermissions";
 
 export function getCommand() {
     return subcommands({
@@ -33,13 +35,19 @@ const runUsersPermisionsCmd = command({
         const auth = getAuthFromFile(args.config_file);
         const api = getD2Api(auth.apiurl);
         const usersRepository = new UserAuthoritiesD2Repository(api);
+        const usersPermissionMetadataRepository = new UserPermissionMetadataD2Repository(api);
         const externalConfigRepository = new D2ExternalConfigRepository(api);
+        const userPermissionsReportRepository = new UserPermissionReportD2Repository(api);
         log.debug(`Get config: ${auth.apiurl}`);
 
         const config = await new GetServerConfigUseCase(externalConfigRepository).execute();
 
         log.info(`Run user permissions`);
-        new RunUserPermissionsUseCase(usersRepository).execute(config);
+        new RunUserPermissionsUseCase(
+            usersRepository,
+            usersPermissionMetadataRepository,
+            userPermissionsReportRepository
+        ).execute(config);
     },
 });
 

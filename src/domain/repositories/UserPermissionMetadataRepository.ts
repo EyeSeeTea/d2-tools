@@ -1,9 +1,24 @@
-import { UserRoleAuthority } from "data/d2-users/D2Users.types";
+import { ProgramMetadata, UserRes, UserRoleAuthority, User } from "data/d2-users/D2Users.types";
 import { Async } from "domain/entities/Async";
 
-export interface UsersRepository {
-    checkPermissions(options: UsersOptions): Promise<Async<void>>;
+export interface UserPermissionMetadataRepository {
+    getTemplateAuthorities(options: UsersOptions): Promise<Async<TemplateGroupWithAuthorities[]>>;
+    getMetadata(programId: string): Promise<Async<ProgramMetadata>>;
+    getAllUsers(excludeIds: string[], exclude?: boolean): Promise<Async<User[]>>;
 }
+
+export interface UserPermissionsDetails extends UserPermissionsCountResponse {
+    usersBackup: User[];
+    usersFixed: User[];
+    eventid: string;
+    userProcessed: UserRes[];
+}
+
+export type UserPermissionsCountResponse = {
+    invalidUsersCount: number;
+    response: string;
+};
+
 export interface TemplateGroup {
     group: Item;
     template: Item;

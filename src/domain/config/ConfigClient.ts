@@ -1,4 +1,4 @@
-import { Item } from "domain/repositories/UsersRepository";
+import { Item } from "domain/entities/UserPermissions";
 import _ from "lodash";
 
 export interface ConfigClient {

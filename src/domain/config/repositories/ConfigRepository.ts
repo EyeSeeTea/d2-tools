@@ -1,4 +1,4 @@
-import { UsersOptions } from "domain/repositories/UsersRepository";
+import { UsersOptions } from "domain/entities/UserPermissions";
 
 export interface ConfigRepositoryConstructor {
     new (): ConfigRepository;

@@ -1,4 +1,5 @@
 export type Id = string;
+
 export interface UserDetails {
     id: Id;
     displayName: string;
