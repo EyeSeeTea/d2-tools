@@ -3,7 +3,7 @@ import { command, subcommands, option, string } from "cmd-ts";
 
 import { getD2Api } from "scripts/common";
 import { RunUserPermissionsUseCase } from "domain/usecases/RunUserPermissionsUseCase";
-import { UsersD2Repository } from "data/UsersD2Repository";
+import { UserAuthoritiesD2Repository } from "data/UsersAuthoritiesD2Repository";
 import { AuthOptions } from "domain/repositories/UsersRepository";
 import log from "utils/log";
 import { D2ExternalConfigRepository } from "data/D2ExternalConfigRepository";
@@ -32,7 +32,7 @@ const runUsersPermisionsCmd = command({
     handler: async args => {
         const auth = getAuthFromFile(args.config_file);
         const api = getD2Api(auth.apiurl);
-        const usersRepository = new UsersD2Repository(api);
+        const usersRepository = new UserAuthoritiesD2Repository(api);
         const externalConfigRepository = new D2ExternalConfigRepository(api);
         log.debug(`Get config: ${auth.apiurl}`);
 
