@@ -6,10 +6,10 @@ import {
     RolesByRoles,
     RolesByUser,
     TemplateGroupWithAuthorities,
-    UserPermissionsCountResponse,
-    UserPermissionsDetails,
+    UserMonitoringCountResponse,
+    UserMonitoringDetails,
     UsersOptions,
-} from "domain/entities/UserPermissions";
+} from "domain/entities/UserMonitoring";
 import { IdItem, User, UserGroup, UserRes } from "./d2-users/D2Users.types";
 import { getUid } from "utils/uid";
 import _ from "lodash";
@@ -28,7 +28,7 @@ export class UserAuthoritiesD2Repository implements UserAuthoritiesRepository {
         options: UsersOptions,
         completeTemplateGroups: TemplateGroupWithAuthorities[],
         allUsersGroupCheck: User[]
-    ): Promise<UserPermissionsCountResponse> {
+    ): Promise<UserMonitoringCountResponse> {
         const { minimalGroupId: minimalGroupId } = options;
 
         const response = await this.addLowLevelTemplateGroupToUsersWithoutAny(
@@ -44,7 +44,7 @@ export class UserAuthoritiesD2Repository implements UserAuthoritiesRepository {
         options: UsersOptions,
         completeTemplateGroups: TemplateGroupWithAuthorities[],
         allUsers: User[]
-    ): Promise<UserPermissionsDetails> {
+    ): Promise<UserMonitoringDetails> {
         const {
             minimalGroupId: minimalGroupId,
             minimalRoleId: minimalRoleId,
@@ -128,7 +128,7 @@ export class UserAuthoritiesD2Repository implements UserAuthoritiesRepository {
         completeTemplateGroups: TemplateGroupWithAuthorities[],
         allUsersGroupCheck: User[],
         minimalGroupId: Item
-    ): Promise<UserPermissionsCountResponse> {
+    ): Promise<UserMonitoringCountResponse> {
         const userIdWithoutGroups: Item[] = this.detectUserIdsWithoutGroups(
             completeTemplateGroups,
             allUsersGroupCheck,
@@ -197,7 +197,7 @@ export class UserAuthoritiesD2Repository implements UserAuthoritiesRepository {
     private async pushUsersWithoutGroupsWithLowLevelGroup(
         userIdWithoutGroups: Item[],
         minimalGroupId: Item
-    ): Promise<UserPermissionsCountResponse> {
+    ): Promise<UserMonitoringCountResponse> {
         if (userIdWithoutGroups != undefined && userIdWithoutGroups.length > 0) {
             const minimalUserGroup = await this.getGroups([minimalGroupId.id]);
             const response = await this.pushUsersToGroup(

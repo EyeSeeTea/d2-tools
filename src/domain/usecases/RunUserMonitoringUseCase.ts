@@ -1,16 +1,16 @@
 import { Async } from "domain/entities/Async";
 import { UserAuthoritiesRepository } from "domain/repositories/UserAuthoritiesRepository";
 import {
-    UserPermissionMetadataRepository,
+    UserMonitoringMetadataRepository,
     UsersOptions,
-} from "domain/repositories/UserPermissionMetadataRepository";
-import { UserPermissionReportRepository } from "domain/repositories/UserPermissionReportRepository";
+} from "domain/repositories/UserMonitoringMetadataRepository";
+import { UserMonitoringReportRepository } from "domain/repositories/UserMonitoringReportRepository";
 
 export class RunUserPermissionsUseCase {
     constructor(
         private userAuthoritiesRepository: UserAuthoritiesRepository,
-        private userPermissionMetadataRepository: UserPermissionMetadataRepository,
-        private userPermissionReportRepository: UserPermissionReportRepository
+        private userPermissionMetadataRepository: UserMonitoringMetadataRepository,
+        private userPermissionReportRepository: UserMonitoringReportRepository
     ) {}
 
     async execute(options: UsersOptions): Async<void> {

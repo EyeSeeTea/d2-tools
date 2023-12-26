@@ -2,14 +2,14 @@ import "json5/lib/register";
 import { command, subcommands, option, string } from "cmd-ts";
 
 import { getD2Api } from "scripts/common";
-import { RunUserPermissionsUseCase } from "domain/usecases/RunUserPermissionsUseCase";
+import { RunUserMonitoringUseCase as RunUserMonitoringUseCase } from "domain/usecases/RunUserMonitoringUseCase";
 import log from "utils/log";
 import { D2ExternalConfigRepository } from "data/D2ExternalConfigRepository";
 import { GetServerConfigUseCase } from "domain/config/usecases/GetServerConfigUseCase";
-import { UserPermissionMetadataD2Repository } from "data/UserPermissionMetadataD2Repository";
-import { UserPermissionReportD2Repository } from "data/UserPermissionReportD2Repository";
+import { UserMonitoringMetadataD2Repository } from "data/UserMonitoringMetadataD2Repository";
+import { UserMonitoringReportD2Repository } from "data/UserMonitoringReportD2Repository";
 import { UserAuthoritiesD2Repository } from "data/UserAuthoritiesD2Repository";
-import { AuthOptions } from "domain/entities/UserPermissions";
+import { AuthOptions } from "domain/entities/UserMonitoring";
 
 export function getCommand() {
     return subcommands({
@@ -21,9 +21,9 @@ export function getCommand() {
 }
 
 const runUsersPermisionsCmd = command({
-    name: "run-users-permissions",
+    name: "run-users-monitoring",
     description:
-        "Run user permissions, a --config-file must be provided (userspermissions run-users-permissions --config-file config.json)",
+        "Run user monitoring, a --config-file must be provided (usersmonitoring run-users-monitoring --config-file config.json)",
     args: {
         config_file: option({
             type: string,
@@ -35,15 +35,15 @@ const runUsersPermisionsCmd = command({
         const auth = getAuthFromFile(args.config_file);
         const api = getD2Api(auth.apiurl);
         const usersRepository = new UserAuthoritiesD2Repository(api);
-        const usersPermissionMetadataRepository = new UserPermissionMetadataD2Repository(api);
+        const usersPermissionMetadataRepository = new UserMonitoringMetadataD2Repository(api);
         const externalConfigRepository = new D2ExternalConfigRepository(api);
-        const userPermissionsReportRepository = new UserPermissionReportD2Repository(api);
+        const userPermissionsReportRepository = new UserMonitoringReportD2Repository(api);
         log.debug(`Get config: ${auth.apiurl}`);
 
         const config = await new GetServerConfigUseCase(externalConfigRepository).execute();
 
-        log.info(`Run user permissions`);
-        new RunUserPermissionsUseCase(
+        log.info(`Run user monitoring`);
+        new RunUserMonitoringUseCase(
             usersRepository,
             usersPermissionMetadataRepository,
             userPermissionsReportRepository

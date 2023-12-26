@@ -7,9 +7,9 @@ import log from "utils/log";
 import { EventDataValue, ProgramMetadata, User, UserRes } from "./d2-users/D2Users.types";
 import _ from "lodash";
 
-import { Item, UserPermissionsCountResponse, UserPermissionsDetails } from "domain/entities/UserPermissions";
+import { Item, UserMonitoringCountResponse, UserMonitoringDetails } from "domain/entities/UserMonitoring";
 import { getUid } from "utils/uid";
-import { UserPermissionReportRepository } from "domain/repositories/UserPermissionReportRepository";
+import { UserMonitoringReportRepository } from "domain/repositories/UserMonitoringReportRepository";
 
 const dataelement_invalid_users_groups_count_code = "ADMIN_invalid_users_groups_count_1_Events";
 const dataelement_invalid_users_groups_list_code = "ADMIN_invalid_users_groups_usernames_5_Events";
@@ -62,13 +62,13 @@ const headers: Record<Attr, { title: string }> = {
     validRoles: { title: "ValidRoles" },
 };
 
-export class UserPermissionReportD2Repository implements UserPermissionReportRepository {
+export class UserMonitoringReportD2Repository implements UserMonitoringReportRepository {
     constructor(private api: D2Api) {}
 
     async pushReport(
         program: ProgramMetadata,
-        responseGroups: UserPermissionsCountResponse,
-        responseRoles: UserPermissionsDetails
+        responseGroups: UserMonitoringCountResponse,
+        responseRoles: UserMonitoringDetails
     ): Promise<Async<void>> {
         const userFixedId = await this.saveFileResource(
             JSON.stringify(responseRoles.usersFixed),

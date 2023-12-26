@@ -20,11 +20,11 @@ import {
     TemplateGroupWithAuthorities,
     UsersOptions,
 } from "domain/entities/UserPermissions";
-import { UserPermissionMetadataRepository } from "domain/repositories/UserPermissionMetadataRepository";
+import { UserMonitoringMetadataRepository } from "domain/repositories/UserMonitoringMetadataRepository";
 
 type Users = { users: User[] };
 
-export class UserPermissionMetadataD2Repository implements UserPermissionMetadataRepository {
+export class UserMonitoringMetadataD2Repository implements UserMonitoringMetadataRepository {
     constructor(private api: D2Api) {}
 
     async getTemplateAuthorities(options: UsersOptions): Promise<Async<TemplateGroupWithAuthorities[]>> {
