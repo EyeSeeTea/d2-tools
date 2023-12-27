@@ -19,7 +19,7 @@ import {
     TemplateGroup,
     TemplateGroupWithAuthorities,
     UsersOptions,
-} from "domain/entities/UserPermissions";
+} from "domain/entities/UserMonitoring";
 import { UserMonitoringMetadataRepository } from "domain/repositories/UserMonitoringMetadataRepository";
 
 type Users = { users: User[] };

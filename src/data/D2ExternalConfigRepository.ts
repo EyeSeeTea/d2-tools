@@ -4,7 +4,7 @@ import { D2Api } from "@eyeseetea/d2-api/2.36";
 import { ConfigClient } from "domain/config/ConfigClient";
 import { Namespace } from "./externalConfig/Namespaces";
 import log from "utils/log";
-import { UsersOptions } from "domain/entities/UserPermissions";
+import { UsersOptions } from "domain/entities/UserMonitoring";
 
 export class D2ExternalConfigRepository implements ConfigRepository {
     private api: D2Api;

@@ -7,14 +7,14 @@ export interface UserMonitoringMetadataRepository {
     getAllUsers(excludeIds: string[], exclude?: boolean): Promise<Async<User[]>>;
 }
 
-export interface UserPermissionsDetails extends UserPermissionsCountResponse {
+export interface UserMonitoringDetails extends UserMonitoringCountResponse {
     usersBackup: User[];
     usersFixed: User[];
     eventid: string;
     userProcessed: UserRes[];
 }
 
-export type UserPermissionsCountResponse = {
+export type UserMonitoringCountResponse = {
     invalidUsersCount: number;
     response: string;
 };

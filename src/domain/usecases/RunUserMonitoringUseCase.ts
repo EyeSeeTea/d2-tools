@@ -6,19 +6,19 @@ import {
 } from "domain/repositories/UserMonitoringMetadataRepository";
 import { UserMonitoringReportRepository } from "domain/repositories/UserMonitoringReportRepository";
 
-export class RunUserPermissionsUseCase {
+export class RunUserMonitoringUseCase {
     constructor(
         private userAuthoritiesRepository: UserAuthoritiesRepository,
-        private userPermissionMetadataRepository: UserMonitoringMetadataRepository,
-        private userPermissionReportRepository: UserMonitoringReportRepository
+        private userMonitoringMetadataRepository: UserMonitoringMetadataRepository,
+        private userMonitoringReportRepository: UserMonitoringReportRepository
     ) {}
 
     async execute(options: UsersOptions): Async<void> {
-        const templatesWithAuthorities = await this.userPermissionMetadataRepository.getTemplateAuthorities(
+        const templatesWithAuthorities = await this.userMonitoringMetadataRepository.getTemplateAuthorities(
             options
         );
 
-        const usersToProcessGroups = await this.userPermissionMetadataRepository.getAllUsers(
+        const usersToProcessGroups = await this.userMonitoringMetadataRepository.getAllUsers(
             options.excludedUsers.map(item => {
                 return item.id;
             }),
@@ -31,8 +31,8 @@ export class RunUserPermissionsUseCase {
             usersToProcessGroups
         );
 
-        const program = await this.userPermissionMetadataRepository.getMetadata(options.pushProgramId.id);
-        const usersToProcessRoles = await this.userPermissionMetadataRepository.getAllUsers(
+        const program = await this.userMonitoringMetadataRepository.getMetadata(options.pushProgramId.id);
+        const usersToProcessRoles = await this.userMonitoringMetadataRepository.getAllUsers(
             options.excludedUsers.map(item => {
                 return item.id;
             }),
@@ -46,7 +46,7 @@ export class RunUserPermissionsUseCase {
         );
 
         if (options.pushReport) {
-            await this.userPermissionReportRepository.pushReport(
+            await this.userMonitoringReportRepository.pushReport(
                 program,
                 responseUserGroups,
                 responseUserRolesProcessed
