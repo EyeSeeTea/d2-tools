@@ -398,3 +398,177 @@ yarn start users migrate \
     "attachments": ["path_to_file.txt"]
 }
 ```
+
+
+## User monitoring
+
+### Execution:
+
+```
+yarn install
+yarn build
+yarn start usermonitoring run-users-monitoring   --config-file config.json```
+
+### Debug:
+
+```
+yarn install
+yarn build:dev
+LOG_LEVEL=debug node --inspect-brk dist/index.js usermonitoring run-users-monitoring   --config-file config.json```
+
+### Requirements:
+
+A config json file to get the user/password and server:
+```
+{
+    "URL": {
+        "username": "",
+        "password": "",
+        "server": "http://localhost:8080"
+    }
+}
+```
+
+The datastore:
+d2-tools -> user-monitoring:
+
+The datastore must contain:
+
+A list of excluded_roles (could be an empty list [])
+
+A list of excluded roles by group (could be an empty list [])
+
+A list of excluded roles by role (could be an empty list [])
+
+A list of excluded roles by user (could be an empty list [])
+
+List of excluded users (the script will ignore them) (could be an empty list [])
+
+A minimum group to add that group to the users without any template group (WIDP requirement)
+
+A minimum role to add that role to the users without any role (DHIS requirement)
+
+A boolean variable push_report to determine if the script must send the report after processing all users
+
+A push_program_id variable with the program ID to send the report
+
+A list of templates (user with the valid roles, and group to identify which users could use those roles).
+
+An example of the file:
+
+```{
+  "EXCLUDE_ROLES": [
+    {
+      "id": "byLnQNR1v1B",
+      "name": "App - Leprosy WER Report"
+    }
+  ],
+  "EXCLUDE_ROLES_BY_GROUPS": [
+    {
+      "group": {
+        "id": "ZXEVDM9XRea",
+        "name": "MAL_Malaria access"
+      },
+      "role": {
+        "id": "hXY2OtVz70P",
+        "name": "App - DHIS2 MAL Approval Report"
+      }
+    }
+  ],
+  "EXCLUDE_ROLES_BY_ROLE": [
+    {
+      "active_role": {
+        "id": "ADf4WvGrP2q",
+        "name": "App - Bulk Load"
+      },
+      "ignore_role": {
+        "id": "A36hTe5VUMS",
+        "name": "Export metadata"
+      }
+    }
+  ],
+  "EXCLUDE_ROLES_BY_USERS": [
+    {
+      "role": {
+        "id": "hOYM2imoNmZ",
+        "name": "App - Android Settings app"
+      },
+      "user": {
+        "id": "wUd8NBL7fn2",
+        "name": "rose.mabelle"
+      }
+    }
+  ],
+  "EXCLUDE_USERS": [
+    {
+      "id": "smGarTiKDdV",
+      "name": "dev.user"
+    }
+  ],
+  "MINIMAL_GROUP": {
+    "id": "UmSnxmr4LE0",
+    "name": "WIDP Users"
+  },
+  "MINIMAL_ROLE": {
+    "id": "vOLtPCt8WeB",
+    "name": "Backend access"
+  },
+  "PUSH_PROGRAM_ID": {
+    "id": "tBI5HRoOMUz",
+    "name": "ADMIN_Users_Check(Event)"
+  },
+  "PUSH_REPORT": true,
+  "TEMPLATE_GROUPS": [
+    {
+      "group": {
+        "id": "UfhhwZK73Lg",
+        "name": "WIDP IT team"
+      },
+      "template": {
+        "id": "cNtWc18LXBS",
+        "name": "widp_it_team.template"
+      }
+    },
+    {
+      "group": {
+        "id": "L5dlGQ4m5av",
+        "name": "WIDP User Manager"
+      },
+      "template": {
+        "id": "Q2e3xq4hRCj",
+        "name": "widp_manager.template"
+      }
+    },
+    {
+      "group": {
+        "id": "sCjEPgiOhP1",
+        "name": "WIDP admins"
+      },
+      "template": {
+        "id": "kxaP3vUEnJn",
+        "name": "widp_admins.template"
+      }
+    },
+    {
+      "group": {
+        "id": "e5NqEzmd8Ql",
+        "name": "WIDP external developers"
+      },
+      "template": {
+        "id": "FnkRtcOGOVQ",
+        "name": "widp_external_developers.template"
+      }
+    },
+    {
+      "group": {
+        "id": "UmSnxmr4LE0",
+        "name": "WIDP Users"
+      },
+      "template": {
+        "id": "WT6QkP45vEC",
+        "name": "widp_user.template"
+      }
+    }
+  ]
+}```
+
