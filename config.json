@@ -2,7 +2,6 @@
     "URL": {
         "username": "",
         "password": "",
-        "server": "localhost:8080",
-        "prefix": "http://"
+        "server": "http://localhost:8080"
     }
 }

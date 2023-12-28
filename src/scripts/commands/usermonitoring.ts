@@ -55,14 +55,11 @@ const runUsersMonitoringCmd = command({
 function getAuthFromFile(config_file: string): AuthOptions {
     const fs = require("fs");
     const configJSON = JSON.parse(fs.readFileSync("./" + config_file, "utf8"));
-
+    const urlprefix = configJSON["URL"]["server"].split("//")[0] + "//";
+    const urlserver = configJSON["URL"]["server"].split("//")[1];
     const apiurl: string =
-        configJSON["URL"]["prefix"] +
-        configJSON["URL"]["username"] +
-        ":" +
-        configJSON["URL"]["password"] +
-        "@" +
-        configJSON["URL"]["server"];
+        urlprefix + configJSON["URL"]["username"] + ":" + configJSON["URL"]["password"] + "@" + urlserver;
+
     return {
         apiurl: apiurl,
     };
