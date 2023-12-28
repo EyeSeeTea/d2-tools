@@ -21,16 +21,17 @@ const dataelement_file_valid_users_file_code = "ADMIN_valid_users_backup_4_Event
 
 const date = new Date()
     .toLocaleString()
-    .replace(" ", "-")
-    .replace(":", "-")
-    .replace(":", "-")
-    .replace("/", "-")
-    .replace("/", "-")
-    .replace("\\", "-");
-const csvErrorFilename = `${date}-users-backup`;
-const filenameErrorOnPush = `${date}-users-push-error`;
-const filenameUsersPushed = `${date}-users-pushed.json`;
-const filenameUserBackup = `${date}-users-update-backup.json`;
+    .replace(" ", "_")
+    .replace(":", "_")
+    .replace(":", "_")
+    .replace("/", "_")
+    .replace("/", "_")
+    .replace("\\", "_")
+    .replace(",", "_");
+const csvErrorFilename = `${date}_users_backup`;
+const filenameErrorOnPush = `${date}_users_push_error`;
+const filenameUsersPushed = `${date}_users_pushed.json`;
+const filenameUserBackup = `${date}_users_update_backup.json`;
 type UserResponse = { status: string; typeReports: object[] };
 
 type Attr =
@@ -103,7 +104,6 @@ export class UserMonitoringReportD2Repository implements UserMonitoringReportRep
         const jsonBlob = Buffer.from(jsonString, "utf-8");
 
         const files = new Files(api);
-
         const form: FileUploadParameters = {
             id: getUid(name),
             name: name,
