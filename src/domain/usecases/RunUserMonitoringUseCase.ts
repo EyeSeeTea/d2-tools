@@ -45,7 +45,10 @@ export class RunUserMonitoringUseCase {
             usersToProcessRoles
         );
 
-        if (options.pushReport) {
+        if (
+            (options.pushReport && responseUserGroups.invalidUsersCount > 0) ||
+            responseUserRolesProcessed.invalidUsersCount > 0
+        ) {
             await this.userMonitoringReportRepository.pushReport(
                 program,
                 responseUserGroups,
