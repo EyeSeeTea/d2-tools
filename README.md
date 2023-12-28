@@ -406,15 +406,21 @@ yarn start users migrate \
 
 ```
 yarn install
+
 yarn build
-yarn start usermonitoring run-users-monitoring   --config-file config.json```
+
+yarn start usermonitoring run-users-monitoring   --config-file config.json
+```
 
 ### Debug:
 
 ```
 yarn install
+
 yarn build:dev
-LOG_LEVEL=debug node --inspect-brk dist/index.js usermonitoring run-users-monitoring   --config-file config.json```
+
+LOG_LEVEL=debug node --inspect-brk dist/index.js usermonitoring run-users-monitoring   --config-file config.json
+```
 
 ### Requirements:
 
