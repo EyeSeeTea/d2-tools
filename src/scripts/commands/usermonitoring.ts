@@ -5,7 +5,7 @@ import { getD2Api } from "scripts/common";
 import { RunUserMonitoringUseCase as RunUserMonitoringUseCase } from "domain/usecases/RunUserMonitoringUseCase";
 import log from "utils/log";
 import { D2ExternalConfigRepository } from "data/D2ExternalConfigRepository";
-import { GetServerConfigUseCase } from "domain/config/usecases/GetServerConfigUseCase";
+import { GetUserMonitoringConfigUseCase } from "domain/config/usecases/GetUserMonitoringConfigUseCase";
 import { UserMonitoringMetadataD2Repository } from "data/UserMonitoringMetadataD2Repository";
 import { UserMonitoringReportD2Repository } from "data/UserMonitoringReportD2Repository";
 import { UserAuthoritiesD2Repository } from "data/UserAuthoritiesD2Repository";
@@ -41,7 +41,7 @@ const runUsersMonitoringCmd = command({
         const userMonitoringReportRepository = new UserMonitoringReportD2Repository(api);
         log.debug(`Get config: ${auth.apiurl}`);
 
-        const config = await new GetServerConfigUseCase(externalConfigRepository).execute();
+        const config = await new GetUserMonitoringConfigUseCase(externalConfigRepository).execute();
 
         log.info(`Run user monitoring`);
         new RunUserMonitoringUseCase(

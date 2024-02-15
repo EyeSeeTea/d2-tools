@@ -15,12 +15,6 @@ import { getUid } from "utils/uid";
 import _ from "lodash";
 import { UserAuthoritiesRepository } from "domain/repositories/UserAuthoritiesRepository";
 
-//users without template group
-
-type Users = { users: User[] };
-type UserGroups = { userGroups: UserGroup[] };
-type UserResponse = { status: string; typeReports: object[] };
-
 export class UserAuthoritiesD2Repository implements UserAuthoritiesRepository {
     constructor(private api: D2Api) {}
 
@@ -29,7 +23,7 @@ export class UserAuthoritiesD2Repository implements UserAuthoritiesRepository {
         completeTemplateGroups: TemplateGroupWithAuthorities[],
         allUsersGroupCheck: User[]
     ): Promise<UserMonitoringCountResponse> {
-        const { minimalGroupId: minimalGroupId } = options;
+        const { minimalGroupId } = options;
 
         const response = await this.addLowLevelTemplateGroupToUsersWithoutAny(
             completeTemplateGroups,
@@ -46,11 +40,11 @@ export class UserAuthoritiesD2Repository implements UserAuthoritiesRepository {
         allUsers: User[]
     ): Promise<UserMonitoringDetails> {
         const {
-            minimalGroupId: minimalGroupId,
-            minimalRoleId: minimalRoleId,
-            excludedRolesByRole: excludedRolesByRole,
-            excludedRolesByUser: excludedRolesByUser,
-            excludedRolesByGroup: excludedRolesByGroup,
+            minimalGroupId,
+            minimalRoleId,
+            excludedRolesByRole,
+            excludedRolesByUser,
+            excludedRolesByGroup,
         } = options;
 
         log.info("Processing users...");
@@ -145,7 +139,7 @@ export class UserAuthoritiesD2Repository implements UserAuthoritiesRepository {
         minimalGroupId: Item
     ): Item[] {
         return _.compact(
-            allUsersGroupCheck.map(user => {
+            allUsersGroupCheck.map((user): Item | undefined => {
                 const templateGroupMatch = completeTemplateGroups.find(template => {
                     return user.userGroups.some(
                         userGroup => userGroup != undefined && template.group.id == userGroup.id
@@ -394,3 +388,7 @@ async function pushUsers(userToPost: User[], api: D2Api) {
         });
     return response;
 }
+
+type Users = { users: User[] };
+type UserGroups = { userGroups: UserGroup[] };
+type UserResponse = { status: string; typeReports: object[] };

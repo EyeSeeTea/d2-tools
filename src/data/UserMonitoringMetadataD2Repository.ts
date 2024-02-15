@@ -22,8 +22,6 @@ import {
 } from "domain/entities/UserMonitoring";
 import { UserMonitoringMetadataRepository } from "domain/repositories/UserMonitoringMetadataRepository";
 
-type Users = { users: User[] };
-
 export class UserMonitoringMetadataD2Repository implements UserMonitoringMetadataRepository {
     constructor(private api: D2Api) {}
 
@@ -32,7 +30,13 @@ export class UserMonitoringMetadataD2Repository implements UserMonitoringMetadat
 
         const userRoles: UserRoleAuthority[] = await this.getAllUserRoles(options);
         log.info("Validating roles...");
-        this.validateAuths(userRoles, excludedRoles);
+        const isAuthValid = this.validateAuths(userRoles, excludedRoles);
+        if (!isAuthValid) {
+            log.error(`Trying to process invalid roles`);
+            throw new Error(
+                "Roles with no authorities are not allowed. Fix them in the server or add in the ignore list"
+            );
+        }
         const completeTemplateGroups = await this.fillAuthorities(templateGroups, userRoles);
         return completeTemplateGroups;
     }
@@ -198,7 +202,7 @@ export class UserMonitoringMetadataD2Repository implements UserMonitoringMetadat
         return templateFilled;
     }
 
-    private validateAuths(userRoles: UserRoleAuthority[], excludedRoles: Item[]) {
+    private validateAuths(userRoles: UserRoleAuthority[], excludedRoles: Item[]): boolean {
         const rolesWithInvalidAuth = userRoles.filter(role => {
             return role.authorities.length == 0;
         });
@@ -213,11 +217,11 @@ export class UserMonitoringMetadataD2Repository implements UserMonitoringMetadat
                 return excludedRoleIds.includes(role.id);
             });
             if (rolesWithInvalidAuth.length - invalidRolesExcluded.length > 0) {
-                log.error(`Trying to process invalid roles`);
-                throw new Error(
-                    "Roles with no authorities are not allowed. Fix them in the server or add in the ignore list"
-                );
+                return false;
             }
         }
+        return true;
     }
 }
+
+type Users = { users: User[] };

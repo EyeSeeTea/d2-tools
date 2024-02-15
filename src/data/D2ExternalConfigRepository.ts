@@ -1,12 +1,12 @@
 import _ from "lodash";
-import { ConfigRepository } from "domain/config/repositories/ConfigRepository";
+import { UserMonitoringConfigRepository } from "domain/config/repositories/UserMonitoringConfigRepository";
 import { D2Api } from "@eyeseetea/d2-api/2.36";
 import { ConfigClient } from "domain/config/ConfigClient";
 import { Namespace } from "./externalConfig/Namespaces";
 import log from "utils/log";
 import { UsersOptions } from "domain/entities/UserMonitoring";
 
-export class D2ExternalConfigRepository implements ConfigRepository {
+export class D2ExternalConfigRepository implements UserMonitoringConfigRepository {
     private api: D2Api;
 
     constructor(api: D2Api) {
@@ -18,7 +18,7 @@ export class D2ExternalConfigRepository implements ConfigRepository {
         return value;
     }
 
-    public async getConfig(): Promise<UsersOptions> {
+    public async get(): Promise<UsersOptions> {
         const config = await this.getObject<ConfigClient>(Namespace.USER_MONITORING);
         if (config) {
             const usersOptions = this.mapTemplates(config);
