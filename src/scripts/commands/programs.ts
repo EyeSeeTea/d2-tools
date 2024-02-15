@@ -134,6 +134,10 @@ const runProgramRulesCmd = command({
             long: "save-payload",
             description: "Save JSON payload with event/TEIs",
         }),
+        backup: flag({
+            long: "backup",
+            description: "Save original event/TEIs (backup-PAYLOAD-PATH)",
+        }),
     },
     handler: async args => {
         const api = getD2Api(args.url);

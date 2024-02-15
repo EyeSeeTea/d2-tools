@@ -1,5 +1,5 @@
 import _ from "lodash";
-import { Event, EventsGetRequest, PaginatedEventsGetResponse } from "@eyeseetea/d2-api/api/events";
+import { EventsGetResponse, PaginatedEventsGetResponse } from "@eyeseetea/d2-api/api/events";
 import { Async } from "domain/entities/Async";
 import { ProgramEvent } from "domain/entities/ProgramEvent";
 import { GetOptions, ProgramEventsRepository } from "domain/repositories/ProgramEventsRepository";
@@ -12,21 +12,30 @@ import { Timestamp } from "domain/entities/Date";
 import { getInChunks } from "./dhis2-utils";
 import { promiseMap } from "./dhis2-utils";
 
-const eventFields = [
-    "event",
-    "status",
-    "orgUnit",
-    "orgUnitName",
-    "program",
-    "programStage",
-    "dataValues",
-    "eventDate",
-    "dueDate",
-    "trackedEntityInstance",
-    "dataValues[dataElement,value,storedBy,providedElsewhere]",
-];
+const eventFields = {
+    created: true,
+    event: true,
+    status: true,
+    orgUnit: true,
+    orgUnitName: true,
+    program: true,
+    programStage: true,
+    eventDate: true,
+    dueDate: true,
+    lastUpdated: true,
+    trackedEntityInstance: true,
+    dataValues: {
+        dataElement: true,
+        value: true,
+        storedBy: true,
+        providedElsewhere: true,
+        lastUpdated: true,
+    },
+} as const;
 
-type EventsRequestWithFilter = EventsGetRequest & { fields: string; event: string[] };
+type Fields = typeof eventFields;
+
+type Event = EventsGetResponse<Fields>["events"][number];
 
 export class ProgramEventsD2Repository implements ProgramEventsRepository {
     constructor(private api: D2Api) {}
@@ -173,9 +182,9 @@ export class ProgramEventsD2Repository implements ProgramEventsRepository {
                     totalPages: true,
                     page: page,
                     pageSize: 1_000,
-                    fields: eventFields.join(","),
+                    fields: eventFields,
                     event: options.eventsIds?.join(";"),
-                } as EventsRequestWithFilter;
+                };
                 logger.debug(`Get API events: ${JSON.stringify(getEventsOptions)}`);
                 const { pager, events } = await this.api.events.get(getEventsOptions).getData();
 
@@ -188,14 +197,14 @@ export class ProgramEventsD2Repository implements ProgramEventsRepository {
         return allEvents;
     }
 
-    private getEvents(eventIds: Id[]): Async<PaginatedEventsGetResponse> {
+    private getEvents(eventIds: Id[]): Async<PaginatedEventsGetResponse<Fields>> {
         return this.api.events
             .get({
                 event: eventIds.join(";"),
-                fields: eventFields.join(","),
+                fields: eventFields,
                 totalPages: true,
                 pageSize: 1e6,
-            } as EventsRequestWithFilter)
+            })
             .getData();
     }
 }
