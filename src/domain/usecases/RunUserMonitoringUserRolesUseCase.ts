@@ -1,37 +1,48 @@
-import { D2Api } from "types/d2-api";
-import log from "utils/log";
+import { Async } from "domain/entities/Async";
 import {
     Item,
     RolesByGroup,
     RolesByRoles,
     RolesByUser,
     TemplateGroupWithAuthorities,
-    UserMonitoringCountResponse,
+    User,
     UserMonitoringDetails,
-    UsersOptions,
+    UserRes,
 } from "domain/entities/UserMonitoring";
-import { IdItem, User, UserGroup, UserRes } from "./d2-users/D2Users.types";
+import { UserMonitoringRepository } from "domain/repositories/UserMonitoringRepository";
+import {
+    UserMonitoringMetadataRepository,
+    UsersOptions,
+} from "domain/repositories/UserMonitoringMetadataRepository";
+import log from "utils/log";
 import { getUid } from "utils/uid";
 import _ from "lodash";
-import { UserAuthoritiesRepository } from "domain/repositories/UserAuthoritiesRepository";
 
-export class UserAuthoritiesD2Repository implements UserAuthoritiesRepository {
-    constructor(private api: D2Api) {}
+export class RunUserMonitoringUserRolesUseCase {
+    constructor(
+        private userMonitoringRepository: UserMonitoringRepository,
+        private userMonitoringMetadataRepository: UserMonitoringMetadataRepository
+    ) {}
 
-    async processUserGroups(
-        options: UsersOptions,
-        completeTemplateGroups: TemplateGroupWithAuthorities[],
-        allUsersGroupCheck: User[]
-    ): Promise<UserMonitoringCountResponse> {
-        const { minimalGroupId } = options;
+    async execute(options: UsersOptions): Async<UserMonitoringDetails> {
+        const templatesWithAuthorities = await this.userMonitoringMetadataRepository.getTemplateAuthorities(
+            options
+        );
+        const responseUserGroups = options.responseUserGroups;
 
-        const response = await this.addLowLevelTemplateGroupToUsersWithoutAny(
-            completeTemplateGroups,
-            allUsersGroupCheck,
-            minimalGroupId
+        const usersToProcessRoles = await this.userMonitoringRepository.getAllUsers(
+            options.excludedUsers.map(item => {
+                return item.id;
+            }),
+            true
         );
 
-        return response;
+        const responseUserRolesProcessed = await this.processUserRoles(
+            options,
+            templatesWithAuthorities,
+            usersToProcessRoles
+        );
+        return responseUserRolesProcessed;
     }
 
     async processUserRoles(
@@ -99,9 +110,9 @@ export class UserAuthoritiesD2Repository implements UserAuthoritiesRepository {
                 return item.user;
             });
 
-            const response = await pushUsers(userToPost, this.api);
+            const response = await this.userMonitoringRepository.saveUsers(userToPost);
 
-            const result = response?.status ?? "null";
+            const result = (await response) ?? "null";
             log.info(`Saving report: ${result}`);
 
             return {
@@ -115,98 +126,6 @@ export class UserAuthoritiesD2Repository implements UserAuthoritiesRepository {
                     return { id: item.fixedUser.id, name: item.fixedUser.username };
                 }),
             };
-        }
-    }
-
-    private async addLowLevelTemplateGroupToUsersWithoutAny(
-        completeTemplateGroups: TemplateGroupWithAuthorities[],
-        allUsersGroupCheck: User[],
-        minimalGroupId: Item
-    ): Promise<UserMonitoringCountResponse> {
-        const userIdWithoutGroups: Item[] = this.detectUserIdsWithoutGroups(
-            completeTemplateGroups,
-            allUsersGroupCheck,
-            minimalGroupId
-        );
-
-        log.info("Pushing fixed users without groups");
-        return await this.pushUsersWithoutGroupsWithLowLevelGroup(userIdWithoutGroups, minimalGroupId);
-    }
-
-    private detectUserIdsWithoutGroups(
-        completeTemplateGroups: TemplateGroupWithAuthorities[],
-        allUsersGroupCheck: User[],
-        minimalGroupId: Item
-    ): Item[] {
-        return _.compact(
-            allUsersGroupCheck.map((user): Item | undefined => {
-                const templateGroupMatch = completeTemplateGroups.find(template => {
-                    return user.userGroups.some(
-                        userGroup => userGroup != undefined && template.group.id == userGroup.id
-                    );
-                });
-
-                if (templateGroupMatch == undefined) {
-                    //template not found -> all roles are invalid except the minimal role
-                    log.error(
-                        `Warning: User don't have groups ${user.id} - ${user.name} adding to minimal group  ${minimalGroupId}`
-                    );
-                    const id: Item = { id: user.id, name: user.username };
-                    return id;
-                }
-            })
-        );
-    }
-
-    async pushUsersToGroup(minimalUserGroup: UserGroup[], userIdWithoutGroups: IdItem[]): Promise<string> {
-        minimalUserGroup[0]?.users.push(...userIdWithoutGroups);
-        try {
-            const response = await this.api.models.userGroups.put(minimalUserGroup[0]!).getData();
-            response.status == "OK"
-                ? log.info("Users added to minimal group")
-                : log.error("Error adding users to minimal group");
-            log.info(JSON.stringify(response.response));
-
-            return response.status;
-        } catch (error) {
-            console.debug(error);
-            return "ERROR";
-        }
-    }
-
-    private async getGroups(groupsIds: string[]): Promise<UserGroup[]> {
-        log.info(`Get metadata: All groups`);
-
-        const responses = await this.api
-            .get<UserGroups>(
-                `/userGroups?filter=id:in:[${groupsIds.join(
-                    ","
-                )}]&fields=id,created,lastUpdated,name,users,*&paging=false.json`
-            )
-            .getData();
-
-        return responses["userGroups"];
-    }
-
-    private async pushUsersWithoutGroupsWithLowLevelGroup(
-        userIdWithoutGroups: Item[],
-        minimalGroupId: Item
-    ): Promise<UserMonitoringCountResponse> {
-        if (userIdWithoutGroups != undefined && userIdWithoutGroups.length > 0) {
-            const minimalUserGroup = await this.getGroups([minimalGroupId.id]);
-            const response = await this.pushUsersToGroup(
-                minimalUserGroup,
-                userIdWithoutGroups.map(item => {
-                    return { id: item.id };
-                })
-            );
-            return {
-                response: response,
-                invalidUsersCount: userIdWithoutGroups.length,
-                listOfAffectedUsers: userIdWithoutGroups,
-            };
-        } else {
-            return { response: "", invalidUsersCount: 0, listOfAffectedUsers: [] };
         }
     }
 
@@ -370,25 +289,3 @@ export class UserAuthoritiesD2Repository implements UserAuthoritiesRepository {
         });
     }
 }
-
-async function pushUsers(userToPost: User[], api: D2Api) {
-    log.info("Push users to dhis2");
-
-    const usersReadyToPost: Users = { users: userToPost };
-
-    const response: UserResponse = await api
-        .post<UserResponse>("/metadata", { async: false }, usersReadyToPost)
-        .getData()
-        .catch(err => {
-            if (err?.response?.data) {
-                return err.response.data as UserResponse;
-            } else {
-                return { status: "ERROR", typeReports: [] };
-            }
-        });
-    return response;
-}
-
-type Users = { users: User[] };
-type UserGroups = { userGroups: UserGroup[] };
-type UserResponse = { status: string; typeReports: object[] };

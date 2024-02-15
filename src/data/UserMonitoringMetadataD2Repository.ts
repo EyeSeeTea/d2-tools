@@ -20,10 +20,22 @@ import {
     TemplateGroupWithAuthorities,
     UsersOptions,
 } from "domain/entities/UserMonitoring";
-import { UserMonitoringMetadataRepository } from "domain/repositories/UserMonitoringMetadataRepository";
+import {
+    UserMonitoringCountResponse,
+    UserMonitoringDetails,
+    UserMonitoringMetadataRepository,
+} from "domain/repositories/UserMonitoringMetadataRepository";
+import { UserMonitoringRepository } from "domain/repositories/UserMonitoringRepository";
 
 export class UserMonitoringMetadataD2Repository implements UserMonitoringMetadataRepository {
-    constructor(private api: D2Api) {}
+    constructor(private api: D2Api, private userMonitoringRepository: UserMonitoringRepository) {}
+    saveReport(
+        program: ProgramMetadata,
+        responseGroups: UserMonitoringCountResponse,
+        responseRoles: UserMonitoringDetails
+    ): Promise<Async<string>> {
+        throw new Error("Method not implemented.");
+    }
 
     async getTemplateAuthorities(options: UsersOptions): Promise<Async<TemplateGroupWithAuthorities[]>> {
         const { templates: templateGroups, excludedRoles: excludedRoles } = options;
@@ -39,20 +51,6 @@ export class UserMonitoringMetadataD2Repository implements UserMonitoringMetadat
         }
         const completeTemplateGroups = await this.fillAuthorities(templateGroups, userRoles);
         return completeTemplateGroups;
-    }
-
-    async getAllUsers(excludedUsers: string[], exclude?: boolean): Promise<Async<User[]>> {
-        log.info(`Get metadata: All users except: ${excludedUsers.join(",")}`);
-        const filterOption = exclude ? "!in" : "in";
-        const responses = await this.api
-            .get<Users>(
-                `/users.json?paging=false&fields=*,userCredentials[*]&filter=id:${filterOption}:[${excludedUsers.join(
-                    ","
-                )}]`
-            )
-            .getData();
-
-        return responses["users"];
     }
 
     async getMetadata(programId: string): Promise<Async<ProgramMetadata>> {
@@ -138,7 +136,7 @@ export class UserMonitoringMetadataD2Repository implements UserMonitoringMetadat
             return template.template.id;
         });
 
-        const allUserTemplates = await this.getAllUsers(userTemplateIds, false);
+        const allUserTemplates = await this.userMonitoringRepository.getAllUsers(userTemplateIds, false);
 
         const templateFilled: TemplateGroupWithAuthorities[] = templateGroups.map(item => {
             const user = allUserTemplates.find(template => {
@@ -225,3 +223,4 @@ export class UserMonitoringMetadataD2Repository implements UserMonitoringMetadat
 }
 
 type Users = { users: User[] };
+type UserResponse = { status: string; typeReports: object[] };

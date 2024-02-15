@@ -4,7 +4,11 @@ import { Async } from "domain/entities/Async";
 export interface UserMonitoringMetadataRepository {
     getTemplateAuthorities(options: UsersOptions): Promise<Async<TemplateGroupWithAuthorities[]>>;
     getMetadata(programId: string): Promise<Async<ProgramMetadata>>;
-    getAllUsers(excludeIds: string[], exclude?: boolean): Promise<Async<User[]>>;
+    saveReport(
+        program: ProgramMetadata,
+        responseGroups: UserMonitoringCountResponse,
+        responseRoles: UserMonitoringDetails
+    ): Promise<Async<string>>;
 }
 
 export interface UserMonitoringDetails extends UserMonitoringCountResponse {
@@ -15,6 +19,7 @@ export interface UserMonitoringDetails extends UserMonitoringCountResponse {
 }
 
 export type UserMonitoringCountResponse = {
+    listOfAffectedUsers: Item[];
     invalidUsersCount: number;
     response: string;
 };
@@ -51,6 +56,8 @@ export interface Item {
     name: string;
 }
 export interface UsersOptions {
+    responseUserRoles?: UserMonitoringDetails;
+    responseUserGroups?: UserMonitoringCountResponse;
     templates: TemplateGroup[];
     excludedRoles: Item[];
     excludedUsers: Item[];
