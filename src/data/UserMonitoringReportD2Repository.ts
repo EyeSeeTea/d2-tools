@@ -21,6 +21,7 @@ const dataelement_file_valid_users_file_code = "ADMIN_valid_users_backup_4_Event
 
 const date = new Date()
     .toLocaleString()
+<<<<<<< HEAD
     .replace(" ", "_")
     .replace(":", "_")
     .replace(":", "_")
@@ -28,6 +29,14 @@ const date = new Date()
     .replace("/", "_")
     .replace("\\", "_")
     .replace(",", "_");
+=======
+    .replace(" ", "-")
+    .replace(":", "-")
+    .replace(":", "-")
+    .replace("/", "-")
+    .replace("/", "-")
+    .replace("\\", "-").replace(/,/g, '').replace(/-/g, '_');;
+>>>>>>> f41359b... fix file names
 const csvErrorFilename = `${date}_users_backup`;
 const filenameErrorOnPush = `${date}_users_push_error`;
 const filenameUsersPushed = `${date}_users_pushed.json`;
