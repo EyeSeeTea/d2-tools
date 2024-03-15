@@ -21,12 +21,13 @@ const dataelement_file_valid_users_file_code = "ADMIN_valid_users_backup_4_Event
 
 const date = new Date()
     .toLocaleString()
-    .replace(" ", "-")
-    .replace(":", "-")
-    .replace(":", "-")
-    .replace("/", "-")
-    .replace("/", "-")
-    .replace("\\", "-").replace(/,/g, '').replace(/-/g, '_');;
+    .replace(/ /g, "_")
+    .replace(/:/g, "_")
+    .replace(/\//g, "_")
+    .replace(/\\/, "_")
+    .replace("\\", "_")
+    .replace(/,/g, "")
+    .replace(/-/g, "_");
 const csvErrorFilename = `${date}_users_backup`;
 const filenameErrorOnPush = `${date}_users_push_error`;
 const filenameUsersPushed = `${date}_users_pushed.json`;
