@@ -1,9 +1,47 @@
 import { Id } from "./Base";
 
-export type Stats = {
+type StatsAttrs = {
     recordsSkipped: Id[];
     created: number;
     ignored: number;
     updated: number;
     errorMessage: string;
 };
+
+export class Stats {
+    public readonly recordsSkipped: Id[];
+    public readonly created: number;
+    public readonly ignored: number;
+    public readonly updated: number;
+    public readonly errorMessage: string;
+
+    constructor(attrs: StatsAttrs) {
+        this.recordsSkipped = attrs.recordsSkipped;
+        this.created = attrs.created;
+        this.ignored = attrs.ignored;
+        this.updated = attrs.updated;
+        this.errorMessage = attrs.errorMessage;
+    }
+
+    static combine(stats: Stats[]): Stats {
+        return stats.reduce((acum, stat) => {
+            return {
+                recordsSkipped: [...acum.recordsSkipped, ...stat.recordsSkipped],
+                errorMessage: `${acum.errorMessage}${stat.errorMessage}`,
+                created: acum.created + stat.created,
+                ignored: acum.ignored + stat.ignored,
+                updated: acum.updated + stat.updated,
+            };
+        }, Stats.empty());
+    }
+
+    static empty(): Stats {
+        return {
+            recordsSkipped: [],
+            errorMessage: "",
+            created: 0,
+            ignored: 0,
+            updated: 0,
+        };
+    }
+}

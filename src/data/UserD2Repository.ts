@@ -150,24 +150,7 @@ export class UserD2Repository implements UserRepository {
                 });
         });
 
-        return stats.reduce(
-            (acum, stat) => {
-                return {
-                    recordsSkipped: [...acum.recordsSkipped, ...stat.recordsSkipped],
-                    errorMessage: `${acum.errorMessage}${stat.errorMessage}`,
-                    created: acum.created + stat.created,
-                    ignored: acum.ignored + stat.ignored,
-                    updated: acum.updated + stat.updated,
-                };
-            },
-            {
-                recordsSkipped: [],
-                errorMessage: "",
-                created: 0,
-                ignored: 0,
-                updated: 0,
-            }
-        );
+        return Stats.combine(stats);
     }
 
     async getAll(): Async<User[]> {
