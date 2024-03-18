@@ -398,3 +398,15 @@ yarn start users migrate \
     "attachments": ["path_to_file.txt"]
 }
 ```
+
+## Move Attributes from a Program
+
+Get all the TEIS in the program and move the value from the attribute in the argument `--from-attribute-id` to the attribute `--to-attribute-id`. Then delete the value in `--from-attribute-id`.
+
+```bash
+yarn start programs move-attribute \
+--url='http://USER:PASSWORD@HOST:PORT' \
+--program-id=WCJhvPcJomX \
+--from-attribute-id=MyOceAlOxLK \
+--to-attribute-id=YqcpwxxRc1D
+```
