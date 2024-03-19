@@ -1,4 +1,4 @@
-import { Id } from "types/d2-api";
+import { Id } from "domain/entities/Base";
 
 export interface IndicatorsRepository {
     get(ids: Id[]): Promise<Indicator[]>;

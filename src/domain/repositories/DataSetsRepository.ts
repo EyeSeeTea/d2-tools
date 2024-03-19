@@ -1,6 +1,5 @@
-import { Id, Identifiable } from "domain/entities/Base";
+import { Id, Identifiable, Ref } from "domain/entities/Base";
 import { DataSet, DataSetMetadata, DataSetToCompare } from "domain/entities/DataSet";
-import { Id, Ref } from "types/d2-api";
 
 export interface DataSetsRepository {
     get(ids: Id[]): Promise<Record<Id, DataSet>>;
