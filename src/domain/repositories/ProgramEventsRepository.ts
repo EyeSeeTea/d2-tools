@@ -17,4 +17,5 @@ export interface GetOptions {
     orgUnitMode?: "SELECTED" | "CHILDREN" | "DESCENDANTS";
     startDate?: Timestamp;
     endDate?: Timestamp;
+    eventsIds?: Id[];
 }
