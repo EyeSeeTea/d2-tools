@@ -188,6 +188,11 @@
   resolved "https://registry.yarnpkg.com/@types/json-schema/-/json-schema-7.0.9.tgz#97edc9037ea0c38585320b28964dde3b39e4660d"
   integrity sha512-qcUXuemtEu+E5wZSJHNxUXeCZhAfXKQ41D+duX+VYPde7xyEVZci+/oXKJL13tnRs9lR2pr4fod59GT6/X1/yQ==
 
+"@types/json-schema@7.0.12":
+  version "7.0.12"
+  resolved "https://registry.yarnpkg.com/@types/json-schema/-/json-schema-7.0.12.tgz#d70faba7039d5fca54c83c7dbab41051d2b6f6cb"
+  integrity sha512-Hr5Jfhc9eYOQNPYO5WLDq/n4jqijdHNlDXjuAQkkt+mWdQR+XJToOHrsD4cPaMXpn6KO7y2+wM8AZEs8VpBLVA==
+
 "@types/json5@^0.0.29":
   version "0.0.29"
   resolved "https://registry.yarnpkg.com/@types/json5/-/json5-0.0.29.tgz#ee28707ae94e11d2b827bcbe5270bcea7f3e71ee"
@@ -3021,6 +3026,13 @@ pupa@^2.1.1:
   integrity sha512-l1jNAspIBSFqbT+y+5FosojNpVpF94nlI+wDUpqP9enwOTfHx9f0gh5nB96vl+6yTpsJsypeNrwfzPrKuHB41A==
   dependencies:
     escape-goat "^2.0.0"
+
+purify-ts@2.0.1:
+  version "2.0.1"
+  resolved "https://registry.yarnpkg.com/purify-ts/-/purify-ts-2.0.1.tgz#1317af1791f1d45727f496309d215145f32594bc"
+  integrity sha512-g17AdcyNtXyUuLgMfQN8bS2xPiTrxxkebe5Ssy234NX8ZpE2Nbk6bIXO5MNapFVb77jcv7a4Xt9NfPtuCLGiBQ==
+  dependencies:
+    "@types/json-schema" "7.0.12"
 
 qs@6.9.7:
   version "6.9.7"

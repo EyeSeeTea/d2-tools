@@ -28,6 +28,7 @@
         "loglevel": "^1.8.0",
         "luxon": "3.4.2",
         "nodemailer": "^6.7.5",
+        "purify-ts": "2.0.1",
         "random-seed": "^0.3.0",
         "simple-node-logger": "^21.8.12",
         "xlsx": "^0.18.5"
