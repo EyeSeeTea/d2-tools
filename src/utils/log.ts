@@ -11,7 +11,7 @@ function getLogger(logLevelIndex: number, level: LogLevel) {
     return function writer(message: string) {
         if (logLevelIndex >= levelIndex) {
             const ts = new Date().toISOString();
-            process.stderr.write(`[${level}] [${ts}] ${message}\n`);
+            process.stderr.write(`[${level.toUpperCase()} ${ts}] ${message}\n`);
         }
     };
 }

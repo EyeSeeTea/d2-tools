@@ -1,4 +1,4 @@
-import { Id, Ref } from "./Base";
+import { Id, NamedRef, Ref } from "./Base";
 
 export interface DataSetToCompare {
     id: Id;
@@ -46,13 +46,14 @@ export interface DataSetMetadata {
 export interface DataSet {
     id: Id;
     name: string;
+    code: string;
     categoryCombo: CategoryCombo;
     dataSetElements: Array<{
         dataElement: DataSetDataElement;
         categoryCombo?: CategoryCombo;
     }>;
     dataInputPeriods: Array<{ period: { id: string } }>;
-    organisationUnits: Ref[];
+    organisationUnits: NamedRef[];
 }
 
 interface CategoryCombo {
@@ -62,5 +63,7 @@ interface CategoryCombo {
 
 export interface DataSetDataElement {
     id: Id;
+    code: string;
+    name: string;
     categoryCombo: CategoryCombo;
 }

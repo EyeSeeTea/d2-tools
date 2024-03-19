@@ -1,13 +1,24 @@
 import { Async } from "domain/entities/Async";
-import { MetadataObject } from "domain/entities/MetadataObject";
+import {
+    MetadataModel,
+    MetadataObject,
+    MetadataObjectWithTranslations,
+} from "domain/entities/MetadataObject";
+import { Pager } from "domain/entities/Pager";
 
 export interface MetadataRepository {
-    get(models: string[]): Async<MetadataObject[]>;
-    save(objects: MetadataObject[], options: SaveOptions): Async<{ payload: Payload; stats: object }>;
+    getPaginated(options: { model: MetadataModel; page: number }): Async<Paginated<MetadataObject>>;
+    getAllWithTranslations(models: MetadataModel[]): Async<MetadataObjectWithTranslations[]>;
+    save<Obj extends MetadataObject>(
+        objects: Obj[],
+        options: SaveOptions
+    ): Async<{ payload: Payload; stats: object }>;
 }
 
-export type Payload = object;
+export type Payload = Record<MetadataModel, object[]>;
 
 export interface SaveOptions {
     dryRun: boolean;
 }
+
+export type Paginated<T> = { objects: T[]; pager: Pager };

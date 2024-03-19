@@ -16,6 +16,9 @@ import { RunProgramRulesUseCase } from "domain/usecases/RunProgramRulesUseCase";
 import { GetDuplicatedEventsUseCase, orgUnitModes } from "domain/usecases/GetDuplicatedEventsUseCase";
 import { ProgramEventsD2Repository } from "data/ProgramEventsD2Repository";
 import { ProgramEventsExportCsvRepository } from "data/ProgramEventsExportCsvRepository";
+import { DeleteProgramDataValuesUseCase } from "domain/usecases/DeleteProgramDataValuesUseCase";
+import { MoveProgramAttributeUseCase } from "domain/usecases/MoveProgramAttributeUseCase";
+import { TrackedEntityD2Repository } from "data/TrackedEntityD2Repository";
 
 export function getCommand() {
     return subcommands({
@@ -25,6 +28,8 @@ export function getCommand() {
             import: importCmd,
             "run-program-rules": runProgramRulesCmd,
             "get-duplicated-events": getDuplicatedEventsCmd,
+            "delete-data-values": deleteDataValuesCmd,
+            "move-attribute": moveAttribute,
         },
     });
 }
@@ -98,6 +103,11 @@ const runProgramRulesCmd = command({
             long: "org-units-ids",
             description: "List of organisation units to filter (comma-separated)",
         }),
+        orgUnitGroupIds: option({
+            type: optional(StringsSeparatedByCommas),
+            long: "org-unit-groups-ids",
+            description: "List of organisation unit groups to filter (comma-separated)",
+        }),
         teiId: option({
             type: optional(string),
             long: "tei-id",
@@ -126,6 +136,10 @@ const runProgramRulesCmd = command({
             type: optional(string),
             long: "save-payload",
             description: "Save JSON payload with event/TEIs",
+        }),
+        backup: flag({
+            long: "backup",
+            description: "Save original event/TEIs (backup-PAYLOAD-PATH)",
         }),
     },
     handler: async args => {
@@ -189,5 +203,104 @@ const getDuplicatedEventsCmd = command({
         const options = _.omit(args, ["url"]);
 
         new GetDuplicatedEventsUseCase(eventsRepository, eventsExportRepository).execute(options);
+    },
+});
+
+const moveAttribute = command({
+    name: "move-attribute",
+    handler: args => {
+        const api = getD2Api(args.url);
+        const trackedEntityRepository = new TrackedEntityD2Repository(api);
+        new MoveProgramAttributeUseCase(trackedEntityRepository).execute(args);
+    },
+    args: {
+        ...getApiUrlOptions(),
+        programId: option({
+            type: string,
+            long: "program-id",
+            description: "Program ID",
+        }),
+        fromAttributeId: option({
+            type: string,
+            long: "from-attribute-id",
+            description: "Attribute ID",
+        }),
+        toAttributeId: option({
+            type: string,
+            long: "to-attribute-id",
+            description: "Attribute ID",
+        }),
+    },
+});
+
+const orgUnitsIdsArg = option({
+    type: StringsSeparatedByCommas,
+    long: "org-units-ids",
+    description: "List of organisation units (comma-separated)",
+});
+
+const orgUnitModeArg = option({
+    type: optional(choiceOf(orgUnitModes)),
+    long: "org-unit-mode",
+    description: `Orgunit mode: ${orgUnitModes.join(", ")}`,
+});
+
+const startDateArg = option({
+    type: optional(string),
+    long: "start-date",
+    description: "Start date",
+});
+
+const endDateArg = option({
+    type: optional(string),
+    long: "end-date",
+    description: "End date",
+});
+
+const dataElementIdsInclude = option({
+    type: optional(StringsSeparatedByCommas),
+    long: "include-data-elements-ids",
+    description: "List of data elements to include (comma-separated)",
+});
+
+const dataElementIdsExclude = option({
+    type: optional(StringsSeparatedByCommas),
+    long: "exclude-data-elements-ids",
+    description: "List of data elements to include (comma-separated)",
+});
+
+const deleteDataValuesCmd = command({
+    name: "Duplicated events",
+    description: "Detect and delete duplicated events for event/tracker programs",
+    args: {
+        ...getApiUrlOptions(),
+        programIds: programIdsOptions,
+        orgUnitsIds: orgUnitsIdsArg,
+        orgUnitMode: orgUnitModeArg,
+        startDate: startDateArg,
+        endDate: endDateArg,
+        dataElementsIdsInclude: dataElementIdsInclude,
+        dataElementsIdsExclude: dataElementIdsExclude,
+        saveBackup: option({
+            type: optional(string),
+            long: "save-backup",
+            description: "Save backup to JSON file",
+        }),
+        savePayload: option({
+            type: optional(string),
+            long: "save-payload",
+            description: "Save payload to JSON file",
+        }),
+        post: flag({
+            long: "post",
+            description: "Delete data values",
+        }),
+    },
+    handler: async args => {
+        const api = getD2ApiFromArgs(args);
+        const eventsRepository = new ProgramEventsD2Repository(api);
+        const options = _.omit(args, ["url"]);
+
+        new DeleteProgramDataValuesUseCase(eventsRepository).execute(options);
     },
 });
