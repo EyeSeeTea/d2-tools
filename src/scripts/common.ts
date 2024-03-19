@@ -1,11 +1,18 @@
 import { option, optional, string, Type } from "cmd-ts";
 import _ from "lodash";
+import { SocksProxyAgent } from "socks-proxy-agent";
 import { D2Api } from "types/d2-api";
 import { isElementOfUnion } from "utils/ts-utils";
 
 export function getD2Api(url: string): D2Api {
-    const { baseUrl, auth } = getApiOptionsFromUrl(url);
-    return new D2Api({ baseUrl, auth });
+    const options = getApiOptionsFromUrl(url);
+    return buildD2Api(options);
+}
+
+function buildD2Api(options: { baseUrl: string; auth: Auth }): D2Api {
+    const socksProxyUrl = process.env.ALL_PROXY;
+    const agent = socksProxyUrl ? new SocksProxyAgent(socksProxyUrl) : undefined;
+    return new D2Api({ ...options, backend: "xhr", agent: agent });
 }
 
 function getApiOptionsFromUrl(url: string): { baseUrl: string; auth: Auth } {
@@ -25,7 +32,7 @@ export function getD2ApiFromArgs(args: D2ApiArgs): D2Api {
     const { baseUrl, auth } = args.auth
         ? { baseUrl: args.url, auth: args.auth }
         : getApiOptionsFromUrl(args.url);
-    return new D2Api({ baseUrl, auth });
+    return buildD2Api({ baseUrl, auth });
 }
 
 export function getApiUrlOption(options?: { long: string }) {
