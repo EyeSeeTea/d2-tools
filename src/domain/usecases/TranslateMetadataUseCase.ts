@@ -7,7 +7,7 @@ import { Translation } from "domain/entities/Translation";
 import log from "utils/log";
 import { FieldTranslations } from "domain/entities/FieldTranslations";
 import { LocalesRepository } from "domain/repositories/LocalesRepository";
-import { MetadataObject } from "domain/entities/MetadataObject";
+import { MetadataObjectWithTranslations } from "domain/entities/MetadataObject";
 import { Maybe } from "utils/ts-utils";
 import { getId } from "domain/entities/Base";
 
@@ -56,7 +56,7 @@ export class TranslateMetadataUseCase {
             .uniq()
             .value();
 
-        const objects = await this.repositories.metadata.get(models);
+        const objects = await this.repositories.metadata.getAllWithTranslations(models);
         const objectsWithTranslations = this.addTranslations(objects, fieldTranslations);
         const objectsWithChanges = _.differenceWith(objectsWithTranslations, objects, _.isEqual);
 
@@ -64,16 +64,16 @@ export class TranslateMetadataUseCase {
     }
 
     private addTranslations(
-        objects: MetadataObject[],
+        objects: MetadataObjectWithTranslations[],
         fieldTranslations: FieldTranslations
-    ): MetadataObject[] {
+    ): MetadataObjectWithTranslations[] {
         const objectsById = _.keyBy(objects, obj => `${obj.model}:${obj.id}`);
         const objectsByCode = _.keyBy(objects, obj => `${obj.model}:${obj.code}`);
         const objectsByNameCI = _.keyBy(objects, obj => `${obj.model}:${obj.name?.toLowerCase()}`);
 
         const objectsUpdated = _(fieldTranslations)
-            .map((fieldTranslation): Maybe<MetadataObject> => {
-                const get = (mapping: Record<string, MetadataObject>, value: Maybe<string>) =>
+            .map((fieldTranslation): Maybe<MetadataObjectWithTranslations> => {
+                const get = (mapping: Record<string, MetadataObjectWithTranslations>, value: Maybe<string>) =>
                     value ? mapping[`${fieldTranslation.model}:${value}`] : undefined;
 
                 const { identifier } = fieldTranslation;
