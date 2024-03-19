@@ -1,4 +1,4 @@
-import { Id, NamedRef } from "./Base";
+import { Id, NamedRef, Ref, Username } from "./Base";
 import _ from "lodash";
 import { Timestamp } from "./Date";
 import { Maybe } from "utils/ts-utils";
@@ -13,13 +13,34 @@ export interface ProgramEvent {
     created: Timestamp;
     status: EventStatus;
     date: Timestamp;
+    dueDate: Timestamp;
+}
+
+export interface ProgramEventToSave {
+    id: Id;
+    program: Ref;
+    orgUnit: Ref;
+    programStage: Ref;
+    dataValues: EventDataValue[];
+    trackedEntityInstanceId?: Id;
+    status: EventStatus;
+    date: Timestamp;
+    dueDate: Timestamp;
 }
 
 type EventStatus = "ACTIVE" | "COMPLETED" | "VISITED" | "SCHEDULED" | "OVERDUE" | "SKIPPED";
 
+export const orgUnitModes = ["SELECTED", "CHILDREN", "DESCENDANTS"] as const;
+
+export type OrgUnitMode = typeof orgUnitModes[number];
+
 export interface EventDataValue {
     dataElementId: Id;
     value: string;
+    storedBy: Username;
+    oldValue?: string;
+    providedElsewhere?: boolean;
+    lastUpdated: Timestamp;
 }
 
 export class DuplicatedProgramEvents {

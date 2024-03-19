@@ -14,9 +14,11 @@ export interface RunRulesOptions {
     teiId?: Id;
     programRulesIds?: Id[];
     orgUnitsIds?: Id[];
+    orgUnitGroupIds?: Id[];
     startDate?: Timestamp;
     endDate?: Timestamp;
     reportPath?: string;
     post: boolean;
     payloadPath?: string;
+    backup: boolean;
 }

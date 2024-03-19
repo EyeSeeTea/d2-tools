@@ -2,12 +2,19 @@ import { option, optional, string, Type } from "cmd-ts";
 import fs from "fs";
 import path from "path";
 import _ from "lodash";
+import { SocksProxyAgent } from "socks-proxy-agent";
 import { D2Api } from "types/d2-api";
 import { isElementOfUnion } from "utils/ts-utils";
 
 export function getD2Api(url: string): D2Api {
-    const { baseUrl, auth } = getApiOptionsFromUrl(url);
-    return new D2Api({ baseUrl, auth });
+    const options = getApiOptionsFromUrl(url);
+    return buildD2Api(options);
+}
+
+function buildD2Api(options: { baseUrl: string; auth: Auth }): D2Api {
+    const socksProxyUrl = process.env.ALL_PROXY;
+    const agent = socksProxyUrl ? new SocksProxyAgent(socksProxyUrl) : undefined;
+    return new D2Api({ ...options, backend: "xhr", agent: agent });
 }
 
 function getApiOptionsFromUrl(url: string): { baseUrl: string; auth: Auth } {
@@ -27,7 +34,7 @@ export function getD2ApiFromArgs(args: D2ApiArgs): D2Api {
     const { baseUrl, auth } = args.auth
         ? { baseUrl: args.url, auth: args.auth }
         : getApiOptionsFromUrl(args.url);
-    return new D2Api({ baseUrl, auth });
+    return buildD2Api({ baseUrl, auth });
 }
 
 export function getApiUrlOption(options?: { long: string }) {
@@ -71,6 +78,21 @@ export const StringsSeparatedByCommas: Type<string, string[]> = {
     },
 };
 
+export const HierarchyLevel: Type<string, number> = {
+    async from(str) {
+        const n = Number(str);
+        if (!Number.isInteger(n) || n < 0) throw new Error(`Not a valid hierarchy level: ${n}`);
+        return n;
+    },
+};
+
+export const OrgUnitPath: Type<string, string> = {
+    async from(str) {
+        if (!isOrgUnitPath(str)) throw new Error(`Not a dhis2 orgunit path: ${str}`);
+        return str;
+    },
+};
+
 export const IDString: Type<string, string> = {
     async from(str) {
         if (_(str).isEmpty()) throw new Error("Value cannot be empty");
@@ -78,6 +100,24 @@ export const IDString: Type<string, string> = {
         return str;
     },
 };
+
+// Return true if str is an organisation unit path.
+// Example of a valid path: "/kbv9iwCpokl/ByqsEM8ZsAz/emI2bZvcq9K"
+function isOrgUnitPath(str: string): boolean {
+    return str.startsWith("/") && str.slice(1).split("/").every(isUid);
+}
+
+// Return true if uid is a valid dhis2 uid.
+// Example of a valid uid: "ByqsEM8ZsAz"
+function isUid(uid: string): boolean {
+    const alpha = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz".split("");
+    const alnum = alpha.concat("0123456789".split(""));
+
+    const isAlpha = (c: string | undefined) => c !== undefined && alpha.includes(c);
+    const areAllAlnum = (str: string) => str.split("").every(c => alnum.includes(c));
+
+    return uid.length === 11 && isAlpha(uid[0]) && areAllAlnum(uid.slice(1));
+}
 
 export const IdsSeparatedByCommas: Type<string, string[]> = {
     async from(str) {

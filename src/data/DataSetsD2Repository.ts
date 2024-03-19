@@ -4,6 +4,7 @@ import { D2Api, Id, PostOptions, Ref } from "types/d2-api";
 import { dataSetSchema } from "./DataSetSchema";
 import { DataSet, DataSetMetadata, DataSetToCompare } from "domain/entities/DataSet";
 import { runMetadata } from "./dhis2-utils";
+import { Identifiable } from "domain/entities/Base";
 
 export class DataSetsD2Repository implements DataSetsRepository {
     constructor(private api: D2Api) {}
@@ -86,20 +87,35 @@ export class DataSetsD2Repository implements DataSetsRepository {
     getSchema(): object {
         return dataSetSchema;
     }
+
+    async getByIdentifiables(values: Identifiable[]): Promise<DataSet[]> {
+        const metadata$ = this.api.metadata.get({
+            dataSets: {
+                fields,
+                filter: { identifiable: { in: values } },
+            },
+        });
+
+        const { dataSets } = await metadata$.getData();
+        return dataSets;
+    }
 }
 
 const fields = {
     $owner: true,
     id: true,
     name: true,
+    code: true,
     categoryCombo: { id: true, categoryOptionCombos: { id: true, name: true } },
     dataSetElements: {
         dataElement: {
             id: true,
+            name: true,
+            code: true,
             categoryCombo: { id: true, categoryOptionCombos: { id: true } },
         },
         categoryCombo: { id: true, categoryOptionCombos: { id: true } },
     },
     dataInputPeriods: { period: { id: true } },
-    organisationUnits: { id: true },
+    organisationUnits: { id: true, name: true },
 } as const;
