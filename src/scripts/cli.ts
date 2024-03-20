@@ -12,6 +12,7 @@ import * as sync from "./commands/sync";
 import * as users from "./commands/users";
 import * as loadTesting from "./commands/loadTesting";
 import * as categoryoptions from "./commands/categoryoptions";
+import * as indicators from "./commands/indicators";
 
 export function runCli() {
     const cliSubcommands = subcommands({
@@ -28,6 +29,7 @@ export function runCli() {
             users: users.getCommand(),
             loadTesting: loadTesting.getCommand(),
             categoryoptions: categoryoptions.getCommand(),
+            indicators: indicators.getCommand(),
         },
     });
 
