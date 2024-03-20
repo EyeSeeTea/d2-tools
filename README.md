@@ -447,10 +447,10 @@ $ LOG_LEVEL=debug node dist/index.js sync validate \
 ### Get Indicators items report
 Get a CSV with the IDs of the items used by Indicators:
 ```console
-shell:~$ yarn start indicators get-de-values-report \
---url='http://USER:PASSWORD@HOST:PORT' \
---indicators=vYRMQ43Zl3Y,vYRMQ43Zl3Y \
---ds-filter=vYRMQ43Zl3Y,vYRMQ43Zl3Y \
+shell:~$ yarn start indicators get-ref-ids \
+--url='https://admin:district@play.dhis2.org/2.38.6/' \
+--indicators=Uvn6LCg7dVU,ReUHfIn0pTQ \
+--ds-filter=QX4ZTUbOt3a,aLpVgfXiz0f \
 --file=./indicatorsRefIDs.csv
 ```
 Working items types: dataElements, programDataElements, programIndicator.
@@ -468,11 +468,11 @@ UID | Indicator | Numerator | Numerator Description | List of referenced dataEle
 Get a CSV with a report of the values of dataElements and categoryOptionCombos:
 ```console
 shell:~$ yarn start indicators get-de-values-report \
---url='http://USER:PASSWORD@HOST:PORT' \
---indicators=vYRMQ43Zl3Y,vYRMQ43Zl3Y \
---org-unit=vYRMQ43Zl3Y \
---period=2000 \
---ds-filter=vYRMQ43Zl3Y,vYRMQ43Zl3Y \
+--url='https://admin:district@play.dhis2.org/2.38.6/' \
+--indicators=Uvn6LCg7dVU,ReUHfIn0pTQ \
+--org-unit=DiszpKrYNg8 \
+--period=2024 \
+--ds-filter=QX4ZTUbOt3a,aLpVgfXiz0f \
 --file=./indicatorsValuesReport.csv
 ```
 
