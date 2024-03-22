@@ -13,20 +13,63 @@ import { UserMonitoringD2Repository } from "data/UserMonitoringD2Repository";
 import { AuthOptions } from "domain/entities/UserMonitoring";
 import { UserGroupsMonitorRepository } from "data/UserGroupsMonitorRepository";
 import { RunUserMonitoringReportUseCase } from "domain/usecases/RunUserMonitoringReportUseCase";
+import { RunReportUsersWithout2FA } from "domain/usecases/RunReportUsersWithout2FA";
 
 export function getCommand() {
     return subcommands({
         name: "users-monitoring",
         cmds: {
-            "run-users-monitoring": runUsersMonitoringCmd,
+            "run-permissions-fixer": runUsersMonitoringCmd,
+            "run-2fa-reporter": run2FAReporterCmd,
         },
     });
 }
 
-const runUsersMonitoringCmd = command({
-    name: "run-users-monitoring",
+const run2FAReporterCmd = command({
+    name: "run-2fa-reporter",
     description:
-        "Run user monitoring, a --config-file must be provided (usersmonitoring run-users-monitoring --config-file config.json)",
+        "Run user 2factor reporter, a --config-file must be provided (usersmonitoring run-2fa-reporter --config-file config.json)",
+    args: {
+        config_file: option({
+            type: string,
+            long: "config-file",
+            description: "Config file",
+        }),
+    },
+
+    handler: async args => {
+        const auth = getAuthFromFile(args.config_file);
+        const api = getD2Api(auth.apiurl);
+        const usersRepository = new UserMonitoringD2Repository(api);
+        const usersMonitoringMetadataRepository = new UserMonitoringMetadataD2Repository(
+            api,
+            usersRepository
+        );
+        const externalConfigRepository = new D2ExternalConfigRepository(api);
+        const userMonitoringReportRepository = new UserMonitoringReportD2Repository(api);
+        log.debug(`Get config: ${auth.apiurl}`);
+
+        const config = await new GetUserMonitoringConfigUseCase(externalConfigRepository).execute();
+
+        log.info(`Run user Role monitoring`);
+        const response = await new RunReportUsersWithout2FA(
+            usersMonitoringMetadataRepository,
+            usersRepository
+        ).execute(config);
+
+        config.userGroupsResponse = response;
+        log.info(`Save monitoring results`);
+        new RunUserMonitoringReportUseCase(
+            usersMonitoringMetadataRepository,
+            userMonitoringReportRepository
+        ).execute(config);
+    },
+});
+
+const runUsersMonitoringCmd = command({
+    name: "run-permissions-fixer",
+    description:
+        "Run user monitoring, a --config-file must be provided (usersmonitoring run-permissions-fixer --config-file config.json)",
     args: {
         config_file: option({
             type: string,
