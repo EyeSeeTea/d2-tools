@@ -4,12 +4,10 @@ import {
     TemplateGroupWithAuthorities,
     User,
     UserMonitoringCountResponse,
+    UsersOptions,
 } from "domain/entities/UserMonitoring";
 import { UserGroupRepository } from "domain/repositories/UserGroupRepository";
-import {
-    UserMonitoringMetadataRepository,
-    UsersOptions,
-} from "domain/repositories/UserMonitoringMetadataRepository";
+import { UserMonitoringMetadataRepository } from "domain/repositories/UserMonitoringMetadataRepository";
 import { UserMonitoringRepository } from "domain/repositories/UserMonitoringRepository";
 import _ from "lodash";
 import log from "utils/log";

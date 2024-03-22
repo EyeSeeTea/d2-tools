@@ -8,12 +8,10 @@ import {
     User,
     UserMonitoringDetails,
     UserRes,
+    UsersOptions,
 } from "domain/entities/UserMonitoring";
 import { UserMonitoringRepository } from "domain/repositories/UserMonitoringRepository";
-import {
-    UserMonitoringMetadataRepository,
-    UsersOptions,
-} from "domain/repositories/UserMonitoringMetadataRepository";
+import { UserMonitoringMetadataRepository } from "domain/repositories/UserMonitoringMetadataRepository";
 import log from "utils/log";
 import { getUid } from "utils/uid";
 import _ from "lodash";
@@ -28,7 +26,6 @@ export class RunUserMonitoringUserRolesUseCase {
         const templatesWithAuthorities = await this.userMonitoringMetadataRepository.getTemplateAuthorities(
             options
         );
-        const responseUserGroups = options.responseUserGroups;
 
         const usersToProcessRoles = await this.userMonitoringRepository.getAllUsers(
             options.excludedUsers.map(item => {

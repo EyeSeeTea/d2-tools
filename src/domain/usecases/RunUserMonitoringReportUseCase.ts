@@ -4,12 +4,10 @@ import {
     TemplateGroupWithAuthorities,
     User,
     UserMonitoringCountResponse,
+    UsersOptions,
 } from "domain/entities/UserMonitoring";
 import { UserGroupRepository } from "domain/repositories/UserGroupRepository";
-import {
-    UserMonitoringMetadataRepository,
-    UsersOptions,
-} from "domain/repositories/UserMonitoringMetadataRepository";
+import { UserMonitoringMetadataRepository } from "domain/repositories/UserMonitoringMetadataRepository";
 import { UserMonitoringReportRepository } from "domain/repositories/UserMonitoringReportRepository";
 import _ from "lodash";
 import log from "utils/log";
@@ -21,14 +19,14 @@ export class RunUserMonitoringReportUseCase {
     ) {}
 
     async execute(options: UsersOptions): Async<void> {
-        const { responseUserGroups, responseUserRoles } = options;
+        const { userRolesResponse, userGroupsResponse } = options;
 
-        const finalUserGroup = responseUserGroups ?? {
+        const finalUserGroup = userGroupsResponse ?? {
             listOfAffectedUsers: [],
             invalidUsersCount: 0,
             response: "",
         };
-        const finalUserRoles = responseUserRoles ?? {
+        const finalUserRoles = userRolesResponse ?? {
             listOfAffectedUsers: [],
             invalidUsersCount: 0,
             response: "",
