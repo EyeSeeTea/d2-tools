@@ -14,6 +14,7 @@ export const Namespace = {
     EXCLUDE_ROLES: "EXCLUDE_ROLES",
     EXCLUDE_USERS: "EXCLUDE_USERS",
     TEMPLATE_GROUPS: "TEMPLATE_GROUPS",
+    TWO_FACTOR_GROUP_ID: "TWO_FACTOR_GROUP_ID",
 };
 
 export const NamespaceProperties: Record<string, string[]> = {
