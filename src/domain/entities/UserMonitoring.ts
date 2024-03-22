@@ -75,6 +75,28 @@ export type UserMonitoringCountResponse = {
     response: string;
 };
 
+export type UserWithoutTwoFactor = {
+    invalidUsersCount: number;
+    listOfAffectedUsers: Item[];
+    response: string;
+};
+
+export interface UsersOptions {
+    userRolesResponse?: UserMonitoringDetails;
+    userGroupsResponse?: UserMonitoringCountResponse;
+    templates: TemplateGroup[];
+    excludedRoles: Item[];
+    excludedUsers: Item[];
+    excludedRolesByUser: RolesByUser[];
+    excludedRolesByGroup: RolesByGroup[];
+    excludedRolesByRole: RolesByRoles[];
+    pushReport: boolean;
+    pushProgramId: Item;
+    minimalGroupId: Item;
+    minimalRoleId: Item;
+    twoFactorGroup: Item;
+}
+
 export interface TemplateGroup {
     group: Item;
     template: Item;
@@ -105,20 +127,6 @@ export interface RolesByGroup {
 export interface Item {
     id: string;
     name: string;
-}
-export interface UsersOptions {
-    userRolesResponse?: UserMonitoringCountResponse;
-    userGroupsResponse?: UserMonitoringCountResponse;
-    templates: TemplateGroup[];
-    excludedRoles: Item[];
-    excludedUsers: Item[];
-    excludedRolesByUser: RolesByUser[];
-    excludedRolesByGroup: RolesByGroup[];
-    excludedRolesByRole: RolesByRoles[];
-    pushReport: boolean;
-    pushProgramId: Item;
-    minimalGroupId: Item;
-    minimalRoleId: Item;
 }
 
 export interface AuthOptions {

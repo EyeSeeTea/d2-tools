@@ -87,6 +87,10 @@ export interface User {
     userRoles: IdItem[];
 }
 
+export interface Users {
+    users: User[];
+}
+
 export interface UserRole {
     created: StringDateTime;
     lastUpdated: StringDateTime;
