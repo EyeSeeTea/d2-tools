@@ -1,13 +1,35 @@
 import { D2Api } from "types/d2-api";
 import log from "utils/log";
-import { IdItem, User, UserGroup, UserRes } from "./d2-users/D2Users.types";
-import { getUid } from "utils/uid";
+import { Id } from "./d2-users/D2Users.types";
 import _ from "lodash";
 import { UserMonitoringRepository } from "domain/repositories/UserMonitoringRepository";
 import { Async } from "domain/entities/Async";
+import { User } from "domain/entities/UserMonitoring";
 
 export class UserMonitoringD2Repository implements UserMonitoringRepository {
     constructor(private api: D2Api) {}
+    async getUsersByGroupId(groupIds: string[]): Promise<Async<User[]>> {
+        log.info(`Get users by group: Users by ids: ${groupIds.join(",")}`);
+        const responses = await this.api
+            .get<Users>(
+                `/users.json?paging=false&fields=*,userCredentials[*]&filter=userGroups.id:in:[${groupIds.join(
+                    ","
+                )}]`
+            )
+            .getData();
+        return responses["users"];
+    }
+
+    async getByIds(ids: Id[]): Async<User[]> {
+        log.info(`Get metadata: Users by ids: ${ids.join(",")}`);
+        const responses = await this.api
+            .get<Users>(
+                `/users.json?paging=false&fields=*,userCredentials[*]&filter=id:in:[${ids.join(",")}]`
+            )
+            .getData();
+
+        return responses["users"];
+    }
 
     async getAllUsers(excludedUsers: string[], exclude?: boolean): Promise<Async<User[]>> {
         log.info(`Get metadata: All users except: ${excludedUsers.join(",")}`);

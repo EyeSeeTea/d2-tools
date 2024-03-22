@@ -18,13 +18,12 @@ import {
     Item,
     TemplateGroup,
     TemplateGroupWithAuthorities,
+    UserWithoutTwoFactor,
     UsersOptions,
-} from "domain/entities/UserMonitoring";
-import {
     UserMonitoringCountResponse,
     UserMonitoringDetails,
-    UserMonitoringMetadataRepository,
-} from "domain/repositories/UserMonitoringMetadataRepository";
+} from "domain/entities/UserMonitoring";
+import { UserMonitoringMetadataRepository } from "domain/repositories/UserMonitoringMetadataRepository";
 import { UserMonitoringRepository } from "domain/repositories/UserMonitoringRepository";
 
 export class UserMonitoringMetadataD2Repository implements UserMonitoringMetadataRepository {
@@ -37,6 +36,12 @@ export class UserMonitoringMetadataD2Repository implements UserMonitoringMetadat
         throw new Error("Method not implemented.");
     }
 
+    saveUsersWithoutTwoFactor(
+        program: ProgramMetadata,
+        response: UserWithoutTwoFactor
+    ): Promise<Async<string>> {
+        throw new Error("Method not implemented.");
+    }
     async getTemplateAuthorities(options: UsersOptions): Promise<Async<TemplateGroupWithAuthorities[]>> {
         const { templates: templateGroups, excludedRoles: excludedRoles } = options;
 

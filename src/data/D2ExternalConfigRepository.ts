@@ -42,6 +42,7 @@ export class D2ExternalConfigRepository implements UserMonitoringConfigRepositor
             minimalGroupId: config[Namespace.MINIMAL_GROUP],
             minimalRoleId: config[Namespace.MINIMAL_ROLE],
             pushProgramId: config[Namespace.PUSH_PROGRAM_ID],
+            twoFactorGroup: config[Namespace.TWO_FACTOR_GROUP_ID],
         };
     }
 }
