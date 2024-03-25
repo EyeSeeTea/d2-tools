@@ -18,7 +18,7 @@ export class GetIndicatorNumDenIDsUseCase {
         const cocDataElements = _.uniq(categoryOptionCombos.map(item => item.dataElement));
         const dataElementsList = [...dataElements, ...cocDataElements];
 
-        const dataSets = await this.dataSetsRepository.getDataSetByElementId(dataElementsList);
+        const dataSets = await this.dataSetsRepository.getByDataElements(dataElementsList);
 
         return {
             dataElementsList: dataElementsList,
@@ -40,7 +40,7 @@ export class GetIndicatorNumDenIDsUseCase {
         const indicatorsMetadata = await this.indicatorsRepository.get(indicatorsIDs);
 
         const indicatorsData = await Promise.all(
-            indicatorsMetadata.map(async indicatorsItem => {
+            indicatorsMetadata.map(async (indicatorsItem): Promise<indicatorDataRow> => {
                 const numerator = await this.processIndicatorsItem(
                     indicatorsItem.numerator,
                     dataSetFilterList
@@ -89,7 +89,7 @@ function processDEParams(exp: string) {
     const dataElems = _.uniq(exp.match(/(?:#\{.{11}\})/g)) ?? [];
 
     return _(dataElems)
-        .flatMap(item => {
+        .map(item => {
             const dataElement = trimItemSeparators(item, "#");
             return dataElement;
         })

@@ -69,7 +69,7 @@ export class DataSetsD2Repository implements DataSetsRepository {
         }
     }
 
-    async getDataSetByElementId(dataSetElements: Id[]): Promise<Ref[]> {
+    async getByDataElements(dataSetElements: Id[]): Promise<Ref[]> {
         const { dataSets } = await this.api.metadata
             .get({
                 dataSets: {

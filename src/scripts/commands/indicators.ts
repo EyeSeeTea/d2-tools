@@ -70,13 +70,13 @@ export function getCommand() {
                 type: IdsSeparatedByCommas,
                 long: "org-unit",
                 short: "o",
-                description: "ORG1",
+                description: "ORG_UNIT_ID1,ORG_UNIT_ID2,...",
             }),
             period: option({
                 type: periodYears,
                 long: "period",
                 short: "op",
-                description: "2000",
+                description: "YEAR1,YEAR2,...",
             }),
             dataSetFilterList: option({
                 type: optional(IdsSeparatedByCommas),

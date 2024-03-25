@@ -8,7 +8,7 @@ export interface DataSetsRepository {
     getComparableDataSets(ids: Id[]): Promise<Record<Id, DataSetToCompare>>;
     getSchema(): object;
     getByIdentifiables(values: Identifiable[]): Promise<DataSet[]>;
-    getDataSetByElementId(dataSetElements: Id[]): Promise<Ref[]>;
+    getByDataElements(dataSetElements: Id[]): Promise<Ref[]>;
 }
 
 export type OUCopyResult = "OK" | "ERROR" | "NO_CHANGE";

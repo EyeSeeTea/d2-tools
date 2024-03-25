@@ -23,7 +23,7 @@ export class GetIndicatorsDataElementsValuesReportUseCase {
         const cocDataElements = _.uniq(categoryOptionCombos.map(item => item.dataElement));
         const dataElementsList = [...dataElements, ...cocDataElements];
 
-        const dataSets = await this.dataSetsRepository.getDataSetByElementId(dataElementsList);
+        const dataSets = await this.dataSetsRepository.getByDataElements(dataElementsList);
 
         return {
             dataElements: dataElements,

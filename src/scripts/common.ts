@@ -162,11 +162,16 @@ function isDir(str: string): boolean {
 
 export const FilePath: Type<string, string> = {
     async from(str) {
+        // path does not resolve ~ to home dir
+        if (str.includes("~")) {
+            str = str.replace("~", require("os").homedir());
+        }
+
         const resolved = path.resolve(str);
 
         if (!fs.existsSync(resolved)) {
             const subPath = resolved.substring(0, resolved.lastIndexOf("/"));
-            if (fs.existsSync(resolved) && isDir(subPath)) {
+            if (fs.existsSync(subPath) && isDir(subPath)) {
                 return resolved;
             }
             throw new Error("Path doesn't exist");
