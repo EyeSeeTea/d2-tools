@@ -8,6 +8,7 @@ import {
 import { SpreadsheetXlsxDataSource } from "domain/repositories/SpreadsheetXlsxRepository";
 import log from "utils/log";
 import { Maybe } from "utils/ts-utils";
+import { getPluralModel } from "./dhis2-utils";
 
 const columnsMapping = {
     id: ["id", "uid"],
@@ -103,7 +104,7 @@ export class ImportTranslationsRepositorySpreadsheetRepository implements Import
             .compact()
             .value();
 
-        return { model: model, identifier: identifier, translations };
+        return { model: getPluralModel(model), identifier: identifier, translations };
     }
 
     private getHeaderValue(row: Row, column: ColumnsMappingKey): Maybe<string> {

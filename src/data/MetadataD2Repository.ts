@@ -3,7 +3,7 @@ import { D2Api } from "@eyeseetea/d2-api/2.36";
 import { Async } from "domain/entities/Async";
 import { Id } from "domain/entities/Base";
 import { MetadataRepository, Paginated, Payload, SaveOptions } from "domain/repositories/MetadataRepository";
-import { runMetadata } from "./dhis2-utils";
+import { getPluralModel, runMetadata } from "./dhis2-utils";
 import log from "utils/log";
 import {
     MetadataModel,
@@ -62,7 +62,7 @@ export class MetadataD2Repository implements MetadataRepository {
             const pageSize = 1_000;
 
             const res$ = this.api.get<{ pager: Pager } & { [K in string]: BasicD2Object[] }>(
-                `/${options.model}`,
+                `/${getPluralModel(options.model)}`,
                 {
                     fields: "id,name,code",
                     pageSize: pageSize,
@@ -103,7 +103,7 @@ export class MetadataD2Repository implements MetadataRepository {
                 }
             })
             .compact()
-            .groupBy(o => o.model + "s") // Metadata payload uses plural name for models.
+            .groupBy(o => getPluralModel(o.model)) // Metadata payload uses plural name for models.
             .mapValues(os => os.map(o => o.object))
             .value();
 
@@ -112,13 +112,14 @@ export class MetadataD2Repository implements MetadataRepository {
 
     private async getD2Metadata(models: string[]): Async<Metadata> {
         const params = _(models)
-            .map(model => [`${model}:fields`, ":owner"] as [string, string])
+            .map(model => [`${getPluralModel(model)}:fields`, ":owner"] as [string, string])
             .fromPairs()
             .value();
 
         type Model = string;
         type MetadataRes = Record<Model, Array<D2Object>>;
 
+        log.debug(`GET metadata: ${JSON.stringify(params)}`);
         return this.api.get<MetadataRes>("/metadata", params).getData();
     }
 
