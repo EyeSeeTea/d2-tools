@@ -63,3 +63,7 @@ export function promiseMap<T, S>(inputValues: T[], mapper: (value: T) => Promise
         );
     return inputValues.reduce(reducer, Promise.resolve([]));
 }
+
+export function getPluralModel(model: string): string {
+    return model.endsWith("s") ? model : model + "s";
+}
