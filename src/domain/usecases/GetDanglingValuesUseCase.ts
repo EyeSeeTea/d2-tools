@@ -11,11 +11,11 @@ import { DanglingDataValuesRepository } from "domain/repositories/DanglingDataVa
 import { Maybe } from "utils/ts-utils";
 import { DanglingDataValue } from "domain/entities/DanglingDataValue";
 import { NotificationsRepository } from "domain/repositories/NotificationsRepository";
+import { UserRepository } from "domain/repositories/UserRepository";
 
 interface GetDanglingValuesOptions {
     outputFile: Path;
-    notify?: Email[];
-
+    notify?: Recipient[];
     dataSetIds?: Id[];
     orgUnitIds?: Id[];
     periods?: string[];
@@ -32,7 +32,8 @@ export class GetDanglingValuesUseCase {
         private dataSetsRepository: DataSetsRepository,
         private dataValuesRepository: DataValuesRepository,
         private danglingDataValuesRepository: DanglingDataValuesRepository,
-        private notificationsRepository: NotificationsRepository
+        private notificationsRepository: NotificationsRepository,
+        private recipientRepository: UserRepository
     ) {}
 
     async execute(options: GetDanglingValuesOptions) {
@@ -75,13 +76,20 @@ export class GetDanglingValuesUseCase {
 
         const sendAttachment = danglingValues.length > 0;
 
-        log.debug(`Send report to: ${options.notify.join(", ")}`);
+        const [emailsBase, ids] = _.partition(options.notify, s => s.includes("@"));
+        const emailsFromMetadata = await this.recipientRepository.getByIds(ids);
+        const emails = _.concat(
+            emailsBase,
+            emailsFromMetadata.map(({ email }) => email)
+        );
+
+        log.debug(`Send report to: ${emails.join(", ")}`);
 
         await this.notificationsRepository.send({
-            recipients: options.notify,
+            recipients: emails,
             subject: `Dangling values report`,
-            body: `Dangling values: ${counts.all} (non-zero: ${counts.nonZero})`,
-            attachments: sendAttachment ? [{ type: "file", file: options.outputFile }] : [],
+            body: { type: "text", contents: `Dangling values: ${counts.all} (non-zero: ${counts.nonZero})` },
+            attachments: sendAttachment ? [{ type: "file", path: options.outputFile }] : [],
         });
     }
 
@@ -192,7 +200,7 @@ export class GetDanglingValuesUseCase {
     }
 }
 
-type Email = string;
+type Recipient = string; // email | userId | userGroupId
 type OrgUnitId = Id;
 type DataElementSetId = string; // dataElementId.cocId
 
