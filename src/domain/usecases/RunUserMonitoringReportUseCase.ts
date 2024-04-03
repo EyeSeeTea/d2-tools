@@ -37,7 +37,7 @@ export class RunUserMonitoringReportUseCase {
         };
         if (finalUserGroup.invalidUsersCount > 0 || finalUserRoles.invalidUsersCount > 0) {
             const program = await this.userMonitoringMetadataRepository.getMetadata(options.pushProgramId.id);
-            await this.userMonitoringReportRepository.pushReport(program, finalUserGroup, finalUserRoles);
+            await this.userMonitoringReportRepository.saveReport(program, finalUserGroup, finalUserRoles);
         }
     }
 }

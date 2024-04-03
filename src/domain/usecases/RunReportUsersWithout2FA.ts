@@ -5,13 +5,15 @@ import {
     UsersOptions,
 } from "domain/entities/UserMonitoring";
 import { UserMonitoringMetadataRepository } from "domain/repositories/UserMonitoringMetadataRepository";
+import { UserMonitoringReportRepository } from "domain/repositories/UserMonitoringReportRepository";
 import { UserMonitoringRepository } from "domain/repositories/UserMonitoringRepository";
 import _ from "lodash";
 
 export class RunReportUsersWithout2FA {
     constructor(
         private userMonitoringMetadataRepository: UserMonitoringMetadataRepository,
-        private userMonitoringRepository: UserMonitoringRepository
+        private userMonitoringRepository: UserMonitoringRepository,
+        private userMonitoringReportRepository: UserMonitoringReportRepository
     ) {}
 
     async execute(options: UsersOptions): Async<UserMonitoringCountResponse> {
@@ -35,7 +37,7 @@ export class RunReportUsersWithout2FA {
         };
         const program = await this.userMonitoringMetadataRepository.getMetadata(options.pushProgramId.id);
 
-        this.userMonitoringMetadataRepository.saveUsersWithoutTwoFactor(program, response);
+        this.userMonitoringReportRepository.saveUsersWithoutTwoFactor(program, response);
         return response;
     }
 }

@@ -73,7 +73,7 @@ const headers: Record<Attr, { title: string }> = {
 
 export class UserMonitoringReportD2Repository implements UserMonitoringReportRepository {
     constructor(private api: D2Api) {}
-    async saveUsersWithoutTwoFactor(program: ProgramMetadata, report: UserWithoutTwoFactor): Promise<void> {
+    async saveUsersWithoutTwoFactor(program: ProgramMetadata, report: UserWithoutTwoFactor): Promise<string> {
         const response = await this.pushUsersWithoutTwoFactorToDhis(
             report.invalidUsersCount.toString(),
             report.listOfAffectedUsers,
@@ -85,14 +85,15 @@ export class UserMonitoringReportD2Repository implements UserMonitoringReportRep
             throw new Error("Error on push report: " + JSON.stringify(response));
         } else {
             log.info("Report sent status: " + response.status);
+            return response.status;
         }
     }
 
-    async pushReport(
+    async saveReport(
         program: ProgramMetadata,
         responseGroups: UserMonitoringCountResponse,
         responseRoles: UserMonitoringDetails
-    ): Promise<Async<void>> {
+    ): Promise<Async<string>> {
         const userFixedId = await this.saveFileResource(
             JSON.stringify(responseRoles.usersFixed),
             filenameUsersPushed,
@@ -119,6 +120,9 @@ export class UserMonitoringReportD2Repository implements UserMonitoringReportRep
 
         if (response?.status != "OK") {
             await this.saveUserErrorsOnLogFile(responseRoles.userProcessed, responseRoles.eventid);
+            throw new Error("Error on push report: " + JSON.stringify(response));
+        } else {
+            return response.status;
         }
     }
 

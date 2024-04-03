@@ -7,11 +7,11 @@ import {
 } from "domain/entities/UserMonitoring";
 
 export interface UserMonitoringReportRepository {
-    pushReport(
+    saveReport(
         program: ProgramMetadata,
         responseGroups: UserMonitoringCountResponse,
         responseRoles: UserMonitoringDetails
-    ): Promise<Async<void>>;
+    ): Promise<Async<string>>;
 
-    saveUsersWithoutTwoFactor(program: ProgramMetadata, response: UserWithoutTwoFactor): Promise<void>;
+    saveUsersWithoutTwoFactor(program: ProgramMetadata, response: UserWithoutTwoFactor): Promise<string>;
 }

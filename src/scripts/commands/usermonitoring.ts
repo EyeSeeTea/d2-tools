@@ -7,13 +7,13 @@ import { RunUserMonitoringUserGroupsUseCase } from "domain/usecases/RunUserMonit
 import log from "utils/log";
 import { D2ExternalConfigRepository } from "data/D2ExternalConfigRepository";
 import { GetUserMonitoringConfigUseCase } from "domain/config/usecases/GetUserMonitoringConfigUseCase";
-import { UserMonitoringMetadataD2Repository } from "data/UserMonitoringMetadataD2Repository";
 import { UserMonitoringReportD2Repository } from "data/UserMonitoringReportD2Repository";
 import { UserMonitoringD2Repository } from "data/UserMonitoringD2Repository";
 import { AuthOptions } from "domain/entities/UserMonitoring";
 import { UserGroupsMonitorRepository } from "data/UserGroupsMonitorRepository";
 import { RunUserMonitoringReportUseCase } from "domain/usecases/RunUserMonitoringReportUseCase";
 import { RunReportUsersWithout2FA } from "domain/usecases/RunReportUsersWithout2FA";
+import { UserMonitoringMetadataD2Repository } from "data/UserMonitoringMetadataD2Repository";
 
 export function getCommand() {
     return subcommands({
@@ -54,7 +54,8 @@ const run2FAReporterCmd = command({
         log.info(`Run user Role monitoring`);
         const response = await new RunReportUsersWithout2FA(
             usersMonitoringMetadataRepository,
-            usersRepository
+            usersRepository,
+            userMonitoringReportRepository
         ).execute(config);
 
         config.userGroupsResponse = response;
