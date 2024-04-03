@@ -10,24 +10,19 @@ import {
     UserRes,
     UsersOptions,
 } from "domain/entities/UserMonitoring";
-import { UserMonitoringRepository } from "domain/repositories/UserMonitoringRepository";
-import { UserMonitoringMetadataRepository } from "domain/repositories/UserMonitoringMetadataRepository";
+import { UserRepository } from "domain/repositories/user-monitoring/UserRepository";
+import { MetadataRepository } from "domain/repositories/user-monitoring/MetadataRepository";
 import log from "utils/log";
 import { getUid } from "utils/uid";
 import _ from "lodash";
 
 export class RunUserMonitoringUserRolesUseCase {
-    constructor(
-        private userMonitoringRepository: UserMonitoringRepository,
-        private userMonitoringMetadataRepository: UserMonitoringMetadataRepository
-    ) {}
+    constructor(private userRepository: UserRepository, private metadataRepository: MetadataRepository) {}
 
     async execute(options: UsersOptions): Async<UserMonitoringDetails> {
-        const templatesWithAuthorities = await this.userMonitoringMetadataRepository.getTemplateAuthorities(
-            options
-        );
+        const templatesWithAuthorities = await this.metadataRepository.getTemplateAuthorities(options);
 
-        const usersToProcessRoles = await this.userMonitoringRepository.getAllUsers(
+        const usersToProcessRoles = await this.userRepository.getAllUsers(
             options.excludedUsers.map(item => {
                 return item.id;
             }),
@@ -107,7 +102,7 @@ export class RunUserMonitoringUserRolesUseCase {
                 return item.user;
             });
 
-            const response = await this.userMonitoringRepository.saveUsers(userToPost);
+            const response = await this.userRepository.saveUsers(userToPost);
 
             const result = (await response) ?? "null";
             log.info(`Saving report: ${result}`);

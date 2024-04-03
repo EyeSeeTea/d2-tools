@@ -4,22 +4,20 @@ import {
     UserWithoutTwoFactor,
     UsersOptions,
 } from "domain/entities/UserMonitoring";
-import { UserMonitoringMetadataRepository } from "domain/repositories/UserMonitoringMetadataRepository";
-import { UserMonitoringReportRepository } from "domain/repositories/UserMonitoringReportRepository";
-import { UserMonitoringRepository } from "domain/repositories/UserMonitoringRepository";
+import { MetadataRepository } from "domain/repositories/user-monitoring/MetadataRepository";
+import { ReportRepository } from "domain/repositories/user-monitoring/ReportRepository";
+import { UserRepository } from "domain/repositories/user-monitoring/UserRepository";
 import _ from "lodash";
 
 export class RunReportUsersWithout2FA {
     constructor(
-        private userMonitoringMetadataRepository: UserMonitoringMetadataRepository,
-        private userMonitoringRepository: UserMonitoringRepository,
-        private userMonitoringReportRepository: UserMonitoringReportRepository
+        private metadataRepository: MetadataRepository,
+        private userRepository: UserRepository,
+        private reportRepository: ReportRepository
     ) {}
 
     async execute(options: UsersOptions): Async<UserMonitoringCountResponse> {
-        const usersMustHave2FA = await this.userMonitoringRepository.getUsersByGroupId([
-            options.twoFactorGroup.id,
-        ]);
+        const usersMustHave2FA = await this.userRepository.getUsersByGroupId([options.twoFactorGroup.id]);
         if (usersMustHave2FA.length == 0) {
             throw new Error("Users not found in the group. Check the group id. " + options.twoFactorGroup.id);
         }
@@ -35,9 +33,9 @@ export class RunReportUsersWithout2FA {
             listOfAffectedUsers: userItems,
             response: "Users without 2FA",
         };
-        const program = await this.userMonitoringMetadataRepository.getMetadata(options.pushProgramId.id);
+        const program = await this.metadataRepository.getMetadata(options.pushProgramId.id);
 
-        this.userMonitoringReportRepository.saveUsersWithoutTwoFactor(program, response);
+        this.reportRepository.saveUsersWithoutTwoFactor(program, response);
         return response;
     }
 }

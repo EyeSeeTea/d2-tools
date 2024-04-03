@@ -4,7 +4,7 @@ import { FileUploadParameters, Files } from "@eyeseetea/d2-api/api/files";
 import { Async } from "domain/entities/Async";
 import { D2Api } from "types/d2-api";
 import log from "utils/log";
-import { EventDataValue, ProgramMetadata, User, UserRes } from "./d2-users/D2Users.types";
+import { EventDataValue, ProgramMetadata, User, UserRes } from "../d2-users/D2Users.types";
 import _ from "lodash";
 
 import {
@@ -14,7 +14,7 @@ import {
     UserWithoutTwoFactor,
 } from "domain/entities/UserMonitoring";
 import { getUid } from "utils/uid";
-import { UserMonitoringReportRepository } from "domain/repositories/UserMonitoringReportRepository";
+import { ReportRepository } from "domain/repositories/user-monitoring/ReportRepository";
 import { getEvent } from "capture-core/events/eventRequests";
 
 const dataelement_invalid_users_groups_count_code = "ADMIN_invalid_users_groups_count_1_Events";
@@ -71,7 +71,7 @@ const headers: Record<Attr, { title: string }> = {
     validRoles: { title: "ValidRoles" },
 };
 
-export class UserMonitoringReportD2Repository implements UserMonitoringReportRepository {
+export class ReportD2Repository implements ReportRepository {
     constructor(private api: D2Api) {}
     async saveUsersWithoutTwoFactor(program: ProgramMetadata, report: UserWithoutTwoFactor): Promise<string> {
         const response = await this.pushUsersWithoutTwoFactorToDhis(

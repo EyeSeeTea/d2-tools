@@ -2,18 +2,20 @@ import "json5/lib/register";
 import { command, subcommands, option, string } from "cmd-ts";
 
 import { getD2Api } from "scripts/common";
-import { RunUserMonitoringUserRolesUseCase } from "domain/usecases/RunUserMonitoringUserRolesUseCase";
-import { RunUserMonitoringUserGroupsUseCase } from "domain/usecases/RunUserMonitoringUserGroupsUseCase";
 import log from "utils/log";
 import { D2ExternalConfigRepository } from "data/D2ExternalConfigRepository";
 import { GetUserMonitoringConfigUseCase } from "domain/config/usecases/GetUserMonitoringConfigUseCase";
-import { UserMonitoringReportD2Repository } from "data/UserMonitoringReportD2Repository";
-import { UserMonitoringD2Repository } from "data/UserMonitoringD2Repository";
+import { ReportD2Repository } from "data/user-monitoring/ReportD2Repository";
+import { UserD2Repository } from "data/user-monitoring/UserD2Repository";
+import { MetadataD2Repository } from "data/user-monitoring/MetadataD2Repository";
+import { UserGroupD2Repository } from "data/user-monitoring/UserGroupD2Repository";
+
 import { AuthOptions } from "domain/entities/UserMonitoring";
-import { UserGroupsMonitorRepository } from "data/UserGroupsMonitorRepository";
-import { RunUserMonitoringReportUseCase } from "domain/usecases/RunUserMonitoringReportUseCase";
-import { RunReportUsersWithout2FA } from "domain/usecases/RunReportUsersWithout2FA";
-import { UserMonitoringMetadataD2Repository } from "data/UserMonitoringMetadataD2Repository";
+
+import { RunUserMonitoringUserRolesUseCase } from "domain/usecases/user-monitoring/RunUserMonitoringUserRolesUseCase";
+import { RunUserMonitoringUserGroupsUseCase } from "domain/usecases/user-monitoring/RunUserMonitoringUserGroupsUseCase";
+import { RunUserMonitoringReportUseCase } from "domain/usecases/user-monitoring/RunUserMonitoringReportUseCase";
+import { RunReportUsersWithout2FA } from "domain/usecases/user-monitoring/RunReportUsersWithout2FA";
 
 export function getCommand() {
     return subcommands({
@@ -40,13 +42,10 @@ const run2FAReporterCmd = command({
     handler: async args => {
         const auth = getAuthFromFile(args.config_file);
         const api = getD2Api(auth.apiurl);
-        const usersRepository = new UserMonitoringD2Repository(api);
-        const usersMonitoringMetadataRepository = new UserMonitoringMetadataD2Repository(
-            api,
-            usersRepository
-        );
+        const usersRepository = new UserD2Repository(api);
+        const usersMonitoringMetadataRepository = new MetadataD2Repository(api, usersRepository);
         const externalConfigRepository = new D2ExternalConfigRepository(api);
-        const userMonitoringReportRepository = new UserMonitoringReportD2Repository(api);
+        const userMonitoringReportRepository = new ReportD2Repository(api);
         log.debug(`Get config: ${auth.apiurl}`);
 
         const config = await new GetUserMonitoringConfigUseCase(externalConfigRepository).execute();
@@ -82,14 +81,11 @@ const runUsersMonitoringCmd = command({
     handler: async args => {
         const auth = getAuthFromFile(args.config_file);
         const api = getD2Api(auth.apiurl);
-        const usersRepository = new UserMonitoringD2Repository(api);
-        const userGroupsRepository = new UserGroupsMonitorRepository(api);
-        const usersMonitoringMetadataRepository = new UserMonitoringMetadataD2Repository(
-            api,
-            usersRepository
-        );
+        const usersRepository = new UserD2Repository(api);
+        const userGroupsRepository = new UserGroupD2Repository(api);
+        const usersMonitoringMetadataRepository = new MetadataD2Repository(api, usersRepository);
         const externalConfigRepository = new D2ExternalConfigRepository(api);
-        const userMonitoringReportRepository = new UserMonitoringReportD2Repository(api);
+        const userMonitoringReportRepository = new ReportD2Repository(api);
         log.debug(`Get config: ${auth.apiurl}`);
 
         const config = await new GetUserMonitoringConfigUseCase(externalConfigRepository).execute();

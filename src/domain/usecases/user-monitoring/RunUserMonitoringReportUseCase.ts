@@ -6,17 +6,12 @@ import {
     UserMonitoringCountResponse,
     UsersOptions,
 } from "domain/entities/UserMonitoring";
-import { UserGroupRepository } from "domain/repositories/UserGroupRepository";
-import { UserMonitoringMetadataRepository } from "domain/repositories/UserMonitoringMetadataRepository";
-import { UserMonitoringReportRepository } from "domain/repositories/UserMonitoringReportRepository";
+import { MetadataRepository } from "domain/repositories/user-monitoring/MetadataRepository";
+import { ReportRepository } from "domain/repositories/user-monitoring/ReportRepository";
 import _ from "lodash";
-import log from "utils/log";
 
 export class RunUserMonitoringReportUseCase {
-    constructor(
-        private userMonitoringMetadataRepository: UserMonitoringMetadataRepository,
-        private userMonitoringReportRepository: UserMonitoringReportRepository
-    ) {}
+    constructor(private metadataRepository: MetadataRepository, private reportRepository: ReportRepository) {}
 
     async execute(options: UsersOptions): Async<void> {
         const { userRolesResponse, userGroupsResponse } = options;
@@ -36,8 +31,8 @@ export class RunUserMonitoringReportUseCase {
             userProcessed: [],
         };
         if (finalUserGroup.invalidUsersCount > 0 || finalUserRoles.invalidUsersCount > 0) {
-            const program = await this.userMonitoringMetadataRepository.getMetadata(options.pushProgramId.id);
-            await this.userMonitoringReportRepository.saveReport(program, finalUserGroup, finalUserRoles);
+            const program = await this.metadataRepository.getMetadata(options.pushProgramId.id);
+            await this.reportRepository.saveReport(program, finalUserGroup, finalUserRoles);
         }
     }
 }

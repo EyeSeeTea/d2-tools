@@ -9,7 +9,7 @@ import {
     ProgramStageDataElement,
     User,
     UserRoleAuthority,
-} from "./d2-users/D2Users.types";
+} from "../d2-users/D2Users.types";
 type Programs = { programs: Program[] };
 type UserRoleAuthorities = { userRoles: UserRoleAuthority[] };
 import _ from "lodash";
@@ -23,25 +23,11 @@ import {
     UserMonitoringCountResponse,
     UserMonitoringDetails,
 } from "domain/entities/UserMonitoring";
-import { UserMonitoringMetadataRepository } from "domain/repositories/UserMonitoringMetadataRepository";
-import { UserMonitoringRepository } from "domain/repositories/UserMonitoringRepository";
+import { MetadataRepository } from "domain/repositories/user-monitoring/MetadataRepository";
+import { UserRepository } from "domain/repositories/user-monitoring/UserRepository";
 
-export class UserMonitoringMetadataD2Repository implements UserMonitoringMetadataRepository {
-    constructor(private api: D2Api, private userMonitoringRepository: UserMonitoringRepository) {}
-    saveReport(
-        program: ProgramMetadata,
-        responseGroups: UserMonitoringCountResponse,
-        responseRoles: UserMonitoringDetails
-    ): Promise<Async<string>> {
-        throw new Error("Method not implemented.");
-    }
-
-    saveUsersWithoutTwoFactor(
-        program: ProgramMetadata,
-        response: UserWithoutTwoFactor
-    ): Promise<Async<string>> {
-        throw new Error("Method not implemented.");
-    }
+export class MetadataD2Repository implements MetadataRepository {
+    constructor(private api: D2Api, private userMonitoringRepository: UserRepository) {}
     async getTemplateAuthorities(options: UsersOptions): Promise<Async<TemplateGroupWithAuthorities[]>> {
         const { templates: templateGroups, excludedRoles: excludedRoles } = options;
 

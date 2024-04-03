@@ -6,17 +6,17 @@ import {
     UserMonitoringCountResponse,
     UsersOptions,
 } from "domain/entities/UserMonitoring";
-import { UserGroupRepository } from "domain/repositories/UserGroupRepository";
-import { UserMonitoringMetadataRepository } from "domain/repositories/UserMonitoringMetadataRepository";
-import { UserMonitoringRepository } from "domain/repositories/UserMonitoringRepository";
+import { UserGroupRepository } from "domain/repositories/user-monitoring/UserGroupRepository";
+import { MetadataRepository } from "domain/repositories/user-monitoring/MetadataRepository";
+import { UserRepository } from "domain/repositories/user-monitoring/UserRepository";
 import _ from "lodash";
 import log from "utils/log";
 
 export class RunUserMonitoringUserGroupsUseCase {
     constructor(
-        private userMonitoringMetadataRepository: UserMonitoringMetadataRepository,
+        private userMonitoringMetadataRepository: MetadataRepository,
         private userGroupRepository: UserGroupRepository,
-        private userMonitoringRepository: UserMonitoringRepository
+        private userMonitoringRepository: UserRepository
     ) {}
 
     async execute(options: UsersOptions): Async<UserMonitoringCountResponse> {

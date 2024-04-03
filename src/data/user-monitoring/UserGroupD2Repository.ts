@@ -1,9 +1,9 @@
-import { UserGroupRepository } from "domain/repositories/UserGroupRepository";
-import { UserGroup } from "./d2-users/D2Users.types";
+import { UserGroupRepository } from "domain/repositories/user-monitoring/UserGroupRepository";
+import { UserGroup } from "../d2-users/D2Users.types";
 import { D2Api } from "@eyeseetea/d2-api/2.36";
 import log from "utils/log";
 
-export class UserGroupsMonitorRepository implements UserGroupRepository {
+export class UserGroupD2Repository implements UserGroupRepository {
     constructor(private api: D2Api) {}
     async getByIds(groupsIds: string[]): Promise<UserGroup[]> {
         log.info(`Get metadata: All groups`);

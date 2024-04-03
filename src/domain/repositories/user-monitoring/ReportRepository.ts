@@ -6,7 +6,7 @@ import {
     UserWithoutTwoFactor,
 } from "domain/entities/UserMonitoring";
 
-export interface UserMonitoringReportRepository {
+export interface ReportRepository {
     saveReport(
         program: ProgramMetadata,
         responseGroups: UserMonitoringCountResponse,
