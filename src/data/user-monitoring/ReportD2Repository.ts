@@ -24,8 +24,8 @@ const dataelement_invalid_roles_list_code = "ADMIN_invalid_users_roles_usernames
 const dataelement_users_pushed_code = "ADMIN_user_pushed_control_Events";
 const dataelement_file_invalid_users_file_code = "ADMIN_invalid_users_backup_3_Events";
 const dataelement_file_valid_users_file_code = "ADMIN_valid_users_backup_4_Events";
-const dataelement_invalid_two_factor_list_code = "ADMIN_users_without_two_factor_count_7_Events";
-const dataelement_users_invalid_two_factor_code = "ADMIN_users_without_two_factor_8_Events";
+const dataelement_invalid_two_factor_count_code = "ADMIN_users_without_two_factor_count_7_Events";
+const dataelement_invalid_two_factor_usernames_list_code = "ADMIN_users_without_two_factor_8_Events";
 
 const date = new Date()
     .toLocaleString()
@@ -182,22 +182,23 @@ export class ReportD2Repository implements ReportRepository {
         return file;
     }
     private async pushUsersWithoutTwoFactorToDhis(
-        userGroupsFixedCount: string,
-        usernamesGroupModified: Item[],
+        invalidConfigNumber: string,
+        invalidConfigUsers: Item[],
         api: D2Api,
         program: ProgramMetadata,
         eventUid: string
     ) {
         log.info(`Create and Pushing users without two factor report to DHIS2`);
+
         const dataValues: EventDataValue[] = program.dataElements
             .map(item => {
                 switch (item.code) {
-                    case dataelement_invalid_two_factor_list_code:
-                        return { dataElement: item.id, value: userGroupsFixedCount };
-                    case dataelement_users_invalid_two_factor_code:
+                    case dataelement_invalid_two_factor_count_code:
+                        return { dataElement: item.id, value: invalidConfigNumber };
+                    case dataelement_invalid_two_factor_usernames_list_code:
                         return {
                             dataElement: item.id,
-                            value: usernamesGroupModified
+                            value: invalidConfigUsers
                                 .map(item => {
                                     return item.name + "(" + item.id + ")";
                                 })
@@ -207,7 +208,8 @@ export class ReportD2Repository implements ReportRepository {
                         return { dataElement: "", value: "" };
                 }
             })
-            .filter(dataValue => dataValue.dataElement !== "");
+            .filter(dataValue => dataValue.dataElement !== "")
+            .filter(dataValue => dataValue.value !== "");
 
         if (dataValues.length == 0) {
             log.info(`No data elements found`);

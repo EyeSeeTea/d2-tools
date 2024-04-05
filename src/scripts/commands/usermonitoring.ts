@@ -58,11 +58,6 @@ const run2FAReporterCmd = command({
         ).execute(config);
 
         config.userGroupsResponse = response;
-        log.info(`Save monitoring results`);
-        new RunUserMonitoringReportUseCase(
-            usersMonitoringMetadataRepository,
-            userMonitoringReportRepository
-        ).execute(config);
     },
 });
 
@@ -105,7 +100,7 @@ const runUsersMonitoringCmd = command({
         ).execute(config);
 
         config.userRolesResponse = userRoleResponse;
-        log.info(`Save monitoring results`);
+        log.info(`Save user-monitoring user-permissions results`);
         new RunUserMonitoringReportUseCase(
             usersMonitoringMetadataRepository,
             userMonitoringReportRepository
