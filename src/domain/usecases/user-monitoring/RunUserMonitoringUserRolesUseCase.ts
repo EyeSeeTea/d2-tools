@@ -9,7 +9,7 @@ import {
     UserMonitoringDetails,
     UserRes,
     UsersOptions,
-} from "domain/entities/UserMonitoring";
+} from "domain/entities/user-monitoring/UserMonitoring";
 import { UserRepository } from "domain/repositories/user-monitoring/UserRepository";
 import { MetadataRepository } from "domain/repositories/user-monitoring/MetadataRepository";
 import log from "utils/log";

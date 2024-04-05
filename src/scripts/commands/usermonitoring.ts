@@ -3,14 +3,14 @@ import { command, subcommands, option, string } from "cmd-ts";
 
 import { getD2Api } from "scripts/common";
 import log from "utils/log";
-import { D2ExternalConfigRepository } from "data/D2ExternalConfigRepository";
+import { D2ExternalConfigRepository } from "data/user-monitoring/D2ExternalConfigRepository";
 import { GetUserMonitoringConfigUseCase } from "domain/config/usecases/GetUserMonitoringConfigUseCase";
 import { ReportD2Repository } from "data/user-monitoring/ReportD2Repository";
 import { UserD2Repository } from "data/user-monitoring/UserD2Repository";
 import { MetadataD2Repository } from "data/user-monitoring/MetadataD2Repository";
 import { UserGroupD2Repository } from "data/user-monitoring/UserGroupD2Repository";
 
-import { AuthOptions } from "domain/entities/UserMonitoring";
+import { AuthOptions } from "domain/entities/user-monitoring/UserMonitoring";
 
 import { RunUserMonitoringUserRolesUseCase } from "domain/usecases/user-monitoring/RunUserMonitoringUserRolesUseCase";
 import { RunUserMonitoringUserGroupsUseCase } from "domain/usecases/user-monitoring/RunUserMonitoringUserGroupsUseCase";

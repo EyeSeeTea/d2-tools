@@ -1,5 +1,5 @@
 import { Async } from "domain/entities/Async";
-import { Id, User } from "domain/entities/UserMonitoring";
+import { Id, User } from "domain/entities/user-monitoring/UserMonitoring";
 
 export interface UserRepository {
     getByIds(ids: Id[]): Async<User[]>;

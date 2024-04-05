@@ -22,7 +22,7 @@ import {
     UsersOptions,
     UserMonitoringCountResponse,
     UserMonitoringDetails,
-} from "domain/entities/UserMonitoring";
+} from "domain/entities/user-monitoring/UserMonitoring";
 import { MetadataRepository } from "domain/repositories/user-monitoring/MetadataRepository";
 import { UserRepository } from "domain/repositories/user-monitoring/UserRepository";
 

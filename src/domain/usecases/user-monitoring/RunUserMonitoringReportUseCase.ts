@@ -5,7 +5,7 @@ import {
     User,
     UserMonitoringCountResponse,
     UsersOptions,
-} from "domain/entities/UserMonitoring";
+} from "domain/entities/user-monitoring/UserMonitoring";
 import { MetadataRepository } from "domain/repositories/user-monitoring/MetadataRepository";
 import { ReportRepository } from "domain/repositories/user-monitoring/ReportRepository";
 import _ from "lodash";

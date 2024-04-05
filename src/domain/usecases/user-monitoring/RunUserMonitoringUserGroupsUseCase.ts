@@ -5,7 +5,7 @@ import {
     User,
     UserMonitoringCountResponse,
     UsersOptions,
-} from "domain/entities/UserMonitoring";
+} from "domain/entities/user-monitoring/UserMonitoring";
 import { UserGroupRepository } from "domain/repositories/user-monitoring/UserGroupRepository";
 import { MetadataRepository } from "domain/repositories/user-monitoring/MetadataRepository";
 import { UserRepository } from "domain/repositories/user-monitoring/UserRepository";
@@ -14,17 +14,15 @@ import log from "utils/log";
 
 export class RunUserMonitoringUserGroupsUseCase {
     constructor(
-        private userMonitoringMetadataRepository: MetadataRepository,
+        private metadataRepository: MetadataRepository,
         private userGroupRepository: UserGroupRepository,
-        private userMonitoringRepository: UserRepository
+        private userRepository: UserRepository
     ) {}
 
     async execute(options: UsersOptions): Async<UserMonitoringCountResponse> {
-        const templatesWithAuthorities = await this.userMonitoringMetadataRepository.getTemplateAuthorities(
-            options
-        );
+        const templatesWithAuthorities = await this.metadataRepository.getTemplateAuthorities(options);
 
-        const usersToProcessGroups = await this.userMonitoringRepository.getAllUsers(
+        const usersToProcessGroups = await this.userRepository.getAllUsers(
             options.excludedUsers.map(item => {
                 return item.id;
             }),

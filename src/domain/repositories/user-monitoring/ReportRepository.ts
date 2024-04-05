@@ -4,7 +4,7 @@ import {
     UserMonitoringCountResponse,
     UserMonitoringDetails,
     UserWithoutTwoFactor,
-} from "domain/entities/UserMonitoring";
+} from "domain/entities/user-monitoring/UserMonitoring";
 
 export interface ReportRepository {
     saveReport(

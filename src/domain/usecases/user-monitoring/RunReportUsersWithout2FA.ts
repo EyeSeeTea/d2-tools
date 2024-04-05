@@ -3,7 +3,7 @@ import {
     UserMonitoringCountResponse,
     UserWithoutTwoFactor,
     UsersOptions,
-} from "domain/entities/UserMonitoring";
+} from "domain/entities/user-monitoring/UserMonitoring";
 import { MetadataRepository } from "domain/repositories/user-monitoring/MetadataRepository";
 import { ReportRepository } from "domain/repositories/user-monitoring/ReportRepository";
 import { UserRepository } from "domain/repositories/user-monitoring/UserRepository";

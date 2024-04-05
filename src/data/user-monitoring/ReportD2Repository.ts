@@ -12,7 +12,7 @@ import {
     UserMonitoringCountResponse,
     UserMonitoringDetails,
     UserWithoutTwoFactor,
-} from "domain/entities/UserMonitoring";
+} from "domain/entities/user-monitoring/UserMonitoring";
 import { getUid } from "utils/uid";
 import { ReportRepository } from "domain/repositories/user-monitoring/ReportRepository";
 import { getEvent } from "capture-core/events/eventRequests";

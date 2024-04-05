@@ -2,9 +2,9 @@ import _ from "lodash";
 import { UserMonitoringConfigRepository } from "domain/config/repositories/UserMonitoringConfigRepository";
 import { D2Api } from "@eyeseetea/d2-api/2.36";
 import { ConfigClient } from "domain/config/ConfigClient";
-import { Namespace } from "./externalConfig/Namespaces";
 import log from "utils/log";
-import { UsersOptions } from "domain/entities/UserMonitoring";
+import { UsersOptions } from "domain/entities/user-monitoring/UserMonitoring";
+import { Namespace } from "data/externalConfig/Namespaces";
 
 export class D2ExternalConfigRepository implements UserMonitoringConfigRepository {
     private api: D2Api;
