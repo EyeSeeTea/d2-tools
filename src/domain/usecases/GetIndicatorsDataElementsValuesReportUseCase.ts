@@ -1,19 +1,20 @@
 import _ from "lodash";
 import { DataSetsRepository } from "domain/repositories/DataSetsRepository";
-import {
-    IndicatorsRepository,
-    metadataItemName,
-    valueReportRow,
-} from "domain/repositories/IndicatorsRepository";
+import { IndicatorsRepository } from "domain/repositories/IndicatorsRepository";
 import { DataValuesRepository } from "domain/repositories/DataValuesRepository";
+import { DataElementsRepository } from "domain/repositories/DataElementsRepository";
+import { CategoryOptionCombosRepository } from "domain/repositories/CategoryOptionCombosRepository";
 import { DataValue } from "domain/entities/DataValue";
-import { Ref } from "@eyeseetea/d2-api";
+import { indicatorDEValueReportRow } from "domain/entities/IndicatorsReports";
+import { Ref, NamedRef } from "domain/entities/Base";
 
 export class GetIndicatorsDataElementsValuesReportUseCase {
     constructor(
         private indicatorsRepository: IndicatorsRepository,
         private dataSetsRepository: DataSetsRepository,
-        private dataValuesRepository: DataValuesRepository
+        private dataValuesRepository: DataValuesRepository,
+        private dataElementsRepository: DataElementsRepository,
+        private categoryOptionCombosRepository: CategoryOptionCombosRepository
     ) {}
 
     private async processIndicatorsItem(indicatorsItem: string, dataSetFilterList?: string[]) {
@@ -37,12 +38,12 @@ export class GetIndicatorsDataElementsValuesReportUseCase {
         orgUnitsIDs: string[];
         period: string[];
         dataSetFilterList?: string[];
-    }): Promise<valueReportRow[]> {
+    }): Promise<indicatorDEValueReportRow[]> {
         const { indicatorsIDs, orgUnitsIDs, period, dataSetFilterList } = options;
 
         const indicatorsMetadata = await this.indicatorsRepository.get(indicatorsIDs);
 
-        const dataElementCheckArray: deCheckType[] = await Promise.all(
+        const dataElementCheckArray: DECheckType[] = await Promise.all(
             indicatorsMetadata.map(async indicatorsItem => {
                 const numerator = await this.processIndicatorsItem(
                     indicatorsItem.numerator,
@@ -78,10 +79,10 @@ export class GetIndicatorsDataElementsValuesReportUseCase {
             ...deCheckObject.dataElements,
             ..._.uniq(deCheckObject.categoryOptionCombos.map(item => item.dataElement)),
         ];
-        const dataElementsNames = await this.indicatorsRepository.getDataElementsNames(allDataElementsIds);
+        const dataElementsNames = await this.dataElementsRepository.getDataElementsNames(allDataElementsIds);
 
         const allCOCombosIds = [..._.uniq(deCheckObject.categoryOptionCombos.map(item => item.coCombo))];
-        const coCombosNames = await this.indicatorsRepository.getCOCombosNames(allCOCombosIds);
+        const coCombosNames = await this.categoryOptionCombosRepository.getCOCombosNames(allCOCombosIds);
 
         const valuesReport = checkDataValues(dataValues, deCheckObject, dataElementsNames, coCombosNames);
 
@@ -125,7 +126,7 @@ function processDataSets(dataSets: Ref[], dataSetFilterList?: string[]) {
         .value();
 }
 
-function deCheckArrayToObject(array: deCheckType[]): deCheckType {
+function deCheckArrayToObject(array: DECheckType[]): DECheckType {
     return _.mergeWith({}, ...array, (destValue: any, srcValue: any) =>
         _.uniq((destValue || []).concat(srcValue))
     );
@@ -133,10 +134,10 @@ function deCheckArrayToObject(array: deCheckType[]): deCheckType {
 
 function checkDataValues(
     dvArray: DataValue[],
-    deCheckObject: deCheckType,
-    dataElementsNames: metadataItemName[],
-    coCombosNames: metadataItemName[]
-): valueReportRow[] {
+    deCheckObject: DECheckType,
+    dataElementsNames: NamedRef[],
+    coCombosNames: NamedRef[]
+): indicatorDEValueReportRow[] {
     const dataElements = deCheckObject.dataElements.flatMap(item => {
         const dataElementName =
             dataElementsNames.find(dnToFilter => {
@@ -182,13 +183,13 @@ function checkDataValues(
     return [...dataElements, ...categoryOptionCombos];
 }
 
-type deCOComboType = {
+type DECOComboType = {
     dataElement: string;
     coCombo: string;
 };
 
-type deCheckType = {
+type DECheckType = {
     dataSets: string[];
     dataElements: string[];
-    categoryOptionCombos: deCOComboType[];
+    categoryOptionCombos: DECOComboType[];
 };

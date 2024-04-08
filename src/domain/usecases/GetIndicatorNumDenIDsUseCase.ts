@@ -1,6 +1,7 @@
 import _ from "lodash";
 import { DataSetsRepository } from "domain/repositories/DataSetsRepository";
-import { IndicatorsRepository, indicatorDataRow } from "domain/repositories/IndicatorsRepository";
+import { IndicatorsRepository } from "domain/repositories/IndicatorsRepository";
+import { indicatorDataReportRow } from "domain/entities/IndicatorsReports";
 import { Ref } from "@eyeseetea/d2-api";
 
 export class GetIndicatorNumDenIDsUseCase {
@@ -34,13 +35,13 @@ export class GetIndicatorNumDenIDsUseCase {
     async execute(options: {
         indicatorsIDs: string[];
         dataSetFilterList?: string[];
-    }): Promise<indicatorDataRow[]> {
+    }): Promise<indicatorDataReportRow[]> {
         const { indicatorsIDs, dataSetFilterList } = options;
 
         const indicatorsMetadata = await this.indicatorsRepository.get(indicatorsIDs);
 
         const indicatorsData = await Promise.all(
-            indicatorsMetadata.map(async (indicatorsItem): Promise<indicatorDataRow> => {
+            indicatorsMetadata.map(async (indicatorsItem): Promise<indicatorDataReportRow> => {
                 const numerator = await this.processIndicatorsItem(
                     indicatorsItem.numerator,
                     dataSetFilterList
@@ -103,7 +104,7 @@ function processPDEParams(exp: string) {
     return progDEs.flatMap(item => {
         const cleanItem = trimItemSeparators(item, "D");
         const [program, dataElement] = cleanItem.split(".");
-        return program && dataElement ? { dataElement: dataElement, program: program } : [];
+        return program && dataElement ? [{ dataElement: dataElement, program: program }] : [];
     });
 }
 
@@ -131,9 +132,15 @@ function processPIndicatorsParams(exp: string) {
 
 function processDataSets(dataSets: Ref[], dataSetFilterList?: string[]) {
     return _(dataSets)
-        .flatMap(dataSet =>
-            dataSetFilterList ? (dataSetFilterList.includes(dataSet.id) ? dataSet.id : []) : dataSet.id
-        )
+        .map(dataSet => {
+            let id: string | undefined = undefined;
+
+            if ((dataSetFilterList && dataSetFilterList.includes(dataSet.id)) || !dataSetFilterList) {
+                id = dataSet.id;
+            }
+
+            return id;
+        })
         .compact()
         .uniq()
         .value();

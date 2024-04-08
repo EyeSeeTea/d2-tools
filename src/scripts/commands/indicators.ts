@@ -3,10 +3,14 @@ import { command, option, optional, subcommands } from "cmd-ts";
 import { getApiUrlOption, getD2Api, IdsSeparatedByCommas, FilePath, periodYears } from "scripts/common";
 import log from "utils/log";
 import { IndicatorsD2Repository } from "data/IndicatorsD2Repository";
-import { GetIndicatorNumDenIDsUseCase } from "domain/usecases/GetIndicatorNumDenIDsUseCase";
 import { DataSetsD2Repository } from "data/DataSetsD2Repository";
 import { DataValuesD2Repository } from "data/DataValuesD2Repository";
+import { DataElementsD2Repository } from "data/DataElementsD2Repository";
+import { CategoryOptionCombosD2Repository } from "data/CategoryOptionCombosD2Repository";
+import { GetIndicatorNumDenIDsUseCase } from "domain/usecases/GetIndicatorNumDenIDsUseCase";
 import { GetIndicatorsDataElementsValuesReportUseCase } from "domain/usecases/GetIndicatorsDataElementsValuesReportUseCase";
+import { exportIndicatorsDataIdsToCSVUseCase } from "domain/usecases/ExportIndicatorsDataIdsToCSVUseCase";
+import { exportValuesReportToCSVUseCase } from "domain/usecases/ExportValuesReportToCSVUseCase";
 
 export function getCommand() {
     const getRefMetadata = command({
@@ -18,19 +22,19 @@ export function getCommand() {
                 type: IdsSeparatedByCommas,
                 long: "indicators",
                 short: "i",
-                description: "IND1,IND2,...",
+                description: "IND_ID1,IND_ID2,...",
             }),
             dataSetFilterList: option({
                 type: optional(IdsSeparatedByCommas),
                 long: "ds-filter",
                 short: "i",
-                description: "DS1,DS2,...",
+                description: "DS_ID1,DS_ID2,...",
             }),
             path: option({
                 type: optional(FilePath),
                 long: "file",
                 short: "f",
-                description: "CSV output path (file or directory)",
+                description: "CSV output path (file or directory), defaults to ./indicatorsRefIDs.csv",
             }),
         },
         handler: async args => {
@@ -44,7 +48,8 @@ export function getCommand() {
                 );
                 const result = await getNumDenIDs.execute(args);
 
-                await indicatorsRepository.exportIndicatorsDataToCSV(result, args.path);
+                const exportIndicatorsDataIdsToCSV = new exportIndicatorsDataIdsToCSVUseCase();
+                await exportIndicatorsDataIdsToCSV.execute(result, args.path);
 
                 process.exit(0);
             } catch (err: any) {
@@ -64,7 +69,7 @@ export function getCommand() {
                 type: IdsSeparatedByCommas,
                 long: "indicators",
                 short: "i",
-                description: "IND1,IND2,...",
+                description: "IND_ID1,IND_ID2,...",
             }),
             orgUnitsIDs: option({
                 type: IdsSeparatedByCommas,
@@ -82,13 +87,13 @@ export function getCommand() {
                 type: optional(IdsSeparatedByCommas),
                 long: "ds-filter",
                 short: "i",
-                description: "DS1,DS2,...",
+                description: "DS_ID1,DS_ID2,...",
             }),
             path: option({
                 type: optional(FilePath),
                 long: "file",
                 short: "f",
-                description: "CSV output path (file or directory)",
+                description: "CSV output path (file or directory), defaults to ./indicatorsValuesReport.csv",
             }),
         },
         handler: async args => {
@@ -96,15 +101,21 @@ export function getCommand() {
             const indicatorsRepository = new IndicatorsD2Repository(api);
             const dataSetsRepository = new DataSetsD2Repository(api);
             const DataValuesRepository = new DataValuesD2Repository(api);
+            const dataElementsRepository = new DataElementsD2Repository(api);
+            const categoryOptionCombosRepository = new CategoryOptionCombosD2Repository(api);
+
             try {
                 const getNumDenIDs = new GetIndicatorsDataElementsValuesReportUseCase(
                     indicatorsRepository,
                     dataSetsRepository,
-                    DataValuesRepository
+                    DataValuesRepository,
+                    dataElementsRepository,
+                    categoryOptionCombosRepository
                 );
                 const result = await getNumDenIDs.execute(args);
 
-                await indicatorsRepository.exportValuesReportToCSV(result, args.path);
+                const exportValuesReportToCSV = new exportValuesReportToCSVUseCase();
+                await exportValuesReportToCSV.execute(result, args.path);
 
                 process.exit(0);
             } catch (err: any) {
