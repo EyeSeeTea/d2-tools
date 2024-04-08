@@ -1,6 +1,6 @@
 import _ from "lodash";
 import { DataSetsRepository, OUCopyResult } from "domain/repositories/DataSetsRepository";
-import { D2Api, Id, PostOptions } from "types/d2-api";
+import { D2Api, Id, PostOptions, Ref } from "types/d2-api";
 import { dataSetSchema } from "./DataSetSchema";
 import { DataSet, DataSetMetadata, DataSetToCompare } from "domain/entities/DataSet";
 import { runMetadata } from "./dhis2-utils";
@@ -67,6 +67,21 @@ export class DataSetsD2Repository implements DataSetsRepository {
             console.debug(errror);
             return "ERROR";
         }
+    }
+
+    async getByDataElements(dataSetElements: Id[]): Promise<Ref[]> {
+        const { dataSets } = await this.api.metadata
+            .get({
+                dataSets: {
+                    fields: {
+                        id: true,
+                    },
+                    filter: { "dataSetElements.dataElement.id": { in: dataSetElements } },
+                },
+            })
+            .getData();
+
+        return dataSets;
     }
 
     getSchema(): object {

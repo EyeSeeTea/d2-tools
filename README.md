@@ -215,7 +215,7 @@ yarn start events update-events \
 
 Get dangling data values and save them in a CSV file:
 
-```
+```console
 $ yarn start datavalues get-dangling-values \
   --url='http://USER:PASSWORD@HOST:PORT' \
   --dataelementgroup-ids=OUwLDu1i5xa,SMkbYuGmadE \
@@ -226,7 +226,7 @@ $ yarn start datavalues get-dangling-values \
 
 To delete the dangling data values, use the generated CSV as data source and this command:
 
-```
+```console
 $ yarn start datavalues post-dangling-values \
   --url='http://USER:PASSWORD@HOST:PORT' dataValues.csv
 ```
@@ -235,8 +235,8 @@ $ yarn start datavalues post-dangling-values \
 
 It reverts the last data values, using the data value audit. For each of these data values, it finds its N audit records, gets the last valid and first invalid audit record and use them to build an updated data value. Example:
 
-```
-$ yarn start datavalues revert \
+```console
+shell:~$ yarn start datavalues revert \
  --url='http://USER:PASSWORD@HOST:PORT' \
  --dataset-ids=Tu81BTLUuCT --orgunit-ids=XKKI1hhyFxk --periods=2020,2021 \
  --date=2022-06-01 --usernames="android" \
@@ -247,8 +247,8 @@ $ yarn start datavalues revert \
 
 It deletes the duplicated events for some events/tracker programs. An example:
 
-```
-$ yarn start programs get-duplicated-events \
+```console
+shell:~$ yarn start programs get-duplicated-events \
   --url='http://USER:PASSWORD@HOST:PORT' \
   --save-report=duplicated-events-ecare-pilot.csv \
   --programs-ids=vYRMQ43Zl3Y --org-units-ids=yT7tCISNWG6 \
@@ -442,3 +442,44 @@ $ LOG_LEVEL=debug node dist/index.js sync validate \
 [INFO 2024-03-19T09:16:35.509Z] # Check ID/code mismatch: 0
 [INFO 2024-03-19T09:16:35.510Z] Output report: sync-validate.json
 ```
+## Indicators
+
+### Get Indicators items report
+Get a CSV with the IDs of the items used by Indicators:
+```console
+shell:~$ yarn start indicators get-ref-ids \
+--url='https://admin:district@play.dhis2.org/2.38.6/' \
+--indicators=Uvn6LCg7dVU,ReUHfIn0pTQ \
+--ds-filter=QX4ZTUbOt3a,aLpVgfXiz0f \
+--file=./indicatorsRefIDs.csv
+```
+Working items types: dataElements, programDataElements, programIndicator.
+
+The ds-filter option allows to filter which dataSets are used.
+
+File option can be a file or directory path, if its a directory path the file will be named `indicatorsRefIDs.csv`
+
+CSV headers:
+
+UID | Indicator | Numerator | Numerator Description | List of referenced dataElements | List of referenced programDataElements | List of referenced categoryOptionCombos | List of referenced Indicators | List of referenced dataSets | List of referenced programs | Denominator | Denominator Description | List of referenced dataElements | List of referenced programDataElements | List of referenced categoryOptionCombos | List of referenced Indicators | List of referenced dataSets | List of referenced programs
+
+### Get Indicators dataElements values report
+
+Get a CSV with a report of the values of dataElements and categoryOptionCombos:
+```console
+shell:~$ yarn start indicators get-de-values-report \
+--url='https://admin:district@play.dhis2.org/2.38.6/' \
+--indicators=Uvn6LCg7dVU,ReUHfIn0pTQ \
+--org-unit=DiszpKrYNg8 \
+--period=2024 \
+--ds-filter=QX4ZTUbOt3a,aLpVgfXiz0f \
+--file=./indicatorsValuesReport.csv
+```
+
+The ds-filter option allows to filter which dataSets are used.
+
+File option can be a file or directory path, if its a directory path the file will be named `indicatorsValuesReport.csv`
+
+CSV headers:
+
+dataElement ID | dataElement Name | categoryOptionCombo ID | categoryOptionCombo Name | Value
