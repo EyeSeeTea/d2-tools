@@ -21,7 +21,7 @@ export class RunReportUsersWithout2FA {
         if (usersMustHave2FA.length == 0) {
             throw new Error("Users not found in the group. Check the group id. " + options.twoFactorGroup.id);
         }
-        console.log("Users must have 2FA: ", usersMustHave2FA);
+
         const usersWithoutTwoFA = usersMustHave2FA.filter(user => {
             return user.twoFA == false;
         });
