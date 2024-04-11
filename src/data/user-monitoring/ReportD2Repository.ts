@@ -306,9 +306,7 @@ export class ReportD2Repository implements ReportRepository {
             log.info(`No data elements found`);
             return;
         }
-        log.info("Push report");
-        log.info(JSON.stringify(dataValues));
-        //todo fix push, change dataelements to only add a count of errors.
+        log.info("Pushing report");
 
         const response: UserResponse = await api
             .post<UserResponse>(
