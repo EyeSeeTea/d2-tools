@@ -140,6 +140,12 @@ export interface AuthOptions {
     apiurl: string;
 }
 
+export interface WebhookOptions {
+    ms_url: string;
+    proxy: string;
+    server_name: string;
+}
+
 // TODO: Use src/domain/entities/Base.ts types
 export type Id = string;
 export type IdItem = {
