@@ -1,13 +1,16 @@
 import { Async } from "domain/entities/Async";
-import { UsersOptions } from "domain/entities/user-monitoring/common/UserOptions";
-import { MetadataRepository } from "domain/repositories/user-monitoring/common/MetadataRepository";
+import { PermissionFixerUserOptions } from "domain/entities/user-monitoring/permission-fixer/PermissionFixerUserOptions";
+import { UserMonitoringMetadataRepository } from "domain/repositories/user-monitoring/common/UserMonitoringMetadataRepository";
 import { ReportRepository } from "domain/repositories/user-monitoring/two-factor-monitoring/ReportRepository";
 import _ from "lodash";
 
 export class RunUserPermissionReportUseCase {
-    constructor(private metadataRepository: MetadataRepository, private reportRepository: ReportRepository) {}
+    constructor(
+        private metadataRepository: UserMonitoringMetadataRepository,
+        private reportRepository: ReportRepository
+    ) {}
 
-    async execute(options: UsersOptions): Async<void> {
+    async execute(options: PermissionFixerUserOptions): Async<void> {
         const { userRolesResponse, userGroupsResponse } = options;
 
         const finalUserGroup = userGroupsResponse ?? {

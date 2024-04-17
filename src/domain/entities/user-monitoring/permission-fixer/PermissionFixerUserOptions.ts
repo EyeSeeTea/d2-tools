@@ -1,11 +1,11 @@
-import { Item } from "./Identifier";
-import { RolesByGroup } from "./RolesByGroup";
-import { RolesByRoles } from "./RolesByRoles";
-import { RolesByUser } from "./RolesByUser";
-import { TemplateGroup } from "./Templates";
-import { UserMonitoringCountResponse, UserMonitoringDetails } from "./UserMonitoring";
+import { Item } from "../common/Identifier";
+import { RolesByGroup } from "../common/RolesByGroup";
+import { RolesByRoles } from "../common/RolesByRoles";
+import { RolesByUser } from "../common/RolesByUser";
+import { TemplateGroup } from "../common/Templates";
+import { UserMonitoringCountResponse, UserMonitoringDetails } from "../common/UserMonitoring";
 
-export interface UsersOptions {
+export interface PermissionFixerUserOptions {
     userRolesResponse?: UserMonitoringDetails;
     userGroupsResponse?: UserMonitoringCountResponse;
     templates: TemplateGroup[];
@@ -18,5 +18,4 @@ export interface UsersOptions {
     pushProgramId: Item;
     minimalGroupId: Item;
     minimalRoleId: Item;
-    twoFactorGroup: Item;
 }

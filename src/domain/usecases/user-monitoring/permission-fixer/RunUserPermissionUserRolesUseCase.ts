@@ -5,7 +5,7 @@ import { TemplateRepository } from "domain/repositories/user-monitoring/permissi
 import log from "utils/log";
 import { getUid } from "utils/uid";
 import _ from "lodash";
-import { UsersOptions } from "domain/entities/user-monitoring/common/UserOptions";
+import { PermissionFixerUserOptions } from "domain/entities/user-monitoring/permission-fixer/PermissionFixerUserOptions";
 import { TemplateGroupWithAuthorities } from "domain/entities/user-monitoring/common/Templates";
 import { UserResponse } from "domain/entities/user-monitoring/common/UserResponse";
 import { RolesByRoles } from "domain/entities/user-monitoring/common/RolesByRoles";
@@ -18,7 +18,7 @@ import { User } from "domain/entities/user-monitoring/common/User";
 export class RunUserPermissionUserRolesUseCase {
     constructor(private userRepository: UserRepository, private metadataRepository: TemplateRepository) {}
 
-    async execute(options: UsersOptions): Async<UserMonitoringDetails> {
+    async execute(options: PermissionFixerUserOptions): Async<UserMonitoringDetails> {
         const templatesWithAuthorities = await this.metadataRepository.getTemplateAuthorities(options);
 
         const usersToProcessRoles = await this.userRepository.getAllUsers(
@@ -37,7 +37,7 @@ export class RunUserPermissionUserRolesUseCase {
     }
 
     async processUserRoles(
-        options: UsersOptions,
+        options: PermissionFixerUserOptions,
         completeTemplateGroups: TemplateGroupWithAuthorities[],
         allUsers: User[]
     ): Promise<UserMonitoringDetails> {

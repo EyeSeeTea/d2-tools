@@ -5,20 +5,20 @@ import { TemplateRepository } from "domain/repositories/user-monitoring/permissi
 import { UserRepository } from "domain/repositories/user-monitoring/permission-fixer/UserRepository";
 import _ from "lodash";
 import log from "utils/log";
-import { UsersOptions } from "domain/entities/user-monitoring/common/UserOptions";
+import { PermissionFixerUserOptions } from "domain/entities/user-monitoring/permission-fixer/PermissionFixerUserOptions";
 import { TemplateGroupWithAuthorities } from "domain/entities/user-monitoring/common/Templates";
 import { User } from "domain/entities/user-monitoring/common/User";
 import { Item } from "domain/entities/user-monitoring/common/Identifier";
 
 export class RunUserPermissionUserGroupsUseCase {
     constructor(
-        private metadataRepository: TemplateRepository,
+        private usersTemplateRepository: TemplateRepository,
         private userGroupRepository: UserGroupRepository,
         private userRepository: UserRepository
     ) {}
 
-    async execute(options: UsersOptions): Async<UserMonitoringCountResponse> {
-        const templatesWithAuthorities = await this.metadataRepository.getTemplateAuthorities(options);
+    async execute(options: PermissionFixerUserOptions): Async<UserMonitoringCountResponse> {
+        const templatesWithAuthorities = await this.usersTemplateRepository.getTemplateAuthorities(options);
 
         const usersToProcessGroups = await this.userRepository.getAllUsers(
             options.excludedUsers.map(item => {
@@ -36,7 +36,7 @@ export class RunUserPermissionUserGroupsUseCase {
     }
 
     async processUserGroups(
-        options: UsersOptions,
+        options: PermissionFixerUserOptions,
         completeTemplateGroups: TemplateGroupWithAuthorities[],
         allUsersGroupCheck: User[]
     ): Promise<UserMonitoringCountResponse> {

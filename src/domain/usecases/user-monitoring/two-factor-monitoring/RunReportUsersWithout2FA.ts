@@ -1,20 +1,20 @@
 import { Async } from "domain/entities/Async";
 import { UserMonitoringCountResponse } from "domain/entities/user-monitoring/common/UserMonitoring";
-import { UsersOptions } from "domain/entities/user-monitoring/common/UserOptions";
+import { TwoFactorUserOptions } from "domain/entities/user-monitoring/two-factor-monitoring/TwoFactorUserOptions";
 import { UserWithoutTwoFactor } from "domain/entities/user-monitoring/common/UserWithoutTwoFactor";
-import { MetadataRepository } from "domain/repositories/user-monitoring/common/MetadataRepository";
+import { UserMonitoringMetadataRepository } from "domain/repositories/user-monitoring/common/UserMonitoringMetadataRepository";
 import { ReportRepository } from "domain/repositories/user-monitoring/two-factor-monitoring/ReportRepository";
 import { UserRepository } from "domain/repositories/user-monitoring/two-factor-monitoring/UserRepository";
 import _ from "lodash";
 
 export class RunReportUsersWithout2FA {
     constructor(
-        private metadataRepository: MetadataRepository,
+        private metadataRepository: UserMonitoringMetadataRepository,
         private userRepository: UserRepository,
         private reportRepository: ReportRepository
     ) {}
 
-    async execute(options: UsersOptions): Async<UserMonitoringCountResponse> {
+    async execute(options: TwoFactorUserOptions): Async<UserMonitoringCountResponse> {
         const usersMustHave2FA = await this.userRepository.getUsersByGroupId([options.twoFactorGroup.id]);
         if (usersMustHave2FA.length == 0) {
             throw new Error("Users not found in the group. Check the group id. " + options.twoFactorGroup.id);
