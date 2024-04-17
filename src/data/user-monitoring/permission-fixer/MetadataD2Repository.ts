@@ -1,29 +1,21 @@
 import { Async } from "domain/entities/Async";
 import { D2Api } from "types/d2-api";
 import log from "utils/log";
-import {
-    DataElement,
-    Program,
-    ProgramMetadata,
-    ProgramStage,
-    ProgramStageDataElement,
-    User,
-    UserRoleAuthority,
-} from "../../d2-users/D2Users.types";
+import { Program, UserRoleAuthority } from "../../d2-users/D2Users.types";
 type Programs = { programs: Program[] };
 type UserRoleAuthorities = { userRoles: UserRoleAuthority[] };
 import _ from "lodash";
 
-import { Item } from "domain/entities/user-monitoring/common/Identifier";
-import { MetadataRepository } from "domain/repositories/user-monitoring/common/MetadataRepository";
-import { UserRepository } from "domain/repositories/user-monitoring/two-factor-monitoring/UserRepository";
-import { UsersOptions } from "domain/entities/user-monitoring/common/UserOptions";
 import {
     TemplateGroup,
     TemplateGroupWithAuthorities,
 } from "domain/entities/user-monitoring/common/Templates";
+import { TemplateRepository } from "domain/repositories/user-monitoring/permission-fixer/TemplateRepository";
+import { UserRepository } from "domain/repositories/user-monitoring/permission-fixer/UserRepository";
+import { UsersOptions } from "domain/entities/user-monitoring/common/UserOptions";
+import { Item } from "domain/entities/user-monitoring/common/Identifier";
 
-export class MetadataD2Repository implements MetadataRepository {
+export class MetadataD2Repository implements TemplateRepository {
     constructor(private api: D2Api, private userMonitoringRepository: UserRepository) {}
     async getTemplateAuthorities(options: UsersOptions): Promise<Async<TemplateGroupWithAuthorities[]>> {
         const { templates: templateGroups, excludedRoles: excludedRoles } = options;
@@ -39,46 +31,6 @@ export class MetadataD2Repository implements MetadataRepository {
         }
         const completeTemplateGroups = await this.fillAuthorities(templateGroups, userRoles);
         return completeTemplateGroups;
-    }
-
-    async getMetadata(programId: string): Promise<Async<ProgramMetadata>> {
-        const responseProgram = await this.getProgram(this.api, programId);
-
-        const programs = responseProgram[0] ?? undefined;
-
-        if (programs === undefined) {
-            log.error(`Program ${programId} not found`);
-            throw new Error("Program ${pushProgramId} not found");
-        }
-        const programStage: ProgramStage | undefined = programs.programStages[0];
-        //todo fix orgunit.id
-        const orgunitstring = JSON.stringify(programs.organisationUnits[0]);
-        const orgUnit: { id: string } = JSON.parse(orgunitstring);
-        const orgUnitId: string = orgUnit.id;
-
-        if (programStage === undefined) {
-            log.error(`Programstage ${programId} not found`);
-            throw new Error(`ProgramStage in ${programId} not found`);
-        }
-
-        if (orgUnitId === undefined) {
-            log.error(`Organisation Unit ${programId} not found`);
-            throw new Error(`Program OrgUnit in ${programId} not found`);
-        }
-
-        const programStageDataElements: ProgramStageDataElement[] = programStage.programStageDataElements;
-
-        const dataElements: DataElement[] = programStageDataElements.map(item => {
-            return item.dataElement;
-        });
-
-        const program: ProgramMetadata = {
-            id: programId,
-            programStageId: programStage.id,
-            dataElements: dataElements,
-            orgUnitId: orgUnitId,
-        };
-        return program;
     }
 
     async getAllUserRoles(options: UsersOptions): Promise<UserRoleAuthority[]> {
@@ -101,18 +53,6 @@ export class MetadataD2Repository implements MetadataRepository {
 
             return responses.userRoles;
         }
-    }
-
-    async getProgram(api: D2Api, programUid: string): Promise<Program[]> {
-        log.info(`Get metadata: Program metadata: ${programUid}`);
-
-        const responses = await api
-            .get<Programs>(
-                `/programs?filter=id:eq:${programUid}&fields=id,organisationUnits[id],programStages[id,programStageDataElements[id,dataElement[id,name,code]]&paging=false.json`
-            )
-            .getData();
-
-        return responses.programs;
     }
 
     //This method organize all the data into templateGroupWithAuthorities to make easy check all.
@@ -209,6 +149,3 @@ export class MetadataD2Repository implements MetadataRepository {
         return true;
     }
 }
-
-type Users = { users: User[] };
-type UserResponse = { status: string; typeReports: object[] };

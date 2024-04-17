@@ -1,23 +1,22 @@
 import { Async } from "domain/entities/Async";
-import {
-    Item,
-    RolesByGroup,
-    RolesByRoles,
-    RolesByUser,
-    TemplateGroupWithAuthorities,
-    User,
-    UserMonitoringDetails,
-    UserRes,
-    UsersOptions,
-} from "domain/entities/user-monitoring/UserMonitoring";
-import { UserRepository } from "domain/repositories/user-monitoring/two-factor-monitoring/UserRepository";
-import { MetadataRepository } from "domain/repositories/user-monitoring/two-factor-monitoring/MetadataRepository";
+import { UserMonitoringDetails } from "domain/entities/user-monitoring/common/UserMonitoring";
+import { UserRepository } from "domain/repositories/user-monitoring/permission-fixer/UserRepository";
+import { TemplateRepository } from "domain/repositories/user-monitoring/permission-fixer/TemplateRepository";
 import log from "utils/log";
 import { getUid } from "utils/uid";
 import _ from "lodash";
+import { UsersOptions } from "domain/entities/user-monitoring/common/UserOptions";
+import { TemplateGroupWithAuthorities } from "domain/entities/user-monitoring/common/Templates";
+import { UserResponse } from "domain/entities/user-monitoring/common/UserResponse";
+import { RolesByRoles } from "domain/entities/user-monitoring/common/RolesByRoles";
+import { RolesByGroup } from "domain/entities/user-monitoring/common/RolesByGroup";
+import { RolesByUser } from "domain/entities/user-monitoring/common/RolesByUser";
+import { Item } from "domain/entities/user-monitoring/common/Identifier";
+import { UserRes } from "data/d2-users/D2Users.types";
+import { User } from "domain/entities/user-monitoring/common/User";
 
-export class RunUserMonitoringUserRolesUseCase {
-    constructor(private userRepository: UserRepository, private metadataRepository: MetadataRepository) {}
+export class RunUserPermissionUserRolesUseCase {
+    constructor(private userRepository: UserRepository, private metadataRepository: TemplateRepository) {}
 
     async execute(options: UsersOptions): Async<UserMonitoringDetails> {
         const templatesWithAuthorities = await this.metadataRepository.getTemplateAuthorities(options);
@@ -52,7 +51,7 @@ export class RunUserMonitoringUserRolesUseCase {
 
         log.info("Processing users...");
         this.validateUsers(allUsers, completeTemplateGroups, minimalGroupId.id);
-        const userinfo: UserRes[] = this.processUsers(
+        const userinfo: UserResponse[] = this.processUsers(
             allUsers,
             completeTemplateGroups,
             excludedRolesByRole,
@@ -128,7 +127,7 @@ export class RunUserMonitoringUserRolesUseCase {
         excludedRolesByGroup: RolesByGroup[],
         excludedRolesByUser: RolesByUser[],
         minimalRoleId: Item
-    ): UserRes[] {
+    ): UserResponse[] {
         const processedUsers = _.compact(
             allUsers.map(user => {
                 const templateGroupMatch = completeTemplateGroups.find(template => {

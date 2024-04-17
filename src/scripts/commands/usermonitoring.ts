@@ -10,13 +10,15 @@ import { UserD2Repository } from "data/user-monitoring/two-factor-monitoring/Use
 import { MetadataD2Repository } from "data/user-monitoring/two-factor-monitoring/MetadataD2Repository";
 import { UserGroupD2Repository } from "data/user-monitoring/two-factor-monitoring/UserGroupD2Repository";
 
-import { AuthOptions } from "domain/entities/user-monitoring/UserMonitoring";
+import { AuthOptions } from "domain/entities/user-monitoring/common/AuthOptions";
 
-import { RunUserMonitoringUserRolesUseCase } from "domain/usecases/user-monitoring/two-factor-monitoring/RunUserMonitoringUserRolesUseCase";
-import { RunUserMonitoringUserGroupsUseCase } from "domain/usecases/user-monitoring/two-factor-monitoring/RunUserMonitoringUserGroupsUseCase";
-import { RunUserMonitoringReportUseCase } from "domain/usecases/user-monitoring/two-factor-monitoring/RunUserMonitoringReportUseCase";
 import { RunReportUsersWithout2FA } from "domain/usecases/user-monitoring/two-factor-monitoring/RunReportUsersWithout2FA";
 
+import { AuthOptions as AuthPermisisonOptions } from "domain/entities/user-monitoring/common/AuthOptions";
+
+import { RunUserPermissionUserRolesUseCase as RunUserPermissionUserRoleUsecase } from "domain/usecases/user-monitoring/permission-fixer/RunUserPermissionUserRolesUseCase";
+import { RunUserPermissionUserGroupsUseCase as RunUserPermissionUserGroupUseCase } from "domain/usecases/user-monitoring/permission-fixer/RunUserPermissionUserGroupsUseCase";
+import { RunUserPermissionReportUseCase as RunUserPermissionUserReportUseCase } from "domain/usecases/user-monitoring/permission-fixer/RunUserPermissionReportUseCase";
 export function getCommand() {
     return subcommands({
         name: "users-monitoring",
@@ -74,7 +76,7 @@ const runUsersMonitoringCmd = command({
     },
 
     handler: async args => {
-        const auth = getAuthFromFile(args.config_file);
+        const auth = getAuthPermissionFromFile(args.config_file);
         const api = getD2Api(auth.apiurl);
         const usersRepository = new UserD2Repository(api);
         const userGroupsRepository = new UserGroupD2Repository(api);
@@ -86,7 +88,7 @@ const runUsersMonitoringCmd = command({
         const config = await new GetUserMonitoringConfigUseCase(externalConfigRepository).execute();
 
         log.info(`Run user Group monitoring`);
-        const userGroupResponse = await new RunUserMonitoringUserGroupsUseCase(
+        const userGroupResponse = await new RunUserPermissionUserGroupUseCase(
             usersMonitoringMetadataRepository,
             userGroupsRepository,
             usersRepository
@@ -94,14 +96,14 @@ const runUsersMonitoringCmd = command({
 
         config.userGroupsResponse = userGroupResponse;
         log.info(`Run user Role monitoring`);
-        const userRoleResponse = await new RunUserMonitoringUserRolesUseCase(
+        const userRoleResponse = await new RunUserPermissionUserRoleUsecase(
             usersRepository,
             usersMonitoringMetadataRepository
         ).execute(config);
 
         config.userRolesResponse = userRoleResponse;
         log.info(`Save user-monitoring user-permissions results`);
-        new RunUserMonitoringReportUseCase(
+        new RunUserPermissionUserReportUseCase(
             usersMonitoringMetadataRepository,
             userMonitoringReportRepository
         ).execute(config);
@@ -109,6 +111,19 @@ const runUsersMonitoringCmd = command({
 });
 
 function getAuthFromFile(config_file: string): AuthOptions {
+    const fs = require("fs");
+    const configJSON = JSON.parse(fs.readFileSync("./" + config_file, "utf8"));
+    const urlprefix = configJSON["URL"]["server"].split("//")[0] + "//";
+    const urlserver = configJSON["URL"]["server"].split("//")[1];
+    const apiurl: string =
+        urlprefix + configJSON["URL"]["username"] + ":" + configJSON["URL"]["password"] + "@" + urlserver;
+
+    return {
+        apiurl: apiurl,
+    };
+}
+
+function getAuthPermissionFromFile(config_file: string): AuthPermisisonOptions {
     const fs = require("fs");
     const configJSON = JSON.parse(fs.readFileSync("./" + config_file, "utf8"));
     const urlprefix = configJSON["URL"]["server"].split("//")[0] + "//";

@@ -1,20 +1,18 @@
 import { Async } from "domain/entities/Async";
-import {
-    Item,
-    TemplateGroupWithAuthorities,
-    User,
-    UserMonitoringCountResponse,
-    UsersOptions,
-} from "domain/entities/user-monitoring/UserMonitoring";
-import { UserGroupRepository } from "domain/repositories/user-monitoring/two-factor-monitoring/UserGroupRepository";
-import { MetadataRepository } from "domain/repositories/user-monitoring/two-factor-monitoring/MetadataRepository";
-import { UserRepository } from "domain/repositories/user-monitoring/two-factor-monitoring/UserRepository";
+import { UserMonitoringCountResponse } from "domain/entities/user-monitoring/common/UserMonitoring";
+import { UserGroupRepository } from "domain/repositories/user-monitoring/permission-fixer/UserGroupRepository";
+import { TemplateRepository } from "domain/repositories/user-monitoring/permission-fixer/TemplateRepository";
+import { UserRepository } from "domain/repositories/user-monitoring/permission-fixer/UserRepository";
 import _ from "lodash";
 import log from "utils/log";
+import { UsersOptions } from "domain/entities/user-monitoring/common/UserOptions";
+import { TemplateGroupWithAuthorities } from "domain/entities/user-monitoring/common/Templates";
+import { User } from "domain/entities/user-monitoring/common/User";
+import { Item } from "domain/entities/user-monitoring/common/Identifier";
 
-export class RunUserMonitoringUserGroupsUseCase {
+export class RunUserPermissionUserGroupsUseCase {
     constructor(
-        private metadataRepository: MetadataRepository,
+        private metadataRepository: TemplateRepository,
         private userGroupRepository: UserGroupRepository,
         private userRepository: UserRepository
     ) {}

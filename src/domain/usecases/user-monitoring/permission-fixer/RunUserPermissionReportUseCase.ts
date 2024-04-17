@@ -1,16 +1,10 @@
 import { Async } from "domain/entities/Async";
-import {
-    Item,
-    TemplateGroupWithAuthorities,
-    User,
-    UserMonitoringCountResponse,
-    UsersOptions,
-} from "domain/entities/user-monitoring/UserMonitoring";
-import { MetadataRepository } from "domain/repositories/user-monitoring/two-factor-monitoring/MetadataRepository";
+import { UsersOptions } from "domain/entities/user-monitoring/common/UserOptions";
+import { MetadataRepository } from "domain/repositories/user-monitoring/common/MetadataRepository";
 import { ReportRepository } from "domain/repositories/user-monitoring/two-factor-monitoring/ReportRepository";
 import _ from "lodash";
 
-export class RunUserMonitoringReportUseCase {
+export class RunUserPermissionReportUseCase {
     constructor(private metadataRepository: MetadataRepository, private reportRepository: ReportRepository) {}
 
     async execute(options: UsersOptions): Async<void> {

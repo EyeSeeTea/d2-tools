@@ -1,4 +1,4 @@
-import { Item } from "domain/entities/user-monitoring/UserMonitoring";
+import { Item } from "domain/entities/user-monitoring/common/Identifier";
 import _ from "lodash";
 
 export interface ConfigClient {

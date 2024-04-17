@@ -13,8 +13,8 @@ import {
 } from "domain/entities/user-monitoring/common/UserMonitoring";
 import { getUid } from "utils/uid";
 import { ReportRepository } from "domain/repositories/user-monitoring/two-factor-monitoring/ReportRepository";
-import { Item } from "domain/entities/user-monitoring/common/Identifier";
 import { UserWithoutTwoFactor } from "domain/entities/user-monitoring/common/UserWithoutTwoFactor";
+import { Item } from "domain/entities/user-monitoring/common/Identifier";
 
 const dataelement_invalid_users_groups_count_code = "ADMIN_invalid_users_groups_count_1_Events";
 const dataelement_invalid_users_groups_list_code = "ADMIN_invalid_users_groups_usernames_5_Events";

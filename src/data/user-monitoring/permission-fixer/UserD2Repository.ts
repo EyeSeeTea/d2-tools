@@ -1,10 +1,9 @@
 import { D2Api } from "types/d2-api";
 import log from "utils/log";
-import { Id } from "domain/entities/user-monitoring/common/Identifier";
+import { Id, User } from "../../d2-users/D2Users.types";
 import _ from "lodash";
 import { UserRepository } from "domain/repositories/user-monitoring/two-factor-monitoring/UserRepository";
 import { Async } from "domain/entities/Async";
-import { User } from "domain/entities/user-monitoring/common/User";
 
 export class UserD2Repository implements UserRepository {
     constructor(private api: D2Api) {}
