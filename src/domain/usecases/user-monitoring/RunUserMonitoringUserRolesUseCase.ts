@@ -8,7 +8,7 @@ import {
     User,
     UserMonitoringDetails,
     UserRes,
-    UsersOptions,
+    UserMonitoringConfig,
 } from "domain/entities/user-monitoring/UserMonitoring";
 import { UserRepository } from "domain/repositories/user-monitoring/UserRepository";
 import { MetadataRepository } from "domain/repositories/user-monitoring/MetadataRepository";
@@ -19,7 +19,7 @@ import _ from "lodash";
 export class RunUserMonitoringUserRolesUseCase {
     constructor(private userRepository: UserRepository, private metadataRepository: MetadataRepository) {}
 
-    async execute(options: UsersOptions): Async<UserMonitoringDetails> {
+    async execute(options: UserMonitoringConfig): Async<UserMonitoringDetails> {
         const templatesWithAuthorities = await this.metadataRepository.getTemplateAuthorities(options);
 
         const usersToProcessRoles = await this.userRepository.getAllUsers(
@@ -38,7 +38,7 @@ export class RunUserMonitoringUserRolesUseCase {
     }
 
     async processUserRoles(
-        options: UsersOptions,
+        options: UserMonitoringConfig,
         completeTemplateGroups: TemplateGroupWithAuthorities[],
         allUsers: User[]
     ): Promise<UserMonitoringDetails> {

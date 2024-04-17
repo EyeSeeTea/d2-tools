@@ -15,7 +15,8 @@ export const Namespace = {
     EXCLUDE_USERS: "EXCLUDE_USERS",
     TEMPLATE_GROUPS: "TEMPLATE_GROUPS",
     TWO_FACTOR_GROUP_ID: "TWO_FACTOR_GROUP_ID",
-};
+    AUTHORITIES_MONITOR: "AUTHORITIES_MONITOR",
+} as const;
 
 export const NamespaceProperties: Record<string, string[]> = {
     [Namespace.USER_MONITORING]: ["user-monitoring"],

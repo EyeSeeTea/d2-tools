@@ -19,7 +19,7 @@ import {
     TemplateGroup,
     TemplateGroupWithAuthorities,
     UserWithoutTwoFactor,
-    UsersOptions,
+    UserMonitoringConfig,
     UserMonitoringCountResponse,
     UserMonitoringDetails,
 } from "domain/entities/user-monitoring/UserMonitoring";
@@ -28,7 +28,9 @@ import { UserRepository } from "domain/repositories/user-monitoring/UserReposito
 
 export class MetadataD2Repository implements MetadataRepository {
     constructor(private api: D2Api, private userMonitoringRepository: UserRepository) {}
-    async getTemplateAuthorities(options: UsersOptions): Promise<Async<TemplateGroupWithAuthorities[]>> {
+    async getTemplateAuthorities(
+        options: UserMonitoringConfig
+    ): Promise<Async<TemplateGroupWithAuthorities[]>> {
         const { templates: templateGroups, excludedRoles: excludedRoles } = options;
 
         const userRoles: UserRoleAuthority[] = await this.getAllUserRoles(options);
@@ -84,7 +86,7 @@ export class MetadataD2Repository implements MetadataRepository {
         return program;
     }
 
-    async getAllUserRoles(options: UsersOptions): Promise<UserRoleAuthority[]> {
+    async getAllUserRoles(options: UserMonitoringConfig): Promise<UserRoleAuthority[]> {
         log.info(`Get metadata: All roles excluding ids: ${options.excludedRoles.join(", ")}`);
         const excludeRoles = options.excludedRoles;
         if (excludeRoles.length == 0) {

@@ -1,4 +1,4 @@
-import { Item } from "domain/entities/user-monitoring/UserMonitoring";
+import { Item, AuthoritiesMonitor } from "domain/entities/user-monitoring/UserMonitoring";
 import _ from "lodash";
 
 export interface ConfigClient {
@@ -12,6 +12,8 @@ export interface ConfigClient {
     minimalGroup: Item;
     minimalRole: Item;
     pushProgram: Item;
+    twoFactorGroup: Item;
+    authoritiesMonitor: AuthoritiesMonitor;
 }
 export interface Identifier {
     id: string;

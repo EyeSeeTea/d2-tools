@@ -81,7 +81,7 @@ export type UserWithoutTwoFactor = {
     response: string;
 };
 
-export interface UsersOptions {
+export interface UserMonitoringConfig {
     userRolesResponse?: UserMonitoringDetails;
     userGroupsResponse?: UserMonitoringCountResponse;
     templates: TemplateGroup[];
@@ -95,6 +95,13 @@ export interface UsersOptions {
     minimalGroupId: Item;
     minimalRoleId: Item;
     twoFactorGroup: Item;
+    authoritiesMonitor: AuthoritiesMonitor;
+}
+
+export interface AuthoritiesMonitor {
+    lastExecution?: string;
+    authoritiesToMonitor: string[];
+    usersByAuthority: { [key: string]: Item[] };
 }
 
 export interface TemplateGroup {
@@ -133,6 +140,7 @@ export interface AuthOptions {
     apiurl: string;
 }
 
+// TODO: Use src/domain/entities/Base.ts types
 export type Id = string;
 export type IdItem = {
     id: Id;

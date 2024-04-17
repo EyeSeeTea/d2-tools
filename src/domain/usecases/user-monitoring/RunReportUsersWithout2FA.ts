@@ -2,7 +2,7 @@ import { Async } from "domain/entities/Async";
 import {
     UserMonitoringCountResponse,
     UserWithoutTwoFactor,
-    UsersOptions,
+    UserMonitoringConfig,
 } from "domain/entities/user-monitoring/UserMonitoring";
 import { MetadataRepository } from "domain/repositories/user-monitoring/MetadataRepository";
 import { ReportRepository } from "domain/repositories/user-monitoring/ReportRepository";
@@ -16,7 +16,7 @@ export class RunReportUsersWithout2FA {
         private reportRepository: ReportRepository
     ) {}
 
-    async execute(options: UsersOptions): Async<UserMonitoringCountResponse> {
+    async execute(options: UserMonitoringConfig): Async<UserMonitoringCountResponse> {
         const usersMustHave2FA = await this.userRepository.getUsersByGroupId([options.twoFactorGroup.id]);
         if (usersMustHave2FA.length == 0) {
             throw new Error("Users not found in the group. Check the group id. " + options.twoFactorGroup.id);

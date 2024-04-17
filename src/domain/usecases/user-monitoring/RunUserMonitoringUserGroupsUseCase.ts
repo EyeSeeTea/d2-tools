@@ -4,7 +4,7 @@ import {
     TemplateGroupWithAuthorities,
     User,
     UserMonitoringCountResponse,
-    UsersOptions,
+    UserMonitoringConfig,
 } from "domain/entities/user-monitoring/UserMonitoring";
 import { UserGroupRepository } from "domain/repositories/user-monitoring/UserGroupRepository";
 import { MetadataRepository } from "domain/repositories/user-monitoring/MetadataRepository";
@@ -19,7 +19,7 @@ export class RunUserMonitoringUserGroupsUseCase {
         private userRepository: UserRepository
     ) {}
 
-    async execute(options: UsersOptions): Async<UserMonitoringCountResponse> {
+    async execute(options: UserMonitoringConfig): Async<UserMonitoringCountResponse> {
         const templatesWithAuthorities = await this.metadataRepository.getTemplateAuthorities(options);
 
         const usersToProcessGroups = await this.userRepository.getAllUsers(
@@ -38,7 +38,7 @@ export class RunUserMonitoringUserGroupsUseCase {
     }
 
     async processUserGroups(
-        options: UsersOptions,
+        options: UserMonitoringConfig,
         completeTemplateGroups: TemplateGroupWithAuthorities[],
         allUsersGroupCheck: User[]
     ): Promise<UserMonitoringCountResponse> {

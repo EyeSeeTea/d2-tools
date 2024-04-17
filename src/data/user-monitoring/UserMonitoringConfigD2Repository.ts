@@ -3,10 +3,10 @@ import { UserMonitoringConfigRepository } from "domain/config/repositories/UserM
 import { D2Api } from "@eyeseetea/d2-api/2.36";
 import { ConfigClient } from "domain/config/ConfigClient";
 import log from "utils/log";
-import { UsersOptions } from "domain/entities/user-monitoring/UserMonitoring";
+import { UserMonitoringConfig } from "domain/entities/user-monitoring/UserMonitoring";
 import { Namespace } from "data/externalConfig/Namespaces";
 
-export class D2ExternalConfigRepository implements UserMonitoringConfigRepository {
+export class UserMonitoringConfigD2Repository implements UserMonitoringConfigRepository {
     private api: D2Api;
 
     constructor(api: D2Api) {
@@ -18,7 +18,7 @@ export class D2ExternalConfigRepository implements UserMonitoringConfigRepositor
         return value;
     }
 
-    public async get(): Promise<UsersOptions> {
+    public async get(): Promise<UserMonitoringConfig> {
         const config = await this.getObject<ConfigClient>(Namespace.USER_MONITORING);
         if (config) {
             const usersOptions = this.mapTemplates(config);
@@ -30,7 +30,7 @@ export class D2ExternalConfigRepository implements UserMonitoringConfigRepositor
     }
 
     //for any reason the values aren't saved as ConfigClient, i must map it using the datastore namespaces
-    public mapTemplates(config: any): UsersOptions {
+    public mapTemplates(config: any): UserMonitoringConfig {
         return {
             excludedRolesByRole: config[Namespace.EXCLUDE_ROLES_BY_ROLE],
             excludedRolesByGroup: config[Namespace.EXCLUDE_ROLES_BY_GROUPS],
@@ -43,6 +43,12 @@ export class D2ExternalConfigRepository implements UserMonitoringConfigRepositor
             minimalRoleId: config[Namespace.MINIMAL_ROLE],
             pushProgramId: config[Namespace.PUSH_PROGRAM_ID],
             twoFactorGroup: config[Namespace.TWO_FACTOR_GROUP_ID],
+            authoritiesMonitor: config[Namespace.AUTHORITIES_MONITOR],
         };
+    }
+
+    public async save(config: UserMonitoringConfig): Promise<void> {
+        // TODO: revert user-monitoring2
+        await this.api.dataStore("d2-tools").save("user-monitoring2", config).getData();
     }
 }

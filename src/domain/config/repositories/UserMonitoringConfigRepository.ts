@@ -1,5 +1,6 @@
-import { UsersOptions } from "domain/entities/user-monitoring/UserMonitoring";
+import { UserMonitoringConfig } from "domain/entities/user-monitoring/UserMonitoring";
 
 export interface UserMonitoringConfigRepository {
-    get(): Promise<UsersOptions>;
+    get(): Promise<UserMonitoringConfig>;
+    save(config: UserMonitoringConfig): Promise<void>;
 }

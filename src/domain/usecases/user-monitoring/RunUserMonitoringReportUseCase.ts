@@ -4,7 +4,7 @@ import {
     TemplateGroupWithAuthorities,
     User,
     UserMonitoringCountResponse,
-    UsersOptions,
+    UserMonitoringConfig,
 } from "domain/entities/user-monitoring/UserMonitoring";
 import { MetadataRepository } from "domain/repositories/user-monitoring/MetadataRepository";
 import { ReportRepository } from "domain/repositories/user-monitoring/ReportRepository";
@@ -13,7 +13,7 @@ import _ from "lodash";
 export class RunUserMonitoringReportUseCase {
     constructor(private metadataRepository: MetadataRepository, private reportRepository: ReportRepository) {}
 
-    async execute(options: UsersOptions): Async<void> {
+    async execute(options: UserMonitoringConfig): Async<void> {
         const { userRolesResponse, userGroupsResponse } = options;
 
         const finalUserGroup = userGroupsResponse ?? {
