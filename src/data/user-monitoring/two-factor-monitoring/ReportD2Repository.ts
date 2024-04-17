@@ -4,7 +4,7 @@ import { FileUploadParameters, Files } from "@eyeseetea/d2-api/api/files";
 import { Async } from "domain/entities/Async";
 import { D2Api } from "types/d2-api";
 import log from "utils/log";
-import { EventDataValue, ProgramMetadata, User, UserRes } from "../d2-users/D2Users.types";
+import { EventDataValue, ProgramMetadata, User, UserRes } from "../../d2-users/D2Users.types";
 import _ from "lodash";
 
 import {
@@ -14,8 +14,7 @@ import {
     UserWithoutTwoFactor,
 } from "domain/entities/user-monitoring/UserMonitoring";
 import { getUid } from "utils/uid";
-import { ReportRepository } from "domain/repositories/user-monitoring/ReportRepository";
-import { getEvent } from "capture-core/events/eventRequests";
+import { ReportRepository } from "domain/repositories/user-monitoring/two-factor-monitoring/ReportRepository";
 
 const dataelement_invalid_users_groups_count_code = "ADMIN_invalid_users_groups_count_1_Events";
 const dataelement_invalid_users_groups_list_code = "ADMIN_invalid_users_groups_usernames_5_Events";

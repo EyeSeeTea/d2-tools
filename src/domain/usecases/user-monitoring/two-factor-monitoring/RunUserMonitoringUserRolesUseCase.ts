@@ -10,8 +10,8 @@ import {
     UserRes,
     UsersOptions,
 } from "domain/entities/user-monitoring/UserMonitoring";
-import { UserRepository } from "domain/repositories/user-monitoring/UserRepository";
-import { MetadataRepository } from "domain/repositories/user-monitoring/MetadataRepository";
+import { UserRepository } from "domain/repositories/user-monitoring/two-factor-monitoring/UserRepository";
+import { MetadataRepository } from "domain/repositories/user-monitoring/two-factor-monitoring/MetadataRepository";
 import log from "utils/log";
 import { getUid } from "utils/uid";
 import _ from "lodash";

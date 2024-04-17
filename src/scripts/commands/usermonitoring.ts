@@ -3,19 +3,19 @@ import { command, subcommands, option, string } from "cmd-ts";
 
 import { getD2Api } from "scripts/common";
 import log from "utils/log";
-import { D2ExternalConfigRepository } from "data/user-monitoring/D2ExternalConfigRepository";
+import { D2ExternalConfigRepository } from "data/user-monitoring/two-factor-monitoring/D2ExternalConfigRepository";
 import { GetUserMonitoringConfigUseCase } from "domain/config/usecases/GetUserMonitoringConfigUseCase";
-import { ReportD2Repository } from "data/user-monitoring/ReportD2Repository";
-import { UserD2Repository } from "data/user-monitoring/UserD2Repository";
-import { MetadataD2Repository } from "data/user-monitoring/MetadataD2Repository";
-import { UserGroupD2Repository } from "data/user-monitoring/UserGroupD2Repository";
+import { ReportD2Repository } from "data/user-monitoring/two-factor-monitoring/ReportD2Repository";
+import { UserD2Repository } from "data/user-monitoring/two-factor-monitoring/UserD2Repository";
+import { MetadataD2Repository } from "data/user-monitoring/two-factor-monitoring/MetadataD2Repository";
+import { UserGroupD2Repository } from "data/user-monitoring/two-factor-monitoring/UserGroupD2Repository";
 
 import { AuthOptions } from "domain/entities/user-monitoring/UserMonitoring";
 
-import { RunUserMonitoringUserRolesUseCase } from "domain/usecases/user-monitoring/RunUserMonitoringUserRolesUseCase";
-import { RunUserMonitoringUserGroupsUseCase } from "domain/usecases/user-monitoring/RunUserMonitoringUserGroupsUseCase";
-import { RunUserMonitoringReportUseCase } from "domain/usecases/user-monitoring/RunUserMonitoringReportUseCase";
-import { RunReportUsersWithout2FA } from "domain/usecases/user-monitoring/RunReportUsersWithout2FA";
+import { RunUserMonitoringUserRolesUseCase } from "domain/usecases/user-monitoring/two-factor-monitoring/RunUserMonitoringUserRolesUseCase";
+import { RunUserMonitoringUserGroupsUseCase } from "domain/usecases/user-monitoring/two-factor-monitoring/RunUserMonitoringUserGroupsUseCase";
+import { RunUserMonitoringReportUseCase } from "domain/usecases/user-monitoring/two-factor-monitoring/RunUserMonitoringReportUseCase";
+import { RunReportUsersWithout2FA } from "domain/usecases/user-monitoring/two-factor-monitoring/RunReportUsersWithout2FA";
 
 export function getCommand() {
     return subcommands({

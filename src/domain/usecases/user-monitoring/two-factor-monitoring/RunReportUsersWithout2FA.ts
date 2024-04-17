@@ -4,9 +4,9 @@ import {
     UserWithoutTwoFactor,
     UsersOptions,
 } from "domain/entities/user-monitoring/UserMonitoring";
-import { MetadataRepository } from "domain/repositories/user-monitoring/MetadataRepository";
-import { ReportRepository } from "domain/repositories/user-monitoring/ReportRepository";
-import { UserRepository } from "domain/repositories/user-monitoring/UserRepository";
+import { MetadataRepository } from "domain/repositories/user-monitoring/two-factor-monitoring/MetadataRepository";
+import { ReportRepository } from "domain/repositories/user-monitoring/two-factor-monitoring/ReportRepository";
+import { UserRepository } from "domain/repositories/user-monitoring/two-factor-monitoring/UserRepository";
 import _ from "lodash";
 
 export class RunReportUsersWithout2FA {

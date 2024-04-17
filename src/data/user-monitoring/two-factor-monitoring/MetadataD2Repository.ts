@@ -9,7 +9,7 @@ import {
     ProgramStageDataElement,
     User,
     UserRoleAuthority,
-} from "../d2-users/D2Users.types";
+} from "../../d2-users/D2Users.types";
 type Programs = { programs: Program[] };
 type UserRoleAuthorities = { userRoles: UserRoleAuthority[] };
 import _ from "lodash";
@@ -18,13 +18,10 @@ import {
     Item,
     TemplateGroup,
     TemplateGroupWithAuthorities,
-    UserWithoutTwoFactor,
     UsersOptions,
-    UserMonitoringCountResponse,
-    UserMonitoringDetails,
 } from "domain/entities/user-monitoring/UserMonitoring";
-import { MetadataRepository } from "domain/repositories/user-monitoring/MetadataRepository";
-import { UserRepository } from "domain/repositories/user-monitoring/UserRepository";
+import { MetadataRepository } from "domain/repositories/user-monitoring/two-factor-monitoring/MetadataRepository";
+import { UserRepository } from "domain/repositories/user-monitoring/two-factor-monitoring/UserRepository";
 
 export class MetadataD2Repository implements MetadataRepository {
     constructor(private api: D2Api, private userMonitoringRepository: UserRepository) {}

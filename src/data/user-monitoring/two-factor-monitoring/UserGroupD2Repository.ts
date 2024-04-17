@@ -1,5 +1,5 @@
-import { UserGroupRepository } from "domain/repositories/user-monitoring/UserGroupRepository";
-import { UserGroup } from "../d2-users/D2Users.types";
+import { UserGroupRepository } from "domain/repositories/user-monitoring/two-factor-monitoring/UserGroupRepository";
+import { UserGroup } from "../../d2-users/D2Users.types";
 import { D2Api } from "@eyeseetea/d2-api/2.36";
 import log from "utils/log";
 

@@ -1,8 +1,8 @@
 import { D2Api } from "types/d2-api";
 import log from "utils/log";
-import { Id } from "../d2-users/D2Users.types";
+import { Id } from "../../d2-users/D2Users.types";
 import _ from "lodash";
-import { UserRepository } from "domain/repositories/user-monitoring/UserRepository";
+import { UserRepository } from "domain/repositories/user-monitoring/two-factor-monitoring/UserRepository";
 import { Async } from "domain/entities/Async";
 import { User } from "domain/entities/user-monitoring/UserMonitoring";
 
