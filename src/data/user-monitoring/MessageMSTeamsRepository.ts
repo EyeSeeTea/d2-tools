@@ -17,8 +17,6 @@ export class MessageMSTeamsRepository implements MessageRepository {
             process.env["https_proxy"] = httpProxy;
         }
 
-        process.env["NODE_TLS_REJECT_UNAUTHORIZED"] = "0";
-
         const postData = JSON.stringify({
             text: `[*AUTHORITIES-MONITORING* - ${server_name}] - ${message}`,
         });
