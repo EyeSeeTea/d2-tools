@@ -74,7 +74,7 @@ export class MigrateUserNameUseCase {
             if (options.sendNotification) {
                 const onlySuccessUsers = _.differenceWith(
                     nonDisabledUsers,
-                    migrateResult.usersSkipped,
+                    migrateResult.recordsSkipped,
                     (user, userError) => user.id === userError
                 );
                 await this.sendNotifications(options, onlySuccessUsers, fromAttribute, toAttribute);
@@ -83,13 +83,7 @@ export class MigrateUserNameUseCase {
             return migrateResult;
         }
 
-        return {
-            usersSkipped: [],
-            errorMessage: "",
-            created: 0,
-            ignored: 0,
-            updated: 0,
-        };
+        return Stats.empty();
     }
 
     private parseToCsv(users: User[], from: keyof UserAttribute, to: keyof UserAttribute) {
