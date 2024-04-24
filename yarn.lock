@@ -49,10 +49,10 @@
     minimatch "^3.0.4"
     strip-json-comments "^3.1.1"
 
-"@eyeseetea/d2-api@1.14.1-beta.1":
-  version "1.14.1-beta.1"
-  resolved "https://registry.yarnpkg.com/@eyeseetea/d2-api/-/d2-api-1.14.1-beta.1.tgz#b2bc356658420a084f01728580deee5b527d25f3"
-  integrity sha512-hBshlfcJu8KTts16lkvVkt27Lxs/eiT1MCvjL9bGVTjDRuuzgDQjtBHyvdujs7kYpDcRuY5V8oFC1teK+A33kw==
+"@eyeseetea/d2-api@1.16.0-beta.2":
+  version "1.16.0-beta.2"
+  resolved "https://registry.yarnpkg.com/@eyeseetea/d2-api/-/d2-api-1.16.0-beta.2.tgz#4b2ce8bebb234896c84550fcc1b893487f424548"
+  integrity sha512-BebVaD0h0TdAv4EALC4+NZT0KGrgaQvnEaC9rS1TrjG/BcMq/P8pxQxBRfJ4KDzX31SkI9UKnhVI33wH+hwinQ==
   dependencies:
     "@babel/runtime" "^7.5.4"
     "@dhis2/d2-i18n" "^1.0.5"
