@@ -442,10 +442,13 @@ $ LOG_LEVEL=debug node dist/index.js sync validate \
 [INFO 2024-03-19T09:16:35.509Z] # Check ID/code mismatch: 0
 [INFO 2024-03-19T09:16:35.510Z] Output report: sync-validate.json
 ```
+
 ## Indicators
 
 ### Get Indicators items report
+
 Get a CSV with the IDs of the items used by Indicators:
+
 ```console
 shell:~$ yarn start indicators get-ref-ids \
 --url='https://admin:district@play.dhis2.org/2.38.6/' \
@@ -453,6 +456,7 @@ shell:~$ yarn start indicators get-ref-ids \
 --ds-filter=QX4ZTUbOt3a,aLpVgfXiz0f \
 --file=./indicatorsRefIDs.csv
 ```
+
 Working items types: dataElements, programDataElements, programIndicator.
 
 The ds-filter option allows to filter which dataSets are used.
@@ -466,6 +470,7 @@ UID | Indicator | Numerator | Numerator Description | List of referenced dataEle
 ### Get Indicators dataElements values report
 
 Get a CSV with a report of the values of dataElements and categoryOptionCombos:
+
 ```console
 shell:~$ yarn start indicators get-de-values-report \
 --url='https://admin:district@play.dhis2.org/2.38.6/' \
@@ -484,9 +489,11 @@ CSV headers:
 
 dataElement ID | dataElement Name | categoryOptionCombo ID | categoryOptionCombo Name | Value
 
-## User monitoring
+## User monitoring scripts
 
-### Execution:
+### Users Monitoring
+
+#### Execution:
 
 ```
 yarn install
@@ -496,7 +503,7 @@ yarn build
 yarn start usermonitoring run-users-monitoring   --config-file config.json
 ```
 
-### Debug:
+#### Debug:
 
 ```
 yarn install
@@ -506,9 +513,10 @@ yarn build:dev
 LOG_LEVEL=debug node --inspect-brk dist/index.js usermonitoring run-users-monitoring   --config-file config.json
 ```
 
-### Requirements:
+#### Requirements:
 
 A config json file to get the user/password and server:
+
 ```
 {
     "URL": {
@@ -546,7 +554,8 @@ A list of templates (user with the valid roles, and group to identify which user
 
 An example of the file:
 
-```{
+```JSON
+{
   "EXCLUDE_ROLES": [
     {
       "id": "byLnQNR1v1B",
@@ -660,5 +669,89 @@ An example of the file:
       }
     }
   ]
-}```
+}
+```
 
+### Users Authorities Monitoring
+
+#### Execution:
+
+```bash
+yarn install
+
+yarn build
+
+yarn start usermonitoring authorities-monitoring --config-file config.json
+
+# To get the debug logs use:
+LOG_LEVEL=debug yarn start usermonitoring authorities-monitoring --config-file config.json &> out.log
+```
+
+#### Requirements:
+
+A config file with the access info of the server and the message webhook details:
+
+```JSON
+{
+    "URL": {
+        "username": "user",
+        "password": "passwd",
+        "server": "https://dhis.url/"
+    },
+    "WEBHOOK": {
+        "ms_url": "http://webhook.url/",
+        "proxy": "http://proxy.url/",
+        "server_name": "INSTANCE_NAME"
+    }
+}
+```
+
+This reports stores data into the `d2-tools.user-monitoring` datastore in a new entry named `AUTHORITIES_MONITOR`. This entry needs to be setup before the first run to get a correct report.
+
+A sample: 
+
+```JSON
+"AUTHORITIES_MONITOR": {
+    "authoritiesToMonitor": [
+      "AUTH1",
+      "AUTH2"
+    ],
+    "lastExecution": "1970-01-01T00:00:00,000",
+    "usersByAuthority": {
+      "AUTH1": [
+        {
+          "id": "lJf6FW6vtDD",
+          "name": "fake user 1",
+          "userRoles": [
+            {
+              "id": "So7ZSqi9ovy",
+              "name": "Role 1"
+            }
+          ]
+        },
+        {
+          "id": "wXGwwP53ngu",
+          "name": "fake user 2",
+          "userRoles": [
+            {
+              "id": "So7ZSqi9ovy",
+              "name": "Role 1"
+            }
+          ]
+        }
+      ],
+       "AUTH2": [
+        {
+          "id": "wXGwwP53ngu",
+          "name": "fake user 2",
+          "userRoles": [
+            {
+              "id": "So7ZSqi9ovy",
+              "name": "Role 1"
+            }
+          ]
+        }
+      ]
+    }
+  }
+```
