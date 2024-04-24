@@ -1,11 +1,11 @@
 import { Async } from "domain/entities/Async";
-import { NamedRef } from "domain/entities/Base";
 import log from "utils/log";
 import _ from "lodash";
 import { UserRolesRepository } from "domain/repositories/user-monitoring/authorities-monitoring/UserRolesRepository";
 import { AuthoritiesMonitoringConfigRepository } from "domain/repositories/user-monitoring/authorities-monitoring/AuthoritiesMonitoringConfigRepository";
 import { MessageRepository } from "domain/repositories/user-monitoring/authorities-monitoring/MessageRepository";
 import { AuthoritiesMonitoringOptions } from "domain/entities/user-monitoring/authorities-monitoring/AuthoritiesMonitoringOptions";
+import { User } from "domain/entities/user-monitoring/authorities-monitoring/User";
 
 export class MonitorUsersByAuthorityUseCase {
     constructor(
@@ -28,15 +28,19 @@ export class MonitorUsersByAuthorityUseCase {
                         authorities: userRole.authorities.filter(authority =>
                             options.AUTHORITIES_MONITOR.authoritiesToMonitor.includes(authority)
                         ),
+                        userRoles: userRoles
+                            .filter(userRole => userRole.users.includes(user))
+                            .map(userRole => ({ id: userRole.id, name: userRole.name })),
                     };
                 });
             })
-            .uniqBy(user => user.id)
             .value();
 
         const usersByAuthority: UsersByAuthority = _(usersWithAuthorities)
             .groupBy(user => user.authorities)
-            .mapValues(users => users.map(user => ({ id: user.id, name: user.name })))
+            .mapValues(users =>
+                users.map(user => ({ id: user.id, name: user.name, userRoles: user.userRoles }))
+            )
             .value();
 
         return usersByAuthority;
@@ -136,7 +140,7 @@ export class MonitorUsersByAuthorityUseCase {
 }
 
 type Authority = string;
-type UsersByAuthority = Record<Authority, NamedRef[]>;
+type UsersByAuthority = Record<Authority, User[]>;
 
 function logFormatDate(date: Date): string {
     const year = date.getFullYear();
