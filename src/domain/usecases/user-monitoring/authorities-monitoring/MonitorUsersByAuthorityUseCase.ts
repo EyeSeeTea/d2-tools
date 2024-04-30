@@ -84,19 +84,24 @@ export class MonitorUsersByAuthorityUseCase {
         return this.compareDicts(usersByAuthority, oldUsers);
     }
 
+    private listUsers(users: User[]): string {
+        return users
+            .map(
+                u =>
+                    `- ${u.name} in role(s): ${u.userRoles.map(role => `${JSON.stringify(role)}`).join(", ")}`
+            )
+            .join("\n");
+    }
+
     private makeMessages(newUsers: UsersByAuthority, usersLosingAuth: UsersByAuthority): string {
         const messages = [];
 
         for (const [authority, users] of Object.entries(newUsers)) {
-            messages.push(
-                `New users with authority ${authority}:\n${users.map(u => "- " + u.name).join("\n")}`
-            );
+            messages.push(`New users with authority ${authority}:\n${this.listUsers(users)}`);
         }
 
         for (const [authority, users] of Object.entries(usersLosingAuth)) {
-            messages.push(
-                `Users losing authority ${authority}:\n${users.map(u => "- " + u.name).join("\n")}`
-            );
+            messages.push(`Users losing authority ${authority}:\n${this.listUsers(users)}`);
         }
 
         return messages.join("\n\n");
@@ -129,11 +134,15 @@ export class MonitorUsersByAuthorityUseCase {
 
         log.debug(`Lost users: ${JSON.stringify(usersLosingAuth, null, 2)}`);
 
-        const messages = this.makeMessages(newUsers, usersLosingAuth);
+        if (_.isEmpty(newUsers) && _.isEmpty(usersLosingAuth)) {
+            log.info("Report: No changes.");
+        } else {
+            const messages = this.makeMessages(newUsers, usersLosingAuth);
 
-        log.info(`Report:\n${messages}`);
+            log.info(`Report:\n${messages}`);
 
-        this.MessageRepository.sendMessage(messages);
+            this.MessageRepository.sendMessage(messages);
+        }
 
         this.saveAuthoritiesMonitor(options, usersByAuthority);
     }
