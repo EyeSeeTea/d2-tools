@@ -117,7 +117,7 @@ export class MonitorUsersByAuthorityUseCase {
         await this.externalConfigRepository.save(options);
     }
 
-    async execute(options: AuthoritiesMonitoringOptions): Async<void> {
+    async execute(options: AuthoritiesMonitoringOptions, setDataStore: boolean): Async<void> {
         log.info(
             `Get user roles by authorities: ${options.AUTHORITIES_MONITOR.authoritiesToMonitor.join(",")}`
         );
@@ -126,25 +126,25 @@ export class MonitorUsersByAuthorityUseCase {
 
         log.debug(`Users by authority: ${JSON.stringify(usersByAuthority, null, 2)}`);
 
-        const newUsers = this.checkNewUsersWithAuthorities(options, usersByAuthority);
+        if (!setDataStore) {
+            const newUsers = this.checkNewUsersWithAuthorities(options, usersByAuthority);
+            const usersLosingAuth = this.checkUsersLosingAuthorities(options, usersByAuthority);
 
-        log.debug(`New users: ${JSON.stringify(newUsers, null, 2)}`);
+            log.debug(`New users: ${JSON.stringify(newUsers, null, 2)}`);
+            log.debug(`Lost users: ${JSON.stringify(usersLosingAuth, null, 2)}`);
 
-        const usersLosingAuth = this.checkUsersLosingAuthorities(options, usersByAuthority);
+            if (_.isEmpty(newUsers) && _.isEmpty(usersLosingAuth)) {
+                log.info("Report: No changes.");
+            } else {
+                const messages = this.makeMessages(newUsers, usersLosingAuth);
+                this.MessageRepository.sendMessage(messages);
 
-        log.debug(`Lost users: ${JSON.stringify(usersLosingAuth, null, 2)}`);
-
-        if (_.isEmpty(newUsers) && _.isEmpty(usersLosingAuth)) {
-            log.info("Report: No changes.");
-        } else {
-            const messages = this.makeMessages(newUsers, usersLosingAuth);
-
-            log.info(`Report:\n${messages}`);
-
-            this.MessageRepository.sendMessage(messages);
+                log.info(`Report:\n${messages}`);
+            }
         }
 
-        this.saveAuthoritiesMonitor(options, usersByAuthority);
+        log.info("Updating datastore...");
+        await this.saveAuthoritiesMonitor(options, usersByAuthority);
     }
 }
 

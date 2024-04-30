@@ -683,9 +683,14 @@ yarn build
 
 yarn start usermonitoring authorities-monitoring --config-file config.json
 
-# To get the debug logs use:
-LOG_LEVEL=debug yarn start usermonitoring authorities-monitoring --config-file config.json &> out.log
+# To get the debug logs and store them in a file use:
+LOG_LEVEL=debug yarn start usermonitoring authorities-monitoring --config-file config.json &> authorities-monitoring.log
 ```
+
+#### Parameters:
+
+-   `--config-file`: Connection and webhook config file.
+-   `-s` | `--set-datastore`: Write users data to datastore, use in script setup. It assumes there is a monitoring config in d2-tools/user-monitoring.
 
 #### Requirements:
 
@@ -707,8 +712,9 @@ A config file with the access info of the server and the message webhook details
 ```
 
 This reports stores data into the `d2-tools.user-monitoring` datastore in a new entry named `AUTHORITIES_MONITOR`. This entry needs to be setup before the first run to get a correct report.
+Its possible to leave `usersByAuthority` empty and use the `-s` flag to populate it.
 
-A sample: 
+A sample:
 
 ```JSON
 "AUTHORITIES_MONITOR": {

@@ -1,5 +1,5 @@
 import "json5/lib/register";
-import { command, subcommands, option, string } from "cmd-ts";
+import { command, subcommands, option, string, flag, boolean } from "cmd-ts";
 
 import { getD2Api } from "scripts/common";
 import log from "utils/log";
@@ -132,6 +132,13 @@ const authoritiesMonitoring = command({
             long: "config-file",
             description: "Config file",
         }),
+        setDataStore: flag({
+            type: boolean,
+            short: "s",
+            long: "set-datastore",
+            description:
+                "Write users data to datastore, use in script setup. It assumes there is a monitoring config in d2-tools/user-monitoring",
+        }),
     },
 
     handler: async args => {
@@ -151,7 +158,7 @@ const authoritiesMonitoring = command({
             UserRolesRepository,
             externalConfigRepository,
             MessageRepository
-        ).execute(config);
+        ).execute(config, args.setDataStore);
     },
 });
 
