@@ -1,10 +1,10 @@
 import { Async } from "domain/entities/Async";
 import { PermissionFixerUserOptions } from "domain/entities/user-monitoring/permission-fixer/PermissionFixerUserOptions";
-import { ReportRepository } from "domain/repositories/user-monitoring/two-factor-monitoring/ReportRepository";
+import { PermissionFixerReportRepository } from "domain/repositories/user-monitoring/permission-fixer/PermissionFixerReportRepository";
 import _ from "lodash";
 
 export class RunUserPermissionReportUseCase {
-    constructor(private reportRepository: ReportRepository) {}
+    constructor(private reportRepository: PermissionFixerReportRepository) {}
 
     async execute(options: PermissionFixerUserOptions): Async<void> {
         const { userRolesResponse, userGroupsResponse } = options;
@@ -24,7 +24,7 @@ export class RunUserPermissionReportUseCase {
             userProcessed: [],
         };
         if (finalUserGroup.invalidUsersCount > 0 || finalUserRoles.invalidUsersCount > 0) {
-            await this.reportRepository.saveReport(options.pushProgramId.id, finalUserGroup, finalUserRoles);
+            await this.reportRepository.save(options.pushProgramId.id, finalUserGroup, finalUserRoles);
         }
     }
 }

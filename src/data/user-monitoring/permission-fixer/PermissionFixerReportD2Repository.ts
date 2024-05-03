@@ -12,11 +12,10 @@ import {
     UserMonitoringDetails,
 } from "domain/entities/user-monitoring/common/UserMonitoring";
 import { getUid } from "utils/uid";
-import { ReportRepository } from "domain/repositories/user-monitoring/two-factor-monitoring/ReportRepository";
+import { UserMonitoringMetadataService } from "data/user-monitoring/common/UserMonitoringMetadataService";
 import { NamedRef } from "domain/entities/Base";
-import { UserWithoutTwoFactor } from "domain/entities/user-monitoring/common/UserWithoutTwoFactor";
 import { UserResponse } from "domain/entities/user-monitoring/common/UserResponse";
-import { UserMonitoringMetadataService } from "../common/UserMonitoringMetadataService";
+import { PermissionFixerReportRepository } from "domain/repositories/user-monitoring/permission-fixer/PermissionFixerReportRepository";
 
 const dataelement_invalid_users_groups_count_code = "ADMIN_invalid_users_groups_count_1_Events";
 const dataelement_invalid_users_groups_list_code = "ADMIN_invalid_users_groups_usernames_5_Events";
@@ -25,8 +24,6 @@ const dataelement_invalid_roles_list_code = "ADMIN_invalid_users_roles_usernames
 const dataelement_users_pushed_code = "ADMIN_user_pushed_control_Events";
 const dataelement_file_invalid_users_file_code = "ADMIN_invalid_users_backup_3_Events";
 const dataelement_file_valid_users_file_code = "ADMIN_valid_users_backup_4_Events";
-const dataelement_invalid_two_factor_count_code = "ADMIN_users_without_two_factor_count_7_Events";
-const dataelement_invalid_two_factor_usernames_list_code = "ADMIN_users_without_two_factor_8_Events";
 
 const date = new Date()
     .toLocaleString()
@@ -72,28 +69,15 @@ const headers: Record<Attr, { title: string }> = {
     validRoles: { title: "ValidRoles" },
 };
 
-export class ReportD2Repository extends UserMonitoringMetadataService implements ReportRepository {
+export class PermissionFixerReportD2Repository
+    extends UserMonitoringMetadataService
+    implements PermissionFixerReportRepository
+{
     constructor(private api: D2Api) {
         super();
     }
-    async saveUsersWithoutTwoFactor(programId: string, report: UserWithoutTwoFactor): Promise<string> {
-        const program = await this.getMetadata(programId, this.api);
-        const response = await this.pushUsersWithoutTwoFactorToDhis(
-            report.invalidUsersCount.toString(),
-            report.listOfAffectedUsers,
-            this.api,
-            program,
-            getUid(date)
-        );
-        if (response?.status != "OK") {
-            throw new Error("Error on push report: " + JSON.stringify(response));
-        } else {
-            log.info("Report sent status: " + response.status);
-            return response.status;
-        }
-    }
 
-    async saveReport(
+    async save(
         programId: string,
         responseGroups: UserMonitoringCountResponse,
         responseRoles: UserMonitoringDetails
@@ -185,76 +169,6 @@ export class ReportD2Repository extends UserMonitoringMetadataService implements
         fs.writeFileSync(file + ".json", content);
         log.info(`Json saved in ${file}`);
         return file;
-    }
-    private async pushUsersWithoutTwoFactorToDhis(
-        invalidConfigNumber: string,
-        invalidConfigUsers: NamedRef[],
-        api: D2Api,
-        program: ProgramMetadata,
-        eventUid: string
-    ) {
-        log.info(`Create and Pushing users without two factor report to DHIS2`);
-
-        const dataValues: EventDataValue[] = program.dataElements
-            .map(item => {
-                switch (item.code) {
-                    case dataelement_invalid_two_factor_count_code:
-                        return { dataElement: item.id, value: invalidConfigNumber };
-                    case dataelement_invalid_two_factor_usernames_list_code:
-                        return {
-                            dataElement: item.id,
-                            value: invalidConfigUsers
-                                .map(item => {
-                                    return item.name + "(" + item.id + ")";
-                                })
-                                .join(","),
-                        };
-                    default:
-                        return { dataElement: "", value: "" };
-                }
-            })
-            .filter(dataValue => dataValue.dataElement !== "")
-            .filter(dataValue => dataValue.value !== "");
-
-        if (dataValues.length == 0) {
-            log.info(`No data elements found`);
-            return;
-        }
-        log.info("Pushing report");
-
-        const response: ServerResponse = await api
-            .post<ServerResponse>(
-                "/tracker",
-                {
-                    async: false,
-                },
-                {
-                    events: [
-                        {
-                            event: eventUid,
-                            program: program.id,
-                            programStage: program.programStageId,
-                            orgUnit: program.orgUnitId,
-                            occurredAt: new Date().toISOString(),
-                            dataValues: dataValues,
-                        },
-                    ],
-                }
-            )
-            .getData()
-            .catch(err => {
-                if (err?.response?.data) {
-                    log.error("Push ERROR ->");
-                    log.error(JSON.stringify(err.response.data));
-                    return err.response.data as ServerResponse;
-                } else {
-                    log.error("Push ERROR without any data");
-                    return { status: "ERROR", typeReports: [] };
-                }
-            });
-        log.info("Report sent status: " + response.status);
-
-        return response;
     }
 
     private async pushReportToDhis(
