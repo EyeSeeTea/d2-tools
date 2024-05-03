@@ -1,5 +1,4 @@
 import { Async } from "domain/entities/Async";
-import { ProgramDetails } from "domain/entities/user-monitoring/common/ProgramDetails";
 import {
     UserMonitoringCountResponse,
     UserMonitoringDetails,
@@ -8,10 +7,10 @@ import { UserWithoutTwoFactor } from "domain/entities/user-monitoring/common/Use
 
 export interface ReportRepository {
     saveReport(
-        program: ProgramDetails,
+        programId: string,
         responseGroups: UserMonitoringCountResponse,
         responseRoles: UserMonitoringDetails
     ): Promise<Async<string>>;
 
-    saveUsersWithoutTwoFactor(program: ProgramDetails, response: UserWithoutTwoFactor): Promise<string>;
+    saveUsersWithoutTwoFactor(programId: string, response: UserWithoutTwoFactor): Promise<string>;
 }

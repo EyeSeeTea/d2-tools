@@ -1,5 +1,3 @@
-import { Async } from "domain/entities/Async";
-import { D2Api } from "types/d2-api";
 import log from "utils/log";
 import {
     DataElement,
@@ -7,17 +5,13 @@ import {
     ProgramMetadata,
     ProgramStage,
     ProgramStageDataElement,
-} from "data/user-monitoring/d2-users/D2Users.types";
-type Programs = { programs: Program[] };
-import _ from "lodash";
+} from "../d2-users/D2Users.types";
+import { Async } from "domain/entities/Async";
+import { D2Api } from "types/d2-api";
 
-import { UserMonitoringMetadataRepository } from "domain/repositories/user-monitoring/common/UserMonitoringMetadataRepository";
-
-export class UserMonitoringMetadataD2Repository implements UserMonitoringMetadataRepository {
-    constructor(private api: D2Api) {}
-
-    async getMetadata(programId: string): Promise<Async<ProgramMetadata>> {
-        const responseProgram = await this.getProgram(this.api, programId);
+export class UserMonitoringMetadataService {
+    async getMetadata(programId: string, api: D2Api): Promise<Async<ProgramMetadata>> {
+        const responseProgram = await this.getProgram(api, programId);
 
         const programs = responseProgram[0] ?? undefined;
 
@@ -25,6 +19,7 @@ export class UserMonitoringMetadataD2Repository implements UserMonitoringMetadat
             log.error(`Program ${programId} not found`);
             throw new Error("Program ${pushProgramId} not found");
         }
+
         const programStage: ProgramStage | undefined = programs.programStages[0];
         //todo fix orgunit.id
         const orgunitstring = JSON.stringify(programs.organisationUnits[0]);
@@ -56,7 +51,7 @@ export class UserMonitoringMetadataD2Repository implements UserMonitoringMetadat
         return program;
     }
 
-    async getProgram(api: D2Api, programUid: string): Promise<Program[]> {
+    private async getProgram(api: D2Api, programUid: string): Promise<Program[]> {
         log.info(`Get metadata: Program metadata: ${programUid}`);
 
         const responses = await api
@@ -68,3 +63,4 @@ export class UserMonitoringMetadataD2Repository implements UserMonitoringMetadat
         return responses.programs;
     }
 }
+type Programs = { programs: Program[] };

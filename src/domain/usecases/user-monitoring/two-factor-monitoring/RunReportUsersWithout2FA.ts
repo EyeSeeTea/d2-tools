@@ -2,17 +2,12 @@ import { Async } from "domain/entities/Async";
 import { UserMonitoringCountResponse } from "domain/entities/user-monitoring/common/UserMonitoring";
 import { TwoFactorUserOptions } from "domain/entities/user-monitoring/two-factor-monitoring/TwoFactorUserOptions";
 import { UserWithoutTwoFactor } from "domain/entities/user-monitoring/common/UserWithoutTwoFactor";
-import { UserMonitoringMetadataRepository } from "domain/repositories/user-monitoring/common/UserMonitoringMetadataRepository";
 import { ReportRepository } from "domain/repositories/user-monitoring/two-factor-monitoring/ReportRepository";
 import { UserRepository } from "domain/repositories/user-monitoring/two-factor-monitoring/UserRepository";
 import _ from "lodash";
 
 export class RunReportUsersWithout2FA {
-    constructor(
-        private metadataRepository: UserMonitoringMetadataRepository,
-        private userRepository: UserRepository,
-        private reportRepository: ReportRepository
-    ) {}
+    constructor(private userRepository: UserRepository, private reportRepository: ReportRepository) {}
 
     async execute(options: TwoFactorUserOptions): Async<UserMonitoringCountResponse> {
         const usersMustHave2FA = await this.userRepository.getUsersByGroupId([options.twoFactorGroup.id]);
@@ -31,9 +26,8 @@ export class RunReportUsersWithout2FA {
             listOfAffectedUsers: userItems,
             response: "Users without 2FA",
         };
-        const program = await this.metadataRepository.getMetadata(options.pushProgramId.id);
 
-        this.reportRepository.saveUsersWithoutTwoFactor(program, response);
+        this.reportRepository.saveUsersWithoutTwoFactor(options.pushProgramId.id, response);
         return response;
     }
 }

@@ -16,6 +16,7 @@ import { ReportRepository } from "domain/repositories/user-monitoring/two-factor
 import { NamedRef } from "domain/entities/Base";
 import { UserWithoutTwoFactor } from "domain/entities/user-monitoring/common/UserWithoutTwoFactor";
 import { UserResponse } from "domain/entities/user-monitoring/common/UserResponse";
+import { UserMonitoringMetadataService } from "../common/UserMonitoringMetadataService";
 
 const dataelement_invalid_users_groups_count_code = "ADMIN_invalid_users_groups_count_1_Events";
 const dataelement_invalid_users_groups_list_code = "ADMIN_invalid_users_groups_usernames_5_Events";
@@ -71,9 +72,12 @@ const headers: Record<Attr, { title: string }> = {
     validRoles: { title: "ValidRoles" },
 };
 
-export class ReportD2Repository implements ReportRepository {
-    constructor(private api: D2Api) {}
-    async saveUsersWithoutTwoFactor(program: ProgramMetadata, report: UserWithoutTwoFactor): Promise<string> {
+export class ReportD2Repository extends UserMonitoringMetadataService implements ReportRepository {
+    constructor(private api: D2Api) {
+        super();
+    }
+    async saveUsersWithoutTwoFactor(programId: string, report: UserWithoutTwoFactor): Promise<string> {
+        const program = await this.getMetadata(programId, this.api);
         const response = await this.pushUsersWithoutTwoFactorToDhis(
             report.invalidUsersCount.toString(),
             report.listOfAffectedUsers,
@@ -90,10 +94,11 @@ export class ReportD2Repository implements ReportRepository {
     }
 
     async saveReport(
-        program: ProgramMetadata,
+        programId: string,
         responseGroups: UserMonitoringCountResponse,
         responseRoles: UserMonitoringDetails
     ): Promise<Async<string>> {
+        const program = await this.getMetadata(programId, this.api);
         const userFixedId = await this.saveFileResource(
             JSON.stringify(responseRoles.usersFixed),
             filenameUsersPushed,

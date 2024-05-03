@@ -20,7 +20,6 @@ import { GetPermissionFixerConfigUseCase } from "domain/usecases/user-monitoring
 import { GetTwoFactorConfigUseCase } from "domain/usecases/user-monitoring/two-factor-monitoring/GetTwoFactorConfigUseCase";
 import { TwoFactorD2ConfigRepository } from "data/user-monitoring/two-factor-monitoring/TwoFactorD2ConfigRepository";
 import { D2PermissionFixerConfigRepository } from "data/user-monitoring/permission-fixer/D2PermissionFixerConfigRepository";
-import { UserMonitoringMetadataD2Repository } from "data/user-monitoring/common/UserMonitoringMetadataD2Repository";
 import { PermissionFixerTemplateD2Repository } from "data/user-monitoring/permission-fixer/PermissionFixerTemplateD2Repository";
 
 export function getCommand() {
@@ -49,7 +48,6 @@ const run2FAReporterCmd = command({
         const auth = getAuthFromFile(args.config_file);
         const api = getD2Api(auth.apiurl);
         const usersRepository = new UserD2Repository(api);
-        const usersMonitoringMetadataRepository = new UserMonitoringMetadataD2Repository(api);
         const externalConfigRepository = new TwoFactorD2ConfigRepository(api);
         const userMonitoringReportRepository = new ReportD2Repository(api);
         log.debug(`Get config: ${auth.apiurl}`);
@@ -58,7 +56,6 @@ const run2FAReporterCmd = command({
 
         log.info(`Run user Role monitoring`);
         const response = await new RunReportUsersWithout2FA(
-            usersMonitoringMetadataRepository,
             usersRepository,
             userMonitoringReportRepository
         ).execute(config);
@@ -84,7 +81,6 @@ const runUsersMonitoringCmd = command({
         const api = getD2Api(auth.apiurl);
         const usersRepository = new UserD2Repository(api);
         const userGroupsRepository = new UserGroupD2Repository(api);
-        const usersMonitoringMetadataRepository = new UserMonitoringMetadataD2Repository(api);
         const usersTemplateRepository = new PermissionFixerTemplateD2Repository(api, usersRepository);
         const externalConfigRepository = new D2PermissionFixerConfigRepository(api);
         const userMonitoringReportRepository = new ReportD2Repository(api);
@@ -108,10 +104,7 @@ const runUsersMonitoringCmd = command({
 
         config.userRolesResponse = userRoleResponse;
         log.info(`Save user-monitoring user-permissions results`);
-        new RunUserPermissionUserReportUseCase(
-            usersMonitoringMetadataRepository,
-            userMonitoringReportRepository
-        ).execute(config);
+        new RunUserPermissionUserReportUseCase(userMonitoringReportRepository).execute(config);
     },
 });
 

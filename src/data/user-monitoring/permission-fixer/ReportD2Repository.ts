@@ -4,7 +4,15 @@ import { FileUploadParameters, Files } from "@eyeseetea/d2-api/api/files";
 import { Async } from "domain/entities/Async";
 import { D2Api } from "types/d2-api";
 import log from "utils/log";
-import { EventDataValue, ProgramMetadata, User } from "data/user-monitoring/d2-users/D2Users.types";
+import {
+    DataElement,
+    EventDataValue,
+    Program,
+    ProgramMetadata,
+    ProgramStage,
+    ProgramStageDataElement,
+    User,
+} from "data/user-monitoring/d2-users/D2Users.types";
 import _ from "lodash";
 
 import {
@@ -12,6 +20,7 @@ import {
     UserMonitoringDetails,
 } from "domain/entities/user-monitoring/common/UserMonitoring";
 import { getUid } from "utils/uid";
+import { UserMonitoringMetadataService } from "data/user-monitoring/common/UserMonitoringMetadataService";
 import { ReportRepository } from "domain/repositories/user-monitoring/two-factor-monitoring/ReportRepository";
 import { UserWithoutTwoFactor } from "domain/entities/user-monitoring/common/UserWithoutTwoFactor";
 import { NamedRef } from "domain/entities/Base";
@@ -71,9 +80,13 @@ const headers: Record<Attr, { title: string }> = {
     validRoles: { title: "ValidRoles" },
 };
 
-export class ReportD2Repository implements ReportRepository {
-    constructor(private api: D2Api) {}
-    async saveUsersWithoutTwoFactor(program: ProgramMetadata, report: UserWithoutTwoFactor): Promise<string> {
+export class ReportD2Repository extends UserMonitoringMetadataService implements ReportRepository {
+    constructor(private api: D2Api) {
+        super();
+    }
+
+    async saveUsersWithoutTwoFactor(programId: string, report: UserWithoutTwoFactor): Promise<string> {
+        const program = await this.getMetadata(programId, this.api);
         const response = await this.pushUsersWithoutTwoFactorToDhis(
             report.invalidUsersCount.toString(),
             report.listOfAffectedUsers,
@@ -90,10 +103,11 @@ export class ReportD2Repository implements ReportRepository {
     }
 
     async saveReport(
-        program: ProgramMetadata,
+        programId: string,
         responseGroups: UserMonitoringCountResponse,
         responseRoles: UserMonitoringDetails
     ): Promise<Async<string>> {
+        const program = await this.getMetadata(programId, this.api);
         const userFixedId = await this.saveFileResource(
             JSON.stringify(responseRoles.usersFixed),
             filenameUsersPushed,
