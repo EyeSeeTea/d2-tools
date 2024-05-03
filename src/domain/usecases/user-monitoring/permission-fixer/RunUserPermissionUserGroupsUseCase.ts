@@ -8,7 +8,7 @@ import log from "utils/log";
 import { PermissionFixerUserOptions } from "domain/entities/user-monitoring/permission-fixer/PermissionFixerUserOptions";
 import { TemplateGroupWithAuthorities } from "domain/entities/user-monitoring/common/Templates";
 import { User } from "domain/entities/user-monitoring/common/User";
-import { Item } from "domain/entities/user-monitoring/common/Identifier";
+import { NamedRef } from "domain/entities/Base";
 
 export class RunUserPermissionUserGroupsUseCase {
     constructor(
@@ -54,9 +54,9 @@ export class RunUserPermissionUserGroupsUseCase {
     private async addLowLevelTemplateGroupToUsersWithoutAny(
         completeTemplateGroups: TemplateGroupWithAuthorities[],
         allUsersGroupCheck: User[],
-        minimalGroupId: Item
+        minimalGroupId: NamedRef
     ): Promise<UserMonitoringCountResponse> {
-        const userIdWithoutGroups: Item[] = this.detectUserIdsWithoutGroups(
+        const userIdWithoutGroups: NamedRef[] = this.detectUserIdsWithoutGroups(
             completeTemplateGroups,
             allUsersGroupCheck,
             minimalGroupId
@@ -69,10 +69,10 @@ export class RunUserPermissionUserGroupsUseCase {
     private detectUserIdsWithoutGroups(
         completeTemplateGroups: TemplateGroupWithAuthorities[],
         allUsersGroupCheck: User[],
-        minimalGroupId: Item
-    ): Item[] {
+        minimalGroupId: NamedRef
+    ): NamedRef[] {
         return _.compact(
-            allUsersGroupCheck.map((user): Item | undefined => {
+            allUsersGroupCheck.map((user): NamedRef | undefined => {
                 const templateGroupMatch = completeTemplateGroups.find(template => {
                     return user.userGroups.some(
                         userGroup => userGroup != undefined && template.group.id == userGroup.id
@@ -84,7 +84,7 @@ export class RunUserPermissionUserGroupsUseCase {
                     log.error(
                         `Warning: User don't have groups ${user.id} - ${user.name} adding to minimal group  ${minimalGroupId}`
                     );
-                    const id: Item = { id: user.id, name: user.username };
+                    const id: NamedRef = { id: user.id, name: user.username };
                     return id;
                 }
             })
@@ -92,8 +92,8 @@ export class RunUserPermissionUserGroupsUseCase {
     }
 
     private async pushUsersWithoutGroupsWithLowLevelGroup(
-        userIdWithoutGroups: Item[],
-        minimalGroupId: Item
+        userIdWithoutGroups: NamedRef[],
+        minimalGroupId: NamedRef
     ): Promise<UserMonitoringCountResponse> {
         if (userIdWithoutGroups != undefined && userIdWithoutGroups.length > 0) {
             const minimalUserGroup = await this.userGroupRepository.getByIds([minimalGroupId.id]);

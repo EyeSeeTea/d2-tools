@@ -1,7 +1,7 @@
-import { Item } from "./Identifier";
+import { NamedRef } from "domain/entities/Base";
 
 export type UserWithoutTwoFactor = {
     invalidUsersCount: number;
-    listOfAffectedUsers: Item[];
+    listOfAffectedUsers: NamedRef[];
     response: string;
 };

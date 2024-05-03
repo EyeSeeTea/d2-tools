@@ -1,6 +1,6 @@
-import { Item } from "./Identifier";
+import { NamedRef } from "domain/entities/Base";
 
 export interface RolesByRoles {
-    active_role: Item;
-    ignore_role: Item;
+    active_role: NamedRef;
+    ignore_role: NamedRef;
 }

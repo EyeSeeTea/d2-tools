@@ -1,11 +1,11 @@
 import { User } from "domain/entities/user-monitoring/common/User";
-import { IdItem } from "./Identifier";
+import { NamedRef } from "domain/entities/Base";
 
 export interface UserResponse {
     user: User;
     fixedUser: User;
-    validUserRoles: IdItem[];
-    invalidUserRoles: IdItem[];
+    validUserRoles: NamedRef[];
+    invalidUserRoles: NamedRef[];
     actionRequired: boolean;
     updated?: boolean;
     networkRes?: string;

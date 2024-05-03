@@ -1,4 +1,4 @@
-import { Id, IdItem } from "./Identifier";
+import { Id, NamedRef } from "domain/entities/Base";
 
 export interface UserCredentials {
     lastUpdated: string;
@@ -10,7 +10,7 @@ export interface UserCredentials {
     disabled: boolean;
     twoFA: boolean;
     username: string;
-    userRoles: IdItem[];
+    userRoles: NamedRef[];
 }
 
 type StringDateTime = string;

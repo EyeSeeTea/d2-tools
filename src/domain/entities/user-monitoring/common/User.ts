@@ -1,4 +1,4 @@
-import { Id, IdItem } from "./Identifier";
+import { Id, NamedRef } from "domain/entities/Base";
 import { UserCredentials } from "./UserCredentials";
 import { UserDetails } from "./UserDetails";
 
@@ -22,7 +22,7 @@ export interface User {
     passwordLastUpdated: StringDateTime;
     username: string;
     userCredentials: UserCredentials;
-    userGroups: IdItem[];
-    userRoles: IdItem[];
+    userGroups: NamedRef[];
+    userRoles: NamedRef[];
 }
 type StringDateTime = string;

@@ -1,5 +1,5 @@
 import { Async } from "domain/entities/Async";
-import { Id } from "domain/entities/user-monitoring/common/Identifier";
+import { Id } from "domain/entities/Base";
 import { User } from "domain/entities/user-monitoring/common/User";
 
 export interface UserRepository {

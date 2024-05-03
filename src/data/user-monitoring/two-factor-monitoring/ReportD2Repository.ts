@@ -13,7 +13,7 @@ import {
 } from "domain/entities/user-monitoring/common/UserMonitoring";
 import { getUid } from "utils/uid";
 import { ReportRepository } from "domain/repositories/user-monitoring/two-factor-monitoring/ReportRepository";
-import { Item } from "domain/entities/user-monitoring/common/Identifier";
+import { NamedRef } from "domain/entities/Base";
 import { UserWithoutTwoFactor } from "domain/entities/user-monitoring/common/UserWithoutTwoFactor";
 
 const dataelement_invalid_users_groups_count_code = "ADMIN_invalid_users_groups_count_1_Events";
@@ -182,7 +182,7 @@ export class ReportD2Repository implements ReportRepository {
     }
     private async pushUsersWithoutTwoFactorToDhis(
         invalidConfigNumber: string,
-        invalidConfigUsers: Item[],
+        invalidConfigUsers: NamedRef[],
         api: D2Api,
         program: ProgramMetadata,
         eventUid: string
@@ -253,9 +253,9 @@ export class ReportD2Repository implements ReportRepository {
 
     private async pushReportToDhis(
         userGroupsFixedCount: string,
-        usernamesGroupModified: Item[],
+        usernamesGroupModified: NamedRef[],
         usersFixedRolesCount: string,
-        usernamesFixedRoles: Item[],
+        usernamesFixedRoles: NamedRef[],
         status: string,
         userFixedFileResourceId: string,
         userBackupFileResourceid: string,

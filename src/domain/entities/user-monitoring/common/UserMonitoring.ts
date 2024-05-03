@@ -1,5 +1,5 @@
 import { UserRes } from "data/d2-users/D2Users.types";
-import { Item } from "./Identifier";
+import { NamedRef } from "domain/entities/Base";
 import { User } from "./User";
 
 export interface UserMonitoringDetails extends UserMonitoringCountResponse {
@@ -11,6 +11,6 @@ export interface UserMonitoringDetails extends UserMonitoringCountResponse {
 
 export type UserMonitoringCountResponse = {
     invalidUsersCount: number;
-    listOfAffectedUsers: Item[];
+    listOfAffectedUsers: NamedRef[];
     response: string;
 };

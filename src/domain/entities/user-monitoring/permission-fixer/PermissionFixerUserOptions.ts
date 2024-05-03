@@ -1,4 +1,4 @@
-import { Item } from "../common/Identifier";
+import { NamedRef } from "domain/entities/Base";
 import { RolesByGroup } from "../common/RolesByGroup";
 import { RolesByRoles } from "../common/RolesByRoles";
 import { RolesByUser } from "../common/RolesByUser";
@@ -9,13 +9,13 @@ export interface PermissionFixerUserOptions {
     userRolesResponse?: UserMonitoringDetails;
     userGroupsResponse?: UserMonitoringCountResponse;
     templates: TemplateGroup[];
-    excludedRoles: Item[];
-    excludedUsers: Item[];
+    excludedRoles: NamedRef[];
+    excludedUsers: NamedRef[];
     excludedRolesByUser: RolesByUser[];
     excludedRolesByGroup: RolesByGroup[];
     excludedRolesByRole: RolesByRoles[];
     pushReport: boolean;
-    pushProgramId: Item;
-    minimalGroupId: Item;
-    minimalRoleId: Item;
+    pushProgramId: NamedRef;
+    minimalGroupId: NamedRef;
+    minimalRoleId: NamedRef;
 }

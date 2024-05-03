@@ -1,8 +1,7 @@
 import { Async } from "domain/entities/Async";
 import { D2Api } from "types/d2-api";
 import log from "utils/log";
-import { Program, UserRoleAuthority } from "../../d2-users/D2Users.types";
-type Programs = { programs: Program[] };
+import { UserRoleAuthority } from "../../d2-users/D2Users.types";
 type UserRoleAuthorities = { userRoles: UserRoleAuthority[] };
 import _ from "lodash";
 
@@ -12,8 +11,8 @@ import {
 } from "domain/entities/user-monitoring/common/Templates";
 import { TemplateRepository } from "domain/repositories/user-monitoring/permission-fixer/TemplateRepository";
 import { UserRepository } from "domain/repositories/user-monitoring/permission-fixer/UserRepository";
-import { Item } from "domain/entities/user-monitoring/common/Identifier";
 import { PermissionFixerUserOptions } from "domain/entities/user-monitoring/permission-fixer/PermissionFixerUserOptions";
+import { NamedRef } from "domain/entities/Base";
 
 export class PermissionFixerTemplateD2Repository implements TemplateRepository {
     constructor(private api: D2Api, private userMonitoringRepository: UserRepository) {}
@@ -130,7 +129,7 @@ export class PermissionFixerTemplateD2Repository implements TemplateRepository {
         return templateFilled;
     }
 
-    private validateAuths(userRoles: UserRoleAuthority[], excludedRoles: Item[]): boolean {
+    private validateAuths(userRoles: UserRoleAuthority[], excludedRoles: NamedRef[]): boolean {
         const rolesWithInvalidAuth = userRoles.filter(role => {
             return role.authorities.length == 0;
         });

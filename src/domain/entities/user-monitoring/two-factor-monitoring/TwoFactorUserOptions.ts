@@ -1,8 +1,8 @@
-import { Item } from "../common/Identifier";
+import { NamedRef } from "domain/entities/Base";
 import { UserMonitoringCountResponse } from "../common/UserMonitoring";
 
 export interface TwoFactorUserOptions {
     userGroupsResponse?: UserMonitoringCountResponse;
-    pushProgramId: Item;
-    twoFactorGroup: Item;
+    pushProgramId: NamedRef;
+    twoFactorGroup: NamedRef;
 }

@@ -11,7 +11,7 @@ import { UserResponse } from "domain/entities/user-monitoring/common/UserRespons
 import { RolesByRoles } from "domain/entities/user-monitoring/common/RolesByRoles";
 import { RolesByGroup } from "domain/entities/user-monitoring/common/RolesByGroup";
 import { RolesByUser } from "domain/entities/user-monitoring/common/RolesByUser";
-import { Item } from "domain/entities/user-monitoring/common/Identifier";
+import { Ref } from "domain/entities/Base";
 import { UserRes } from "data/d2-users/D2Users.types";
 import { User } from "domain/entities/user-monitoring/common/User";
 
@@ -126,7 +126,7 @@ export class RunUserPermissionUserRolesUseCase {
         excludedRolesByRole: RolesByRoles[],
         excludedRolesByGroup: RolesByGroup[],
         excludedRolesByUser: RolesByUser[],
-        minimalRoleId: Item
+        minimalRoleId: Ref
     ): UserResponse[] {
         const processedUsers = _.compact(
             allUsers.map(user => {

@@ -1,9 +1,9 @@
-import { Item } from "./Identifier";
+import { NamedRef } from "domain/entities/Base";
 import { UserRoleAuthority } from "./UserRoleAuthority";
 
 export interface TemplateGroup {
-    group: Item;
-    template: Item;
+    group: NamedRef;
+    template: NamedRef;
 }
 
 export interface TemplateGroupWithAuthorities extends TemplateGroup {

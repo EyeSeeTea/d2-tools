@@ -1,4 +1,4 @@
-import { Item } from "domain/entities/user-monitoring/common/Identifier";
+import { NamedRef } from "domain/entities/Base";
 import _ from "lodash";
 
 export interface ConfigClient {
@@ -9,39 +9,35 @@ export interface ConfigClient {
     excludeUsers: ExcludeUsers;
     templateGroups: TemplateGroups[];
     pushReport: boolean;
-    minimalGroup: Item;
-    minimalRole: Item;
-    pushProgram: Item;
-}
-export interface Identifier {
-    id: string;
-    name: string;
+    minimalGroup: NamedRef;
+    minimalRole: NamedRef;
+    pushProgram: NamedRef;
 }
 
 export interface ExcludeRoleByRole {
-    active_role: Identifier;
-    ignore_role: Identifier;
+    active_role: NamedRef;
+    ignore_role: NamedRef;
 }
 
 export interface ExcludeRoleByGroup {
-    role: Identifier;
-    group: Identifier;
+    role: NamedRef;
+    group: NamedRef;
 }
 
 export interface ExcludeRoleByUser {
-    role: Identifier;
-    user: Identifier;
+    role: NamedRef;
+    user: NamedRef;
 }
 
 export interface ExcludeRoles {
-    roles: Identifier[];
+    roles: NamedRef[];
 }
 
 export interface ExcludeUsers {
-    users: Identifier[];
+    users: NamedRef[];
 }
 
 export interface TemplateGroups {
-    group: Identifier;
-    template: Identifier;
+    group: NamedRef;
+    template: NamedRef;
 }

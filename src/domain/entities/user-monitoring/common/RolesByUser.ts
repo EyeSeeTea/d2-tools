@@ -1,6 +1,6 @@
-import { Item } from "./Identifier";
+import { NamedRef } from "domain/entities/Base";
 
 export interface RolesByUser {
-    role: Item;
-    user: Item;
+    role: NamedRef;
+    user: NamedRef;
 }

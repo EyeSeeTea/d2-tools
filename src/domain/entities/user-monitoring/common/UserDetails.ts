@@ -1,4 +1,4 @@
-import { Id } from "./Identifier";
+import { Id } from "domain/entities/Base";
 
 export interface UserDetails {
     id: Id;
