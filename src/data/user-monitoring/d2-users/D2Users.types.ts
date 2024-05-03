@@ -50,14 +50,6 @@ export interface User {
     userRoles: Ref[];
 }
 
-export interface UserGroup {
-    created: StringDateTime;
-    lastUpdated: StringDateTime;
-    name: string;
-    id: string;
-    users: Ref[];
-}
-
 export interface Program {
     program: string;
     programStages: ProgramStage[];

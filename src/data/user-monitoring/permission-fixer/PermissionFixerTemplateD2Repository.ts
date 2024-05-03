@@ -1,7 +1,7 @@
 import { Async } from "domain/entities/Async";
 import { D2Api } from "types/d2-api";
 import log from "utils/log";
-import { UserRoleAuthority } from "../../d2-users/D2Users.types";
+import { UserRoleAuthority } from "data/user-monitoring/d2-users/D2Users.types";
 type UserRoleAuthorities = { userRoles: UserRoleAuthority[] };
 import _ from "lodash";
 

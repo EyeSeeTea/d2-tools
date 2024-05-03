@@ -4,7 +4,7 @@ import { FileUploadParameters, Files } from "@eyeseetea/d2-api/api/files";
 import { Async } from "domain/entities/Async";
 import { D2Api } from "types/d2-api";
 import log from "utils/log";
-import { EventDataValue, ProgramMetadata, User } from "../../d2-users/D2Users.types";
+import { EventDataValue, ProgramMetadata, User } from "data/user-monitoring/d2-users/D2Users.types";
 import _ from "lodash";
 
 import {

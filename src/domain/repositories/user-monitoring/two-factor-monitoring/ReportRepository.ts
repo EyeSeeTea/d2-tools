@@ -1,5 +1,5 @@
-import { ProgramMetadata } from "data/d2-users/D2Users.types";
 import { Async } from "domain/entities/Async";
+import { ProgramDetails } from "domain/entities/user-monitoring/common/ProgramDetails";
 import {
     UserMonitoringCountResponse,
     UserMonitoringDetails,
@@ -8,10 +8,10 @@ import { UserWithoutTwoFactor } from "domain/entities/user-monitoring/common/Use
 
 export interface ReportRepository {
     saveReport(
-        program: ProgramMetadata,
+        program: ProgramDetails,
         responseGroups: UserMonitoringCountResponse,
         responseRoles: UserMonitoringDetails
     ): Promise<Async<string>>;
 
-    saveUsersWithoutTwoFactor(program: ProgramMetadata, response: UserWithoutTwoFactor): Promise<string>;
+    saveUsersWithoutTwoFactor(program: ProgramDetails, response: UserWithoutTwoFactor): Promise<string>;
 }

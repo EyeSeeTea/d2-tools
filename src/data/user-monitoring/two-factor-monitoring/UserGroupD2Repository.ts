@@ -1,11 +1,11 @@
 import { UserGroupRepository } from "domain/repositories/user-monitoring/two-factor-monitoring/UserGroupRepository";
-import { UserGroup } from "../../d2-users/D2Users.types";
 import { D2Api } from "@eyeseetea/d2-api/2.36";
 import log from "utils/log";
+import { UserGroupExtended } from "domain/entities/user-monitoring/common/UserGroupExtended";
 
 export class UserGroupD2Repository implements UserGroupRepository {
     constructor(private api: D2Api) {}
-    async getByIds(groupsIds: string[]): Promise<UserGroup[]> {
+    async getByIds(groupsIds: string[]): Promise<UserGroupExtended[]> {
         log.info(`Get metadata: All groups`);
 
         const responses = await this.api
@@ -18,7 +18,7 @@ export class UserGroupD2Repository implements UserGroupRepository {
 
         return responses["userGroups"];
     }
-    async save(userGroup: UserGroup): Promise<string> {
+    async save(userGroup: UserGroupExtended): Promise<string> {
         try {
             const response = await this.api.models.userGroups.put(userGroup).getData();
             response.status == "OK"
@@ -34,4 +34,4 @@ export class UserGroupD2Repository implements UserGroupRepository {
     }
 }
 
-type UserGroups = { userGroups: UserGroup[] };
+type UserGroups = { userGroups: UserGroupExtended[] };

@@ -7,7 +7,7 @@ import {
     ProgramMetadata,
     ProgramStage,
     ProgramStageDataElement,
-} from "../../d2-users/D2Users.types";
+} from "data/user-monitoring/d2-users/D2Users.types";
 type Programs = { programs: Program[] };
 import _ from "lodash";
 

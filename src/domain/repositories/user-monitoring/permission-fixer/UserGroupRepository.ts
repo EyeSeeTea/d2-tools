@@ -1,7 +1,7 @@
 import { Id } from "@eyeseetea/d2-api";
-import { UserGroup } from "data/d2-users/D2Users.types";
+import { UserGroupExtended } from "domain/entities/user-monitoring/common/UserGroupExtended";
 
 export interface UserGroupRepository {
-    getByIds(ids: Id[]): Promise<UserGroup[]>;
-    save(userGroup: UserGroup): Promise<string>;
+    getByIds(ids: Id[]): Promise<UserGroupExtended[]>;
+    save(userGroup: UserGroupExtended): Promise<string>;
 }
