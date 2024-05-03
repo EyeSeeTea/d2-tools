@@ -1,6 +1,6 @@
 {
     "name": "d2-tools",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "main": "src/index.ts",
     "description": "DHIS2 tools",
     "scripts": {
@@ -9,6 +9,7 @@
         "lint": "eslint src/{data,domain,scripts,types,utils} --ext .ts",
         "service": "nodemon",
         "start": "node dist/index.js",
+        "start:dev": "ts-node src/index.ts",
         "prettify": "prettier \"./**/*.{js,jsx,json,css,ts,tsx}\" --write",
         "release": "standard-version"
     },
@@ -29,6 +30,7 @@
         "luxon": "3.4.2",
         "md5.js": "^1.3.5",
         "nodemailer": "^6.7.5",
+        "purify-ts": "2.0.1",
         "random-seed": "^0.3.0",
         "simple-node-logger": "^21.8.12",
         "socks-proxy-agent": "^8.0.2",

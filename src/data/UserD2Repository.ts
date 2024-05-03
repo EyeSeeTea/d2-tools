@@ -126,7 +126,7 @@ export class UserD2Repository implements UserRepository {
 
                     return [
                         {
-                            usersSkipped:
+                            recordsSkipped:
                                 response.status === "ERROR" ? result.usersToSave.map(user => user.id) : [],
                             errorMessage,
                             created: response.stats.created,
@@ -140,7 +140,7 @@ export class UserD2Repository implements UserRepository {
                     console.error(errorMessage, err);
                     return [
                         {
-                            usersSkipped: userIds,
+                            recordsSkipped: userIds,
                             errorMessage,
                             created: 0,
                             ignored: userIds.length,
@@ -150,24 +150,7 @@ export class UserD2Repository implements UserRepository {
                 });
         });
 
-        return stats.reduce(
-            (acum, stat) => {
-                return {
-                    usersSkipped: [...acum.usersSkipped, ...stat.usersSkipped],
-                    errorMessage: `${acum.errorMessage}${stat.errorMessage}`,
-                    created: acum.created + stat.created,
-                    ignored: acum.ignored + stat.ignored,
-                    updated: acum.updated + stat.updated,
-                };
-            },
-            {
-                usersSkipped: [],
-                errorMessage: "",
-                created: 0,
-                ignored: 0,
-                updated: 0,
-            }
-        );
+        return Stats.combine(stats);
     }
 
     async getAll(): Async<User[]> {
