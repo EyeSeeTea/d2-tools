@@ -12,7 +12,6 @@ import { RolesByRoles } from "domain/entities/user-monitoring/common/RolesByRole
 import { RolesByGroup } from "domain/entities/user-monitoring/common/RolesByGroup";
 import { RolesByUser } from "domain/entities/user-monitoring/common/RolesByUser";
 import { Ref } from "domain/entities/Base";
-import { UserRes } from "data/d2-users/D2Users.types";
 import { User } from "domain/entities/user-monitoring/common/User";
 
 export class RunUserPermissionUserRolesUseCase {
@@ -145,10 +144,10 @@ export class RunUserPermissionUserRolesUseCase {
                     const fixedUser = JSON.parse(JSON.stringify(user));
                     fixedUser.userCredentials.userRoles = [{ id: minimalRoleId.id }];
                     fixedUser.userRoles = [{ id: minimalRoleId.id }];
-                    const userInfoRes: UserRes = {
+                    const userInfoRes: UserResponse = {
                         user: user,
                         fixedUser: fixedUser,
-                        validUserRoles: [{ id: minimalRoleId.id }],
+                        validUserRoles: [{ id: minimalRoleId.id, name: "Minimal Role" }],
                         actionRequired: true,
                         invalidUserRoles: [],
                         userNameTemplate: "User don't have roles",
@@ -227,7 +226,7 @@ export class RunUserPermissionUserRolesUseCase {
 
                     if (AllGroupMatch.length > 1) {
                         log.debug(`Debug: User have more than 1 group ${user.id} - ${user.name}`);
-                        const userInfoRes: UserRes = {
+                        const userInfoRes: UserResponse = {
                             user: user,
                             fixedUser: fixedUser,
                             validUserRoles: userValidRoles,
@@ -240,7 +239,7 @@ export class RunUserPermissionUserRolesUseCase {
                         };
                         return userInfoRes;
                     } else {
-                        const userInfoRes: UserRes = {
+                        const userInfoRes: UserResponse = {
                             user: user,
                             fixedUser: fixedUser,
                             validUserRoles: userValidRoles,

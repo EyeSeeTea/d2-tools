@@ -4,7 +4,7 @@ import { FileUploadParameters, Files } from "@eyeseetea/d2-api/api/files";
 import { Async } from "domain/entities/Async";
 import { D2Api } from "types/d2-api";
 import log from "utils/log";
-import { EventDataValue, ProgramMetadata, User, UserRes } from "../../d2-users/D2Users.types";
+import { EventDataValue, ProgramMetadata, User } from "../../d2-users/D2Users.types";
 import _ from "lodash";
 
 import {
@@ -15,6 +15,7 @@ import { getUid } from "utils/uid";
 import { ReportRepository } from "domain/repositories/user-monitoring/two-factor-monitoring/ReportRepository";
 import { UserWithoutTwoFactor } from "domain/entities/user-monitoring/common/UserWithoutTwoFactor";
 import { NamedRef } from "domain/entities/Base";
+import { UserResponse } from "domain/entities/user-monitoring/common/UserResponse";
 
 const dataelement_invalid_users_groups_count_code = "ADMIN_invalid_users_groups_count_1_Events";
 const dataelement_invalid_users_groups_list_code = "ADMIN_invalid_users_groups_usernames_5_Events";
@@ -39,7 +40,7 @@ const csvErrorFilename = `${date}_users_backup`;
 const filenameErrorOnPush = `${date}_users_push_error`;
 const filenameUsersPushed = `${date}_users_pushed.json`;
 const filenameUserBackup = `${date}_users_update_backup.json`;
-type UserResponse = { status: string; typeReports: object[] };
+type ServerResponse = { status: string; typeReports: object[] };
 
 type Attr =
     | "id"
@@ -141,7 +142,7 @@ export class ReportD2Repository implements ReportRepository {
         return fileresourceId;
     }
 
-    private async saveInCsv(users: UserRes[], filepath: string) {
+    private async saveInCsv(users: UserResponse[], filepath: string) {
         const createCsvWriter = CsvWriter.createObjectCsvWriter;
         const csvHeader = _.map(headers, (obj, key) => ({ id: key, ...obj }));
         const csvWriter = createCsvWriter({ path: filepath + ".csv", header: csvHeader });
@@ -165,7 +166,7 @@ export class ReportD2Repository implements ReportRepository {
         await csvWriter.writeRecords(records);
     }
 
-    private async saveUserErrorsOnLogFile(userActionRequired: UserRes[], eventid: string) {
+    private async saveUserErrorsOnLogFile(userActionRequired: UserResponse[], eventid: string) {
         const userToPost: User[] = userActionRequired.map(item => {
             return item.fixedUser;
         });
@@ -216,8 +217,8 @@ export class ReportD2Repository implements ReportRepository {
         }
         log.info("Pushing report");
 
-        const response: UserResponse = await api
-            .post<UserResponse>(
+        const response: ServerResponse = await api
+            .post<ServerResponse>(
                 "/tracker",
                 {
                     async: false,
@@ -240,7 +241,7 @@ export class ReportD2Repository implements ReportRepository {
                 if (err?.response?.data) {
                     log.error("Push ERROR ->");
                     log.error(JSON.stringify(err.response.data));
-                    return err.response.data as UserResponse;
+                    return err.response.data as ServerResponse;
                 } else {
                     log.error("Push ERROR without any data");
                     return { status: "ERROR", typeReports: [] };
@@ -307,8 +308,8 @@ export class ReportD2Repository implements ReportRepository {
         }
         log.info("Pushing report");
 
-        const response: UserResponse = await api
-            .post<UserResponse>(
+        const response: ServerResponse = await api
+            .post<ServerResponse>(
                 "/tracker",
                 {
                     async: false,
@@ -331,7 +332,7 @@ export class ReportD2Repository implements ReportRepository {
                 if (err?.response?.data) {
                     log.error("Push ERROR ->");
                     log.error(JSON.stringify(err.response.data));
-                    return err.response.data as UserResponse;
+                    return err.response.data as ServerResponse;
                 } else {
                     log.error("Push ERROR without any data");
                     return { status: "ERROR", typeReports: [] };

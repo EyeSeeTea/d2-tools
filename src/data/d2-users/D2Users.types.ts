@@ -1,4 +1,4 @@
-export type Id = string;
+import { Ref, Id, StringDateTime } from "domain/entities/Base";
 
 export interface UserDetails {
     id: Id;
@@ -17,7 +17,7 @@ export interface UserCredentials {
     disabled: boolean;
     twoFA: boolean;
     username: string;
-    userRoles: IdItem[];
+    userRoles: Ref[];
 }
 
 export interface UserRoleAuthority {
@@ -26,43 +26,6 @@ export interface UserRoleAuthority {
     name: string;
 }
 
-export interface UserResult {
-    user: User;
-    validRoles: IdItem[];
-    invalidRoles: IdItem[];
-}
-
-export interface UserRes {
-    user: User;
-    fixedUser: User;
-    validUserRoles: IdItem[];
-    invalidUserRoles: IdItem[];
-    actionRequired: boolean;
-    updated?: boolean;
-    networkRes?: string;
-    userNameTemplate?: string;
-    templateIdTemplate?: string;
-    groupIdTemplate?: string;
-    multipleUserGroups?: string[];
-    undefinedUserGroups?: boolean;
-    undefinedRoles?: boolean;
-}
-
-export interface UserCSV {
-    id: Id;
-    username: string;
-    email: string;
-    displayName: string;
-    userGroups: string[];
-    lastUpdatedBy: string;
-    updated?: boolean;
-    networkRes?: string;
-    createdBy: string;
-    userType: string;
-    templateUser: string;
-    validUserRoles: IdItem[];
-    invalidUserRoles: IdItem[];
-}
 export interface User {
     id: Id;
     lastUpdatedBy: UserDetails;
@@ -83,23 +46,8 @@ export interface User {
     passwordLastUpdated: StringDateTime;
     username: string;
     userCredentials: UserCredentials;
-    userGroups: IdItem[];
-    userRoles: IdItem[];
-}
-
-export interface Users {
-    users: User[];
-}
-
-export interface UserRole {
-    created: StringDateTime;
-    lastUpdated: StringDateTime;
-    name: string;
-    id: string;
-    description: string;
-    lastUpdatedBy: UserDetails;
-    authorities: string[];
-    users: IdItem[];
+    userGroups: Ref[];
+    userRoles: Ref[];
 }
 
 export interface UserGroup {
@@ -107,7 +55,7 @@ export interface UserGroup {
     lastUpdated: StringDateTime;
     name: string;
     id: string;
-    users: IdItem[];
+    users: Ref[];
 }
 
 export interface Program {
@@ -143,8 +91,3 @@ export interface DataElement {
     code: string;
     name: string;
 }
-export interface IdItem {
-    id: Id;
-}
-
-type StringDateTime = string;

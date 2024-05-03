@@ -1,4 +1,4 @@
-import { Id, NamedRef } from "domain/entities/Base";
+import { Id, NamedRef, StringDateTime } from "domain/entities/Base";
 
 export interface UserCredentials {
     lastUpdated: string;
@@ -12,5 +12,3 @@ export interface UserCredentials {
     username: string;
     userRoles: NamedRef[];
 }
-
-type StringDateTime = string;

@@ -1,4 +1,4 @@
-import { Id, NamedRef } from "domain/entities/Base";
+import { Id, NamedRef, StringDateTime } from "domain/entities/Base";
 import { UserCredentials } from "./UserCredentials";
 import { UserDetails } from "./UserDetails";
 
@@ -25,4 +25,3 @@ export interface User {
     userGroups: NamedRef[];
     userRoles: NamedRef[];
 }
-type StringDateTime = string;
