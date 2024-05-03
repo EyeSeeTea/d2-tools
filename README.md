@@ -501,14 +501,14 @@ An example of the file:
       },
       "user": {
         "id": "wUd8NBL7fn2",
-        "name": "rose.mabelle"
+        "name": "user"
       }
     }
   ],
   "EXCLUDE_USERS": [
     {
       "id": "smGarTiKDdV",
-      "name": "dev.user"
+      "name": "user"
     }
   ],
   "MINIMAL_GROUP": {
