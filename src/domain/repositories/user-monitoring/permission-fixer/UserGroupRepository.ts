@@ -1,4 +1,4 @@
-import { Id } from "@eyeseetea/d2-api";
+import { Id } from "domain/entities/Base";
 import { UserGroupExtended } from "domain/entities/user-monitoring/common/UserGroupExtended";
 
 export interface UserGroupRepository {

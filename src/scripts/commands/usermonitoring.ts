@@ -7,7 +7,7 @@ import { UserD2Repository } from "data/user-monitoring/two-factor-monitoring/Use
 
 import { AuthOptions } from "domain/entities/user-monitoring/common/AuthOptions";
 
-import { RunReportUsersWithout2FA } from "domain/usecases/user-monitoring/two-factor-monitoring/RunReportUsersWithout2FA";
+import { RunReportUsersWithout2FAUseCase } from "domain/usecases/user-monitoring/two-factor-monitoring/RunReportUsersWithout2FAUseCase";
 
 import { AuthOptions as AuthPermisisonOptions } from "domain/entities/user-monitoring/common/AuthOptions";
 
@@ -51,17 +51,17 @@ const run2FAReporterCmd = command({
         const usersRepository = new UserD2Repository(api);
         const externalConfigRepository = new TwoFactorD2ConfigRepository(api);
         const userMonitoringReportRepository = new TwoFactorUsersReportD2Repository(api);
-        log.debug(`Get config: ${auth.apiurl}`);
-
-        const config = await new GetTwoFactorConfigUseCase(externalConfigRepository).execute();
-
         log.info(`Run user Role monitoring`);
-        const response = await new RunReportUsersWithout2FA(
+        const response = await new RunReportUsersWithout2FAUseCase(
             usersRepository,
-            userMonitoringReportRepository
-        ).execute(config);
-
-        config.userGroupsResponse = response;
+            userMonitoringReportRepository,
+            externalConfigRepository
+        ).execute();
+        if (response.response == "OK") {
+            log.info("2FA report generated");
+        } else {
+            log.error("Error generating 2FA report");
+        }
     },
 });
 

@@ -1,5 +1,4 @@
 import { Async } from "domain/entities/Async";
-import { ProgramDetails } from "domain/entities/user-monitoring/common/ProgramDetails";
 import {
     UserMonitoringCountResponse,
     UserMonitoringDetails,
