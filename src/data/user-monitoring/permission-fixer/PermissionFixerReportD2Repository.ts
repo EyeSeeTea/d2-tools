@@ -84,14 +84,14 @@ export class PermissionFixerReportD2Repository
     ): Promise<Async<string>> {
         log.info(`Saving report ` + programId);
         const program = await this.getMetadata(programId, this.api);
-        log.info(`Users fixed file id: ${filenameUsersPushed}`);
+        log.debug(`Users fixed file id: ${filenameUsersPushed}`);
         const userFixedId = await this.saveFileResource(
             JSON.stringify(responseRoles.usersFixed),
             filenameUsersPushed,
             this.api
         );
-        log.info(`Users fixed file id: ${userFixedId}`);
-        log.info(`Users fixed file id: ${filenameUserBackup}`);
+        log.debug(`Users fixed file id: ${userFixedId}`);
+        log.debug(`Users fixed file id: ${filenameUserBackup}`);
 
         const userBackupId = await this.saveFileResource(
             JSON.stringify(responseRoles.usersBackup),
@@ -99,7 +99,7 @@ export class PermissionFixerReportD2Repository
             this.api
         );
 
-        log.info(`Users backup file id: ${userBackupId}`);
+        log.debug(`Users backup file id: ${userBackupId}`);
 
         const response = await this.pushReportToDhis(
             responseGroups.invalidUsersCount.toString(),
