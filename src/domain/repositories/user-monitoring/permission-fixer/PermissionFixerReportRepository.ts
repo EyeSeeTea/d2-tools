@@ -1,13 +1,13 @@
 import { Async } from "domain/entities/Async";
 import {
-    UserMonitoringCountResponse,
-    UserMonitoringDetails,
+    UserMonitoringBasicResult,
+    UserMonitoringExtendedResult,
 } from "domain/entities/user-monitoring/common/UserMonitoring";
 
 export interface PermissionFixerReportRepository {
     save(
         programId: string,
-        responseGroups: UserMonitoringCountResponse,
-        responseRoles: UserMonitoringDetails
+        responseGroups: UserMonitoringBasicResult,
+        responseRoles: UserMonitoringExtendedResult
     ): Promise<Async<string>>;
 }

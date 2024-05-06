@@ -11,17 +11,13 @@ import { RunReportUsersWithout2FAUseCase } from "domain/usecases/user-monitoring
 
 import { AuthOptions as AuthPermisisonOptions } from "domain/entities/user-monitoring/common/AuthOptions";
 
-import { RunUserPermissionUserRolesUseCase as RunUserPermissionUserRoleUsecase } from "domain/usecases/user-monitoring/permission-fixer/RunUserPermissionUserRolesUseCase";
-import { RunUserPermissionUserGroupsUseCase as RunUserPermissionUserGroupUseCase } from "domain/usecases/user-monitoring/permission-fixer/RunUserPermissionUserGroupsUseCase";
-import { RunUserPermissionReportUseCase as RunUserPermissionUserReportUseCase } from "domain/usecases/user-monitoring/permission-fixer/RunUserPermissionReportUseCase";
-import { GetPermissionFixerConfigUseCase } from "domain/usecases/user-monitoring/permission-fixer/GetPermissionFixerConfigUseCase";
-import { GetTwoFactorConfigUseCase } from "domain/usecases/user-monitoring/two-factor-monitoring/GetTwoFactorConfigUseCase";
 import { TwoFactorD2ConfigRepository } from "data/user-monitoring/two-factor-monitoring/TwoFactorD2ConfigRepository";
 import { D2PermissionFixerConfigRepository } from "data/user-monitoring/permission-fixer/D2PermissionFixerConfigRepository";
 import { PermissionFixerTemplateD2Repository } from "data/user-monitoring/permission-fixer/PermissionFixerTemplateD2Repository";
 import { PermissionFixerReportD2Repository } from "data/user-monitoring/permission-fixer/PermissionFixerReportD2Repository";
 import { TwoFactorUsersReportD2Repository } from "data/user-monitoring/two-factor-monitoring/TwoFactorUsersReportD2Repository";
 import { UserGroupD2Repository } from "data/user-monitoring/permission-fixer/UserGroupD2Repository";
+import { RunUserPermissionUseCase } from "domain/usecases/user-monitoring/permission-fixer/RunUserPermissionUseCase";
 
 export function getCommand() {
     return subcommands({
@@ -52,16 +48,11 @@ const run2FAReporterCmd = command({
         const externalConfigRepository = new TwoFactorD2ConfigRepository(api);
         const userMonitoringReportRepository = new TwoFactorUsersReportD2Repository(api);
         log.info(`Run user Role monitoring`);
-        const response = await new RunReportUsersWithout2FAUseCase(
+        await new RunReportUsersWithout2FAUseCase(
             usersRepository,
             userMonitoringReportRepository,
             externalConfigRepository
         ).execute();
-        if (response.response == "OK") {
-            log.info("2FA report generated");
-        } else {
-            log.error("Error generating 2FA report");
-        }
     },
 });
 
@@ -85,27 +76,14 @@ const runUsersMonitoringCmd = command({
         const usersTemplateRepository = new PermissionFixerTemplateD2Repository(api, usersRepository);
         const externalConfigRepository = new D2PermissionFixerConfigRepository(api);
         const userMonitoringReportRepository = new PermissionFixerReportD2Repository(api);
-        log.debug(`Get config: ${auth.apiurl}`);
 
-        const config = await new GetPermissionFixerConfigUseCase(externalConfigRepository).execute();
-
-        log.info(`Run user Group monitoring`);
-        const userGroupResponse = await new RunUserPermissionUserGroupUseCase(
+        await new RunUserPermissionUseCase(
+            externalConfigRepository,
+            userMonitoringReportRepository,
             usersTemplateRepository,
             userGroupsRepository,
             usersRepository
-        ).execute(config);
-
-        config.userGroupsResponse = userGroupResponse;
-        log.info(`Run user Role monitoring`);
-        const userRoleResponse = await new RunUserPermissionUserRoleUsecase(
-            usersRepository,
-            usersTemplateRepository
-        ).execute(config);
-
-        config.userRolesResponse = userRoleResponse;
-        log.info(`Save user-monitoring user-permissions results`);
-        new RunUserPermissionUserReportUseCase(userMonitoringReportRepository).execute(config);
+        ).execute();
     },
 });
 

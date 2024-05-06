@@ -1,10 +1,11 @@
 import { Async } from "domain/entities/Async";
-import { UserMonitoringCountResponse } from "domain/entities/user-monitoring/common/UserMonitoring";
+import { UserMonitoringBasicResult } from "domain/entities/user-monitoring/common/UserMonitoring";
 import { UserWithoutTwoFactor } from "domain/entities/user-monitoring/common/UserWithoutTwoFactor";
 import { UserRepository } from "domain/repositories/user-monitoring/two-factor-monitoring/UserRepository";
 import _ from "lodash";
 import { TwoFactorReportRepository } from "domain/repositories/user-monitoring/two-factor-monitoring/TwoFactorReportRepository";
 import { TwoFactorConfigRepository } from "domain/repositories/user-monitoring/two-factor-monitoring/TwoFactorConfigRepository";
+import log from "utils/log";
 
 export class RunReportUsersWithout2FAUseCase {
     constructor(
@@ -13,7 +14,7 @@ export class RunReportUsersWithout2FAUseCase {
         private configRepository: TwoFactorConfigRepository
     ) {}
 
-    async execute(): Async<UserMonitoringCountResponse> {
+    async execute(): Async<string> {
         const options = await this.configRepository.get();
         if (!options.twoFactorGroup) {
             throw new Error("Two factor group is not defined in the datastore.");
@@ -33,10 +34,10 @@ export class RunReportUsersWithout2FAUseCase {
         const response: UserWithoutTwoFactor = {
             invalidUsersCount: userItems.length,
             listOfAffectedUsers: userItems,
-            response: "Users without 2FA",
         };
+        log.info("Users without 2FA: " + userItems.length);
 
-        this.reportRepository.save(options.pushProgramId.id, response);
-        return response;
+        const saveResponse = this.reportRepository.save(options.pushProgramId.id, response);
+        return saveResponse;
     }
 }

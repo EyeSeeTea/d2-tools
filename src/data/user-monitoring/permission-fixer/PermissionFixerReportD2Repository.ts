@@ -8,8 +8,8 @@ import { EventDataValue, ProgramMetadata, User } from "data/user-monitoring/d2-u
 import _ from "lodash";
 
 import {
-    UserMonitoringCountResponse,
-    UserMonitoringDetails,
+    UserMonitoringBasicResult,
+    UserMonitoringExtendedResult,
 } from "domain/entities/user-monitoring/common/UserMonitoring";
 import { getUid } from "utils/uid";
 import { UserMonitoringMetadataService } from "data/user-monitoring/common/UserMonitoringMetadataService";
@@ -79,8 +79,8 @@ export class PermissionFixerReportD2Repository
 
     async save(
         programId: string,
-        responseGroups: UserMonitoringCountResponse,
-        responseRoles: UserMonitoringDetails
+        responseGroups: UserMonitoringBasicResult,
+        responseRoles: UserMonitoringExtendedResult
     ): Promise<Async<string>> {
         const program = await this.getMetadata(programId, this.api);
         const userFixedId = await this.saveFileResource(

@@ -3,11 +3,9 @@ import { RolesByGroup } from "../common/RolesByGroup";
 import { RolesByRoles } from "../common/RolesByRoles";
 import { RolesByUser } from "../common/RolesByUser";
 import { TemplateGroup } from "../common/Templates";
-import { UserMonitoringCountResponse, UserMonitoringDetails } from "../common/UserMonitoring";
+import { UserMonitoringBasicResult, UserMonitoringExtendedResult } from "../common/UserMonitoring";
 
 export interface PermissionFixerUserOptions {
-    userRolesResponse?: UserMonitoringDetails;
-    userGroupsResponse?: UserMonitoringCountResponse;
     templates: TemplateGroup[];
     excludedRoles: NamedRef[];
     excludedUsers: NamedRef[];

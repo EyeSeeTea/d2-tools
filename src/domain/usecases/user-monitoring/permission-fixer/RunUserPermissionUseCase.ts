@@ -1,8 +1,7 @@
-import { Async } from "domain/entities/Async";
-import { UserMonitoringDetails } from "domain/entities/user-monitoring/common/UserMonitoring";
+import { PermissionFixerConfigRepository } from "domain/repositories/user-monitoring/permission-fixer/PermissionFixerConfigRepository";
+import { UserMonitoringExtendedResult } from "domain/entities/user-monitoring/common/UserMonitoring";
 import { UserRepository } from "domain/repositories/user-monitoring/permission-fixer/UserRepository";
 import { TemplateRepository } from "domain/repositories/user-monitoring/permission-fixer/TemplateRepository";
-import log from "utils/log";
 import { getUid } from "utils/uid";
 import _ from "lodash";
 import { PermissionFixerUserOptions } from "domain/entities/user-monitoring/permission-fixer/PermissionFixerUserOptions";
@@ -13,13 +12,42 @@ import { RolesByGroup } from "domain/entities/user-monitoring/common/RolesByGrou
 import { RolesByUser } from "domain/entities/user-monitoring/common/RolesByUser";
 import { Ref } from "domain/entities/Base";
 import { User } from "domain/entities/user-monitoring/common/User";
+import { UserMonitoringBasicResult } from "domain/entities/user-monitoring/common/UserMonitoring";
+import { UserGroupRepository } from "domain/repositories/user-monitoring/permission-fixer/UserGroupRepository";
+import log from "utils/log";
+import { NamedRef } from "domain/entities/Base";
+import { PermissionFixerReportRepository } from "domain/repositories/user-monitoring/permission-fixer/PermissionFixerReportRepository";
 
-export class RunUserPermissionUserRolesUseCase {
-    constructor(private userRepository: UserRepository, private metadataRepository: TemplateRepository) {}
+export class RunUserPermissionUseCase {
+    constructor(
+        private configRepository: PermissionFixerConfigRepository,
+        private reportRepository: PermissionFixerReportRepository,
+        private templateRepository: TemplateRepository,
+        private userGroupRepository: UserGroupRepository,
+        private userRepository: UserRepository
+    ) {}
 
-    async execute(options: PermissionFixerUserOptions): Async<UserMonitoringDetails> {
-        const templatesWithAuthorities = await this.metadataRepository.getTemplateAuthorities(options);
+    async execute() {
+        const options = await this.configRepository.get();
 
+        //usergroups
+        const templatesWithAuthorities = await this.templateRepository.getTemplateAuthorities(options);
+
+        const usersToProcessGroups = await this.userRepository.getAllUsers(
+            options.excludedUsers.map(item => {
+                return item.id;
+            }),
+            true
+        );
+
+        log.info(`Run user Group monitoring`);
+        const responseUserGroups = await this.processUserGroups(
+            options,
+            templatesWithAuthorities,
+            usersToProcessGroups
+        );
+
+        log.info(`Run user Role monitoring`);
         const usersToProcessRoles = await this.userRepository.getAllUsers(
             options.excludedUsers.map(item => {
                 return item.id;
@@ -32,14 +60,34 @@ export class RunUserPermissionUserRolesUseCase {
             templatesWithAuthorities,
             usersToProcessRoles
         );
-        return responseUserRolesProcessed;
+
+        //RunUserPermissionReportUseCase
+
+        log.info(`Save user-monitoring user-permissions results`);
+        const finalUserGroup = responseUserGroups ?? {
+            listOfAffectedUsers: [],
+            invalidUsersCount: 0,
+            response: "",
+        };
+        const finalUserRoles = responseUserRolesProcessed ?? {
+            listOfAffectedUsers: [],
+            invalidUsersCount: 0,
+            response: "",
+            usersBackup: [],
+            usersFixed: [],
+            eventid: "",
+            userProcessed: [],
+        };
+        if (finalUserGroup.invalidUsersCount > 0 || finalUserRoles.invalidUsersCount > 0) {
+            await this.reportRepository.save(options.pushProgramId.id, finalUserGroup, finalUserRoles);
+        }
     }
 
     async processUserRoles(
         options: PermissionFixerUserOptions,
         completeTemplateGroups: TemplateGroupWithAuthorities[],
         allUsers: User[]
-    ): Promise<UserMonitoringDetails> {
+    ): Promise<UserMonitoringExtendedResult> {
         const {
             minimalGroupId,
             minimalRoleId,
@@ -277,5 +325,83 @@ export class RunUserPermissionUserRolesUseCase {
                 throw new Error("User: " + user.username + " don't have valid groups");
             }
         });
+    }
+
+    async processUserGroups(
+        options: PermissionFixerUserOptions,
+        completeTemplateGroups: TemplateGroupWithAuthorities[],
+        allUsersGroupCheck: User[]
+    ): Promise<UserMonitoringBasicResult> {
+        const { minimalGroupId } = options;
+
+        const response = await this.addLowLevelTemplateGroupToUsersWithoutAny(
+            completeTemplateGroups,
+            allUsersGroupCheck,
+            minimalGroupId
+        );
+
+        return response;
+    }
+
+    private async addLowLevelTemplateGroupToUsersWithoutAny(
+        completeTemplateGroups: TemplateGroupWithAuthorities[],
+        allUsersGroupCheck: User[],
+        minimalGroupId: NamedRef
+    ): Promise<UserMonitoringBasicResult> {
+        const userIdWithoutGroups: NamedRef[] = this.detectUserIdsWithoutGroups(
+            completeTemplateGroups,
+            allUsersGroupCheck,
+            minimalGroupId
+        );
+
+        log.info("Pushing fixed users without groups");
+        return await this.pushUsersWithoutGroupsWithLowLevelGroup(userIdWithoutGroups, minimalGroupId);
+    }
+
+    private detectUserIdsWithoutGroups(
+        completeTemplateGroups: TemplateGroupWithAuthorities[],
+        allUsersGroupCheck: User[],
+        minimalGroupId: NamedRef
+    ): NamedRef[] {
+        return _.compact(
+            allUsersGroupCheck.map((user): NamedRef | undefined => {
+                const templateGroupMatch = completeTemplateGroups.find(template => {
+                    return user.userGroups.some(
+                        userGroup => userGroup != undefined && template.group.id == userGroup.id
+                    );
+                });
+
+                if (templateGroupMatch == undefined) {
+                    //template not found -> all roles are invalid except the minimal role
+                    log.error(
+                        `Warning: User don't have groups ${user.id} - ${user.name} adding to minimal group  ${minimalGroupId}`
+                    );
+                    const id: NamedRef = { id: user.id, name: user.username };
+                    return id;
+                }
+            })
+        );
+    }
+
+    private async pushUsersWithoutGroupsWithLowLevelGroup(
+        userIdWithoutGroups: NamedRef[],
+        minimalGroupId: NamedRef
+    ): Promise<UserMonitoringBasicResult> {
+        if (userIdWithoutGroups != undefined && userIdWithoutGroups.length > 0) {
+            const minimalUserGroup = await this.userGroupRepository.getByIds([minimalGroupId.id]);
+            const userIds = userIdWithoutGroups.map(item => {
+                return { id: item.id };
+            });
+            minimalUserGroup[0]?.users.push(...userIds);
+
+            const response = await this.userGroupRepository.save(minimalUserGroup[0]!);
+            return {
+                response: response,
+                invalidUsersCount: userIdWithoutGroups.length,
+                listOfAffectedUsers: userIdWithoutGroups,
+            };
+        } else {
+            return { response: "", invalidUsersCount: 0, listOfAffectedUsers: [] };
+        }
     }
 }
