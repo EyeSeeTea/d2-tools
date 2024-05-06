@@ -4,7 +4,6 @@ import { command, subcommands, option, string } from "cmd-ts";
 import { getD2Api } from "scripts/common";
 import log from "utils/log";
 import { UserD2Repository } from "data/user-monitoring/two-factor-monitoring/UserD2Repository";
-import { UserGroupD2Repository } from "data/user-monitoring/two-factor-monitoring/UserGroupD2Repository";
 
 import { AuthOptions } from "domain/entities/user-monitoring/common/AuthOptions";
 
@@ -22,6 +21,7 @@ import { D2PermissionFixerConfigRepository } from "data/user-monitoring/permissi
 import { PermissionFixerTemplateD2Repository } from "data/user-monitoring/permission-fixer/PermissionFixerTemplateD2Repository";
 import { PermissionFixerReportD2Repository } from "data/user-monitoring/permission-fixer/PermissionFixerReportD2Repository";
 import { TwoFactorUsersReportD2Repository } from "data/user-monitoring/two-factor-monitoring/TwoFactorUsersReportD2Repository";
+import { UserGroupD2Repository } from "data/user-monitoring/permission-fixer/UserGroupD2Repository";
 
 export function getCommand() {
     return subcommands({

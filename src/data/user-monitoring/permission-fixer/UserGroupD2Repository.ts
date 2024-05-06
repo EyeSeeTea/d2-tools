@@ -1,7 +1,7 @@
-import { UserGroupRepository } from "domain/repositories/user-monitoring/two-factor-monitoring/UserGroupRepository";
 import { D2Api } from "@eyeseetea/d2-api/2.36";
 import log from "utils/log";
 import { UserGroupExtended } from "domain/entities/user-monitoring/common/UserGroupExtended";
+import { UserGroupRepository } from "domain/repositories/user-monitoring/permission-fixer/UserGroupRepository";
 
 export class UserGroupD2Repository implements UserGroupRepository {
     constructor(private api: D2Api) {}
@@ -10,9 +10,7 @@ export class UserGroupD2Repository implements UserGroupRepository {
 
         const responses = await this.api
             .get<UserGroups>(
-                `/userGroups?filter=id:in:[${groupsIds.join(
-                    ","
-                )}]&fields=id,created,lastUpdated,name,users,*&paging=false.json`
+                `/userGroups?filter=id:in:[${groupsIds.join(",")}]&fields=id,name,users,*&paging=false.json`
             )
             .getData();
 

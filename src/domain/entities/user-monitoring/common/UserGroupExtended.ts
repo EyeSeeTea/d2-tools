@@ -1,8 +1,6 @@
-import { Ref, StringDateTime } from "domain/entities/Base";
+import { Ref } from "domain/entities/Base";
 
 export interface UserGroupExtended {
-    created: StringDateTime;
-    lastUpdated: StringDateTime;
     name: string;
     id: string;
     users: Ref[];
