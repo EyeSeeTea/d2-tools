@@ -82,17 +82,24 @@ export class PermissionFixerReportD2Repository
         responseGroups: UserMonitoringBasicResult,
         responseRoles: UserMonitoringExtendedResult
     ): Promise<Async<string>> {
+        log.info(`Saving report ` + programId);
         const program = await this.getMetadata(programId, this.api);
+        log.info(`Users fixed file id: ${filenameUsersPushed}`);
         const userFixedId = await this.saveFileResource(
             JSON.stringify(responseRoles.usersFixed),
             filenameUsersPushed,
             this.api
         );
+        log.info(`Users fixed file id: ${userFixedId}`);
+        log.info(`Users fixed file id: ${filenameUserBackup}`);
+
         const userBackupId = await this.saveFileResource(
             JSON.stringify(responseRoles.usersBackup),
             filenameUserBackup,
             this.api
         );
+
+        log.info(`Users backup file id: ${userBackupId}`);
 
         const response = await this.pushReportToDhis(
             responseGroups.invalidUsersCount.toString(),
@@ -126,6 +133,7 @@ export class PermissionFixerReportD2Repository
             ignoreDocument: true,
             domain: "DATA_VALUE",
         };
+        log.info(`Saving file ${name}`);
         const response = await files.saveFileResource(form).getData();
         const fileresourceId = response;
         return fileresourceId;

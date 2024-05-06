@@ -5,6 +5,7 @@ export type Namespace = typeof Namespace[keyof typeof Namespace];
 export const Namespace = {
     USER_MONITORING: "user-monitoring",
     PUSH_REPORT: "PUSH_REPORT",
+    TEST_ONLY: "TEST_ONLY",
     MINIMAL_GROUP: "MINIMAL_GROUP",
     MINIMAL_ROLE: "MINIMAL_ROLE",
     PUSH_PROGRAM_ID: "PUSH_PROGRAM_ID",
@@ -20,6 +21,7 @@ export const Namespace = {
 export const NamespaceProperties: Record<string, string[]> = {
     [Namespace.USER_MONITORING]: ["user-monitoring"],
     [Namespace.PUSH_REPORT]: [],
+    [Namespace.TEST_ONLY]: [],
     [Namespace.MINIMAL_GROUP]: [],
     [Namespace.MINIMAL_ROLE]: [],
     [Namespace.PUSH_PROGRAM_ID]: [],

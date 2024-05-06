@@ -3,7 +3,6 @@ import { RolesByGroup } from "../common/RolesByGroup";
 import { RolesByRoles } from "../common/RolesByRoles";
 import { RolesByUser } from "../common/RolesByUser";
 import { TemplateGroup } from "../common/Templates";
-import { UserMonitoringBasicResult, UserMonitoringExtendedResult } from "../common/UserMonitoring";
 
 export interface PermissionFixerUserOptions {
     templates: TemplateGroup[];
@@ -13,6 +12,7 @@ export interface PermissionFixerUserOptions {
     excludedRolesByGroup: RolesByGroup[];
     excludedRolesByRole: RolesByRoles[];
     pushReport: boolean;
+    testOnly: boolean;
     pushProgramId: NamedRef;
     minimalGroupId: NamedRef;
     minimalRoleId: NamedRef;

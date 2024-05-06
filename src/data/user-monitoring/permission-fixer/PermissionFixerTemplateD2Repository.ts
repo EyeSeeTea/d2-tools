@@ -13,11 +13,13 @@ import { TemplateRepository } from "domain/repositories/user-monitoring/permissi
 import { UserRepository } from "domain/repositories/user-monitoring/permission-fixer/UserRepository";
 import { PermissionFixerUserOptions } from "domain/entities/user-monitoring/permission-fixer/PermissionFixerUserOptions";
 import { NamedRef } from "domain/entities/Base";
+import { User as MonitoringUser } from "domain/entities/user-monitoring/common/User";
 
 export class PermissionFixerTemplateD2Repository implements TemplateRepository {
     constructor(private api: D2Api, private userMonitoringRepository: UserRepository) {}
     async getTemplateAuthorities(
-        options: PermissionFixerUserOptions
+        options: PermissionFixerUserOptions,
+        userTemplates: MonitoringUser[]
     ): Promise<Async<TemplateGroupWithAuthorities[]>> {
         const { templates: templateGroups, excludedRoles: excludedRoles } = options;
 
@@ -30,7 +32,7 @@ export class PermissionFixerTemplateD2Repository implements TemplateRepository {
                 "Roles with no authorities are not allowed. Fix them in the server or add in the ignore list"
             );
         }
-        const completeTemplateGroups = await this.fillAuthorities(templateGroups, userRoles);
+        const completeTemplateGroups = await this.fillAuthorities(templateGroups, userRoles, userTemplates);
         return completeTemplateGroups;
     }
 
@@ -59,14 +61,9 @@ export class PermissionFixerTemplateD2Repository implements TemplateRepository {
     //This method organize all the data into templateGroupWithAuthorities to make easy check all.
     private async fillAuthorities(
         templateGroups: TemplateGroup[],
-        userRoles: UserRoleAuthority[]
+        userRoles: UserRoleAuthority[],
+        allUserTemplates: MonitoringUser[]
     ): Promise<TemplateGroupWithAuthorities[]> {
-        const userTemplateIds = templateGroups.map(template => {
-            return template.template.id;
-        });
-
-        const allUserTemplates = await this.userMonitoringRepository.getAllUsers(userTemplateIds, false);
-
         const templateFilled: TemplateGroupWithAuthorities[] = templateGroups.map(item => {
             const user = allUserTemplates.find(template => {
                 return template.id == item.template.id;

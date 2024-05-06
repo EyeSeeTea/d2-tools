@@ -40,6 +40,7 @@ export class D2PermissionFixerConfigRepository implements PermissionFixerConfigR
             excludedUsers: config[Namespace.EXCLUDE_USERS],
             templates: config[Namespace.TEMPLATE_GROUPS],
             pushReport: config[Namespace.PUSH_REPORT],
+            testOnly: config[Namespace.TEST_ONLY],
             minimalGroupId: config[Namespace.MINIMAL_GROUP],
             minimalRoleId: config[Namespace.MINIMAL_ROLE],
             pushProgramId: config[Namespace.PUSH_PROGRAM_ID],

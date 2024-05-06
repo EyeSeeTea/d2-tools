@@ -30,8 +30,16 @@ export class RunUserPermissionUseCase {
     async execute() {
         const options = await this.configRepository.get();
 
+        const userTemplateIds = options.templates.map(template => {
+            return template.template.id;
+        });
+
+        const allUserTemplates = await this.userRepository.getAllUsers(userTemplateIds, false);
         //usergroups
-        const templatesWithAuthorities = await this.templateRepository.getTemplateAuthorities(options);
+        const templatesWithAuthorities = await this.templateRepository.getTemplateAuthorities(
+            options,
+            allUserTemplates
+        );
 
         const usersToProcessGroups = await this.userRepository.getAllUsers(
             options.excludedUsers.map(item => {
@@ -40,7 +48,7 @@ export class RunUserPermissionUseCase {
             true
         );
 
-        log.info(`Run user Group monitoring`);
+        log.info(`Processing userGroups (all users must have at least one template user group)`);
         const responseUserGroups = await this.processUserGroups(
             options,
             templatesWithAuthorities,
@@ -61,9 +69,6 @@ export class RunUserPermissionUseCase {
             usersToProcessRoles
         );
 
-        //RunUserPermissionReportUseCase
-
-        log.info(`Save user-monitoring user-permissions results`);
         const finalUserGroup = responseUserGroups ?? {
             listOfAffectedUsers: [],
             invalidUsersCount: 0,
@@ -78,8 +83,14 @@ export class RunUserPermissionUseCase {
             eventid: "",
             userProcessed: [],
         };
-        if (finalUserGroup.invalidUsersCount > 0 || finalUserRoles.invalidUsersCount > 0) {
+        if (
+            options.pushReport &&
+            (finalUserGroup.invalidUsersCount > 0 || finalUserRoles.invalidUsersCount > 0)
+        ) {
+            log.info(`Sending user-monitoring user-permissions report results`);
             await this.reportRepository.save(options.pushProgramId.id, finalUserGroup, finalUserRoles);
+        } else {
+            log.info(`Nothing to report. No invalid users found.`);
         }
     }
 
@@ -91,6 +102,7 @@ export class RunUserPermissionUseCase {
         const {
             minimalGroupId,
             minimalRoleId,
+            testOnly,
             excludedRolesByRole,
             excludedRolesByUser,
             excludedRolesByGroup,
@@ -110,7 +122,9 @@ export class RunUserPermissionUseCase {
         //users without user groups
         const usersWithErrorsInGroups = userinfo.filter(item => item.undefinedUserGroups);
         //todo: Maybe add throw exception?
-
+        if (usersWithErrorsInGroups.length > 0) {
+            throw new Error("Still having users without any template user group.");
+        }
         //users with action required
         const usersToBeFixed = userinfo.filter(item => item.actionRequired);
 
@@ -148,14 +162,13 @@ export class RunUserPermissionUseCase {
                 return item.user;
             });
 
-            const response = await this.userRepository.saveUsers(userToPost);
-
-            const result = (await response) ?? "null";
-            log.info(`Saving report: ${result}`);
+            const response = !testOnly
+                ? (await this.userRepository.saveUsers(userToPost)) ?? "Empty response"
+                : "Test_only_mode";
 
             return {
                 invalidUsersCount: usersToBeFixed.length,
-                response: result,
+                response: await response,
                 eventid: eventUid,
                 usersBackup: userBackup,
                 usersFixed: userToPost,
@@ -332,12 +345,13 @@ export class RunUserPermissionUseCase {
         completeTemplateGroups: TemplateGroupWithAuthorities[],
         allUsersGroupCheck: User[]
     ): Promise<UserMonitoringBasicResult> {
-        const { minimalGroupId } = options;
+        const { minimalGroupId, testOnly } = options;
 
         const response = await this.addLowLevelTemplateGroupToUsersWithoutAny(
             completeTemplateGroups,
             allUsersGroupCheck,
-            minimalGroupId
+            minimalGroupId,
+            testOnly
         );
 
         return response;
@@ -346,16 +360,19 @@ export class RunUserPermissionUseCase {
     private async addLowLevelTemplateGroupToUsersWithoutAny(
         completeTemplateGroups: TemplateGroupWithAuthorities[],
         allUsersGroupCheck: User[],
-        minimalGroupId: NamedRef
+        minimalGroupId: NamedRef,
+        testOnly: boolean
     ): Promise<UserMonitoringBasicResult> {
         const userIdWithoutGroups: NamedRef[] = this.detectUserIdsWithoutGroups(
             completeTemplateGroups,
             allUsersGroupCheck,
             minimalGroupId
         );
-
-        log.info("Pushing fixed users without groups");
-        return await this.pushUsersWithoutGroupsWithLowLevelGroup(userIdWithoutGroups, minimalGroupId);
+        return await this.pushUsersWithoutGroupsWithLowLevelGroup(
+            userIdWithoutGroups,
+            minimalGroupId,
+            testOnly
+        );
     }
 
     private detectUserIdsWithoutGroups(
@@ -385,7 +402,8 @@ export class RunUserPermissionUseCase {
 
     private async pushUsersWithoutGroupsWithLowLevelGroup(
         userIdWithoutGroups: NamedRef[],
-        minimalGroupId: NamedRef
+        minimalGroupId: NamedRef,
+        testOnly: boolean
     ): Promise<UserMonitoringBasicResult> {
         if (userIdWithoutGroups != undefined && userIdWithoutGroups.length > 0) {
             const minimalUserGroup = await this.userGroupRepository.getByIds([minimalGroupId.id]);
@@ -394,12 +412,24 @@ export class RunUserPermissionUseCase {
             });
             minimalUserGroup[0]?.users.push(...userIds);
 
-            const response = await this.userGroupRepository.save(minimalUserGroup[0]!);
-            return {
-                response: response,
-                invalidUsersCount: userIdWithoutGroups.length,
-                listOfAffectedUsers: userIdWithoutGroups,
-            };
+            log.info("Pushing fixed users without groups");
+            if (testOnly) {
+                log.info("Test only mode. No changes will be saved to the database.");
+                return {
+                    response: "Test only mode",
+                    invalidUsersCount: userIdWithoutGroups.length,
+                    listOfAffectedUsers: userIdWithoutGroups,
+                };
+            } else {
+                const response = await this.userGroupRepository.save(minimalUserGroup[0]!);
+
+                log.info("Result: " + response);
+                return {
+                    response: response,
+                    invalidUsersCount: userIdWithoutGroups.length,
+                    listOfAffectedUsers: userIdWithoutGroups,
+                };
+            }
         } else {
             return { response: "", invalidUsersCount: 0, listOfAffectedUsers: [] };
         }
