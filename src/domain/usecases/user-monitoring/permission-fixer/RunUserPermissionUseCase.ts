@@ -1,6 +1,6 @@
 import { PermissionFixerConfigRepository } from "domain/repositories/user-monitoring/permission-fixer/PermissionFixerConfigRepository";
 import { UserMonitoringExtendedResult } from "domain/entities/user-monitoring/common/UserMonitoring";
-import { UserRepository } from "domain/repositories/user-monitoring/permission-fixer/UserRepository";
+import { UserMonitoringRepository } from "domain/repositories/user-monitoring/common/UserMonitoringRepository";
 import { TemplateRepository } from "domain/repositories/user-monitoring/permission-fixer/TemplateRepository";
 import { getUid } from "utils/uid";
 import _ from "lodash";
@@ -24,7 +24,7 @@ export class RunUserPermissionUseCase {
         private reportRepository: PermissionFixerReportRepository,
         private templateRepository: TemplateRepository,
         private userGroupRepository: UserGroupRepository,
-        private userRepository: UserRepository
+        private userRepository: UserMonitoringRepository
     ) {}
 
     async execute() {

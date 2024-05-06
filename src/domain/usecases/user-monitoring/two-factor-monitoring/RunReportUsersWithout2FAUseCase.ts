@@ -1,7 +1,6 @@
 import { Async } from "domain/entities/Async";
-import { UserMonitoringBasicResult } from "domain/entities/user-monitoring/common/UserMonitoring";
 import { UserWithoutTwoFactor } from "domain/entities/user-monitoring/common/UserWithoutTwoFactor";
-import { UserRepository } from "domain/repositories/user-monitoring/two-factor-monitoring/UserRepository";
+import { UserMonitoringRepository } from "domain/repositories/user-monitoring/common/UserMonitoringRepository";
 import _ from "lodash";
 import { TwoFactorReportRepository } from "domain/repositories/user-monitoring/two-factor-monitoring/TwoFactorReportRepository";
 import { TwoFactorConfigRepository } from "domain/repositories/user-monitoring/two-factor-monitoring/TwoFactorConfigRepository";
@@ -9,7 +8,7 @@ import log from "utils/log";
 
 export class RunReportUsersWithout2FAUseCase {
     constructor(
-        private userRepository: UserRepository,
+        private userRepository: UserMonitoringRepository,
         private reportRepository: TwoFactorReportRepository,
         private configRepository: TwoFactorConfigRepository
     ) {}

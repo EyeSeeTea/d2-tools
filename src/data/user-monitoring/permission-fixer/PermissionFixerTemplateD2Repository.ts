@@ -10,13 +10,12 @@ import {
     TemplateGroupWithAuthorities,
 } from "domain/entities/user-monitoring/common/Templates";
 import { TemplateRepository } from "domain/repositories/user-monitoring/permission-fixer/TemplateRepository";
-import { UserRepository } from "domain/repositories/user-monitoring/permission-fixer/UserRepository";
 import { PermissionFixerUserOptions } from "domain/entities/user-monitoring/permission-fixer/PermissionFixerUserOptions";
 import { NamedRef } from "domain/entities/Base";
 import { User as MonitoringUser } from "domain/entities/user-monitoring/common/User";
 
 export class PermissionFixerTemplateD2Repository implements TemplateRepository {
-    constructor(private api: D2Api, private userMonitoringRepository: UserRepository) {}
+    constructor(private api: D2Api) {}
     async getTemplateAuthorities(
         options: PermissionFixerUserOptions,
         userTemplates: MonitoringUser[]

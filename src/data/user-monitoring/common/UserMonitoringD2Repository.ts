@@ -1,12 +1,12 @@
 import { D2Api } from "types/d2-api";
 import log from "utils/log";
-import { Id } from "domain/entities/Base";
-import { User } from "domain/entities/user-monitoring/common/User";
 import _ from "lodash";
-import { UserRepository } from "domain/repositories/user-monitoring/two-factor-monitoring/UserRepository";
+import { UserMonitoringRepository } from "domain/repositories/user-monitoring/common/UserMonitoringRepository";
 import { Async } from "domain/entities/Async";
+import { User } from "domain/entities/user-monitoring/common/User";
+import { Id } from "domain/entities/Base";
 
-export class UserD2Repository implements UserRepository {
+export class UserMonitoringD2Repository implements UserMonitoringRepository {
     constructor(private api: D2Api) {}
     async getUsersByGroupId(groupIds: string[]): Promise<Async<User[]>> {
         log.info(`Get users by group: Users by ids: ${groupIds.join(",")}`);

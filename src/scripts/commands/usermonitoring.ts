@@ -3,7 +3,7 @@ import { command, subcommands, option, string } from "cmd-ts";
 
 import { getD2Api } from "scripts/common";
 import log from "utils/log";
-import { UserD2Repository } from "data/user-monitoring/two-factor-monitoring/UserD2Repository";
+import { UserMonitoringD2Repository } from "data/user-monitoring/common/UserMonitoringD2Repository";
 
 import { AuthOptions } from "domain/entities/user-monitoring/common/AuthOptions";
 
@@ -44,10 +44,10 @@ const run2FAReporterCmd = command({
     handler: async args => {
         const auth = getAuthFromFile(args.config_file);
         const api = getD2Api(auth.apiurl);
-        const usersRepository = new UserD2Repository(api);
+        const usersRepository = new UserMonitoringD2Repository(api);
         const externalConfigRepository = new TwoFactorD2ConfigRepository(api);
         const userMonitoringReportRepository = new TwoFactorUsersReportD2Repository(api);
-        log.info(`Run user Role monitoring`);
+        log.info(`Run Report users without 2FA`);
         await new RunReportUsersWithout2FAUseCase(
             usersRepository,
             userMonitoringReportRepository,
@@ -71,12 +71,12 @@ const runUsersMonitoringCmd = command({
     handler: async args => {
         const auth = getAuthPermissionFromFile(args.config_file);
         const api = getD2Api(auth.apiurl);
-        const usersRepository = new UserD2Repository(api);
+        const usersRepository = new UserMonitoringD2Repository(api);
         const userGroupsRepository = new UserGroupD2Repository(api);
-        const usersTemplateRepository = new PermissionFixerTemplateD2Repository(api, usersRepository);
+        const usersTemplateRepository = new PermissionFixerTemplateD2Repository(api);
         const externalConfigRepository = new D2PermissionFixerConfigRepository(api);
         const userMonitoringReportRepository = new PermissionFixerReportD2Repository(api);
-
+        log.info(`Run User permissions fixer`);
         await new RunUserPermissionUseCase(
             externalConfigRepository,
             userMonitoringReportRepository,
