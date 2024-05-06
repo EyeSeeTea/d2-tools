@@ -1,5 +1,5 @@
-import { UserWithoutTwoFactor } from "domain/entities/user-monitoring/common/UserWithoutTwoFactor";
+import { TwoFactorUserReport } from "domain/entities/user-monitoring/two-factor-monitoring/TwoFactorUserReport";
 
 export interface TwoFactorReportRepository {
-    save(programId: string, response: UserWithoutTwoFactor): Promise<string>;
+    save(programId: string, response: TwoFactorUserReport): Promise<string>;
 }

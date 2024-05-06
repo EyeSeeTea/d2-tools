@@ -21,7 +21,7 @@ export class UserMonitoringMetadataService {
         }
 
         const programStage: ProgramStage | undefined = programs.programStages[0];
-        //todo fix orgunit.id
+
         const orgunitstring = JSON.stringify(programs.organisationUnits[0]);
         const orgUnit: { id: string } = JSON.parse(orgunitstring);
         const orgUnitId: string = orgUnit.id;

@@ -1,11 +1,11 @@
 import { NamedRef } from "domain/entities/Base";
-import { RolesByGroup } from "../common/RolesByGroup";
-import { RolesByRoles } from "../common/RolesByRoles";
-import { RolesByUser } from "../common/RolesByUser";
-import { TemplateGroup } from "../common/Templates";
+import { PermissionFixerTemplateGroup } from "./PermissionFixerTemplates";
+import { RolesByUser } from "./RolesByUser";
+import { RolesByGroup } from "./RolesByGroup";
+import { RolesByRoles } from "./RolesByRoles";
 
 export interface PermissionFixerUserOptions {
-    templates: TemplateGroup[];
+    templates: PermissionFixerTemplateGroup[];
     excludedRoles: NamedRef[];
     excludedUsers: NamedRef[];
     excludedRolesByUser: RolesByUser[];

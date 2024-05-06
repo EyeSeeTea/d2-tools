@@ -3,12 +3,12 @@ import log from "utils/log";
 import _ from "lodash";
 import { UserMonitoringRepository } from "domain/repositories/user-monitoring/common/UserMonitoringRepository";
 import { Async } from "domain/entities/Async";
-import { User } from "domain/entities/user-monitoring/common/User";
+import { UserMonitoringUser } from "domain/entities/user-monitoring/common/UserMonitoringUser";
 import { Id } from "domain/entities/Base";
 
 export class UserMonitoringD2Repository implements UserMonitoringRepository {
     constructor(private api: D2Api) {}
-    async getUsersByGroupId(groupIds: string[]): Promise<Async<User[]>> {
+    async getUsersByGroupId(groupIds: string[]): Promise<Async<UserMonitoringUser[]>> {
         log.info(`Get users by group: Users by ids: ${groupIds.join(",")}`);
         const responses = await this.api
             .get<Users>(
@@ -20,7 +20,7 @@ export class UserMonitoringD2Repository implements UserMonitoringRepository {
         return responses["users"];
     }
 
-    async getByIds(ids: Id[]): Async<User[]> {
+    async getByIds(ids: Id[]): Async<UserMonitoringUser[]> {
         log.info(`Get metadata: Users by ids: ${ids.join(",")}`);
         const responses = await this.api
             .get<Users>(
@@ -31,7 +31,7 @@ export class UserMonitoringD2Repository implements UserMonitoringRepository {
         return responses["users"];
     }
 
-    async getAllUsers(excludedUsers: string[], exclude?: boolean): Promise<Async<User[]>> {
+    async getAllUsers(excludedUsers: string[], exclude?: boolean): Promise<Async<UserMonitoringUser[]>> {
         log.info(`Get metadata: All users except: ${excludedUsers.join(",")}`);
         const filterOption = exclude ? "!in" : "in";
         const responses = await this.api
@@ -45,7 +45,7 @@ export class UserMonitoringD2Repository implements UserMonitoringRepository {
         return responses["users"];
     }
 
-    async saveUsers(users: User[]): Promise<string> {
+    async saveUsers(users: UserMonitoringUser[]): Promise<string> {
         log.info("Push users to dhis2");
 
         const usersReadyToPost: Users = { users: users };
@@ -63,5 +63,5 @@ export class UserMonitoringD2Repository implements UserMonitoringRepository {
         return response.status;
     }
 }
-type Users = { users: User[] };
+type Users = { users: UserMonitoringUser[] };
 type UserResponse = { status: string; typeReports: object[] };

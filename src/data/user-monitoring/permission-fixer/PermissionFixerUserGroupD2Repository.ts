@@ -1,11 +1,11 @@
 import { D2Api } from "@eyeseetea/d2-api/2.36";
 import log from "utils/log";
-import { UserGroupExtended } from "domain/entities/user-monitoring/common/UserGroupExtended";
-import { UserGroupRepository } from "domain/repositories/user-monitoring/permission-fixer/UserGroupRepository";
+import { PermissionFixerUserGroupExtended } from "domain/entities/user-monitoring/permission-fixer/PermissionFixerUserGroupExtended";
+import { PermissionFixerUserGroupRepository } from "domain/repositories/user-monitoring/permission-fixer/PermissionFixerUserGroupRepository";
 
-export class UserGroupD2Repository implements UserGroupRepository {
+export class UserGroupD2Repository implements PermissionFixerUserGroupRepository {
     constructor(private api: D2Api) {}
-    async getByIds(groupsIds: string[]): Promise<UserGroupExtended[]> {
+    async getByIds(groupsIds: string[]): Promise<PermissionFixerUserGroupExtended[]> {
         log.info(`Get metadata: All groups`);
 
         const responses = await this.api
@@ -16,7 +16,7 @@ export class UserGroupD2Repository implements UserGroupRepository {
 
         return responses["userGroups"];
     }
-    async save(userGroup: UserGroupExtended): Promise<string> {
+    async save(userGroup: PermissionFixerUserGroupExtended): Promise<string> {
         try {
             const response = await this.api.models.userGroups.put(userGroup).getData();
             response.status == "OK"
@@ -32,4 +32,4 @@ export class UserGroupD2Repository implements UserGroupRepository {
     }
 }
 
-type UserGroups = { userGroups: UserGroupExtended[] };
+type UserGroups = { userGroups: PermissionFixerUserGroupExtended[] };

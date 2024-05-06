@@ -1,5 +1,5 @@
 import { Async } from "domain/entities/Async";
-import { UserWithoutTwoFactor } from "domain/entities/user-monitoring/common/UserWithoutTwoFactor";
+import { TwoFactorUserReport } from "domain/entities/user-monitoring/two-factor-monitoring/TwoFactorUserReport";
 import { UserMonitoringRepository } from "domain/repositories/user-monitoring/common/UserMonitoringRepository";
 import _ from "lodash";
 import { TwoFactorReportRepository } from "domain/repositories/user-monitoring/two-factor-monitoring/TwoFactorReportRepository";
@@ -30,7 +30,7 @@ export class RunReportUsersWithout2FAUseCase {
         const userItems = usersWithoutTwoFA.map(user => {
             return { id: user.id, name: user.username };
         });
-        const response: UserWithoutTwoFactor = {
+        const response: TwoFactorUserReport = {
             invalidUsersCount: userItems.length,
             listOfAffectedUsers: userItems,
         };

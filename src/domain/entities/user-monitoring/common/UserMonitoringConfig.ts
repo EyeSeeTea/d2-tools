@@ -1,7 +1,7 @@
 import { NamedRef } from "domain/entities/Base";
 import _ from "lodash";
 
-export interface ConfigClient {
+export interface UserMonitoringConfig {
     excludeRoleByRole: ExcludeRoleByRole[];
     excludeRoleByGroup: ExcludeRoleByGroup[];
     excludeRoleByUser: ExcludeRoleByUser[];

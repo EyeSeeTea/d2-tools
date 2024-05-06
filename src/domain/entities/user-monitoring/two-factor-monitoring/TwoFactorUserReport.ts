@@ -1,6 +1,6 @@
 import { NamedRef } from "domain/entities/Base";
 
-export type UserWithoutTwoFactor = {
+export type TwoFactorUserReport = {
     invalidUsersCount: number;
     listOfAffectedUsers: NamedRef[];
 };

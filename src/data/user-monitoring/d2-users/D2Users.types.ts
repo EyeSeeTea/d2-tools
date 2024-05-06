@@ -1,54 +1,4 @@
-import { Ref, Id, StringDateTime } from "domain/entities/Base";
-
-export interface UserDetails {
-    id: Id;
-    displayName: string;
-    name: string;
-    username: string;
-}
-
-export interface UserCredentials {
-    lastUpdated: string;
-    lastLogin: string;
-    passwordLastUpdated: StringDateTime;
-    invitation: boolean;
-    selfRegisterd: boolean;
-    uid: Id;
-    disabled: boolean;
-    twoFA: boolean;
-    username: string;
-    userRoles: Ref[];
-}
-
-export interface UserRoleAuthority {
-    id: Id;
-    authorities: string[];
-    name: string;
-}
-
-export interface User {
-    id: Id;
-    lastUpdatedBy: UserDetails;
-    createdBy: UserDetails;
-    twoFA: boolean;
-    invitation: false;
-    selftRefistered: false;
-    firstName: string;
-    phoneNumber: string;
-    name: string;
-    favorite: false;
-    displayName: string;
-    externalAuth: boolean;
-    externalAccess: boolean;
-    surname: string;
-    disabled: boolean;
-    email: string;
-    passwordLastUpdated: StringDateTime;
-    username: string;
-    userCredentials: UserCredentials;
-    userGroups: Ref[];
-    userRoles: Ref[];
-}
+import { Id } from "domain/entities/Base";
 
 export interface Program {
     program: string;
@@ -78,6 +28,7 @@ export interface EventDataValue {
     dataElement: Id;
     value: string | number;
 }
+
 export interface DataElement {
     id: string;
     code: string;

@@ -1,8 +1,8 @@
 import { NamedRef } from "domain/entities/Base";
-import { UserMonitoringBasicResult } from "../common/UserMonitoring";
+import { TwoFactorUserReport } from "./TwoFactorUserReport";
 
 export interface TwoFactorUserOptions {
-    userGroupsResponse?: UserMonitoringBasicResult;
+    userGroupsResponse?: TwoFactorUserReport;
     pushProgramId: NamedRef;
     twoFactorGroup: NamedRef;
 }

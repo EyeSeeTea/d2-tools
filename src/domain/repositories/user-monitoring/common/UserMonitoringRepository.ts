@@ -1,10 +1,10 @@
 import { Async } from "domain/entities/Async";
 import { Id } from "domain/entities/Base";
-import { User } from "domain/entities/user-monitoring/common/User";
+import { UserMonitoringUser } from "domain/entities/user-monitoring/common/UserMonitoringUser";
 
 export interface UserMonitoringRepository {
-    getByIds(ids: Id[]): Async<User[]>;
-    getAllUsers(excludedUsers: string[], exclude?: boolean): Promise<Async<User[]>>;
-    getUsersByGroupId(groupIds: string[]): Promise<Async<User[]>>;
-    saveUsers(user: User[]): Promise<string>;
+    getByIds(ids: Id[]): Async<UserMonitoringUser[]>;
+    getAllUsers(excludedUsers: string[], exclude?: boolean): Promise<Async<UserMonitoringUser[]>>;
+    getUsersByGroupId(groupIds: string[]): Promise<Async<UserMonitoringUser[]>>;
+    saveUsers(user: UserMonitoringUser[]): Promise<string>;
 }

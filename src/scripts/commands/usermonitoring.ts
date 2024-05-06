@@ -5,18 +5,14 @@ import { getD2Api } from "scripts/common";
 import log from "utils/log";
 import { UserMonitoringD2Repository } from "data/user-monitoring/common/UserMonitoringD2Repository";
 
-import { AuthOptions } from "domain/entities/user-monitoring/common/AuthOptions";
-
 import { RunReportUsersWithout2FAUseCase } from "domain/usecases/user-monitoring/two-factor-monitoring/RunReportUsersWithout2FAUseCase";
 
-import { AuthOptions as AuthPermisisonOptions } from "domain/entities/user-monitoring/common/AuthOptions";
-
-import { TwoFactorD2ConfigRepository } from "data/user-monitoring/two-factor-monitoring/TwoFactorD2ConfigRepository";
-import { D2PermissionFixerConfigRepository } from "data/user-monitoring/permission-fixer/D2PermissionFixerConfigRepository";
+import { TwoFactorConfigD2Repository } from "data/user-monitoring/two-factor-monitoring/TwoFactorConfigD2Repository";
+import { PermissionFixerConfigD2Repository } from "data/user-monitoring/permission-fixer/PermissionFixerConfigD2Repository";
 import { PermissionFixerTemplateD2Repository } from "data/user-monitoring/permission-fixer/PermissionFixerTemplateD2Repository";
 import { PermissionFixerReportD2Repository } from "data/user-monitoring/permission-fixer/PermissionFixerReportD2Repository";
 import { TwoFactorUsersReportD2Repository } from "data/user-monitoring/two-factor-monitoring/TwoFactorUsersReportD2Repository";
-import { UserGroupD2Repository } from "data/user-monitoring/permission-fixer/UserGroupD2Repository";
+import { UserGroupD2Repository } from "data/user-monitoring/permission-fixer/PermissionFixerUserGroupD2Repository";
 import { RunUserPermissionUseCase } from "domain/usecases/user-monitoring/permission-fixer/RunUserPermissionUseCase";
 
 export function getCommand() {
@@ -45,7 +41,7 @@ const run2FAReporterCmd = command({
         const auth = getAuthFromFile(args.config_file);
         const api = getD2Api(auth.apiurl);
         const usersRepository = new UserMonitoringD2Repository(api);
-        const externalConfigRepository = new TwoFactorD2ConfigRepository(api);
+        const externalConfigRepository = new TwoFactorConfigD2Repository(api);
         const userMonitoringReportRepository = new TwoFactorUsersReportD2Repository(api);
         log.info(`Run Report users without 2FA`);
         await new RunReportUsersWithout2FAUseCase(
@@ -69,12 +65,12 @@ const runUsersMonitoringCmd = command({
     },
 
     handler: async args => {
-        const auth = getAuthPermissionFromFile(args.config_file);
+        const auth = getAuthFromFile(args.config_file);
         const api = getD2Api(auth.apiurl);
         const usersRepository = new UserMonitoringD2Repository(api);
         const userGroupsRepository = new UserGroupD2Repository(api);
         const usersTemplateRepository = new PermissionFixerTemplateD2Repository(api);
-        const externalConfigRepository = new D2PermissionFixerConfigRepository(api);
+        const externalConfigRepository = new PermissionFixerConfigD2Repository(api);
         const userMonitoringReportRepository = new PermissionFixerReportD2Repository(api);
         log.info(`Run User permissions fixer`);
         await new RunUserPermissionUseCase(
@@ -87,7 +83,7 @@ const runUsersMonitoringCmd = command({
     },
 });
 
-function getAuthFromFile(config_file: string): AuthOptions {
+function getAuthFromFile(config_file: string): UserMonitoringAuth {
     const fs = require("fs");
     const configJSON = JSON.parse(fs.readFileSync("./" + config_file, "utf8"));
     const urlprefix = configJSON["URL"]["server"].split("//")[0] + "//";
@@ -100,15 +96,4 @@ function getAuthFromFile(config_file: string): AuthOptions {
     };
 }
 
-function getAuthPermissionFromFile(config_file: string): AuthPermisisonOptions {
-    const fs = require("fs");
-    const configJSON = JSON.parse(fs.readFileSync("./" + config_file, "utf8"));
-    const urlprefix = configJSON["URL"]["server"].split("//")[0] + "//";
-    const urlserver = configJSON["URL"]["server"].split("//")[1];
-    const apiurl: string =
-        urlprefix + configJSON["URL"]["username"] + ":" + configJSON["URL"]["password"] + "@" + urlserver;
-
-    return {
-        apiurl: apiurl,
-    };
-}
+export type UserMonitoringAuth = { apiurl: string };

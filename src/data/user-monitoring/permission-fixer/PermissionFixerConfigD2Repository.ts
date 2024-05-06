@@ -1,13 +1,13 @@
 import _ from "lodash";
 
 import { D2Api } from "@eyeseetea/d2-api/2.36";
-import { ConfigClient } from "domain/entities/user-monitoring/common/ConfigClient";
+import { UserMonitoringConfig } from "domain/entities/user-monitoring/common/UserMonitoringConfig";
 import log from "utils/log";
 import { PermissionFixerUserOptions } from "domain/entities/user-monitoring/permission-fixer/PermissionFixerUserOptions";
 import { Namespace } from "data/externalConfig/Namespaces";
 import { PermissionFixerConfigRepository } from "domain/repositories/user-monitoring/permission-fixer/PermissionFixerConfigRepository";
 
-export class D2PermissionFixerConfigRepository implements PermissionFixerConfigRepository {
+export class PermissionFixerConfigD2Repository implements PermissionFixerConfigRepository {
     private api: D2Api;
 
     constructor(api: D2Api) {
@@ -20,7 +20,7 @@ export class D2PermissionFixerConfigRepository implements PermissionFixerConfigR
     }
 
     public async get(): Promise<PermissionFixerUserOptions> {
-        const config = await this.getObject<ConfigClient>(Namespace.USER_MONITORING);
+        const config = await this.getObject<UserMonitoringConfig>(Namespace.USER_MONITORING);
         if (config) {
             const usersOptions = this.mapTemplates(config);
             return usersOptions;
@@ -29,7 +29,6 @@ export class D2PermissionFixerConfigRepository implements PermissionFixerConfigR
             throw new Error("Error loading config from datastore");
         }
     }
-
     //for any reason the values aren't saved as ConfigClient, i must map it using the datastore namespaces
     public mapTemplates(config: any): PermissionFixerUserOptions {
         return {

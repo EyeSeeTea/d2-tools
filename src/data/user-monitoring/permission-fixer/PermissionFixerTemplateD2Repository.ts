@@ -1,28 +1,27 @@
 import { Async } from "domain/entities/Async";
 import { D2Api } from "types/d2-api";
 import log from "utils/log";
-import { UserRoleAuthority } from "data/user-monitoring/d2-users/D2Users.types";
-type UserRoleAuthorities = { userRoles: UserRoleAuthority[] };
 import _ from "lodash";
 
-import {
-    TemplateGroup,
-    TemplateGroupWithAuthorities,
-} from "domain/entities/user-monitoring/common/Templates";
-import { TemplateRepository } from "domain/repositories/user-monitoring/permission-fixer/TemplateRepository";
+import { PermissionFixerTemplateRepository } from "domain/repositories/user-monitoring/permission-fixer/PermissionFixerTemplateRepository";
 import { PermissionFixerUserOptions } from "domain/entities/user-monitoring/permission-fixer/PermissionFixerUserOptions";
 import { NamedRef } from "domain/entities/Base";
-import { User as MonitoringUser } from "domain/entities/user-monitoring/common/User";
+import { UserMonitoringUser } from "domain/entities/user-monitoring/common/UserMonitoringUser";
+import { PermissionFixerUserRoleAuthority } from "domain/entities/user-monitoring/permission-fixer/PermissionFixerUserRoleAuthority";
+import {
+    PermissionFixerTemplateGroup,
+    PermissionFixerTemplateGroupExtended,
+} from "domain/entities/user-monitoring/permission-fixer/PermissionFixerTemplates";
 
-export class PermissionFixerTemplateD2Repository implements TemplateRepository {
+export class PermissionFixerTemplateD2Repository implements PermissionFixerTemplateRepository {
     constructor(private api: D2Api) {}
     async getTemplateAuthorities(
         options: PermissionFixerUserOptions,
-        userTemplates: MonitoringUser[]
-    ): Promise<Async<TemplateGroupWithAuthorities[]>> {
+        userTemplates: UserMonitoringUser[]
+    ): Promise<Async<PermissionFixerTemplateGroupExtended[]>> {
         const { templates: templateGroups, excludedRoles: excludedRoles } = options;
 
-        const userRoles: UserRoleAuthority[] = await this.getAllUserRoles(options);
+        const userRoles: PermissionFixerUserRoleAuthority[] = await this.getAllUserRoles(options);
         log.info("Validating roles...");
         const isAuthValid = this.validateAuths(userRoles, excludedRoles);
         if (!isAuthValid) {
@@ -35,7 +34,7 @@ export class PermissionFixerTemplateD2Repository implements TemplateRepository {
         return completeTemplateGroups;
     }
 
-    async getAllUserRoles(options: PermissionFixerUserOptions): Promise<UserRoleAuthority[]> {
+    async getAllUserRoles(options: PermissionFixerUserOptions): Promise<PermissionFixerUserRoleAuthority[]> {
         log.info(`Get metadata: All roles excluding ids: ${options.excludedRoles.join(", ")}`);
         const excludeRoles = options.excludedRoles;
         if (excludeRoles.length == 0) {
@@ -59,11 +58,11 @@ export class PermissionFixerTemplateD2Repository implements TemplateRepository {
 
     //This method organize all the data into templateGroupWithAuthorities to make easy check all.
     private async fillAuthorities(
-        templateGroups: TemplateGroup[],
-        userRoles: UserRoleAuthority[],
-        allUserTemplates: MonitoringUser[]
-    ): Promise<TemplateGroupWithAuthorities[]> {
-        const templateFilled: TemplateGroupWithAuthorities[] = templateGroups.map(item => {
+        templateGroups: PermissionFixerTemplateGroup[],
+        userRoles: PermissionFixerUserRoleAuthority[],
+        allUserTemplates: UserMonitoringUser[]
+    ): Promise<PermissionFixerTemplateGroupExtended[]> {
+        const templateFilled: PermissionFixerTemplateGroupExtended[] = templateGroups.map(item => {
             const user = allUserTemplates.find(template => {
                 return template.id == item.template.id;
             });
@@ -77,7 +76,7 @@ export class PermissionFixerTemplateD2Repository implements TemplateRepository {
                     });
                 })
             );
-            const validRolesByAuthority: UserRoleAuthority[] = _.compact(
+            const validRolesByAuthority: PermissionFixerUserRoleAuthority[] = _.compact(
                 userRoles.map(role => {
                     const authorities = role.authorities.filter(authority => {
                         if (templateAutorities.indexOf(authority) >= 0) return authority;
@@ -91,7 +90,7 @@ export class PermissionFixerTemplateD2Repository implements TemplateRepository {
                 })
             );
 
-            const invalidRolesByAuthority: UserRoleAuthority[] = _.compact(
+            const invalidRolesByAuthority: PermissionFixerUserRoleAuthority[] = _.compact(
                 userRoles.map(role => {
                     const authorities = role.authorities.filter(authority => {
                         if (templateAutorities.indexOf(authority) == -1) return authority;
@@ -125,7 +124,7 @@ export class PermissionFixerTemplateD2Repository implements TemplateRepository {
         return templateFilled;
     }
 
-    private validateAuths(userRoles: UserRoleAuthority[], excludedRoles: NamedRef[]): boolean {
+    private validateAuths(userRoles: PermissionFixerUserRoleAuthority[], excludedRoles: NamedRef[]): boolean {
         const rolesWithInvalidAuth = userRoles.filter(role => {
             return role.authorities.length == 0;
         });
@@ -146,3 +145,5 @@ export class PermissionFixerTemplateD2Repository implements TemplateRepository {
         return true;
     }
 }
+
+type UserRoleAuthorities = { userRoles: PermissionFixerUserRoleAuthority[] };

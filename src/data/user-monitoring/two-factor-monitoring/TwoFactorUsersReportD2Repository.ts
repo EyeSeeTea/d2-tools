@@ -4,8 +4,7 @@ import { EventDataValue, ProgramMetadata } from "data/user-monitoring/d2-users/D
 import _ from "lodash";
 import { getUid } from "utils/uid";
 import { NamedRef } from "domain/entities/Base";
-import { UserWithoutTwoFactor } from "domain/entities/user-monitoring/common/UserWithoutTwoFactor";
-import { UserResponse } from "domain/entities/user-monitoring/common/UserResponse";
+import { TwoFactorUserReport } from "domain/entities/user-monitoring/two-factor-monitoring/TwoFactorUserReport";
 import { UserMonitoringMetadataService } from "../common/UserMonitoringMetadataService";
 import { TwoFactorReportRepository } from "domain/repositories/user-monitoring/two-factor-monitoring/TwoFactorReportRepository";
 
@@ -30,7 +29,7 @@ export class TwoFactorUsersReportD2Repository
     constructor(private api: D2Api) {
         super();
     }
-    async save(programId: string, report: UserWithoutTwoFactor): Promise<string> {
+    async save(programId: string, report: TwoFactorUserReport): Promise<string> {
         const program = await this.getMetadata(programId, this.api);
         const response = await this.push(
             report.invalidUsersCount.toString(),

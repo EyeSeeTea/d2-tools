@@ -1,6 +1,6 @@
 import { Id } from "domain/entities/Base";
 
-export interface UserRoleAuthority {
+export interface PermissionFixerUserRoleAuthority {
     id: Id;
     authorities: string[];
     name: string;

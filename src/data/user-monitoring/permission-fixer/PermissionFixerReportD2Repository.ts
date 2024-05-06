@@ -4,18 +4,19 @@ import { FileUploadParameters, Files } from "@eyeseetea/d2-api/api/files";
 import { Async } from "domain/entities/Async";
 import { D2Api } from "types/d2-api";
 import log from "utils/log";
-import { EventDataValue, ProgramMetadata, User } from "data/user-monitoring/d2-users/D2Users.types";
+import { EventDataValue, ProgramMetadata } from "data/user-monitoring/d2-users/D2Users.types";
 import _ from "lodash";
 
 import {
-    UserMonitoringBasicResult,
-    UserMonitoringExtendedResult,
-} from "domain/entities/user-monitoring/common/UserMonitoring";
+    PermissionFixerReport,
+    PermissionFixerExtendedReport,
+} from "domain/entities/user-monitoring/permission-fixer/PermissionFixerReport";
 import { getUid } from "utils/uid";
 import { UserMonitoringMetadataService } from "data/user-monitoring/common/UserMonitoringMetadataService";
 import { NamedRef } from "domain/entities/Base";
-import { UserResponse } from "domain/entities/user-monitoring/common/UserResponse";
+import { UserMonitoringUserResponse } from "domain/entities/user-monitoring/common/UserMonitoringUserResponse";
 import { PermissionFixerReportRepository } from "domain/repositories/user-monitoring/permission-fixer/PermissionFixerReportRepository";
+import { UserMonitoringUser } from "domain/entities/user-monitoring/common/UserMonitoringUser";
 
 const dataelement_invalid_users_groups_count_code = "ADMIN_invalid_users_groups_count_1_Events";
 const dataelement_invalid_users_groups_list_code = "ADMIN_invalid_users_groups_usernames_5_Events";
@@ -79,8 +80,8 @@ export class PermissionFixerReportD2Repository
 
     async save(
         programId: string,
-        responseGroups: UserMonitoringBasicResult,
-        responseRoles: UserMonitoringExtendedResult
+        responseGroups: PermissionFixerReport,
+        responseRoles: PermissionFixerExtendedReport
     ): Promise<Async<string>> {
         log.info(`Saving report ` + programId);
         const program = await this.getMetadata(programId, this.api);
@@ -139,7 +140,7 @@ export class PermissionFixerReportD2Repository
         return fileresourceId;
     }
 
-    private async saveInCsv(users: UserResponse[], filepath: string) {
+    private async saveInCsv(users: UserMonitoringUserResponse[], filepath: string) {
         const createCsvWriter = CsvWriter.createObjectCsvWriter;
         const csvHeader = _.map(headers, (obj, key) => ({ id: key, ...obj }));
         const csvWriter = createCsvWriter({ path: filepath + ".csv", header: csvHeader });
@@ -163,8 +164,8 @@ export class PermissionFixerReportD2Repository
         await csvWriter.writeRecords(records);
     }
 
-    private async saveUserErrorsOnLogFile(userActionRequired: UserResponse[], eventid: string) {
-        const userToPost: User[] = userActionRequired.map(item => {
+    private async saveUserErrorsOnLogFile(userActionRequired: UserMonitoringUserResponse[], eventid: string) {
+        const userToPost: UserMonitoringUser[] = userActionRequired.map(item => {
             return item.fixedUser;
         });
         log.error(`Save jsons on import error: ${filenameErrorOnPush}`);
