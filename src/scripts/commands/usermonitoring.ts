@@ -3,7 +3,7 @@ import { command, subcommands, option, string } from "cmd-ts";
 
 import { getD2Api } from "scripts/common";
 import log from "utils/log";
-import { UserMonitoringD2Repository } from "data/user-monitoring/common/UserMonitoringD2Repository";
+import { UserMonitoringUserD2Repository } from "data/user-monitoring/common/UserMonitoringUserD2Repository";
 
 import { RunReportUsersWithout2FAUseCase } from "domain/usecases/user-monitoring/two-factor-monitoring/RunReportUsersWithout2FAUseCase";
 
@@ -14,6 +14,7 @@ import { PermissionFixerReportD2Repository } from "data/user-monitoring/permissi
 import { TwoFactorUsersReportD2Repository } from "data/user-monitoring/two-factor-monitoring/TwoFactorUsersReportD2Repository";
 import { UserGroupD2Repository } from "data/user-monitoring/permission-fixer/PermissionFixerUserGroupD2Repository";
 import { RunUserPermissionUseCase } from "domain/usecases/user-monitoring/permission-fixer/RunUserPermissionUseCase";
+import { UserMonitoringProgramD2Repository } from "data/user-monitoring/common/UserMonitoringProgramD2Repository";
 
 export function getCommand() {
     return subcommands({
@@ -40,14 +41,16 @@ const run2FAReporterCmd = command({
     handler: async args => {
         const auth = getAuthFromFile(args.config_file);
         const api = getD2Api(auth.apiurl);
-        const usersRepository = new UserMonitoringD2Repository(api);
+        const usersRepository = new UserMonitoringUserD2Repository(api);
         const externalConfigRepository = new TwoFactorConfigD2Repository(api);
         const userMonitoringReportRepository = new TwoFactorUsersReportD2Repository(api);
+        const programRepository = new UserMonitoringProgramD2Repository(api);
         log.info(`Run Report users without 2FA`);
         await new RunReportUsersWithout2FAUseCase(
             usersRepository,
             userMonitoringReportRepository,
-            externalConfigRepository
+            externalConfigRepository,
+            programRepository
         ).execute();
     },
 });
@@ -67,18 +70,20 @@ const runUsersMonitoringCmd = command({
     handler: async args => {
         const auth = getAuthFromFile(args.config_file);
         const api = getD2Api(auth.apiurl);
-        const usersRepository = new UserMonitoringD2Repository(api);
+        const usersRepository = new UserMonitoringUserD2Repository(api);
         const userGroupsRepository = new UserGroupD2Repository(api);
         const usersTemplateRepository = new PermissionFixerTemplateD2Repository(api);
         const externalConfigRepository = new PermissionFixerConfigD2Repository(api);
         const userMonitoringReportRepository = new PermissionFixerReportD2Repository(api);
+        const programRepository = new UserMonitoringProgramD2Repository(api);
         log.info(`Run User permissions fixer`);
         await new RunUserPermissionUseCase(
             externalConfigRepository,
             userMonitoringReportRepository,
             usersTemplateRepository,
             userGroupsRepository,
-            usersRepository
+            usersRepository,
+            programRepository
         ).execute();
     },
 });
