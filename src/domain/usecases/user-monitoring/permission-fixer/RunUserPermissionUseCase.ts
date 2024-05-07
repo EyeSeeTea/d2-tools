@@ -34,8 +34,8 @@ export class RunUserPermissionUseCase {
     async execute() {
         const options = await this.configRepository.get();
         log.info(`Getting all users with the templates ` + options.pushReport);
-        log.info(`Getting all users with the templates ` + options.testOnly);
-        log.info(`Getting all users with the templates ` + options.fixUserGroups);
+        log.info(`Getting all users with the templates ` + options.pushFixedUsersRoles);
+        log.info(`Getting all users with the templates ` + options.pushFixedUserGroups);
 
         const programMetadata = await this.programRepository.get(options.pushProgramId.id);
         if (!programMetadata) {
@@ -113,7 +113,7 @@ export class RunUserPermissionUseCase {
         const {
             minimalGroupId,
             minimalRoleId,
-            testOnly,
+            pushFixedUsersRoles,
             excludedRolesByRole,
             excludedRolesByUser,
             excludedRolesByGroup,
@@ -173,9 +173,9 @@ export class RunUserPermissionUseCase {
                 return item.user;
             });
 
-            const response = !testOnly
+            const response = pushFixedUsersRoles
                 ? (await this.userRepository.saveUsers(userToPost)) ?? "Empty response"
-                : "Test_only_mode";
+                : "Test_mode";
 
             return {
                 invalidUsersCount: usersToBeFixed.length,
@@ -356,14 +356,17 @@ export class RunUserPermissionUseCase {
         completeTemplateGroups: PermissionFixerTemplateGroupExtended[],
         allUsersGroupCheck: UserMonitoringUser[]
     ): Promise<PermissionFixerReport> {
-        const { minimalGroupId, testOnly, fixUserGroups } = options;
+        const {
+            minimalGroupId,
+            pushFixedUsersRoles: pushFixedUsersRoles,
+            pushFixedUserGroups: pushFixedUserGroups,
+        } = options;
 
         const response = await this.addLowLevelTemplateGroupToUsersWithoutAny(
             completeTemplateGroups,
             allUsersGroupCheck,
             minimalGroupId,
-            testOnly,
-            fixUserGroups
+            pushFixedUserGroups
         );
 
         return response;
@@ -373,8 +376,7 @@ export class RunUserPermissionUseCase {
         completeTemplateGroups: PermissionFixerTemplateGroupExtended[],
         allUsersGroupCheck: UserMonitoringUser[],
         minimalGroupId: NamedRef,
-        testOnly: boolean,
-        fixUserGroups: boolean
+        pushFixedUserGroups: boolean
     ): Promise<PermissionFixerReport> {
         const userIdWithoutGroups: NamedRef[] = this.detectUserIdsWithoutGroups(
             completeTemplateGroups,
@@ -384,8 +386,7 @@ export class RunUserPermissionUseCase {
         return await this.pushUsersWithoutGroupsWithLowLevelGroup(
             userIdWithoutGroups,
             minimalGroupId,
-            testOnly,
-            fixUserGroups
+            pushFixedUserGroups
         );
     }
 
@@ -417,8 +418,7 @@ export class RunUserPermissionUseCase {
     private async pushUsersWithoutGroupsWithLowLevelGroup(
         userIdWithoutGroups: NamedRef[],
         minimalGroupId: NamedRef,
-        testOnly: boolean,
-        fixUserGroups: boolean
+        pushFixedUserGroups: boolean
     ): Promise<PermissionFixerReport> {
         if (userIdWithoutGroups != undefined && userIdWithoutGroups.length > 0) {
             const minimalUserGroup = await this.userGroupRepository.getByIds([minimalGroupId.id]);
@@ -428,19 +428,12 @@ export class RunUserPermissionUseCase {
             minimalUserGroup[0]?.users.push(...userIds);
 
             log.info("Pushing fixed users without groups");
-            log.info(
-                "Users without groups: " + userIdWithoutGroups.length + " fixUserGroups: " + fixUserGroups
-            );
-            if (!fixUserGroups) {
+            if (!pushFixedUserGroups) {
                 return this.getResponse(
                     "Fix user groups is disabled.",
                     userIdWithoutGroups.length,
                     userIdWithoutGroups
                 );
-            }
-
-            if (testOnly) {
-                return this.getResponse("Test only mode", userIdWithoutGroups.length, userIdWithoutGroups);
             }
 
             const response = await this.userGroupRepository.save(minimalUserGroup[0]!);

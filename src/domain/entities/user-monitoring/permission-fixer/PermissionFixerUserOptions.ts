@@ -12,8 +12,8 @@ export interface PermissionFixerUserOptions {
     excludedRolesByGroup: RolesByGroup[];
     excludedRolesByRole: RolesByRoles[];
     pushReport: boolean;
-    testOnly: boolean;
-    fixUserGroups: boolean;
+    pushFixedUsersRoles: boolean;
+    pushFixedUserGroups: boolean;
     pushProgramId: NamedRef;
     minimalGroupId: NamedRef;
     minimalRoleId: NamedRef;

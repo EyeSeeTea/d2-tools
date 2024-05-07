@@ -106,7 +106,6 @@ export class TwoFactorUsersReportD2Repository implements TwoFactorReportReposito
                     return { status: "ERROR", typeReports: [] };
                 }
             });
-        log.info("Report sent status: " + response.status);
 
         return response;
     }
