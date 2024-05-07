@@ -29,7 +29,7 @@ export class PermissionFixerConfigD2Repository implements PermissionFixerConfigR
             throw new Error("Error loading config from datastore");
         }
     }
-    //for any reason the values aren't saved as ConfigClient, i must map it using the datastore namespaces
+
     public mapTemplates(config: any): PermissionFixerUserOptions {
         return {
             excludedRolesByRole: config[Namespace.EXCLUDE_ROLES_BY_ROLE],

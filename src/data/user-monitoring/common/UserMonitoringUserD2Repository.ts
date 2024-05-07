@@ -10,6 +10,7 @@ export class UserMonitoringUserD2Repository implements UserMonitoringUserReposit
     constructor(private api: D2Api) {}
     async getUsersByGroupId(groupIds: string[]): Promise<Async<UserMonitoringUser[]>> {
         log.info(`Get users by group: Users by ids: ${groupIds.join(",")}`);
+        //todo use d2api filters
         const responses = await this.api
             .get<Users>(
                 `/users.json?paging=false&fields=*,userCredentials[*]&filter=userGroups.id:in:[${groupIds.join(
@@ -22,6 +23,7 @@ export class UserMonitoringUserD2Repository implements UserMonitoringUserReposit
 
     async getByIds(ids: Id[]): Async<UserMonitoringUser[]> {
         log.info(`Get metadata: Users by ids: ${ids.join(",")}`);
+        //todo use d2api filters
         const responses = await this.api
             .get<Users>(
                 `/users.json?paging=false&fields=*,userCredentials[*]&filter=id:in:[${ids.join(",")}]`
@@ -34,6 +36,7 @@ export class UserMonitoringUserD2Repository implements UserMonitoringUserReposit
     async getAllUsers(excludedUsers: string[], exclude?: boolean): Promise<Async<UserMonitoringUser[]>> {
         log.info(`Get metadata: All users except: ${excludedUsers.join(",")}`);
         const filterOption = exclude ? "!in" : "in";
+        //todo use d2api filters
         const responses = await this.api
             .get<Users>(
                 `/users.json?paging=false&fields=*,userCredentials[*]&filter=id:${filterOption}:[${excludedUsers.join(

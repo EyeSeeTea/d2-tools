@@ -29,7 +29,6 @@ export class TwoFactorConfigD2Repository implements TwoFactorConfigRepository {
         }
     }
 
-    //for any reason the values aren't saved as ConfigClient, i must map it using the datastore namespaces
     public mapTemplates(config: any): TwoFactorUserOptions {
         return {
             pushProgramId: config[Namespace.PUSH_PROGRAM_ID],

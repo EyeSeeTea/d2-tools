@@ -8,6 +8,7 @@ export class UserGroupD2Repository implements PermissionFixerUserGroupRepository
     async getByIds(groupsIds: string[]): Promise<PermissionFixerUserGroupExtended[]> {
         log.info(`Get metadata: All groups`);
 
+        //todo use d2api filters
         const responses = await this.api
             .get<UserGroups>(
                 `/userGroups?filter=id:in:[${groupsIds.join(",")}]&fields=id,name,users,*&paging=false.json`

@@ -14,6 +14,7 @@ import {
 } from "domain/entities/user-monitoring/permission-fixer/PermissionFixerTemplates";
 
 export class PermissionFixerTemplateD2Repository implements PermissionFixerTemplateRepository {
+    //todo This repository has some logic that should be moved to the usecase
     constructor(private api: D2Api) {}
     async getTemplateAuthorities(
         options: PermissionFixerUserOptions,
