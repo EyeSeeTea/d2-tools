@@ -33,9 +33,6 @@ export class RunUserPermissionUseCase {
 
     async execute() {
         const options = await this.configRepository.get();
-        log.info(`Getting all users with the templates ` + options.pushReport);
-        log.info(`Getting all users with the templates ` + options.pushFixedUsersRoles);
-        log.info(`Getting all users with the templates ` + options.pushFixedUserGroups);
 
         const programMetadata = await this.programRepository.get(options.pushProgramId.id);
         if (!programMetadata) {
@@ -46,7 +43,7 @@ export class RunUserPermissionUseCase {
         });
 
         const allUserTemplates = await this.userRepository.getAllUsers(userTemplateIds, false);
-        //usergroups
+
         const templatesWithAuthorities = await this.templateRepository.getTemplateAuthorities(
             options,
             allUserTemplates
@@ -132,7 +129,7 @@ export class RunUserPermissionUseCase {
 
         //users without user groups
         const usersWithErrorsInGroups = userinfo.filter(item => item.undefinedUserGroups);
-        //todo: Maybe add throw exception?
+
         if (usersWithErrorsInGroups.length > 0) {
             throw new Error("Still having users without any template user group.");
         }
