@@ -1,5 +1,5 @@
 import { PermissionFixerConfigRepository } from "domain/repositories/user-monitoring/permission-fixer/PermissionFixerConfigRepository";
-import { UserMonitoringRepository } from "domain/repositories/user-monitoring/common/UserMonitoringRepository";
+import { UserMonitoringUserRepository } from "domain/repositories/user-monitoring/common/UserMonitoringUserRepository";
 import { PermissionFixerTemplateRepository } from "domain/repositories/user-monitoring/permission-fixer/PermissionFixerTemplateRepository";
 import { getUid } from "utils/uid";
 import _ from "lodash";
@@ -19,6 +19,7 @@ import { NamedRef } from "domain/entities/Base";
 import { PermissionFixerReportRepository } from "domain/repositories/user-monitoring/permission-fixer/PermissionFixerReportRepository";
 import { PermissionFixerTemplateGroupExtended } from "domain/entities/user-monitoring/permission-fixer/PermissionFixerTemplates";
 import { UserMonitoringUserResponse } from "domain/entities/user-monitoring/common/UserMonitoringUserResponse";
+import { UserMonitoringProgramRepository } from "domain/repositories/user-monitoring/common/UserMonitoringProgramRepository";
 
 export class RunUserPermissionUseCase {
     constructor(
@@ -26,12 +27,20 @@ export class RunUserPermissionUseCase {
         private reportRepository: PermissionFixerReportRepository,
         private templateRepository: PermissionFixerTemplateRepository,
         private userGroupRepository: PermissionFixerUserGroupRepository,
-        private userRepository: UserMonitoringRepository
+        private userRepository: UserMonitoringUserRepository,
+        private programRepository: UserMonitoringProgramRepository
     ) {}
 
     async execute() {
         const options = await this.configRepository.get();
+        log.info(`Getting all users with the templates ` + options.pushReport);
+        log.info(`Getting all users with the templates ` + options.testOnly);
+        log.info(`Getting all users with the templates ` + options.fixUserGroups);
 
+        const programMetadata = await this.programRepository.get(options.pushProgramId.id);
+        if (!programMetadata) {
+            throw new Error("Metadata not found in the server. Check the program id.");
+        }
         const userTemplateIds = options.templates.map(template => {
             return template.template.id;
         });
@@ -90,7 +99,7 @@ export class RunUserPermissionUseCase {
             (finalUserGroup.invalidUsersCount > 0 || finalUserRoles.invalidUsersCount > 0)
         ) {
             log.info(`Sending user-monitoring user-permissions report results`);
-            await this.reportRepository.save(options.pushProgramId.id, finalUserGroup, finalUserRoles);
+            await this.reportRepository.save(programMetadata, finalUserGroup, finalUserRoles);
         } else {
             log.info(`Nothing to report. No invalid users found.`);
         }
@@ -347,13 +356,14 @@ export class RunUserPermissionUseCase {
         completeTemplateGroups: PermissionFixerTemplateGroupExtended[],
         allUsersGroupCheck: UserMonitoringUser[]
     ): Promise<PermissionFixerReport> {
-        const { minimalGroupId, testOnly } = options;
+        const { minimalGroupId, testOnly, fixUserGroups } = options;
 
         const response = await this.addLowLevelTemplateGroupToUsersWithoutAny(
             completeTemplateGroups,
             allUsersGroupCheck,
             minimalGroupId,
-            testOnly
+            testOnly,
+            fixUserGroups
         );
 
         return response;
@@ -363,7 +373,8 @@ export class RunUserPermissionUseCase {
         completeTemplateGroups: PermissionFixerTemplateGroupExtended[],
         allUsersGroupCheck: UserMonitoringUser[],
         minimalGroupId: NamedRef,
-        testOnly: boolean
+        testOnly: boolean,
+        fixUserGroups: boolean
     ): Promise<PermissionFixerReport> {
         const userIdWithoutGroups: NamedRef[] = this.detectUserIdsWithoutGroups(
             completeTemplateGroups,
@@ -373,7 +384,8 @@ export class RunUserPermissionUseCase {
         return await this.pushUsersWithoutGroupsWithLowLevelGroup(
             userIdWithoutGroups,
             minimalGroupId,
-            testOnly
+            testOnly,
+            fixUserGroups
         );
     }
 
@@ -405,7 +417,8 @@ export class RunUserPermissionUseCase {
     private async pushUsersWithoutGroupsWithLowLevelGroup(
         userIdWithoutGroups: NamedRef[],
         minimalGroupId: NamedRef,
-        testOnly: boolean
+        testOnly: boolean,
+        fixUserGroups: boolean
     ): Promise<PermissionFixerReport> {
         if (userIdWithoutGroups != undefined && userIdWithoutGroups.length > 0) {
             const minimalUserGroup = await this.userGroupRepository.getByIds([minimalGroupId.id]);
@@ -415,25 +428,38 @@ export class RunUserPermissionUseCase {
             minimalUserGroup[0]?.users.push(...userIds);
 
             log.info("Pushing fixed users without groups");
-            if (testOnly) {
-                log.info("Test only mode. No changes will be saved to the database.");
-                return {
-                    response: "Test only mode",
-                    invalidUsersCount: userIdWithoutGroups.length,
-                    listOfAffectedUsers: userIdWithoutGroups,
-                };
-            } else {
-                const response = await this.userGroupRepository.save(minimalUserGroup[0]!);
-
-                log.info("Result: " + response);
-                return {
-                    response: response,
-                    invalidUsersCount: userIdWithoutGroups.length,
-                    listOfAffectedUsers: userIdWithoutGroups,
-                };
+            log.info(
+                "Users without groups: " + userIdWithoutGroups.length + " fixUserGroups: " + fixUserGroups
+            );
+            if (!fixUserGroups) {
+                return this.getResponse(
+                    "Fix user groups is disabled.",
+                    userIdWithoutGroups.length,
+                    userIdWithoutGroups
+                );
             }
+
+            if (testOnly) {
+                return this.getResponse("Test only mode", userIdWithoutGroups.length, userIdWithoutGroups);
+            }
+
+            const response = await this.userGroupRepository.save(minimalUserGroup[0]!);
+            return this.getResponse(response, userIdWithoutGroups.length, userIdWithoutGroups);
         } else {
-            return { response: "", invalidUsersCount: 0, listOfAffectedUsers: [] };
+            return this.getResponse("No users without groups found.", 0, []);
         }
+    }
+
+    private getResponse(
+        message: string,
+        invalidUsersCount: number,
+        listOfAffectedUsers: NamedRef[]
+    ): PermissionFixerReport {
+        log.info("Result: " + message);
+        return {
+            response: message,
+            invalidUsersCount: invalidUsersCount,
+            listOfAffectedUsers: listOfAffectedUsers,
+        };
     }
 }

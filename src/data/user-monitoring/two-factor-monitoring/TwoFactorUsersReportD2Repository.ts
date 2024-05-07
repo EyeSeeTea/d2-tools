@@ -1,12 +1,12 @@
 import { D2Api } from "types/d2-api";
 import log from "utils/log";
-import { EventDataValue, ProgramMetadata } from "data/user-monitoring/d2-users/D2Users.types";
 import _ from "lodash";
 import { getUid } from "utils/uid";
 import { NamedRef } from "domain/entities/Base";
 import { TwoFactorUserReport } from "domain/entities/user-monitoring/two-factor-monitoring/TwoFactorUserReport";
-import { UserMonitoringMetadataService } from "../common/UserMonitoringMetadataService";
 import { TwoFactorReportRepository } from "domain/repositories/user-monitoring/two-factor-monitoring/TwoFactorReportRepository";
+import { UserMonitoringProgramMetadata } from "domain/entities/user-monitoring/common/UserMonitoringProgramMetadata";
+import { UserMonitoringReportValues } from "domain/entities/user-monitoring/common/UserMonitoringReportValues";
 
 const dataelement_invalid_two_factor_count_code = "ADMIN_users_without_two_factor_count_7_Events";
 const dataelement_invalid_two_factor_usernames_list_code = "ADMIN_users_without_two_factor_8_Events";
@@ -22,15 +22,9 @@ const date = new Date()
     .replace(/-/g, "_");
 type ServerResponse = { status: string; typeReports: object[] };
 
-export class TwoFactorUsersReportD2Repository
-    extends UserMonitoringMetadataService
-    implements TwoFactorReportRepository
-{
-    constructor(private api: D2Api) {
-        super();
-    }
-    async save(programId: string, report: TwoFactorUserReport): Promise<string> {
-        const program = await this.getMetadata(programId, this.api);
+export class TwoFactorUsersReportD2Repository implements TwoFactorReportRepository {
+    constructor(private api: D2Api) {}
+    async save(program: UserMonitoringProgramMetadata, report: TwoFactorUserReport): Promise<string> {
         const response = await this.push(
             report.invalidUsersCount.toString(),
             report.listOfAffectedUsers,
@@ -50,12 +44,12 @@ export class TwoFactorUsersReportD2Repository
         invalidConfigNumber: string,
         invalidConfigUsers: NamedRef[],
         api: D2Api,
-        program: ProgramMetadata,
+        program: UserMonitoringProgramMetadata,
         eventUid: string
     ) {
         log.info(`Create and Pushing users without two factor report to DHIS2`);
 
-        const dataValues: EventDataValue[] = program.dataElements
+        const dataValues: UserMonitoringReportValues[] = program.dataElements
             .map(item => {
                 switch (item.code) {
                     case dataelement_invalid_two_factor_count_code:

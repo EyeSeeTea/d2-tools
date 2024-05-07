@@ -4,7 +4,6 @@ import { FileUploadParameters, Files } from "@eyeseetea/d2-api/api/files";
 import { Async } from "domain/entities/Async";
 import { D2Api } from "types/d2-api";
 import log from "utils/log";
-import { EventDataValue, ProgramMetadata } from "data/user-monitoring/d2-users/D2Users.types";
 import _ from "lodash";
 
 import {
@@ -12,11 +11,12 @@ import {
     PermissionFixerExtendedReport,
 } from "domain/entities/user-monitoring/permission-fixer/PermissionFixerReport";
 import { getUid } from "utils/uid";
-import { UserMonitoringMetadataService } from "data/user-monitoring/common/UserMonitoringMetadataService";
 import { NamedRef } from "domain/entities/Base";
 import { UserMonitoringUserResponse } from "domain/entities/user-monitoring/common/UserMonitoringUserResponse";
 import { PermissionFixerReportRepository } from "domain/repositories/user-monitoring/permission-fixer/PermissionFixerReportRepository";
 import { UserMonitoringUser } from "domain/entities/user-monitoring/common/UserMonitoringUser";
+import { UserMonitoringProgramMetadata } from "domain/entities/user-monitoring/common/UserMonitoringProgramMetadata";
+import { UserMonitoringReportValues } from "domain/entities/user-monitoring/common/UserMonitoringReportValues";
 
 const dataelement_invalid_users_groups_count_code = "ADMIN_invalid_users_groups_count_1_Events";
 const dataelement_invalid_users_groups_list_code = "ADMIN_invalid_users_groups_usernames_5_Events";
@@ -70,21 +70,15 @@ const headers: Record<Attr, { title: string }> = {
     validRoles: { title: "ValidRoles" },
 };
 
-export class PermissionFixerReportD2Repository
-    extends UserMonitoringMetadataService
-    implements PermissionFixerReportRepository
-{
-    constructor(private api: D2Api) {
-        super();
-    }
+export class PermissionFixerReportD2Repository implements PermissionFixerReportRepository {
+    constructor(private api: D2Api) {}
 
     async save(
-        programId: string,
+        program: UserMonitoringProgramMetadata,
         responseGroups: PermissionFixerReport,
         responseRoles: PermissionFixerExtendedReport
     ): Promise<Async<string>> {
-        log.info(`Saving report ` + programId);
-        const program = await this.getMetadata(programId, this.api);
+        log.info(`Saving report `);
         log.debug(`Users fixed file id: ${filenameUsersPushed}`);
         const userFixedId = await this.saveFileResource(
             JSON.stringify(responseRoles.usersFixed),
@@ -189,11 +183,11 @@ export class PermissionFixerReportD2Repository
         userFixedFileResourceId: string,
         userBackupFileResourceid: string,
         api: D2Api,
-        program: ProgramMetadata,
+        program: UserMonitoringProgramMetadata,
         eventUid: string
     ) {
         log.info(`Create and Pushing report to DHIS2`);
-        const dataValues: EventDataValue[] = program.dataElements
+        const dataValues: UserMonitoringReportValues[] = program.dataElements
             .map(item => {
                 switch (item.code) {
                     case dataelement_invalid_users_groups_count_code:

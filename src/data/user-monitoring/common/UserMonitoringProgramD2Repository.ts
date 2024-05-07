@@ -1,17 +1,20 @@
 import log from "utils/log";
-import {
-    DataElement,
-    Program,
-    ProgramMetadata,
-    ProgramStage,
-    ProgramStageDataElement,
-} from "../d2-users/D2Users.types";
 import { Async } from "domain/entities/Async";
 import { D2Api } from "types/d2-api";
+import {
+    UserMonitoringD2DataElement,
+    UserMonitoringD2Program,
+    UserMonitoringD2ProgramStage,
+    UserMonitoringD2ProgramStageDataElement,
+} from "data/user-monitoring/entities/UserMonitoringD2Program";
+import { UserMonitoringProgramMetadata } from "domain/entities/user-monitoring/common/UserMonitoringProgramMetadata";
+import { UserMonitoringProgramRepository } from "domain/repositories/user-monitoring/common/UserMonitoringProgramRepository";
 
-export class UserMonitoringMetadataService {
-    async getMetadata(programId: string, api: D2Api): Promise<Async<ProgramMetadata>> {
-        const responseProgram = await this.getProgram(api, programId);
+export class UserMonitoringProgramD2Repository implements UserMonitoringProgramRepository {
+    constructor(private api: D2Api) {}
+
+    async get(programId: string): Promise<Async<UserMonitoringProgramMetadata>> {
+        const responseProgram = await this.getProgram(this.api, programId);
 
         const programs = responseProgram[0] ?? undefined;
 
@@ -20,7 +23,7 @@ export class UserMonitoringMetadataService {
             throw new Error("Program ${pushProgramId} not found");
         }
 
-        const programStage: ProgramStage | undefined = programs.programStages[0];
+        const programStage: UserMonitoringD2ProgramStage | undefined = programs.programStages[0];
 
         const orgunitstring = JSON.stringify(programs.organisationUnits[0]);
         const orgUnit: { id: string } = JSON.parse(orgunitstring);
@@ -36,13 +39,14 @@ export class UserMonitoringMetadataService {
             throw new Error(`Program OrgUnit in ${programId} not found`);
         }
 
-        const programStageDataElements: ProgramStageDataElement[] = programStage.programStageDataElements;
+        const programStageDataElements: UserMonitoringD2ProgramStageDataElement[] =
+            programStage.programStageDataElements;
 
-        const dataElements: DataElement[] = programStageDataElements.map(item => {
+        const dataElements: UserMonitoringD2DataElement[] = programStageDataElements.map(item => {
             return item.dataElement;
         });
 
-        const program: ProgramMetadata = {
+        const program: UserMonitoringProgramMetadata = {
             id: programId,
             programStageId: programStage.id,
             dataElements: dataElements,
@@ -51,7 +55,7 @@ export class UserMonitoringMetadataService {
         return program;
     }
 
-    private async getProgram(api: D2Api, programUid: string): Promise<Program[]> {
+    private async getProgram(api: D2Api, programUid: string): Promise<UserMonitoringD2Program[]> {
         log.info(`Get metadata: Program metadata: ${programUid}`);
 
         const responses = await api
@@ -63,4 +67,4 @@ export class UserMonitoringMetadataService {
         return responses.programs;
     }
 }
-type Programs = { programs: Program[] };
+type Programs = { programs: UserMonitoringD2Program[] };

@@ -1,4 +1,5 @@
 import { Async } from "domain/entities/Async";
+import { UserMonitoringProgramMetadata } from "domain/entities/user-monitoring/common/UserMonitoringProgramMetadata";
 import {
     PermissionFixerExtendedReport,
     PermissionFixerReport,
@@ -6,7 +7,7 @@ import {
 
 export interface PermissionFixerReportRepository {
     save(
-        programId: string,
+        program: UserMonitoringProgramMetadata,
         responseGroups: PermissionFixerReport,
         responseRoles: PermissionFixerExtendedReport
     ): Promise<Async<string>>;
