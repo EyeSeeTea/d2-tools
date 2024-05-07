@@ -472,7 +472,8 @@ An example of the datastore:
 
 Note: the names are used only to make easy understand and debug the keys.
 
-````{
+````
+{
   "EXCLUDE_ROLES": [
     {
       "id": "uid",

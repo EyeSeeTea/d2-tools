@@ -1,14 +1,14 @@
 import log from "utils/log";
 import { Async } from "domain/entities/Async";
 import { D2Api } from "types/d2-api";
+import { UserMonitoringProgramMetadata } from "domain/entities/user-monitoring/common/UserMonitoringProgramMetadata";
+import { UserMonitoringProgramRepository } from "domain/repositories/user-monitoring/common/UserMonitoringProgramRepository";
 import {
     UserMonitoringD2DataElement,
     UserMonitoringD2Program,
     UserMonitoringD2ProgramStage,
     UserMonitoringD2ProgramStageDataElement,
-} from "data/user-monitoring/entities/UserMonitoringD2Program";
-import { UserMonitoringProgramMetadata } from "domain/entities/user-monitoring/common/UserMonitoringProgramMetadata";
-import { UserMonitoringProgramRepository } from "domain/repositories/user-monitoring/common/UserMonitoringProgramRepository";
+} from "../entities/UserMonitoringD2Program";
 
 export class UserMonitoringProgramD2Repository implements UserMonitoringProgramRepository {
     constructor(private api: D2Api) {}
@@ -57,7 +57,7 @@ export class UserMonitoringProgramD2Repository implements UserMonitoringProgramR
 
     private async getProgram(api: D2Api, programUid: string): Promise<UserMonitoringD2Program[]> {
         log.info(`Get metadata: Program metadata: ${programUid}`);
-
+        //todo use d2api filters
         const responses = await api
             .get<Programs>(
                 `/programs?filter=id:eq:${programUid}&fields=id,organisationUnits[id],programStages[id,programStageDataElements[id,dataElement[id,name,code]]&paging=false.json`
