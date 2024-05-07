@@ -423,6 +423,12 @@ LOG_LEVEL=debug node --inspect-brk dist/index.js usermonitoring run-users-monito
 
 ### Requirements:
 
+Use node 16:
+
+```
+nvm use 16
+```
+
 A config json file to get the user/password and server:
 
 ```
@@ -460,122 +466,130 @@ A push_program_id variable with the program ID to send the report
 
 A list of templates (user with the valid roles, and group to identify which users could use those roles).
 
-An example of the file:
+A list with flags to control the script (PERMISSION_FIXER_CONFIG).
+
+An example of the datastore:
+
+Note: the names are used only to make easy understand and debug the keys.
 
 ````{
   "EXCLUDE_ROLES": [
     {
-      "id": "byLnQNR1v1B",
-      "name": "App - Leprosy WER Report"
+      "id": "uid",
+      "name": "App - name"
     }
   ],
   "EXCLUDE_ROLES_BY_GROUPS": [
     {
       "group": {
-        "id": "ZXEVDM9XRea",
-        "name": "MAL_Malaria access"
+        "id": "uid",
+        "name": "User group name"
       },
       "role": {
         "id": "hXY2OtVz70P",
-        "name": "App - DHIS2 MAL Approval Report"
+        "name": "App - name"
       }
     }
   ],
   "EXCLUDE_ROLES_BY_ROLE": [
     {
       "active_role": {
-        "id": "ADf4WvGrP2q",
-        "name": "App - Bulk Load"
+        "id": "uid",
+        "name": "App present in the user"
       },
       "ignore_role": {
-        "id": "A36hTe5VUMS",
-        "name": "Export metadata"
+        "id": "uid",
+        "name": "App to be ignored"
       }
     }
   ],
   "EXCLUDE_ROLES_BY_USERS": [
     {
       "role": {
-        "id": "hOYM2imoNmZ",
-        "name": "App - Android Settings app"
+        "id": "uid",
+        "name": "App - name"
       },
       "user": {
-        "id": "wUd8NBL7fn2",
-        "name": "user"
+        "id": "uid",
+        "name": "username"
       }
     }
   ],
   "EXCLUDE_USERS": [
     {
-      "id": "smGarTiKDdV",
-      "name": "user"
+      "id": "uid",
+      "name": "username"
     }
   ],
   "MINIMAL_GROUP": {
-    "id": "UmSnxmr4LE0",
-    "name": "WIDP Users"
+    "id": "uid",
+    "name": "Users"
   },
   "MINIMAL_ROLE": {
-    "id": "vOLtPCt8WeB",
-    "name": "Backend access"
+    "id": "uid",
+    "name": "Role name"
   },
   "PUSH_PROGRAM_ID": {
-    "id": "tBI5HRoOMUz",
-    "name": "ADMIN_Users_Check(Event)"
+    "id": "uid",
+    "name": "Program name"
   },
-  "PUSH_REPORT": true,
   "TEMPLATE_GROUPS": [
     {
       "group": {
-        "id": "UfhhwZK73Lg",
-        "name": "WIDP IT team"
+        "id": "uid",
+        "name": "IT team"
       },
       "template": {
-        "id": "cNtWc18LXBS",
-        "name": "widp_it_team.template"
+        "id": "uid",
+        "name": "it_team_template_username"
       }
     },
     {
       "group": {
-        "id": "L5dlGQ4m5av",
-        "name": "WIDP User Manager"
+        "id": "uid",
+        "name": "User Manager"
       },
       "template": {
-        "id": "Q2e3xq4hRCj",
-        "name": "widp_manager.template"
+        "id": "uid",
+        "name": "manager_template_username"
       }
     },
     {
       "group": {
-        "id": "sCjEPgiOhP1",
-        "name": "WIDP admins"
+        "id": "uid",
+        "name": "admins"
       },
       "template": {
-        "id": "kxaP3vUEnJn",
-        "name": "widp_admins.template"
+        "id": "uid",
+        "name": "admins_template_username"
       }
     },
     {
       "group": {
-        "id": "e5NqEzmd8Ql",
-        "name": "WIDP external developers"
+        "id": "uid",
+        "name": "external developers"
       },
       "template": {
-        "id": "FnkRtcOGOVQ",
-        "name": "widp_external_developers.template"
+        "id": "uid",
+        "name": "external_developers_template_username"
       }
     },
     {
       "group": {
-        "id": "UmSnxmr4LE0",
-        "name": "WIDP Users"
+        "id": "uid",
+        "name": "Users"
       },
       "template": {
-        "id": "WT6QkP45vEC",
-        "name": "widp_user.template"
+        "id": "uid",
+        "name": "user_template_username"
       }
     }
   ]
+  ,"PERMISSION_FIXER_CONFIG": {
+    "PUSH_FIXED_ROLES": true,
+    "PUSH_FIXED_USERGROUPS": true,
+    "PUSH_REPORT": true
+  }
 }```
 
 
