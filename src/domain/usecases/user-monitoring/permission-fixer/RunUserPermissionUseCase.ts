@@ -1,5 +1,4 @@
 import { PermissionFixerConfigRepository } from "domain/repositories/user-monitoring/permission-fixer/PermissionFixerConfigRepository";
-import { UserMonitoringUserRepository } from "domain/repositories/user-monitoring/common/UserMonitoringUserRepository";
 import { PermissionFixerTemplateRepository } from "domain/repositories/user-monitoring/permission-fixer/PermissionFixerTemplateRepository";
 import { getUid } from "utils/uid";
 import _ from "lodash";
@@ -7,7 +6,6 @@ import { RolesByRoles } from "domain/entities/user-monitoring/permission-fixer/R
 import { RolesByGroup } from "domain/entities/user-monitoring/permission-fixer/RolesByGroup";
 import { RolesByUser } from "domain/entities/user-monitoring/permission-fixer/RolesByUser";
 import { Ref } from "domain/entities/Base";
-import { UserMonitoringUser } from "domain/entities/user-monitoring/common/UserMonitoringUser";
 import {
     PermissionFixerReport,
     PermissionFixerExtendedReport,
@@ -20,6 +18,8 @@ import { PermissionFixerTemplateGroupExtended } from "domain/entities/user-monit
 import { UserMonitoringUserResponse } from "domain/entities/user-monitoring/common/UserMonitoringUserResponse";
 import { UserMonitoringProgramRepository } from "domain/repositories/user-monitoring/common/UserMonitoringProgramRepository";
 import { PermissionFixerConfigOptions } from "domain/entities/user-monitoring/permission-fixer/PermissionFixerConfigOptions";
+import { PermissionFixerUserRepository } from "domain/repositories/user-monitoring/permission-fixer/PermissionFixerUserRepository";
+import { PermissionFixerUser } from "domain/entities/user-monitoring/permission-fixer/PermissionFixerUser";
 
 export class RunUserPermissionUseCase {
     constructor(
@@ -27,7 +27,7 @@ export class RunUserPermissionUseCase {
         private reportRepository: PermissionFixerReportRepository,
         private templateRepository: PermissionFixerTemplateRepository,
         private userGroupRepository: PermissionFixerUserGroupRepository,
-        private userRepository: UserMonitoringUserRepository,
+        private userRepository: PermissionFixerUserRepository,
         private programRepository: UserMonitoringProgramRepository
     ) {}
 
@@ -105,7 +105,7 @@ export class RunUserPermissionUseCase {
     async processUserRoles(
         options: PermissionFixerConfigOptions,
         completeTemplateGroups: PermissionFixerTemplateGroupExtended[],
-        allUsers: UserMonitoringUser[]
+        allUsers: PermissionFixerUser[]
     ): Promise<PermissionFixerExtendedReport> {
         const {
             minimalGroupId,
@@ -163,10 +163,10 @@ export class RunUserPermissionUseCase {
                 .replace("\\", "-");
             const eventUid = getUid(date);
 
-            const userToPost: UserMonitoringUser[] = usersToBeFixed.map(item => {
+            const userToPost: PermissionFixerUser[] = usersToBeFixed.map(item => {
                 return item.fixedUser;
             });
-            const userBackup: UserMonitoringUser[] = usersToBeFixed.map(item => {
+            const userBackup: PermissionFixerUser[] = usersToBeFixed.map(item => {
                 return item.user;
             });
 
@@ -189,7 +189,7 @@ export class RunUserPermissionUseCase {
     }
 
     private processUsers(
-        allUsers: UserMonitoringUser[],
+        allUsers: PermissionFixerUser[],
         completeTemplateGroups: PermissionFixerTemplateGroupExtended[],
         excludedRolesByRole: RolesByRoles[],
         excludedRolesByGroup: RolesByGroup[],
@@ -328,7 +328,7 @@ export class RunUserPermissionUseCase {
     }
 
     private validateUsers(
-        allUsers: UserMonitoringUser[],
+        allUsers: PermissionFixerUser[],
         completeTemplateGroups: PermissionFixerTemplateGroupExtended[],
         minimalGroupId: string
     ) {
@@ -351,7 +351,7 @@ export class RunUserPermissionUseCase {
     async processUserGroups(
         options: PermissionFixerConfigOptions,
         completeTemplateGroups: PermissionFixerTemplateGroupExtended[],
-        allUsersGroupCheck: UserMonitoringUser[]
+        allUsersGroupCheck: PermissionFixerUser[]
     ): Promise<PermissionFixerReport> {
         const { minimalGroupId, pushFixedUserGroups: pushFixedUserGroups } = options;
 
@@ -367,7 +367,7 @@ export class RunUserPermissionUseCase {
 
     private async addLowLevelTemplateGroupToUsersWithoutAny(
         completeTemplateGroups: PermissionFixerTemplateGroupExtended[],
-        allUsersGroupCheck: UserMonitoringUser[],
+        allUsersGroupCheck: PermissionFixerUser[],
         minimalGroupId: NamedRef,
         pushFixedUserGroups: boolean
     ): Promise<PermissionFixerReport> {
@@ -385,7 +385,7 @@ export class RunUserPermissionUseCase {
 
     private detectUserIdsWithoutGroups(
         completeTemplateGroups: PermissionFixerTemplateGroupExtended[],
-        allUsersGroupCheck: UserMonitoringUser[],
+        allUsersGroupCheck: PermissionFixerUser[],
         minimalGroupId: NamedRef
     ): NamedRef[] {
         return _.compact(

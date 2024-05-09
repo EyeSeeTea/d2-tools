@@ -22,7 +22,7 @@ const date = new Date()
     .replace(/-/g, "_");
 type ServerResponse = { status: string; typeReports: object[] };
 
-export class TwoFactorUsersReportD2Repository implements TwoFactorReportRepository {
+export class TwoFactorReportD2Repository implements TwoFactorReportRepository {
     constructor(private api: D2Api) {}
     async save(program: UserMonitoringProgramMetadata, report: TwoFactorUserReport): Promise<string> {
         const response = await this.push(

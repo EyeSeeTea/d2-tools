@@ -1,18 +1,18 @@
 import { Async } from "domain/entities/Async";
-import { TwoFactorUserReport } from "domain/entities/user-monitoring/two-factor-monitoring/TwoFactorUserReport";
 import _ from "lodash";
-import { TwoFactorReportRepository } from "domain/repositories/user-monitoring/two-factor-monitoring/TwoFactorReportRepository";
-import { TwoFactorConfigRepository } from "domain/repositories/user-monitoring/two-factor-monitoring/TwoFactorConfigRepository";
+import { TwoFactorUserD2Repository } from "data/user-monitoring/two-factor-monitoring/TwoFactorUserD2Repository";
+import { TwoFactorConfigD2Repository } from "data/user-monitoring/two-factor-monitoring/TwoFactorConfigD2Repository";
+import { UserMonitoringProgramD2Repository } from "data/user-monitoring/common/UserMonitoringProgramD2Repository";
+import { TwoFactorReportD2Repository } from "data/user-monitoring/two-factor-monitoring/TwoFactorReportD2Repository";
 import log from "utils/log";
-import { UserMonitoringUserRepository } from "domain/repositories/user-monitoring/common/UserMonitoringUserRepository";
-import { UserMonitoringProgramRepository } from "domain/repositories/user-monitoring/common/UserMonitoringProgramRepository";
+import { TwoFactorUserReport } from "domain/entities/user-monitoring/two-factor-monitoring/TwoFactorUserReport";
 
-export class RunReportUsersWithout2FAUseCase {
+export class RunTwoFactorReportUseCase {
     constructor(
-        private userRepository: UserMonitoringUserRepository,
-        private reportRepository: TwoFactorReportRepository,
-        private configRepository: TwoFactorConfigRepository,
-        private programRepository: UserMonitoringProgramRepository
+        private userRepository: TwoFactorUserD2Repository,
+        private reportRepository: TwoFactorReportD2Repository,
+        private configRepository: TwoFactorConfigD2Repository,
+        private programRepository: UserMonitoringProgramD2Repository
     ) {}
 
     async execute(): Async<string> {

@@ -1,11 +1,11 @@
 import { Async } from "domain/entities/Async";
-import { UserMonitoringUser } from "domain/entities/user-monitoring/common/UserMonitoringUser";
 import { PermissionFixerTemplateGroupExtended } from "domain/entities/user-monitoring/permission-fixer/PermissionFixerTemplates";
 import { PermissionFixerConfigOptions } from "domain/entities/user-monitoring/permission-fixer/PermissionFixerConfigOptions";
+import { PermissionFixerUser } from "domain/entities/user-monitoring/permission-fixer/PermissionFixerUser";
 
 export interface PermissionFixerTemplateRepository {
     getTemplateAuthorities(
         options: PermissionFixerConfigOptions,
-        userTemplates: UserMonitoringUser[]
+        userTemplates: PermissionFixerUser[]
     ): Promise<Async<PermissionFixerTemplateGroupExtended[]>>;
 }

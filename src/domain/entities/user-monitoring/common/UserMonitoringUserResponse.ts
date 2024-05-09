@@ -1,9 +1,9 @@
-import { UserMonitoringUser } from "domain/entities/user-monitoring/common/UserMonitoringUser";
 import { NamedRef } from "domain/entities/Base";
+import { PermissionFixerUser } from "../permission-fixer/PermissionFixerUser";
 
 export interface UserMonitoringUserResponse {
-    user: UserMonitoringUser;
-    fixedUser: UserMonitoringUser;
+    user: PermissionFixerUser;
+    fixedUser: PermissionFixerUser;
     validUserRoles: NamedRef[];
     invalidUserRoles: NamedRef[];
     actionRequired: boolean;

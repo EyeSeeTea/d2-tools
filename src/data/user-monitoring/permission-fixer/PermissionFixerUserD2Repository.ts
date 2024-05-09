@@ -1,27 +1,15 @@
 import { D2Api } from "types/d2-api";
 import log from "utils/log";
 import _ from "lodash";
-import { UserMonitoringUserRepository } from "domain/repositories/user-monitoring/common/UserMonitoringUserRepository";
 import { Async } from "domain/entities/Async";
-import { UserMonitoringUser } from "domain/entities/user-monitoring/common/UserMonitoringUser";
 import { Id } from "domain/entities/Base";
+import { PermissionFixerUserRepository } from "domain/repositories/user-monitoring/permission-fixer/PermissionFixerUserRepository";
+import { PermissionFixerUser } from "domain/entities/user-monitoring/permission-fixer/PermissionFixerUser";
 
-export class UserMonitoringUserD2Repository implements UserMonitoringUserRepository {
+export class PermissionFixerUserD2Repository implements PermissionFixerUserRepository {
     constructor(private api: D2Api) {}
-    async getUsersByGroupId(groupIds: string[]): Promise<Async<UserMonitoringUser[]>> {
-        log.info(`Get users by group: Users by ids: ${groupIds.join(",")}`);
-        //todo use d2api filters
-        const responses = await this.api
-            .get<Users>(
-                `/users.json?paging=false&fields=*,userCredentials[*]&filter=userGroups.id:in:[${groupIds.join(
-                    ","
-                )}]`
-            )
-            .getData();
-        return responses["users"];
-    }
 
-    async getByIds(ids: Id[]): Async<UserMonitoringUser[]> {
+    async getByIds(ids: Id[]): Async<PermissionFixerUser[]> {
         log.info(`Get metadata: Users by ids: ${ids.join(",")}`);
         //todo use d2api filters
         const responses = await this.api
@@ -33,7 +21,7 @@ export class UserMonitoringUserD2Repository implements UserMonitoringUserReposit
         return responses["users"];
     }
 
-    async getAllUsers(excludedUsers: string[], exclude?: boolean): Promise<Async<UserMonitoringUser[]>> {
+    async getAllUsers(excludedUsers: string[], exclude?: boolean): Promise<Async<PermissionFixerUser[]>> {
         log.info(`Get metadata: All users except: ${excludedUsers.join(",")}`);
         const filterOption = exclude ? "!in" : "in";
         //todo use d2api filters
@@ -48,7 +36,7 @@ export class UserMonitoringUserD2Repository implements UserMonitoringUserReposit
         return responses["users"];
     }
 
-    async saveUsers(users: UserMonitoringUser[]): Promise<string> {
+    async saveUsers(users: PermissionFixerUser[]): Promise<string> {
         log.info("Push users to dhis2");
 
         const usersReadyToPost: Users = { users: users };
@@ -66,5 +54,5 @@ export class UserMonitoringUserD2Repository implements UserMonitoringUserReposit
         return response.status;
     }
 }
-type Users = { users: UserMonitoringUser[] };
+type Users = { users: PermissionFixerUser[] };
 type UserResponse = { status: string; typeReports: object[] };

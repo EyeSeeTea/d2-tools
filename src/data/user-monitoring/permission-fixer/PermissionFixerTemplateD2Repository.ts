@@ -6,19 +6,19 @@ import _ from "lodash";
 import { PermissionFixerTemplateRepository } from "domain/repositories/user-monitoring/permission-fixer/PermissionFixerTemplateRepository";
 import { PermissionFixerConfigOptions } from "domain/entities/user-monitoring/permission-fixer/PermissionFixerConfigOptions";
 import { NamedRef } from "domain/entities/Base";
-import { UserMonitoringUser } from "domain/entities/user-monitoring/common/UserMonitoringUser";
 import { PermissionFixerUserRoleAuthority } from "domain/entities/user-monitoring/permission-fixer/PermissionFixerUserRoleAuthority";
 import {
     PermissionFixerTemplateGroup,
     PermissionFixerTemplateGroupExtended,
 } from "domain/entities/user-monitoring/permission-fixer/PermissionFixerTemplates";
+import { PermissionFixerUser } from "domain/entities/user-monitoring/permission-fixer/PermissionFixerUser";
 
 export class PermissionFixerTemplateD2Repository implements PermissionFixerTemplateRepository {
     //todo This repository has some logic that should be moved to the usecase
     constructor(private api: D2Api) {}
     async getTemplateAuthorities(
         options: PermissionFixerConfigOptions,
-        userTemplates: UserMonitoringUser[]
+        userTemplates: PermissionFixerUser[]
     ): Promise<Async<PermissionFixerTemplateGroupExtended[]>> {
         const { templates: templateGroups, excludedRoles: excludedRoles } = options;
 
@@ -63,7 +63,7 @@ export class PermissionFixerTemplateD2Repository implements PermissionFixerTempl
     private async fillAuthorities(
         templateGroups: PermissionFixerTemplateGroup[],
         userRoles: PermissionFixerUserRoleAuthority[],
-        allUserTemplates: UserMonitoringUser[]
+        allUserTemplates: PermissionFixerUser[]
     ): Promise<PermissionFixerTemplateGroupExtended[]> {
         const templateFilled: PermissionFixerTemplateGroupExtended[] = templateGroups.map(item => {
             const user = allUserTemplates.find(template => {

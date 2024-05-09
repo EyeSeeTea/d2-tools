@@ -20,7 +20,7 @@ export class UserMonitoringProgramD2Repository implements UserMonitoringProgramR
 
         if (programs === undefined) {
             log.error(`Program ${programId} not found`);
-            throw new Error("Program ${pushProgramId} not found");
+            throw new Error(`Program ${programId} not found`);
         }
 
         const programStage: UserMonitoringD2ProgramStage | undefined = programs.programStages[0];
@@ -30,12 +30,10 @@ export class UserMonitoringProgramD2Repository implements UserMonitoringProgramR
         const orgUnitId: string = orgUnit.id;
 
         if (programStage === undefined) {
-            log.error(`Programstage ${programId} not found`);
             throw new Error(`ProgramStage in ${programId} not found`);
         }
 
         if (orgUnitId === undefined) {
-            log.error(`Organisation Unit ${programId} not found`);
             throw new Error(`Program OrgUnit in ${programId} not found`);
         }
 

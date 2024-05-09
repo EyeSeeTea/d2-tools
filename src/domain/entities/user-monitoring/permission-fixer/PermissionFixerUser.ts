@@ -1,9 +1,9 @@
 import { Id, NamedRef, StringDateTime } from "domain/entities/Base";
 
-export interface UserMonitoringUser {
+export interface PermissionFixerUser {
     id: Id;
-    lastUpdatedBy: UserMonitoringUserDetails;
-    createdBy: UserMonitoringUserDetails;
+    lastUpdatedBy: PermissionFixerUserDetails;
+    createdBy: PermissionFixerUserDetails;
     twoFA: boolean;
     invitation: false;
     selftRefistered: false;
@@ -19,12 +19,12 @@ export interface UserMonitoringUser {
     email: string;
     passwordLastUpdated: StringDateTime;
     username: string;
-    userCredentials: UserMonitoringUserCredentials;
+    userCredentials: PermissionFixerUserCredentials;
     userGroups: NamedRef[];
     userRoles: NamedRef[];
 }
 
-export interface UserMonitoringUserCredentials {
+export interface PermissionFixerUserCredentials {
     lastUpdated: string;
     lastLogin: string;
     passwordLastUpdated: StringDateTime;
@@ -37,7 +37,7 @@ export interface UserMonitoringUserCredentials {
     userRoles: NamedRef[];
 }
 
-export interface UserMonitoringUserDetails {
+export interface PermissionFixerUserDetails {
     id: Id;
     displayName: string;
     name: string;

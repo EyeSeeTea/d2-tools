@@ -14,9 +14,9 @@ import { getUid } from "utils/uid";
 import { NamedRef } from "domain/entities/Base";
 import { UserMonitoringUserResponse } from "domain/entities/user-monitoring/common/UserMonitoringUserResponse";
 import { PermissionFixerReportRepository } from "domain/repositories/user-monitoring/permission-fixer/PermissionFixerReportRepository";
-import { UserMonitoringUser } from "domain/entities/user-monitoring/common/UserMonitoringUser";
 import { UserMonitoringProgramMetadata } from "domain/entities/user-monitoring/common/UserMonitoringProgramMetadata";
 import { UserMonitoringReportValues } from "domain/entities/user-monitoring/common/UserMonitoringReportValues";
+import { PermissionFixerUser } from "domain/entities/user-monitoring/permission-fixer/PermissionFixerUser";
 
 const dataelement_invalid_users_groups_count_code = "ADMIN_invalid_users_groups_count_1_Events";
 const dataelement_invalid_users_groups_list_code = "ADMIN_invalid_users_groups_usernames_5_Events";
@@ -159,7 +159,7 @@ export class PermissionFixerReportD2Repository implements PermissionFixerReportR
     }
 
     private async saveUserErrorsOnLogFile(userActionRequired: UserMonitoringUserResponse[], eventid: string) {
-        const userToPost: UserMonitoringUser[] = userActionRequired.map(item => {
+        const userToPost: PermissionFixerUser[] = userActionRequired.map(item => {
             return item.fixedUser;
         });
         log.error(`Save jsons on import error: ${filenameErrorOnPush}`);
