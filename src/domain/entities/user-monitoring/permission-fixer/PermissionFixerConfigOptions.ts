@@ -4,7 +4,7 @@ import { RolesByUser } from "./RolesByUser";
 import { RolesByGroup } from "./RolesByGroup";
 import { RolesByRoles } from "./RolesByRoles";
 
-export interface PermissionFixerUserOptions {
+export interface PermissionFixerConfigOptions {
     templates: PermissionFixerTemplateGroup[];
     excludedRoles: NamedRef[];
     excludedUsers: NamedRef[];

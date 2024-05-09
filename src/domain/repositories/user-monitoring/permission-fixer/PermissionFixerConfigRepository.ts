@@ -1,5 +1,5 @@
-import { PermissionFixerUserOptions } from "domain/entities/user-monitoring/permission-fixer/PermissionFixerUserOptions";
+import { PermissionFixerConfigOptions } from "domain/entities/user-monitoring/permission-fixer/PermissionFixerConfigOptions";
 
 export interface PermissionFixerConfigRepository {
-    get(): Promise<PermissionFixerUserOptions>;
+    get(): Promise<PermissionFixerConfigOptions>;
 }

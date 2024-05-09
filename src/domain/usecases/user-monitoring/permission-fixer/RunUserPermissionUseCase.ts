@@ -3,7 +3,6 @@ import { UserMonitoringUserRepository } from "domain/repositories/user-monitorin
 import { PermissionFixerTemplateRepository } from "domain/repositories/user-monitoring/permission-fixer/PermissionFixerTemplateRepository";
 import { getUid } from "utils/uid";
 import _ from "lodash";
-import { PermissionFixerUserOptions } from "domain/entities/user-monitoring/permission-fixer/PermissionFixerUserOptions";
 import { RolesByRoles } from "domain/entities/user-monitoring/permission-fixer/RolesByRoles";
 import { RolesByGroup } from "domain/entities/user-monitoring/permission-fixer/RolesByGroup";
 import { RolesByUser } from "domain/entities/user-monitoring/permission-fixer/RolesByUser";
@@ -20,6 +19,7 @@ import { PermissionFixerReportRepository } from "domain/repositories/user-monito
 import { PermissionFixerTemplateGroupExtended } from "domain/entities/user-monitoring/permission-fixer/PermissionFixerTemplates";
 import { UserMonitoringUserResponse } from "domain/entities/user-monitoring/common/UserMonitoringUserResponse";
 import { UserMonitoringProgramRepository } from "domain/repositories/user-monitoring/common/UserMonitoringProgramRepository";
+import { PermissionFixerConfigOptions } from "domain/entities/user-monitoring/permission-fixer/PermissionFixerConfigOptions";
 
 export class RunUserPermissionUseCase {
     constructor(
@@ -103,7 +103,7 @@ export class RunUserPermissionUseCase {
     }
 
     async processUserRoles(
-        options: PermissionFixerUserOptions,
+        options: PermissionFixerConfigOptions,
         completeTemplateGroups: PermissionFixerTemplateGroupExtended[],
         allUsers: UserMonitoringUser[]
     ): Promise<PermissionFixerExtendedReport> {
@@ -349,15 +349,11 @@ export class RunUserPermissionUseCase {
     }
 
     async processUserGroups(
-        options: PermissionFixerUserOptions,
+        options: PermissionFixerConfigOptions,
         completeTemplateGroups: PermissionFixerTemplateGroupExtended[],
         allUsersGroupCheck: UserMonitoringUser[]
     ): Promise<PermissionFixerReport> {
-        const {
-            minimalGroupId,
-            pushFixedUsersRoles: pushFixedUsersRoles,
-            pushFixedUserGroups: pushFixedUserGroups,
-        } = options;
+        const { minimalGroupId, pushFixedUserGroups: pushFixedUserGroups } = options;
 
         const response = await this.addLowLevelTemplateGroupToUsersWithoutAny(
             completeTemplateGroups,

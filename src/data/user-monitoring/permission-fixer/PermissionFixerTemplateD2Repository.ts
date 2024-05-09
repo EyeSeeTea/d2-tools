@@ -4,7 +4,7 @@ import log from "utils/log";
 import _ from "lodash";
 
 import { PermissionFixerTemplateRepository } from "domain/repositories/user-monitoring/permission-fixer/PermissionFixerTemplateRepository";
-import { PermissionFixerUserOptions } from "domain/entities/user-monitoring/permission-fixer/PermissionFixerUserOptions";
+import { PermissionFixerConfigOptions } from "domain/entities/user-monitoring/permission-fixer/PermissionFixerConfigOptions";
 import { NamedRef } from "domain/entities/Base";
 import { UserMonitoringUser } from "domain/entities/user-monitoring/common/UserMonitoringUser";
 import { PermissionFixerUserRoleAuthority } from "domain/entities/user-monitoring/permission-fixer/PermissionFixerUserRoleAuthority";
@@ -17,7 +17,7 @@ export class PermissionFixerTemplateD2Repository implements PermissionFixerTempl
     //todo This repository has some logic that should be moved to the usecase
     constructor(private api: D2Api) {}
     async getTemplateAuthorities(
-        options: PermissionFixerUserOptions,
+        options: PermissionFixerConfigOptions,
         userTemplates: UserMonitoringUser[]
     ): Promise<Async<PermissionFixerTemplateGroupExtended[]>> {
         const { templates: templateGroups, excludedRoles: excludedRoles } = options;
@@ -35,7 +35,9 @@ export class PermissionFixerTemplateD2Repository implements PermissionFixerTempl
         return completeTemplateGroups;
     }
 
-    async getAllUserRoles(options: PermissionFixerUserOptions): Promise<PermissionFixerUserRoleAuthority[]> {
+    async getAllUserRoles(
+        options: PermissionFixerConfigOptions
+    ): Promise<PermissionFixerUserRoleAuthority[]> {
         log.info(`Get metadata: All roles excluding ids: ${options.excludedRoles.join(", ")}`);
         const excludeRoles = options.excludedRoles;
         if (excludeRoles.length == 0) {
