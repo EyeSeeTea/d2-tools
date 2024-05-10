@@ -1,4 +1,4 @@
-import { deepEqual, instance, mock, verify, when } from "ts-mockito";
+import { anything, deepEqual, instance, mock, verify, when } from "ts-mockito";
 import { describe, it, expect } from "vitest";
 import { RunTwoFactorReportUseCase } from "domain/usecases/user-monitoring/two-factor-monitoring/RunTwoFactorReportUseCase";
 import { TwoFactorReportD2Repository } from "data/user-monitoring/two-factor-monitoring/TwoFactorReportD2Repository";
@@ -11,16 +11,16 @@ import { TwoFactorUserReport } from "domain/entities/user-monitoring/two-factor-
 import { UserMonitoringProgramD2Repository } from "data/user-monitoring/common/UserMonitoringProgramD2Repository";
 import { Async } from "domain/entities/Async";
 
-export const resolvableInstance = <T extends {}>(mock: T) =>
-    new Proxy<T>(instance(mock), {
-        get(target, name: PropertyKey) {
-            if (["Symbol(Symbol.toPrimitive)", "then", "catch"].includes(name.toString())) {
-                return undefined;
-            }
+// export const resolvableInstance = <T extends {}>(mock: T) =>
+//     new Proxy<T>(instance(mock), {
+//         get(target, name: PropertyKey) {
+//             if (["Symbol(Symbol.toPrimitive)", "then", "catch"].includes(name.toString())) {
+//                 return undefined;
+//             }
 
-            return (target as any)[name];
-        },
-    });
+//             return (target as any)[name];
+//         },
+//     });
 
 let userRepository: TwoFactorUserD2Repository;
 let reportRepository: TwoFactorReportD2Repository;
@@ -142,37 +142,40 @@ describe("Two Factor Monitoring", () => {
     });
 }); */
 
+// This would go to a separate file
+const fakeUsers: TwoFactorUser[] = [
+    {
+        id: "fakeuserid",
+        username: "fakeusername",
+        twoFA: false,
+    },
+    {
+        id: "fakevaliduserid",
+        username: "fakevalidusername",
+        twoFA: true,
+    },
+];
+
+const testParameter = [twoFactorUserOptions.twoFactorGroup.id];
+
+function givenAStubTwoFactorUserD2Repository() {
+    const mockedRepository = mock(TwoFactorUserD2Repository);
+
+    // anything() can be used to invoke the method with any argument to check the return value
+    when(mockedRepository.getUsersByGroupId(testParameter)).thenResolve(Promise.resolve(fakeUsers));
+
+    const userRepository = instance(mockedRepository);
+
+    return userRepository;
+}
+
 describe("Test mocked repository", () => {
     it("only trying to make work the test", async () => {
-        const mockedUserRepository = mock(TwoFactorUserD2Repository);
-        when(mockedUserRepository.getUsersByGroupId([twoFactorUserOptions.twoFactorGroup.id])).thenResolve(
-            Promise.resolve([
-                {
-                    id: "fakeuserid",
-                    username: "fakeusername",
-                    twoFA: false,
-                },
-                {
-                    id: "fakevaliduserid",
-                    username: "fakevalidusername",
-                    twoFA: true,
-                },
-            ])
-        );
-        userRepository = instance(mockedUserRepository);
+        const userRepository = givenAStubTwoFactorUserD2Repository();
 
-        await expect(userRepository.getUsersByGroupId([twoFactorUserOptions.twoFactorGroup.id])).toBe([
-            {
-                id: "fakeuserid",
-                username: "fakeusernameresultado",
-                twoFA: false,
-            },
-            {
-                id: "fakevaliduserid",
-                username: "fakevalidusername",
-                twoFA: true,
-            },
-        ]);
+        const result = await userRepository.getUsersByGroupId(testParameter);
+
+        expect(result).toBe(fakeUsers);
     });
 });
 /* 
