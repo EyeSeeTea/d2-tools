@@ -7,6 +7,7 @@ import { TwoFactorUserReport } from "domain/entities/user-monitoring/two-factor-
 import { TwoFactorReportRepository } from "domain/repositories/user-monitoring/two-factor-monitoring/TwoFactorReportRepository";
 import { UserMonitoringProgramMetadata } from "domain/entities/user-monitoring/common/UserMonitoringProgramMetadata";
 import { UserMonitoringReportValues } from "domain/entities/user-monitoring/common/UserMonitoringReportValues";
+import { Async } from "domain/entities/Async";
 
 const dataelement_invalid_two_factor_count_code = "ADMIN_users_without_two_factor_count_7_Events";
 const dataelement_invalid_two_factor_usernames_list_code = "ADMIN_users_without_two_factor_8_Events";
@@ -24,7 +25,7 @@ type ServerResponse = { status: string; typeReports: object[] };
 
 export class TwoFactorReportD2Repository implements TwoFactorReportRepository {
     constructor(private api: D2Api) {}
-    async save(program: UserMonitoringProgramMetadata, report: TwoFactorUserReport): Promise<string> {
+    async save(program: UserMonitoringProgramMetadata, report: TwoFactorUserReport): Async<string> {
         const response = await this.push(
             report.invalidUsersCount.toString(),
             report.listOfAffectedUsers,

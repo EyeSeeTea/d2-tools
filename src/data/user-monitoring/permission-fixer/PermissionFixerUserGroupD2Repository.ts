@@ -2,10 +2,11 @@ import { D2Api } from "@eyeseetea/d2-api/2.36";
 import log from "utils/log";
 import { PermissionFixerUserGroupExtended } from "domain/entities/user-monitoring/permission-fixer/PermissionFixerUserGroupExtended";
 import { PermissionFixerUserGroupRepository } from "domain/repositories/user-monitoring/permission-fixer/PermissionFixerUserGroupRepository";
+import { Async } from "domain/entities/Async";
 
 export class PermissionFixerUserGroupD2Repository implements PermissionFixerUserGroupRepository {
     constructor(private api: D2Api) {}
-    async getByIds(groupsIds: string[]): Promise<PermissionFixerUserGroupExtended[]> {
+    async getByIds(groupsIds: string[]): Async<PermissionFixerUserGroupExtended[]> {
         log.info(`Get metadata: All groups`);
 
         //todo use d2api filters
@@ -17,7 +18,7 @@ export class PermissionFixerUserGroupD2Repository implements PermissionFixerUser
 
         return responses["userGroups"];
     }
-    async save(userGroup: PermissionFixerUserGroupExtended): Promise<string> {
+    async save(userGroup: PermissionFixerUserGroupExtended): Async<string> {
         try {
             const response = await this.api.models.userGroups.put(userGroup).getData();
             response.status == "OK"

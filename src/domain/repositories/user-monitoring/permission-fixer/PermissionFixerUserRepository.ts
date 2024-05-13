@@ -4,6 +4,6 @@ import { PermissionFixerUser } from "domain/entities/user-monitoring/permission-
 
 export interface PermissionFixerUserRepository {
     getByIds(ids: Id[]): Async<PermissionFixerUser[]>;
-    getAllUsers(excludedUsers: string[], exclude?: boolean): Promise<Async<PermissionFixerUser[]>>;
-    saveUsers(user: PermissionFixerUser[]): Promise<string>;
+    getAllUsers(excludedUsers: string[], exclude?: boolean): Async<PermissionFixerUser[]>;
+    saveUsers(user: PermissionFixerUser[]): Async<string>;
 }

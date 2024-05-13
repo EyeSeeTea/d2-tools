@@ -6,6 +6,7 @@ import { PermissionFixerConfigOptions } from "domain/entities/user-monitoring/pe
 import { PermissionFixerConfigRepository } from "domain/repositories/user-monitoring/permission-fixer/PermissionFixerConfigRepository";
 import { getObject } from "../common/GetDataStoreObjectByKey";
 import { Namespace, d2ToolsNamespace } from "data/externalConfig/Namespaces";
+import { Async } from "domain/entities/Async";
 
 export class PermissionFixerConfigD2Repository implements PermissionFixerConfigRepository {
     private api: D2Api;
@@ -14,7 +15,7 @@ export class PermissionFixerConfigD2Repository implements PermissionFixerConfigR
         this.api = api;
     }
 
-    public async get(): Promise<PermissionFixerConfigOptions> {
+    public async get(): Async<PermissionFixerConfigOptions> {
         const config = await getObject<PermissionFixerConfigOptions>(
             this.api,
             d2ToolsNamespace,

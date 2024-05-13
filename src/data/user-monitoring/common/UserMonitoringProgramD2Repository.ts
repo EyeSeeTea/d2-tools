@@ -1,5 +1,4 @@
 import log from "utils/log";
-import { Async } from "domain/entities/Async";
 import { D2Api } from "types/d2-api";
 import { UserMonitoringProgramMetadata } from "domain/entities/user-monitoring/common/UserMonitoringProgramMetadata";
 import { UserMonitoringProgramRepository } from "domain/repositories/user-monitoring/common/UserMonitoringProgramRepository";
@@ -9,11 +8,12 @@ import {
     UserMonitoringD2ProgramStage,
     UserMonitoringD2ProgramStageDataElement,
 } from "../entities/UserMonitoringD2Program";
+import { Async } from "domain/entities/Async";
 
 export class UserMonitoringProgramD2Repository implements UserMonitoringProgramRepository {
     constructor(private api: D2Api) {}
 
-    async get(programId: string): Promise<Async<UserMonitoringProgramMetadata>> {
+    async get(programId: string): Async<UserMonitoringProgramMetadata> {
         const responseProgram = await this.getProgram(this.api, programId);
 
         const programs = responseProgram[0] ?? undefined;
@@ -53,7 +53,7 @@ export class UserMonitoringProgramD2Repository implements UserMonitoringProgramR
         return program;
     }
 
-    private async getProgram(api: D2Api, programUid: string): Promise<UserMonitoringD2Program[]> {
+    private async getProgram(api: D2Api, programUid: string): Async<UserMonitoringD2Program[]> {
         log.info(`Get metadata: Program metadata: ${programUid}`);
         //todo use d2api filters
         const responses = await api

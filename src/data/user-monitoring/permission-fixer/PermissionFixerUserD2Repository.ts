@@ -1,10 +1,11 @@
 import { D2Api } from "types/d2-api";
 import log from "utils/log";
 import _ from "lodash";
-import { Async } from "domain/entities/Async";
+
 import { Id } from "domain/entities/Base";
 import { PermissionFixerUserRepository } from "domain/repositories/user-monitoring/permission-fixer/PermissionFixerUserRepository";
 import { PermissionFixerUser } from "domain/entities/user-monitoring/permission-fixer/PermissionFixerUser";
+import { Async } from "domain/entities/Async";
 
 export class PermissionFixerUserD2Repository implements PermissionFixerUserRepository {
     constructor(private api: D2Api) {}
@@ -21,7 +22,7 @@ export class PermissionFixerUserD2Repository implements PermissionFixerUserRepos
         return responses["users"];
     }
 
-    async getAllUsers(excludedUsers: string[], exclude?: boolean): Promise<Async<PermissionFixerUser[]>> {
+    async getAllUsers(excludedUsers: string[], exclude?: boolean): Async<PermissionFixerUser[]> {
         log.info(`Get metadata: All users except: ${excludedUsers.join(",")}`);
         const filterOption = exclude ? "!in" : "in";
         //todo use d2api filters
@@ -36,7 +37,7 @@ export class PermissionFixerUserD2Repository implements PermissionFixerUserRepos
         return responses["users"];
     }
 
-    async saveUsers(users: PermissionFixerUser[]): Promise<string> {
+    async saveUsers(users: PermissionFixerUser[]): Async<string> {
         log.info("Push users to dhis2");
 
         const usersReadyToPost: Users = { users: users };

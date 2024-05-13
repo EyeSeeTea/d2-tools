@@ -1,4 +1,3 @@
-import { Async } from "domain/entities/Async";
 import _ from "lodash";
 import { TwoFactorUserD2Repository } from "data/user-monitoring/two-factor-monitoring/TwoFactorUserD2Repository";
 import { TwoFactorConfigD2Repository } from "data/user-monitoring/two-factor-monitoring/TwoFactorConfigD2Repository";
@@ -6,6 +5,8 @@ import { UserMonitoringProgramD2Repository } from "data/user-monitoring/common/U
 import { TwoFactorReportD2Repository } from "data/user-monitoring/two-factor-monitoring/TwoFactorReportD2Repository";
 import log from "utils/log";
 import { TwoFactorUserReport } from "domain/entities/user-monitoring/two-factor-monitoring/TwoFactorUserReport";
+import { Async } from "domain/entities/Async";
+import { NonUsersException } from "domain/entities/user-monitoring/two-factor-monitoring/Exceptions/NonUsersException";
 
 export class RunTwoFactorReportUseCase {
     constructor(
@@ -17,13 +18,12 @@ export class RunTwoFactorReportUseCase {
 
     async execute(): Async<string> {
         const options = await this.configRepository.get();
-        if (!options.twoFactorGroup) {
-            throw new Error("Two factor group is not defined in the datastore.");
-        }
 
         const usersMustHave2FA = await this.userRepository.getUsersByGroupId([options.twoFactorGroup.id]);
         if (usersMustHave2FA.length == 0) {
-            throw new Error("Users not found in the group. Check the group id. " + options.twoFactorGroup.id);
+            throw new NonUsersException(
+                "Users not found in the group. Check the group id. " + options.twoFactorGroup.id
+            );
         }
 
         const usersWithoutTwoFA = usersMustHave2FA.filter(user => {

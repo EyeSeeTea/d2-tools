@@ -1,4 +1,3 @@
-import { Async } from "domain/entities/Async";
 import { D2Api } from "types/d2-api";
 import log from "utils/log";
 import _ from "lodash";
@@ -12,6 +11,7 @@ import {
     PermissionFixerTemplateGroupExtended,
 } from "domain/entities/user-monitoring/permission-fixer/PermissionFixerTemplates";
 import { PermissionFixerUser } from "domain/entities/user-monitoring/permission-fixer/PermissionFixerUser";
+import { Async } from "domain/entities/Async";
 
 export class PermissionFixerTemplateD2Repository implements PermissionFixerTemplateRepository {
     //todo This repository has some logic that should be moved to the usecase
@@ -19,7 +19,7 @@ export class PermissionFixerTemplateD2Repository implements PermissionFixerTempl
     async getTemplateAuthorities(
         options: PermissionFixerConfigOptions,
         userTemplates: PermissionFixerUser[]
-    ): Promise<Async<PermissionFixerTemplateGroupExtended[]>> {
+    ): Async<PermissionFixerTemplateGroupExtended[]> {
         const { templates: templateGroups, excludedRoles: excludedRoles } = options;
 
         const userRoles: PermissionFixerUserRoleAuthority[] = await this.getAllUserRoles(options);
@@ -35,9 +35,7 @@ export class PermissionFixerTemplateD2Repository implements PermissionFixerTempl
         return completeTemplateGroups;
     }
 
-    async getAllUserRoles(
-        options: PermissionFixerConfigOptions
-    ): Promise<PermissionFixerUserRoleAuthority[]> {
+    async getAllUserRoles(options: PermissionFixerConfigOptions): Async<PermissionFixerUserRoleAuthority[]> {
         log.info(`Get metadata: All roles excluding ids: ${options.excludedRoles.join(", ")}`);
         const excludeRoles = options.excludedRoles;
         if (excludeRoles.length == 0) {
@@ -64,7 +62,7 @@ export class PermissionFixerTemplateD2Repository implements PermissionFixerTempl
         templateGroups: PermissionFixerTemplateGroup[],
         userRoles: PermissionFixerUserRoleAuthority[],
         allUserTemplates: PermissionFixerUser[]
-    ): Promise<PermissionFixerTemplateGroupExtended[]> {
+    ): Async<PermissionFixerTemplateGroupExtended[]> {
         const templateFilled: PermissionFixerTemplateGroupExtended[] = templateGroups.map(item => {
             const user = allUserTemplates.find(template => {
                 return template.id == item.template.id;

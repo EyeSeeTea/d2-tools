@@ -1,14 +1,14 @@
 import { D2Api } from "types/d2-api";
 import log from "utils/log";
 import _ from "lodash";
-import { Async } from "domain/entities/Async";
 import { TwoFactorUser } from "domain/entities/user-monitoring/two-factor-monitoring/TwoFactorUser";
 import { TwoFactorUserRepository } from "domain/repositories/user-monitoring/two-factor-monitoring/TwoFactorUserRepository";
 import { PermissionFixerUser } from "domain/entities/user-monitoring/permission-fixer/PermissionFixerUser";
+import { Async } from "domain/entities/Async";
 
 export class TwoFactorUserD2Repository implements TwoFactorUserRepository {
     constructor(private api: D2Api) {}
-    async getUsersByGroupId(groupIds: string[]): Promise<Async<TwoFactorUser[]>> {
+    async getUsersByGroupId(groupIds: string[]): Async<TwoFactorUser[]> {
         log.info(`Get users by group: Users by ids: ${groupIds.join(",")}`);
         //todo use d2api filters
         const responses = await this.api

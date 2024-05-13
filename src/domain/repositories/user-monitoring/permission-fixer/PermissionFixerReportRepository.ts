@@ -10,5 +10,5 @@ export interface PermissionFixerReportRepository {
         program: UserMonitoringProgramMetadata,
         responseGroups: PermissionFixerReport,
         responseRoles: PermissionFixerExtendedReport
-    ): Promise<Async<string>>;
+    ): Async<string>;
 }

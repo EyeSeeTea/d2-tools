@@ -5,16 +5,16 @@ import { TwoFactorUserOptions } from "domain/entities/user-monitoring/two-factor
 import { TwoFactorConfigRepository } from "domain/repositories/user-monitoring/two-factor-monitoring/TwoFactorConfigRepository";
 import { getObject } from "../common/GetDataStoreObjectByKey";
 import { Namespace, d2ToolsNamespace } from "data/externalConfig/Namespaces";
+import { Async } from "domain/entities/Async";
 
 export class TwoFactorConfigD2Repository implements TwoFactorConfigRepository {
     private api: D2Api;
-    private dataStoreKey = "two-factor-monitoring";
 
     constructor(api: D2Api) {
         this.api = api;
     }
 
-    public async get(): Promise<TwoFactorUserOptions> {
+    public async get(): Async<TwoFactorUserOptions> {
         const config = await getObject<TwoFactorUserOptions>(
             this.api,
             d2ToolsNamespace,

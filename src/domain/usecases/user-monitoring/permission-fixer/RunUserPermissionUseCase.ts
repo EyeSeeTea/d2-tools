@@ -20,6 +20,7 @@ import { UserMonitoringProgramRepository } from "domain/repositories/user-monito
 import { PermissionFixerConfigOptions } from "domain/entities/user-monitoring/permission-fixer/PermissionFixerConfigOptions";
 import { PermissionFixerUserRepository } from "domain/repositories/user-monitoring/permission-fixer/PermissionFixerUserRepository";
 import { PermissionFixerUser } from "domain/entities/user-monitoring/permission-fixer/PermissionFixerUser";
+import { Async } from "domain/entities/Async";
 
 export class RunUserPermissionUseCase {
     constructor(
@@ -106,7 +107,7 @@ export class RunUserPermissionUseCase {
         options: PermissionFixerConfigOptions,
         completeTemplateGroups: PermissionFixerTemplateGroupExtended[],
         allUsers: PermissionFixerUser[]
-    ): Promise<PermissionFixerExtendedReport> {
+    ): Async<PermissionFixerExtendedReport> {
         const {
             minimalGroupId,
             minimalRoleId,
@@ -352,7 +353,7 @@ export class RunUserPermissionUseCase {
         options: PermissionFixerConfigOptions,
         completeTemplateGroups: PermissionFixerTemplateGroupExtended[],
         allUsersGroupCheck: PermissionFixerUser[]
-    ): Promise<PermissionFixerReport> {
+    ): Async<PermissionFixerReport> {
         const { minimalGroupId, pushFixedUserGroups: pushFixedUserGroups } = options;
 
         const response = await this.addLowLevelTemplateGroupToUsersWithoutAny(
@@ -370,7 +371,7 @@ export class RunUserPermissionUseCase {
         allUsersGroupCheck: PermissionFixerUser[],
         minimalGroupId: NamedRef,
         pushFixedUserGroups: boolean
-    ): Promise<PermissionFixerReport> {
+    ): Async<PermissionFixerReport> {
         const userIdWithoutGroups: NamedRef[] = this.detectUserIdsWithoutGroups(
             completeTemplateGroups,
             allUsersGroupCheck,
@@ -412,7 +413,7 @@ export class RunUserPermissionUseCase {
         userIdWithoutGroups: NamedRef[],
         minimalGroupId: NamedRef,
         pushFixedUserGroups: boolean
-    ): Promise<PermissionFixerReport> {
+    ): Async<PermissionFixerReport> {
         if (userIdWithoutGroups != undefined && userIdWithoutGroups.length > 0) {
             const minimalUserGroup = await this.userGroupRepository.getByIds([minimalGroupId.id]);
             const userIds = userIdWithoutGroups.map(item => {
