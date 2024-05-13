@@ -6,7 +6,7 @@ import { TwoFactorReportD2Repository } from "data/user-monitoring/two-factor-mon
 import log from "utils/log";
 import { TwoFactorUserReport } from "domain/entities/user-monitoring/two-factor-monitoring/TwoFactorUserReport";
 import { Async } from "domain/entities/Async";
-import { NonUsersException } from "domain/entities/user-monitoring/two-factor-monitoring/Exceptions/NonUsersException";
+import { NonUsersException } from "domain/entities/user-monitoring/two-factor-monitoring/exception/NonUsersException";
 
 export class RunTwoFactorReportUseCase {
     constructor(
