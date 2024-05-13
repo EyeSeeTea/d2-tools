@@ -4,6 +4,7 @@ import log from "utils/log";
 import { TwoFactorUserOptions } from "domain/entities/user-monitoring/two-factor-monitoring/TwoFactorUserOptions";
 import { TwoFactorConfigRepository } from "domain/repositories/user-monitoring/two-factor-monitoring/TwoFactorConfigRepository";
 import { getObject } from "../common/GetDataStoreObjectByKey";
+import { Namespace, d2ToolsNamespace } from "data/externalConfig/Namespaces";
 
 export class TwoFactorConfigD2Repository implements TwoFactorConfigRepository {
     private api: D2Api;
@@ -14,7 +15,11 @@ export class TwoFactorConfigD2Repository implements TwoFactorConfigRepository {
     }
 
     public async get(): Promise<TwoFactorUserOptions> {
-        const config = await getObject<TwoFactorUserOptions>(this.api, this.dataStoreKey);
+        const config = await getObject<TwoFactorUserOptions>(
+            this.api,
+            d2ToolsNamespace,
+            Namespace.TWO_FACTOR_MONITORING
+        );
 
         if (!config) {
             log.warn("Error loading config from datastore");
