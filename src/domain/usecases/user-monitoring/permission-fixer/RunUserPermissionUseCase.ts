@@ -17,7 +17,7 @@ import { PermissionFixerReportRepository } from "domain/repositories/user-monito
 import { PermissionFixerTemplateGroupExtended } from "domain/entities/user-monitoring/permission-fixer/PermissionFixerTemplates";
 import { UserMonitoringUserResponse } from "domain/entities/user-monitoring/common/UserMonitoringUserResponse";
 import { UserMonitoringProgramRepository } from "domain/repositories/user-monitoring/common/UserMonitoringProgramRepository";
-import { PermissionFixerConfigOptions } from "domain/entities/user-monitoring/permission-fixer/PermissionFixerConfigOptions";
+import { PermissionFixerMetadataConfig } from "domain/entities/user-monitoring/permission-fixer/PermissionFixerConfigOptions";
 import { PermissionFixerUserRepository } from "domain/repositories/user-monitoring/permission-fixer/PermissionFixerUserRepository";
 import { PermissionFixerUser } from "domain/entities/user-monitoring/permission-fixer/PermissionFixerUser";
 import { Async } from "domain/entities/Async";
@@ -93,7 +93,7 @@ export class RunUserPermissionUseCase {
             userProcessed: [],
         };
         if (
-            options.pushReport &&
+            options.permissionFixerConfig.pushReport &&
             (finalUserGroup.invalidUsersCount > 0 || finalUserRoles.invalidUsersCount > 0)
         ) {
             log.info(`Sending user-monitoring user-permissions report results`);
@@ -104,14 +104,14 @@ export class RunUserPermissionUseCase {
     }
 
     async processUserRoles(
-        options: PermissionFixerConfigOptions,
+        options: PermissionFixerMetadataConfig,
         completeTemplateGroups: PermissionFixerTemplateGroupExtended[],
         allUsers: PermissionFixerUser[]
     ): Async<PermissionFixerExtendedReport> {
         const {
             minimalGroupId,
             minimalRoleId,
-            pushFixedUsersRoles,
+            permissionFixerConfig: { pushFixedUsersRoles },
             excludedRolesByRole,
             excludedRolesByUser,
             excludedRolesByGroup,
@@ -350,12 +350,14 @@ export class RunUserPermissionUseCase {
     }
 
     async processUserGroups(
-        options: PermissionFixerConfigOptions,
+        options: PermissionFixerMetadataConfig,
         completeTemplateGroups: PermissionFixerTemplateGroupExtended[],
         allUsersGroupCheck: PermissionFixerUser[]
     ): Async<PermissionFixerReport> {
-        const { minimalGroupId, pushFixedUserGroups: pushFixedUserGroups } = options;
-
+        const {
+            minimalGroupId,
+            permissionFixerConfig: { pushFixedUserGroups },
+        } = options;
         const response = await this.addLowLevelTemplateGroupToUsersWithoutAny(
             completeTemplateGroups,
             allUsersGroupCheck,

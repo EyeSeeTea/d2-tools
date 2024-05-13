@@ -2,7 +2,7 @@ import _ from "lodash";
 
 import { D2Api } from "@eyeseetea/d2-api/2.36";
 import log from "utils/log";
-import { PermissionFixerConfigOptions } from "domain/entities/user-monitoring/permission-fixer/PermissionFixerConfigOptions";
+import { PermissionFixerMetadataConfig } from "domain/entities/user-monitoring/permission-fixer/PermissionFixerConfigOptions";
 import { PermissionFixerConfigRepository } from "domain/repositories/user-monitoring/permission-fixer/PermissionFixerConfigRepository";
 import { getObject } from "../common/GetDataStoreObjectByKey";
 import { Namespace, d2ToolsNamespace } from "data/externalConfig/Namespaces";
@@ -15,8 +15,8 @@ export class PermissionFixerConfigD2Repository implements PermissionFixerConfigR
         this.api = api;
     }
 
-    public async get(): Async<PermissionFixerConfigOptions> {
-        const config = await getObject<PermissionFixerConfigOptions>(
+    public async get(): Async<PermissionFixerMetadataConfig> {
+        const config = await getObject<PermissionFixerMetadataConfig>(
             this.api,
             d2ToolsNamespace,
             Namespace.USER_MONITORING
