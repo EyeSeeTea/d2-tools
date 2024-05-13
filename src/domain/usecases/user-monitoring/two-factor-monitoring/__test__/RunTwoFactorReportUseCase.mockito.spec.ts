@@ -77,10 +77,13 @@ function givenAStubConfigD2Repository() {
     return configRepository;
 }
 
-async function givenAStubReportD2Repository(a: UserMonitoringProgramMetadata, b: TwoFactorUserReport) {
+async function givenAStubReportD2Repository(
+    programMetadata: UserMonitoringProgramMetadata,
+    b: TwoFactorUserReport
+) {
     const mockedRepository = mock(TwoFactorReportD2Repository);
 
-    when(mockedRepository.save(deepEqual(a), deepEqual(fakeUserReport))).thenResolve("OK");
+    when(mockedRepository.save(deepEqual(programMetadata), deepEqual(fakeUserReport))).thenResolve("OK");
 
     const reportRepository = instance(mockedRepository);
 
@@ -134,24 +137,5 @@ describe("Two Factor Monitoring0", () => {
             programRepository
         );
         expect(twoFactorReportUseCase.execute()).rejects.toThrow(NonUsersException);
-    });
-});
-
-describe("Test mocked repository", () => {
-    it("should return a list of users if exist in twofactor group", async () => {
-        const userRepository = await givenAStubTwoFactorUserD2Repository(fakeUsers);
-
-        const result = await userRepository.getUsersByGroupId(twoFactorGroupId);
-
-        expect(result).toEqual(fakeUsers);
-    });
-});
-
-describe("Test mocked repository2", () => {
-    it("should return a two factor config", async () => {
-        const configRepository = await givenAStubConfigD2Repository();
-        const result = await configRepository.get();
-
-        expect(result).toEqual(twoFactorUserOptions);
     });
 });
