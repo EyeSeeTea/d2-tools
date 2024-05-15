@@ -30,7 +30,7 @@ export function getCommand() {
 const run2FAReporterCmd = command({
     name: "run-2fa-reporter",
     description:
-        "Run user 2factor reporter, a --config-file must be provided (usersmonitoring run-2fa-reporter --config-file config.json)",
+        "Run user 2factor reporter, a --config-file must be provided (usermonitoring run-2fa-reporter --config-file config.json)",
     args: {
         config_file: option({
             type: string,
@@ -59,7 +59,7 @@ const run2FAReporterCmd = command({
 const runUsersMonitoringCmd = command({
     name: "run-permissions-fixer",
     description:
-        "Run user monitoring, a --config-file must be provided (usersmonitoring run-permissions-fixer --config-file config.json)",
+        "Run user monitoring, a --config-file must be provided (usermonitoring run-permissions-fixer --config-file config.json)",
     args: {
         config_file: option({
             type: string,
