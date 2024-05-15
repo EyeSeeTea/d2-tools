@@ -408,7 +408,9 @@ yarn install
 
 yarn build
 
-yarn start usermonitoring run-users-monitoring   --config-file config.json
+yarn start usermonitoring run-permissions-fixer --config-file config.json
+or
+yarn start usermonitoring run-2fa-reporter --config-file config.json
 ```
 
 ### Debug:
@@ -419,6 +421,7 @@ yarn install
 yarn build:dev
 
 LOG_LEVEL=debug node --inspect-brk dist/index.js usermonitoring run-users-monitoring   --config-file config.json
+LOG_LEVEL=debug node --inspect-brk dist/index.js usermonitoring run-2fa-reporter   --config-file config.json
 ```
 
 ### Requirements:
@@ -441,8 +444,32 @@ A config json file to get the user/password and server:
 }
 ```
 
-The datastore:
-d2-tools -> user-monitoring:
+### run-2fa-reporter Datastore:
+
+d2-tools -> two-factor-monitoring:
+
+A program id with the id of the program in dhis
+
+A group id to filter the users that should have two factor activated
+
+The datastore must contain:
+
+```
+{
+  "pushProgramId": {
+    "id": "uid",
+    "name": "push program"
+  },
+  "twoFactorGroup": {
+    "id": "uid",
+    "name": "Auth control group"
+  }
+}
+```
+
+### run-users-monitoring Datastore:
+
+d2-tools -> permission-fixer:
 
 The datastore must contain:
 
@@ -466,21 +493,21 @@ A push_program_id variable with the program ID to send the report
 
 A list of templates (user with the valid roles, and group to identify which users could use those roles).
 
-A list with flags to control the script (PERMISSION_FIXER_CONFIG).
+A list with flags to control the script (permissionFixerConfig).
 
 An example of the datastore:
 
 Note: the names are used only to make easy understand and debug the keys.
 
-````
+```
 {
-  "EXCLUDE_ROLES": [
+  "excludedRoles": [
     {
       "id": "uid",
       "name": "App - name"
     }
   ],
-  "EXCLUDE_ROLES_BY_GROUPS": [
+  "excludedRolesByGroup": [
     {
       "group": {
         "id": "uid",
@@ -492,7 +519,7 @@ Note: the names are used only to make easy understand and debug the keys.
       }
     }
   ],
-  "EXCLUDE_ROLES_BY_ROLE": [
+  "excludedRolesByRole": [
     {
       "active_role": {
         "id": "uid",
@@ -504,7 +531,7 @@ Note: the names are used only to make easy understand and debug the keys.
       }
     }
   ],
-  "EXCLUDE_ROLES_BY_USERS": [
+  "excludedRolesByUser": [
     {
       "role": {
         "id": "uid",
@@ -516,83 +543,43 @@ Note: the names are used only to make easy understand and debug the keys.
       }
     }
   ],
-  "EXCLUDE_USERS": [
+  "excludedUsers": [
     {
       "id": "uid",
       "name": "username"
     }
   ],
-  "MINIMAL_GROUP": {
+  "minimalGroupId": {
     "id": "uid",
     "name": "Users"
   },
-  "MINIMAL_ROLE": {
+  "minimalRoleId": {
     "id": "uid",
     "name": "Role name"
   },
-  "PUSH_PROGRAM_ID": {
+  "permissionFixerConfig":{
+    "pushFixedUserGroups": false,
+    "pushFixedUsersRoles": false,
+    "pushReport": true
+  },
+  "pushProgramId": {
     "id": "uid",
     "name": "Program name"
   },
-  "TEMPLATE_GROUPS": [
+  "templates": [
     {
       "group": {
         "id": "uid",
-        "name": "IT team"
+        "name": "user group name"
       },
       "template": {
         "id": "uid",
-        "name": "it_team_template_username"
-      }
-    },
-    {
-      "group": {
-        "id": "uid",
-        "name": "User Manager"
-      },
-      "template": {
-        "id": "uid",
-        "name": "manager_template_username"
-      }
-    },
-    {
-      "group": {
-        "id": "uid",
-        "name": "admins"
-      },
-      "template": {
-        "id": "uid",
-        "name": "admins_template_username"
-      }
-    },
-    {
-      "group": {
-        "id": "uid",
-        "name": "external developers"
-      },
-      "template": {
-        "id": "uid",
-        "name": "external_developers_template_username"
-      }
-    },
-    {
-      "group": {
-        "id": "uid",
-        "name": "Users"
-      },
-      "template": {
-        "id": "uid",
-        "name": "user_template_username"
+        "name": "user template username"
       }
     }
   ]
-  ,"PERMISSION_FIXER_CONFIG": {
-    "PUSH_FIXED_ROLES": true,
-    "PUSH_FIXED_USERGROUPS": true,
-    "PUSH_REPORT": true
-  }
-}```
-
+}
+```
 
 ## Move Attributes from a Program
 
@@ -604,7 +591,7 @@ yarn start programs move-attribute \
 --program-id=WCJhvPcJomX \
 --from-attribute-id=MyOceAlOxLK \
 --to-attribute-id=YqcpwxxRc1D
-````
+```
 
 ## Compare metadata between instances
 
