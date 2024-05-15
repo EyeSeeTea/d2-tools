@@ -19,7 +19,7 @@ export class PermissionFixerConfigD2Repository implements PermissionFixerConfigR
         const config = await getObject<PermissionFixerMetadataConfig>(
             this.api,
             d2ToolsNamespace,
-            Namespace.USER_MONITORING
+            Namespace.PERMISSION_FIXER
         );
 
         if (!config) {
