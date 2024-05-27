@@ -15,9 +15,7 @@ export class MonitorUsersByAuthorityUseCase {
     ) {}
 
     private async getUsersByAuthorities(options: AuthoritiesMonitoringOptions): Async<UsersByAuthority> {
-        const userRoles = await this.userRolesRepository.getByAuthorities(
-            options.AUTHORITIES_MONITOR.authoritiesToMonitor
-        );
+        const userRoles = await this.userRolesRepository.getByAuthorities(options.authoritiesToMonitor);
 
         const usersWithAuthorities = _(userRoles)
             .flatMap(userRole => {
@@ -26,7 +24,7 @@ export class MonitorUsersByAuthorityUseCase {
                         id: user.id,
                         name: user.name,
                         authorities: userRole.authorities.filter(authority =>
-                            options.AUTHORITIES_MONITOR.authoritiesToMonitor.includes(authority)
+                            options.authoritiesToMonitor.includes(authority)
                         ),
                         userRoles: userRoles
                             .filter(userRole => userRole.users.includes(user))
@@ -70,7 +68,7 @@ export class MonitorUsersByAuthorityUseCase {
         options: AuthoritiesMonitoringOptions,
         usersByAuthority: UsersByAuthority
     ): UsersByAuthority {
-        const oldUsers: UsersByAuthority = options.AUTHORITIES_MONITOR.usersByAuthority;
+        const oldUsers: UsersByAuthority = options.usersByAuthority;
 
         return this.compareDicts(oldUsers, usersByAuthority);
     }
@@ -79,7 +77,7 @@ export class MonitorUsersByAuthorityUseCase {
         options: AuthoritiesMonitoringOptions,
         usersByAuthority: UsersByAuthority
     ): UsersByAuthority {
-        const oldUsers: UsersByAuthority = options.AUTHORITIES_MONITOR.usersByAuthority;
+        const oldUsers: UsersByAuthority = options.usersByAuthority;
 
         return this.compareDicts(usersByAuthority, oldUsers);
     }
@@ -111,16 +109,14 @@ export class MonitorUsersByAuthorityUseCase {
         options: AuthoritiesMonitoringOptions,
         usersByAuthority: UsersByAuthority
     ): Async<void> {
-        options.AUTHORITIES_MONITOR.lastExecution = logFormatDate(new Date());
-        options.AUTHORITIES_MONITOR.usersByAuthority = usersByAuthority;
+        options.lastExecution = logFormatDate(new Date());
+        options.usersByAuthority = usersByAuthority;
 
         await this.externalConfigRepository.save(options);
     }
 
     async execute(options: AuthoritiesMonitoringOptions, setDataStore: boolean): Async<void> {
-        log.info(
-            `Get user roles by authorities: ${options.AUTHORITIES_MONITOR.authoritiesToMonitor.join(",")}`
-        );
+        log.info(`Get user roles by authorities: ${options.authoritiesToMonitor.join(",")}`);
 
         const usersByAuthority = await this.getUsersByAuthorities(options);
 

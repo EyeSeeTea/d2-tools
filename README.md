@@ -399,6 +399,275 @@ yarn start users migrate \
 }
 ```
 
+## User monitoring
+
+### Users Permissions Fixer and 2FA Reporter
+
+#### Execution:
+
+```
+yarn install
+
+yarn build
+
+yarn start usermonitoring run-permissions-fixer --config-file config.json
+or
+yarn start usermonitoring run-2fa-reporter --config-file config.json
+```
+
+#### Debug:
+
+```
+yarn install
+
+yarn build:dev
+
+LOG_LEVEL=debug node --inspect-brk dist/index.js usermonitoring run-users-monitoring   --config-file config.json
+LOG_LEVEL=debug node --inspect-brk dist/index.js usermonitoring run-2fa-reporter   --config-file config.json
+```
+
+#### Requirements:
+
+Use node 16:
+
+```
+nvm use 16
+```
+
+A config json file to get the user/password and server:
+
+```
+{
+    "URL": {
+        "username": "",
+        "password": "",
+        "server": "http://localhost:8080"
+    }
+}
+```
+
+#### run-2fa-reporter Datastore:
+
+d2-tools -> two-factor-monitoring:
+
+A program id with the id of the program in dhis
+
+A group id to filter the users that should have two factor activated
+
+The datastore must contain:
+
+```
+{
+  "pushProgramId": {
+    "id": "uid",
+    "name": "push program"
+  },
+  "twoFactorGroup": {
+    "id": "uid",
+    "name": "Auth control group"
+  }
+}
+```
+
+#### run-users-monitoring Datastore:
+
+d2-tools -> permission-fixer:
+
+The datastore must contain:
+
+A list of excluded_roles (could be an empty list [])
+
+A list of excluded roles by group (could be an empty list [])
+
+A list of excluded roles by role (could be an empty list [])
+
+A list of excluded roles by user (could be an empty list [])
+
+List of excluded users (the script will ignore them) (could be an empty list [])
+
+A minimum group to add that group to the users without any template group (WIDP requirement)
+
+A minimum role to add that role to the users without any role (DHIS requirement)
+
+A boolean variable push_report to determine if the script must send the report after processing all users
+
+A push_program_id variable with the program ID to send the report
+
+A list of templates (user with the valid roles, and group to identify which users could use those roles).
+
+A list with flags to control the script (permissionFixerConfig).
+
+An example of the datastore:
+
+Note: the names are used only to make easy understand and debug the keys.
+
+```
+{
+  "excludedRoles": [
+    {
+      "id": "uid",
+      "name": "App - name"
+    }
+  ],
+  "excludedRolesByGroup": [
+    {
+      "group": {
+        "id": "uid",
+        "name": "User group name"
+      },
+      "role": {
+        "id": "hXY2OtVz70P",
+        "name": "App - name"
+      }
+    }
+  ],
+  "excludedRolesByRole": [
+    {
+      "active_role": {
+        "id": "uid",
+        "name": "App present in the user"
+      },
+      "ignore_role": {
+        "id": "uid",
+        "name": "App to be ignored"
+      }
+    }
+  ],
+  "excludedRolesByUser": [
+    {
+      "role": {
+        "id": "uid",
+        "name": "App - name"
+      },
+      "user": {
+        "id": "uid",
+        "name": "username"
+      }
+    }
+  ],
+  "excludedUsers": [
+    {
+      "id": "uid",
+      "name": "username"
+    }
+  ],
+  "minimalGroupId": {
+    "id": "uid",
+    "name": "Users"
+  },
+  "minimalRoleId": {
+    "id": "uid",
+    "name": "Role name"
+  },
+  "permissionFixerConfig":{
+    "pushFixedUserGroups": false,
+    "pushFixedUsersRoles": false,
+    "pushReport": true
+  },
+  "pushProgramId": {
+    "id": "uid",
+    "name": "Program name"
+  },
+  "templates": [
+    {
+      "group": {
+        "id": "uid",
+        "name": "user group name"
+      },
+      "template": {
+        "id": "uid",
+        "name": "user template username"
+      }
+    }
+  ]
+}
+```
+
+### Users Authorities Monitoring
+
+#### Execution:
+
+```bash
+yarn install
+
+yarn build
+
+yarn start usermonitoring authorities-monitoring --config-file config.json
+
+# To get the debug logs and store them in a file use:
+LOG_LEVEL=debug yarn start usermonitoring authorities-monitoring --config-file config.json &> authorities-monitoring.log
+```
+
+#### Parameters:
+
+-   `--config-file`: Connection and webhook config file.
+-   `-s` | `--set-datastore`: Write users data to datastore, use in script setup. It assumes there is a monitoring config in d2-tools/authorities-monitor.
+
+#### Requirements:
+
+A config file with the access info of the server and the message webhook details:
+
+```JSON
+{
+    "URL": {
+        "username": "user",
+        "password": "passwd",
+        "server": "https://dhis.url/"
+    },
+    "WEBHOOK": {
+        "ms_url": "http://webhook.url/",
+        "proxy": "http://proxy.url/",
+        "server_name": "INSTANCE_NAME"
+    }
+}
+```
+
+This reports stores data into the `d2-tools.authorities-monitor` datastore. This key needs to be setup before the first run to get a correct report.
+Its possible to leave `usersByAuthority` empty and use the `-s` flag to populate it.
+
+A sample:
+
+```JSON
+{
+  "usersByAuthority": {
+    "AUTH1": [
+      {
+        "id": "lJf6FW6vtDD",
+        "name": "fake user 1",
+        "userRoles": [
+          {
+            "id": "So7ZSqi9ovy",
+            "name": "Role 1"
+          }
+        ]
+      },
+      {
+        "id": "wXGwwP53ngu",
+        "name": "fake user 2",
+        "userRoles": [
+          {
+            "id": "So7ZSqi9ovy",
+            "name": "Role 1"
+          }
+        ]
+      }
+    ],
+    "AUTH2": [
+      {
+        "id": "wXGwwP53ngu",
+        "name": "fake user 2",
+        "userRoles": [
+          {
+            "id": "So7ZSqi9ovy",
+            "name": "Role 1"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
 ## Move Attributes from a Program
 
 Get all the TEIS in the program and move the value from the attribute in the argument `--from-attribute-id` to the attribute `--to-attribute-id`. Then delete the value in `--from-attribute-id`.
@@ -488,276 +757,3 @@ File option can be a file or directory path, if its a directory path the file wi
 CSV headers:
 
 dataElement ID | dataElement Name | categoryOptionCombo ID | categoryOptionCombo Name | Value
-
-## User monitoring scripts
-
-### Users Monitoring
-
-#### Execution:
-
-```
-yarn install
-
-yarn build
-
-yarn start usermonitoring run-users-monitoring   --config-file config.json
-```
-
-#### Debug:
-
-```
-yarn install
-
-yarn build:dev
-
-LOG_LEVEL=debug node --inspect-brk dist/index.js usermonitoring run-users-monitoring   --config-file config.json
-```
-
-#### Requirements:
-
-A config json file to get the user/password and server:
-
-```
-{
-    "URL": {
-        "username": "",
-        "password": "",
-        "server": "http://localhost:8080"
-    }
-}
-```
-
-The datastore:
-d2-tools -> user-monitoring:
-
-The datastore must contain:
-
-A list of excluded_roles (could be an empty list [])
-
-A list of excluded roles by group (could be an empty list [])
-
-A list of excluded roles by role (could be an empty list [])
-
-A list of excluded roles by user (could be an empty list [])
-
-List of excluded users (the script will ignore them) (could be an empty list [])
-
-A minimum group to add that group to the users without any template group (WIDP requirement)
-
-A minimum role to add that role to the users without any role (DHIS requirement)
-
-A boolean variable push_report to determine if the script must send the report after processing all users
-
-A push_program_id variable with the program ID to send the report
-
-A list of templates (user with the valid roles, and group to identify which users could use those roles).
-
-An example of the file:
-
-```JSON
-{
-  "EXCLUDE_ROLES": [
-    {
-      "id": "byLnQNR1v1B",
-      "name": "App - Leprosy WER Report"
-    }
-  ],
-  "EXCLUDE_ROLES_BY_GROUPS": [
-    {
-      "group": {
-        "id": "ZXEVDM9XRea",
-        "name": "MAL_Malaria access"
-      },
-      "role": {
-        "id": "hXY2OtVz70P",
-        "name": "App - DHIS2 MAL Approval Report"
-      }
-    }
-  ],
-  "EXCLUDE_ROLES_BY_ROLE": [
-    {
-      "active_role": {
-        "id": "ADf4WvGrP2q",
-        "name": "App - Bulk Load"
-      },
-      "ignore_role": {
-        "id": "A36hTe5VUMS",
-        "name": "Export metadata"
-      }
-    }
-  ],
-  "EXCLUDE_ROLES_BY_USERS": [
-    {
-      "role": {
-        "id": "hOYM2imoNmZ",
-        "name": "App - Android Settings app"
-      },
-      "user": {
-        "id": "wUd8NBL7fn2",
-        "name": "rose.mabelle"
-      }
-    }
-  ],
-  "EXCLUDE_USERS": [
-    {
-      "id": "smGarTiKDdV",
-      "name": "dev.user"
-    }
-  ],
-  "MINIMAL_GROUP": {
-    "id": "UmSnxmr4LE0",
-    "name": "WIDP Users"
-  },
-  "MINIMAL_ROLE": {
-    "id": "vOLtPCt8WeB",
-    "name": "Backend access"
-  },
-  "PUSH_PROGRAM_ID": {
-    "id": "tBI5HRoOMUz",
-    "name": "ADMIN_Users_Check(Event)"
-  },
-  "PUSH_REPORT": true,
-  "TEMPLATE_GROUPS": [
-    {
-      "group": {
-        "id": "UfhhwZK73Lg",
-        "name": "WIDP IT team"
-      },
-      "template": {
-        "id": "cNtWc18LXBS",
-        "name": "widp_it_team.template"
-      }
-    },
-    {
-      "group": {
-        "id": "L5dlGQ4m5av",
-        "name": "WIDP User Manager"
-      },
-      "template": {
-        "id": "Q2e3xq4hRCj",
-        "name": "widp_manager.template"
-      }
-    },
-    {
-      "group": {
-        "id": "sCjEPgiOhP1",
-        "name": "WIDP admins"
-      },
-      "template": {
-        "id": "kxaP3vUEnJn",
-        "name": "widp_admins.template"
-      }
-    },
-    {
-      "group": {
-        "id": "e5NqEzmd8Ql",
-        "name": "WIDP external developers"
-      },
-      "template": {
-        "id": "FnkRtcOGOVQ",
-        "name": "widp_external_developers.template"
-      }
-    },
-    {
-      "group": {
-        "id": "UmSnxmr4LE0",
-        "name": "WIDP Users"
-      },
-      "template": {
-        "id": "WT6QkP45vEC",
-        "name": "widp_user.template"
-      }
-    }
-  ]
-}
-```
-
-### Users Authorities Monitoring
-
-#### Execution:
-
-```bash
-yarn install
-
-yarn build
-
-yarn start usermonitoring authorities-monitoring --config-file config.json
-
-# To get the debug logs and store them in a file use:
-LOG_LEVEL=debug yarn start usermonitoring authorities-monitoring --config-file config.json &> authorities-monitoring.log
-```
-
-#### Parameters:
-
--   `--config-file`: Connection and webhook config file.
--   `-s` | `--set-datastore`: Write users data to datastore, use in script setup. It assumes there is a monitoring config in d2-tools/user-monitoring.
-
-#### Requirements:
-
-A config file with the access info of the server and the message webhook details:
-
-```JSON
-{
-    "URL": {
-        "username": "user",
-        "password": "passwd",
-        "server": "https://dhis.url/"
-    },
-    "WEBHOOK": {
-        "ms_url": "http://webhook.url/",
-        "proxy": "http://proxy.url/",
-        "server_name": "INSTANCE_NAME"
-    }
-}
-```
-
-This reports stores data into the `d2-tools.user-monitoring` datastore in a new entry named `AUTHORITIES_MONITOR`. This entry needs to be setup before the first run to get a correct report.
-Its possible to leave `usersByAuthority` empty and use the `-s` flag to populate it.
-
-A sample:
-
-```JSON
-"AUTHORITIES_MONITOR": {
-    "authoritiesToMonitor": [
-      "AUTH1",
-      "AUTH2"
-    ],
-    "lastExecution": "1970-01-01T00:00:00,000",
-    "usersByAuthority": {
-      "AUTH1": [
-        {
-          "id": "lJf6FW6vtDD",
-          "name": "fake user 1",
-          "userRoles": [
-            {
-              "id": "So7ZSqi9ovy",
-              "name": "Role 1"
-            }
-          ]
-        },
-        {
-          "id": "wXGwwP53ngu",
-          "name": "fake user 2",
-          "userRoles": [
-            {
-              "id": "So7ZSqi9ovy",
-              "name": "Role 1"
-            }
-          ]
-        }
-      ],
-       "AUTH2": [
-        {
-          "id": "wXGwwP53ngu",
-          "name": "fake user 2",
-          "userRoles": [
-            {
-              "id": "So7ZSqi9ovy",
-              "name": "Role 1"
-            }
-          ]
-        }
-      ]
-    }
-  }
-```
