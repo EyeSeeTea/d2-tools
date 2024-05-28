@@ -26,17 +26,17 @@ export class RunTwoFactorReportUseCase {
             );
         }
 
-        const usersWithoutTwoFA = twoFactorGroupUsers.filter(user => {
+        const usersWithoutTwoFactor = twoFactorGroupUsers.filter(user => {
             return user.twoFA == false;
         });
-        const userItems = usersWithoutTwoFA.map(user => {
+        const userItems = usersWithoutTwoFactor.map(user => {
             return { id: user.id, name: user.username };
         });
         const response: TwoFactorUserReport = {
             invalidUsersCount: userItems.length,
             listOfAffectedUsers: userItems,
         };
-        log.info("Users without 2FA: " + userItems.length);
+        log.info("Users without two factor: " + userItems.length);
         const programMetadata = await this.programRepository.get(options.pushProgramId.id);
         const saveResponse = await this.reportRepository.save(programMetadata, response);
         return saveResponse;
