@@ -21,6 +21,7 @@ import { PermissionFixerMetadataConfig } from "domain/entities/user-monitoring/p
 import { PermissionFixerUserRepository } from "domain/repositories/user-monitoring/permission-fixer/PermissionFixerUserRepository";
 import { PermissionFixerUser } from "domain/entities/user-monitoring/permission-fixer/PermissionFixerUser";
 import { Async } from "domain/entities/Async";
+import { UserTemplateNotFoundException } from "domain/entities/user-monitoring/two-factor-monitoring/exception/UserTemplateNotFoundException";
 
 export class RunUserPermissionUseCase {
     constructor(
@@ -293,7 +294,12 @@ export class RunUserPermissionUseCase {
                     const fixedUser = JSON.parse(JSON.stringify(user));
                     fixedUser.userCredentials.userRoles = userValidRoles;
                     fixedUser.userRoles = userValidRoles;
-
+                    const userTemplateGroupMatch = templateGroupMatch ?? undefined;
+                    if (userTemplateGroupMatch == undefined) {
+                        throw new UserTemplateNotFoundException(
+                            "User: " + user.username + " don't have valid template-groups"
+                        );
+                    }
                     if (AllGroupMatch.length > 1) {
                         log.debug(`Debug: User have more than 1 group ${user.id} - ${user.name}`);
                         const userInfoRes: UserMonitoringUserResponse = {
@@ -302,9 +308,9 @@ export class RunUserPermissionUseCase {
                             validUserRoles: userValidRoles,
                             actionRequired: userInvalidRoles.length > 0,
                             invalidUserRoles: userInvalidRoles,
-                            userNameTemplate: templateGroupMatch!.template.name,
-                            templateIdTemplate: templateGroupMatch!.template.id,
-                            groupIdTemplate: templateGroupMatch!.group.id,
+                            userNameTemplate: userTemplateGroupMatch.template.name,
+                            templateIdTemplate: userTemplateGroupMatch.template.id,
+                            groupIdTemplate: userTemplateGroupMatch.group.id,
                             multipleUserGroups: AllGroupMatch.map(item => item.group.id),
                         };
                         return userInfoRes;
