@@ -26,9 +26,12 @@ export class PermissionFixerUserGroupD2Repository implements PermissionFixerUser
     async save(userGroup: PermissionFixerUserGroupExtended): Async<string> {
         try {
             const response = await this.api.models.userGroups.put(userGroup).getData();
-            response.status == "OK"
-                ? log.info("Users added to minimal group")
-                : log.error("Error adding users to minimal group");
+            if (response.status == "OK") {
+                log.info("Users added to minimal group");
+            } else {
+                log.error("Error adding users to minimal group");
+            }
+
             log.info(JSON.stringify(response.response));
 
             return response.status;
