@@ -19,14 +19,14 @@ export class RunTwoFactorReportUseCase {
     async execute(): Async<string> {
         const options = await this.configRepository.get();
 
-        const usersMustHave2FA = await this.userRepository.getUsersByGroupId([options.twoFactorGroup.id]);
-        if (usersMustHave2FA.length == 0) {
+        const twoFactorGroupUsers = await this.userRepository.getUsersByGroupId([options.twoFactorGroup.id]);
+        if (twoFactorGroupUsers.length == 0) {
             throw new NonUsersException(
                 "Users not found in the group. Check the group id. " + options.twoFactorGroup.id
             );
         }
 
-        const usersWithoutTwoFA = usersMustHave2FA.filter(user => {
+        const usersWithoutTwoFA = twoFactorGroupUsers.filter(user => {
             return user.twoFA == false;
         });
         const userItems = usersWithoutTwoFA.map(user => {
