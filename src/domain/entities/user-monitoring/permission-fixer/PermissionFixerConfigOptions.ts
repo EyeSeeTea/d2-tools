@@ -11,9 +11,9 @@ export interface PermissionFixerMetadataConfig {
     excludedRolesByUser: RolesByUser[];
     excludedRolesByGroup: RolesByGroup[];
     excludedRolesByRole: RolesByRoles[];
-    pushProgramId: NamedRef;
-    minimalGroupId: NamedRef;
-    minimalRoleId: NamedRef;
+    pushProgram: NamedRef;
+    minimalGroup: NamedRef;
+    minimalRole: NamedRef;
     permissionFixerConfig: PermissionFixerConfig;
 }
 

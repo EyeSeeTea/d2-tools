@@ -37,7 +37,7 @@ export class RunTwoFactorReportUseCase {
             listOfAffectedUsers: userItems,
         };
         log.info("Users without two factor: " + userItems.length);
-        const programMetadata = await this.programRepository.get(options.pushProgramId.id);
+        const programMetadata = await this.programRepository.get(options.pushProgram.id);
         const saveResponse = await this.reportRepository.save(programMetadata, response);
         return saveResponse;
     }

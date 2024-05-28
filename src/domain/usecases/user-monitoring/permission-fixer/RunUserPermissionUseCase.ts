@@ -35,7 +35,7 @@ export class RunUserPermissionUseCase {
     async execute() {
         const options = await this.configRepository.get();
 
-        const programMetadata = await this.programRepository.get(options.pushProgramId.id);
+        const programMetadata = await this.programRepository.get(options.pushProgram.id);
         if (!programMetadata) {
             throw new Error("Metadata not found in the server. Check the program id.");
         }
@@ -109,8 +109,8 @@ export class RunUserPermissionUseCase {
         allUsers: PermissionFixerUser[]
     ): Async<PermissionFixerExtendedReport> {
         const {
-            minimalGroupId,
-            minimalRoleId,
+            minimalGroup,
+            minimalRole,
             permissionFixerConfig: { pushFixedUsersRoles },
             excludedRolesByRole,
             excludedRolesByUser,
@@ -118,14 +118,14 @@ export class RunUserPermissionUseCase {
         } = options;
 
         log.info("Processing users...");
-        this.validateUsers(allUsers, completeTemplateGroups, minimalGroupId.id);
+        this.validateUsers(allUsers, completeTemplateGroups, minimalGroup.id);
         const userinfo: UserMonitoringUserResponse[] = this.processUsers(
             allUsers,
             completeTemplateGroups,
             excludedRolesByRole,
             excludedRolesByGroup,
             excludedRolesByUser,
-            minimalRoleId
+            minimalRole
         );
 
         //users without user groups
@@ -195,7 +195,7 @@ export class RunUserPermissionUseCase {
         excludedRolesByRole: RolesByRoles[],
         excludedRolesByGroup: RolesByGroup[],
         excludedRolesByUser: RolesByUser[],
-        minimalRoleId: Ref
+        minimalRole: Ref
     ): UserMonitoringUserResponse[] {
         const processedUsers = _.compact(
             allUsers.map(user => {
@@ -212,12 +212,12 @@ export class RunUserPermissionUseCase {
 
                 if (user.userCredentials.userRoles === undefined) {
                     const fixedUser = JSON.parse(JSON.stringify(user));
-                    fixedUser.userCredentials.userRoles = [{ id: minimalRoleId.id }];
-                    fixedUser.userRoles = [{ id: minimalRoleId.id }];
+                    fixedUser.userCredentials.userRoles = [{ id: minimalRole.id }];
+                    fixedUser.userRoles = [{ id: minimalRole.id }];
                     const userInfoRes: UserMonitoringUserResponse = {
                         user: user,
                         fixedUser: fixedUser,
-                        validUserRoles: [{ id: minimalRoleId.id, name: "Minimal Role" }],
+                        validUserRoles: [{ id: minimalRole.id, name: "Minimal Role" }],
                         actionRequired: true,
                         invalidUserRoles: [],
                         userNameTemplate: "User don't have roles",
@@ -355,13 +355,13 @@ export class RunUserPermissionUseCase {
         allUsersGroupCheck: PermissionFixerUser[]
     ): Async<PermissionFixerReport> {
         const {
-            minimalGroupId,
+            minimalGroup,
             permissionFixerConfig: { pushFixedUserGroups },
         } = options;
         const response = await this.addLowLevelTemplateGroupToUsersWithoutAny(
             completeTemplateGroups,
             allUsersGroupCheck,
-            minimalGroupId,
+            minimalGroup,
             pushFixedUserGroups
         );
 
@@ -371,17 +371,17 @@ export class RunUserPermissionUseCase {
     private async addLowLevelTemplateGroupToUsersWithoutAny(
         completeTemplateGroups: PermissionFixerTemplateGroupExtended[],
         allUsersGroupCheck: PermissionFixerUser[],
-        minimalGroupId: NamedRef,
+        minimalGroup: NamedRef,
         pushFixedUserGroups: boolean
     ): Async<PermissionFixerReport> {
         const userIdWithoutGroups: NamedRef[] = this.detectUserIdsWithoutGroups(
             completeTemplateGroups,
             allUsersGroupCheck,
-            minimalGroupId
+            minimalGroup
         );
         return await this.pushUsersWithoutGroupsWithLowLevelGroup(
             userIdWithoutGroups,
-            minimalGroupId,
+            minimalGroup,
             pushFixedUserGroups
         );
     }
@@ -389,7 +389,7 @@ export class RunUserPermissionUseCase {
     private detectUserIdsWithoutGroups(
         completeTemplateGroups: PermissionFixerTemplateGroupExtended[],
         allUsersGroupCheck: PermissionFixerUser[],
-        minimalGroupId: NamedRef
+        minimalGroup: NamedRef
     ): NamedRef[] {
         return _.compact(
             allUsersGroupCheck.map((user): NamedRef | undefined => {
@@ -402,7 +402,7 @@ export class RunUserPermissionUseCase {
                 if (templateGroupMatch == undefined) {
                     //template not found -> all roles are invalid except the minimal role
                     log.error(
-                        `Warning: User don't have groups ${user.id} - ${user.name} adding to minimal group  ${minimalGroupId}`
+                        `Warning: User don't have groups ${user.id} - ${user.name} adding to minimal group  ${minimalGroup.id}`
                     );
                     const id: NamedRef = { id: user.id, name: user.username };
                     return id;
@@ -413,11 +413,11 @@ export class RunUserPermissionUseCase {
 
     private async pushUsersWithoutGroupsWithLowLevelGroup(
         userIdWithoutGroups: NamedRef[],
-        minimalGroupId: NamedRef,
+        minimalGroup: NamedRef,
         pushFixedUserGroups: boolean
     ): Async<PermissionFixerReport> {
         if (userIdWithoutGroups != undefined && userIdWithoutGroups.length > 0) {
-            const minimalUserGroup = await this.userGroupRepository.getByIds([minimalGroupId.id]);
+            const minimalUserGroup = await this.userGroupRepository.getByIds([minimalGroup.id]);
             const userIds = userIdWithoutGroups.map(item => {
                 return { id: item.id };
             });
