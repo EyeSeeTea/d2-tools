@@ -6,7 +6,7 @@ import { Async } from "domain/entities/Async";
 
 export class PermissionFixerUserGroupD2Repository implements PermissionFixerUserGroupRepository {
     constructor(private api: D2Api) {}
-    async getByIds(groupsIds: string[]): Async<PermissionFixerUserGroupExtended[]> {
+    async getByIds(groupsIds: string[]): Async<PermissionFixerUserGroupExtended> {
         log.info(`Get metadata: All groups`);
 
         //todo use d2api filters
@@ -16,7 +16,12 @@ export class PermissionFixerUserGroupD2Repository implements PermissionFixerUser
             )
             .getData();
 
-        return responses["userGroups"];
+        const userGroups = responses["userGroups"][0] ?? undefined;
+        if (userGroups) {
+            return userGroups;
+        } else {
+            throw new UserGroupNotFoundException("Error getting user groups: " + groupsIds.join(","));
+        }
     }
     async save(userGroup: PermissionFixerUserGroupExtended): Async<string> {
         try {
