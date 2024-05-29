@@ -6,6 +6,8 @@ import { AuthoritiesMonitoringConfigRepository } from "domain/repositories/user-
 import { MessageRepository } from "domain/repositories/user-monitoring/authorities-monitoring/MessageRepository";
 import { AuthoritiesMonitoringOptions } from "domain/entities/user-monitoring/authorities-monitoring/AuthoritiesMonitoringOptions";
 import { User } from "domain/entities/user-monitoring/authorities-monitoring/User";
+import { GetUsersByAuthoritiesUseCase } from "./GetUsersByAuthoritiesUseCase";
+import { CheckUserByAuthoritiesChangesUseCase } from "./CheckUserByAuthoritiesChangesUseCase";
 
 export class MonitorUsersByAuthorityUseCase {
     constructor(
@@ -13,74 +15,6 @@ export class MonitorUsersByAuthorityUseCase {
         private externalConfigRepository: AuthoritiesMonitoringConfigRepository,
         private MessageRepository: MessageRepository
     ) {}
-
-    private async getUsersByAuthorities(options: AuthoritiesMonitoringOptions): Async<UsersByAuthority> {
-        const userRoles = await this.userRolesRepository.getByAuthorities(options.authoritiesToMonitor);
-
-        const usersWithAuthorities = _(userRoles)
-            .flatMap(userRole => {
-                return userRole.users.map(user => {
-                    return {
-                        id: user.id,
-                        name: user.name,
-                        authorities: userRole.authorities.filter(authority =>
-                            options.authoritiesToMonitor.includes(authority)
-                        ),
-                        userRoles: userRoles
-                            .filter(userRole => userRole.users.includes(user))
-                            .map(userRole => ({ id: userRole.id, name: userRole.name })),
-                    };
-                });
-            })
-            .value();
-
-        const usersByAuthority: UsersByAuthority = _(usersWithAuthorities)
-            .groupBy(user => user.authorities)
-            .mapValues(users =>
-                users.map(user => ({ id: user.id, name: user.name, userRoles: user.userRoles }))
-            )
-            .value();
-
-        return usersByAuthority;
-    }
-
-    private compareDicts(dict1: UsersByAuthority, dict2: UsersByAuthority) {
-        // TODO: // check _ intersection, union, difference, differenceBy
-        return _(dict2).reduce((result, users, authority) => {
-            const diff = _(users)
-                .map(user => {
-                    if (!dict1[authority]?.some(u => u.id === user.id)) {
-                        return user;
-                    }
-                })
-                .compact()
-                .value();
-
-            if (diff.length > 0) {
-                result[authority] = diff;
-            }
-
-            return result;
-        }, {} as UsersByAuthority);
-    }
-
-    private checkNewUsersWithAuthorities(
-        options: AuthoritiesMonitoringOptions,
-        usersByAuthority: UsersByAuthority
-    ): UsersByAuthority {
-        const oldUsers: UsersByAuthority = options.usersByAuthority;
-
-        return this.compareDicts(oldUsers, usersByAuthority);
-    }
-
-    private checkUsersLosingAuthorities(
-        options: AuthoritiesMonitoringOptions,
-        usersByAuthority: UsersByAuthority
-    ): UsersByAuthority {
-        const oldUsers: UsersByAuthority = options.usersByAuthority;
-
-        return this.compareDicts(usersByAuthority, oldUsers);
-    }
 
     private listUsers(users: User[]): string {
         return users
@@ -118,13 +52,17 @@ export class MonitorUsersByAuthorityUseCase {
     async execute(options: AuthoritiesMonitoringOptions, setDataStore: boolean): Async<void> {
         log.info(`Get user roles by authorities: ${options.authoritiesToMonitor.join(",")}`);
 
-        const usersByAuthority = await this.getUsersByAuthorities(options);
+        const getUsersUseCases = new GetUsersByAuthoritiesUseCase(this.userRolesRepository);
+        const usersByAuthority = await getUsersUseCases.execute(options);
 
         log.debug(`Users by authority: ${JSON.stringify(usersByAuthority, null, 2)}`);
 
         if (!setDataStore) {
-            const newUsers = this.checkNewUsersWithAuthorities(options, usersByAuthority);
-            const usersLosingAuth = this.checkUsersLosingAuthorities(options, usersByAuthority);
+            const checkUsersChangesUseCase = new CheckUserByAuthoritiesChangesUseCase();
+            const { newUsers, usersLosingAuth } = await checkUsersChangesUseCase.execute(
+                options.usersByAuthority,
+                usersByAuthority
+            );
 
             log.debug(`New users: ${JSON.stringify(newUsers, null, 2)}`);
             log.debug(`Lost users: ${JSON.stringify(usersLosingAuth, null, 2)}`);
@@ -133,7 +71,7 @@ export class MonitorUsersByAuthorityUseCase {
                 log.info("Report: No changes.");
             } else {
                 const messages = this.makeMessages(newUsers, usersLosingAuth);
-                this.MessageRepository.sendMessage(messages);
+                // this.MessageRepository.sendMessage(messages);
 
                 log.info(`Report:\n${messages}`);
             }

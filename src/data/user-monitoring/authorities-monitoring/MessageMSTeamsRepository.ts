@@ -1,11 +1,11 @@
 import _, { isEmpty } from "lodash";
 import log from "utils/log";
 import { Async } from "domain/entities/Async";
-import { WebhookOptions } from "domain/entities/user-monitoring/common/WebhookOptions";
+import { MSTeamsWebhookOptions } from "data/user-monitoring/entities/MSTeamsWebhookOptions";
 import { MessageRepository } from "domain/repositories/user-monitoring/authorities-monitoring/MessageRepository";
 
 export class MessageMSTeamsRepository implements MessageRepository {
-    constructor(private webhook: WebhookOptions) {}
+    constructor(private webhook: MSTeamsWebhookOptions) {}
 
     async sendMessage(message: string): Async<void> {
         const httpProxy = this.webhook.proxy;

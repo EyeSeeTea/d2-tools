@@ -31,6 +31,6 @@ export class AuthoritiesMonitoringConfigD2Repository implements AuthoritiesMonit
     }
 
     public async save(config: AuthoritiesMonitoringOptions): Promise<void> {
-        await this.api.dataStore("d2-tools").save(Namespace.AUTHORITIES_MONITOR, config).getData();
+        await this.api.dataStore(d2ToolsNamespace).save(Namespace.AUTHORITIES_MONITOR, config).getData();
     }
 }

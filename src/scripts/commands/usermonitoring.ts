@@ -22,7 +22,7 @@ import { UserRolesD2Repository } from "data/user-monitoring/authorities-monitori
 import { MessageMSTeamsRepository } from "data/user-monitoring/authorities-monitoring/MessageMSTeamsRepository";
 import { GetAuthoritiesMonitoringConfigUseCase } from "domain/usecases/user-monitoring/authorities-monitoring/GetAuthoritiesMonitoringConfigUseCase";
 import { MonitorUsersByAuthorityUseCase } from "domain/usecases/user-monitoring/authorities-monitoring/MonitorUsersByAuthorityUseCase";
-import { WebhookOptions } from "domain/entities/user-monitoring/common/WebhookOptions";
+import { MSTeamsWebhookOptions } from "data/user-monitoring/entities/MSTeamsWebhookOptions";
 
 export function getCommand() {
     return subcommands({
@@ -150,7 +150,7 @@ function getAuthFromFile(config_file: string): UserMonitoringAuth {
     };
 }
 
-function getWebhookConfFromFile(config_file: string): WebhookOptions {
+function getWebhookConfFromFile(config_file: string): MSTeamsWebhookOptions {
     const fs = require("fs");
     const configJSON = JSON.parse(fs.readFileSync("./" + config_file, "utf8"));
     const ms_url = configJSON["WEBHOOK"]["ms_url"];
