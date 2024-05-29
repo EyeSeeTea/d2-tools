@@ -4,7 +4,6 @@ import { FileUploadParameters, Files } from "@eyeseetea/d2-api/api/files";
 import { D2Api } from "types/d2-api";
 import log from "utils/log";
 import _ from "lodash";
-import { getUid } from "utils/uid";
 import { Async } from "domain/entities/Async";
 import { UserMonitoringUserResponse } from "domain/entities/user-monitoring/common/UserMonitoringUserResponse";
 
@@ -16,7 +15,6 @@ export class UserMonitoringFileResourceUtils {
         const files = new Files(api);
         const uniqueFilename = this.createUniqueFilename(name);
         const form: FileUploadParameters = {
-            id: getUid(uniqueFilename),
             name: uniqueFilename,
             data: jsonBlob,
             ignoreDocument: true,

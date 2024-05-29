@@ -20,7 +20,6 @@ import { PermissionFixerUserRepository } from "domain/repositories/user-monitori
 import { PermissionFixerUser } from "domain/entities/user-monitoring/permission-fixer/PermissionFixerUser";
 import { Async } from "domain/entities/Async";
 import { UserTemplateNotFoundException } from "domain/entities/user-monitoring/two-factor-monitoring/exception/UserTemplateNotFoundException";
-import { getUid } from "utils/uid";
 import _ from "lodash";
 
 export class RunUserPermissionUseCase {
@@ -143,7 +142,6 @@ export class RunUserPermissionUseCase {
             return {
                 invalidUsersCount: 0,
                 response: "",
-                eventid: "",
                 usersBackup: [],
                 usersFixed: [],
                 userProcessed: [],
@@ -162,7 +160,7 @@ export class RunUserPermissionUseCase {
             const userBackup: PermissionFixerUser[] = usersToBeFixed.map(item => {
                 return item.user;
             });
-
+            log.info("Push status: " + pushFixedUsersRoles);
             const response = pushFixedUsersRoles
                 ? (await this.userRepository.saveUsers(userToPost)) ?? "Empty response"
                 : "Test_mode";
@@ -172,7 +170,6 @@ export class RunUserPermissionUseCase {
                 response: await response,
                 usersBackup: userBackup,
                 usersFixed: userToPost,
-                eventid: getUid(new Date().toLocaleString()),
                 userProcessed: usersToBeFixed,
                 listOfAffectedUsers: usersToBeFixed.map(item => {
                     return { id: item.fixedUser.id, name: item.fixedUser.username };

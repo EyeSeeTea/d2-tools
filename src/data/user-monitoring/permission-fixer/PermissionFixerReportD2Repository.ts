@@ -67,25 +67,24 @@ export class PermissionFixerReportD2Repository implements PermissionFixerReportR
             userFixedId,
             userBackupId,
             this.api,
-            program,
-            responseRoles.eventid
+            program
         );
 
         if (response?.status != "OK") {
-            await this.saveUserErrorsOnLogFile(responseRoles.userProcessed, responseRoles.eventid);
+            await this.saveUserErrorsOnLogFile(responseRoles.userProcessed);
             throw new Error("Error on push report: " + JSON.stringify(response));
         } else {
             return response.status;
         }
     }
 
-    private async saveUserErrorsOnLogFile(userActionRequired: UserMonitoringUserResponse[], eventid: string) {
+    private async saveUserErrorsOnLogFile(userActionRequired: UserMonitoringUserResponse[]) {
         const userToPost: PermissionFixerUser[] = userActionRequired.map(item => {
             return item.fixedUser;
         });
         log.error(`Save jsons on import error: ${filenameErrorOnPush}`);
         await UserMonitoringFileResourceUtils.saveInJsonFormat(
-            JSON.stringify({ eventid, userToPost }, null, 4),
+            JSON.stringify({ userToPost }, null, 4),
             filenameErrorOnPush
         );
         log.error(`Save errors in csv: `);
@@ -104,8 +103,7 @@ export class PermissionFixerReportD2Repository implements PermissionFixerReportR
         userFixedFileResourceId: string,
         userBackupFileResourceid: string,
         api: D2Api,
-        program: UserMonitoringProgramMetadata,
-        eventUid: string
+        program: UserMonitoringProgramMetadata
     ) {
         log.info(`Create and Pushing report to DHIS2`);
         const dataValues: UserMonitoringReportValues[] = program.dataElements
@@ -160,7 +158,6 @@ export class PermissionFixerReportD2Repository implements PermissionFixerReportR
                 {
                     events: [
                         {
-                            event: eventUid,
                             program: program.id,
                             programStage: program.programStageId,
                             orgUnit: program.orgUnitId,
