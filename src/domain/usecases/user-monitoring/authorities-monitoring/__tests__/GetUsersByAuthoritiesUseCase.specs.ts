@@ -1,13 +1,11 @@
 import { mock, when, instance } from "ts-mockito";
 import { describe, it, expect } from "vitest";
+import { auth1Users, auth2Users, noneUsers, twoAuthUsers } from "./data";
 
 import { UserRolesD2Repository } from "data/user-monitoring/authorities-monitoring/UserRolesD2Repository";
 
 import { UserRole } from "domain/entities/user-monitoring/UserRole";
-import {
-    AuthoritiesMonitoringOptions,
-    UsersByAuthority,
-} from "domain/entities/user-monitoring/authorities-monitoring/AuthoritiesMonitoringOptions";
+import { AuthoritiesMonitoringOptions } from "domain/entities/user-monitoring/authorities-monitoring/AuthoritiesMonitoringOptions";
 
 import { GetUsersByAuthoritiesUseCase } from "../GetUsersByAuthoritiesUseCase";
 
@@ -88,107 +86,6 @@ const noUsersDatastore: AuthoritiesMonitoringOptions = {
     authoritiesToMonitor: ["NONE"],
     lastExecution: "2024-05-28T22:14:36,492",
     usersByAuthority: {},
-};
-
-const auth1Users: UsersByAuthority = {
-    AUTH_1: [
-        {
-            id: "cNtWc18LXBS",
-            name: "user auth1 1",
-            userRoles: [
-                {
-                    id: "FdKbkgGda2o",
-                    name: "allUserRole",
-                },
-            ],
-        },
-        {
-            id: "H4atNsEuKxP",
-            name: "user auth1 2",
-            userRoles: [
-                {
-                    id: "FdKbkgGda2o",
-                    name: "allUserRole",
-                },
-            ],
-        },
-    ],
-};
-
-const auth2Users: UsersByAuthority = {
-    AUTH_2: [
-        {
-            id: "cNtWc18LXBS",
-            name: "user auth1 1",
-            userRoles: [
-                {
-                    id: "FdKbkgGda2o",
-                    name: "allUserRole",
-                },
-            ],
-        },
-        {
-            id: "H4atNsEuKxP",
-            name: "user auth1 2",
-            userRoles: [
-                {
-                    id: "FdKbkgGda2o",
-                    name: "allUserRole",
-                },
-            ],
-        },
-        {
-            id: "cNtWc18LXB1",
-            name: "user auth2 1",
-            userRoles: [
-                {
-                    id: "FdKbkgGda21",
-                    name: "someUserRole",
-                },
-            ],
-        },
-        {
-            id: "H4atNsEuKx1",
-            name: "user auth2 2",
-            userRoles: [
-                {
-                    id: "FdKbkgGda21",
-                    name: "someUserRole",
-                },
-            ],
-        },
-    ],
-};
-
-const twoAuthUsers: UsersByAuthority = {
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    AUTH_2: auth2Users["AUTH_2"]!,
-    AUTH_3: [
-        {
-            id: "cNtWc18LXB2",
-            name: "user auth3 1",
-            userRoles: [
-                {
-                    id: "FdKbkgGda22",
-                    name: "almostAllUserRole",
-                },
-            ],
-        },
-        {
-            id: "H4atNsEuKx2",
-            name: "user auth3 2",
-            userRoles: [
-                {
-                    id: "FdKbkgGda22",
-                    name: "almostAllUserRole",
-                },
-            ],
-        },
-    ],
-};
-
-const noneUsers: UsersByAuthority = {
-    NONE: [],
 };
 
 const auth1UserRole: UserRole = {
