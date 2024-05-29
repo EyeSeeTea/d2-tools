@@ -1,7 +1,5 @@
 import { PermissionFixerConfigRepository } from "domain/repositories/user-monitoring/permission-fixer/PermissionFixerConfigRepository";
 import { PermissionFixerTemplateRepository } from "domain/repositories/user-monitoring/permission-fixer/PermissionFixerTemplateRepository";
-import { getUid } from "utils/uid";
-import _ from "lodash";
 import { RolesByRoles } from "domain/entities/user-monitoring/permission-fixer/RolesByRoles";
 import { RolesByGroup } from "domain/entities/user-monitoring/permission-fixer/RolesByGroup";
 import { RolesByUser } from "domain/entities/user-monitoring/permission-fixer/RolesByUser";
@@ -22,6 +20,8 @@ import { PermissionFixerUserRepository } from "domain/repositories/user-monitori
 import { PermissionFixerUser } from "domain/entities/user-monitoring/permission-fixer/PermissionFixerUser";
 import { Async } from "domain/entities/Async";
 import { UserTemplateNotFoundException } from "domain/entities/user-monitoring/two-factor-monitoring/exception/UserTemplateNotFoundException";
+import { getUid } from "utils/uid";
+import _ from "lodash";
 
 export class RunUserPermissionUseCase {
     constructor(
@@ -156,15 +156,6 @@ export class RunUserPermissionUseCase {
 
             log.info("Users processed. Starting push...");
 
-            const date = new Date()
-                .toLocaleString()
-                .replace(" ", "-")
-                .replace(":", "-")
-                .replace("/", "-")
-                .replace("/", "-")
-                .replace("\\", "-");
-            const eventUid = getUid(date);
-
             const userToPost: PermissionFixerUser[] = usersToBeFixed.map(item => {
                 return item.fixedUser;
             });
@@ -179,9 +170,9 @@ export class RunUserPermissionUseCase {
             return {
                 invalidUsersCount: usersToBeFixed.length,
                 response: await response,
-                eventid: eventUid,
                 usersBackup: userBackup,
                 usersFixed: userToPost,
+                eventid: getUid(new Date().toLocaleString()),
                 userProcessed: usersToBeFixed,
                 listOfAffectedUsers: usersToBeFixed.map(item => {
                     return { id: item.fixedUser.id, name: item.fixedUser.username };

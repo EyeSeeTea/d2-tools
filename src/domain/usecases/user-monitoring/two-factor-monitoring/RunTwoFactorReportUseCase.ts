@@ -20,7 +20,7 @@ export class RunTwoFactorReportUseCase {
         const options = await this.configRepository.get();
 
         const twoFactorGroupUsers = await this.userRepository.getUsersByGroupId([options.twoFactorGroup.id]);
-        if (twoFactorGroupUsers.length == 0) {
+        if (!twoFactorGroupUsers) {
             throw new NonUsersException(
                 "Users not found in the group. Check the group id. " + options.twoFactorGroup.id
             );
