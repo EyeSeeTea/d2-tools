@@ -6,21 +6,20 @@ import { Async } from "domain/entities/Async";
 
 export class PermissionFixerUserGroupD2Repository implements PermissionFixerUserGroupRepository {
     constructor(private api: D2Api) {}
-    async getByIds(groupsIds: string[]): Async<PermissionFixerUserGroupExtended> {
+    async get(groupsIds: string): Async<PermissionFixerUserGroupExtended> {
         log.info(`Get metadata: All groups`);
 
         //todo use d2api filters
-        const responses = await this.api
-            .get<UserGroups>(
-                `/userGroups?filter=id:in:[${groupsIds.join(",")}]&fields=id,name,users,*&paging=false.json`
-            )
+        const userGroup = await this.api
+            .get<PermissionFixerUserGroupExtended>(`/userGroups/${groupsIds}.json?fields=id,name,users`)
             .getData();
 
-        const userGroups = responses["userGroups"][0] ?? undefined;
-        if (userGroups) {
-            return userGroups;
+        if (userGroup) {
+            return userGroup;
         } else {
-            throw new UserGroupNotFoundException("Error getting user groups: " + groupsIds.join(","));
+            log.info(`Error getting user group: ${groupsIds}`);
+
+            throw new UserGroupNotFoundException("Error getting user group: " + groupsIds);
         }
     }
     async save(userGroup: PermissionFixerUserGroupExtended): Async<string> {
@@ -41,5 +40,3 @@ export class PermissionFixerUserGroupD2Repository implements PermissionFixerUser
         }
     }
 }
-
-type UserGroups = { userGroups: PermissionFixerUserGroupExtended[] };

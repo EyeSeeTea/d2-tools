@@ -411,7 +411,7 @@ export class RunUserPermissionUseCase {
         pushFixedUserGroups: boolean
     ): Async<PermissionFixerReport> {
         if (userIdWithoutGroups != undefined && userIdWithoutGroups.length > 0) {
-            const minimalUserGroup = await this.userGroupRepository.getByIds([minimalGroup.id]);
+            const minimalUserGroup = await this.userGroupRepository.get(minimalGroup.id);
             const userIds = userIdWithoutGroups.map(item => {
                 return { id: item.id };
             });
