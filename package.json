@@ -10,6 +10,11 @@
         "service": "nodemon",
         "start": "node dist/index.js",
         "start:dev": "ts-node src/index.ts",
+        "test": "yarn test-unit",
+        "test-unit": "vitest run --reporter=basic",
+        "test-unit-watch": "vitest watch",
+        "test-fixtures-generate": "yarn run-script src/tests/manage.ts generate-fixtures",
+        "test-snapshots-delete": "yarn run-script src/tests/manage.ts delete",
         "prettify": "prettier \"./**/*.{js,jsx,json,css,ts,tsx}\" --write",
         "release": "standard-version"
     },
@@ -18,6 +23,7 @@
     "dependencies": {
         "@eyeseetea/d2-api": "1.14.1-beta.1",
         "@types/json-diff": "^0.7.0",
+        "@types/jest": "^29.5.12",
         "async-parallel": "^1.2.3",
         "cmd-ts": "^0.10.0",
         "csv-reader": "^1.0.8",
@@ -64,6 +70,14 @@
         "typescript": "^4.6.2",
         "webpack": "^5.70.0",
         "webpack-cli": "^4.9.2",
-        "webpack-node-externals": "^3.0.0"
+        "webpack-node-externals": "^3.0.0",
+        "vite": "^4.2.0",
+        "vite-bundle-visualizer": "^0.6.0",
+        "vite-plugin-checker": "^0.6.2",
+        "vite-plugin-eslint": "^1.8.1",
+        "vite-plugin-node-stdlib-browser": "^0.2.1",
+        "vite-tsconfig-paths": "4.0.0",
+        "vitest": "^0.32.2",
+        "ts-mockito": "^2.6.1"
     }
 }
