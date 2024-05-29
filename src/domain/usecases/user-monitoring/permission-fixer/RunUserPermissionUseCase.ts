@@ -309,9 +309,9 @@ export class RunUserPermissionUseCase {
                             validUserRoles: userValidRoles,
                             actionRequired: userInvalidRoles.length > 0,
                             invalidUserRoles: userInvalidRoles,
-                            userNameTemplate: templateGroupMatch!.template.name,
-                            templateIdTemplate: templateGroupMatch!.template.id,
-                            groupIdTemplate: templateGroupMatch!.group.id,
+                            userNameTemplate: userTemplateGroupMatch.template.name,
+                            templateIdTemplate: userTemplateGroupMatch.template.id,
+                            groupIdTemplate: userTemplateGroupMatch.group.id,
                         };
 
                         return userInfoRes;
