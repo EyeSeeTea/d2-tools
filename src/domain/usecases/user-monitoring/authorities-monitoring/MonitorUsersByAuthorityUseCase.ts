@@ -1,13 +1,18 @@
-import { Async } from "domain/entities/Async";
-import log from "utils/log";
 import _ from "lodash";
+import log from "utils/log";
+import { Async } from "domain/entities/Async";
+
+import { MessageRepository } from "domain/repositories/user-monitoring/authorities-monitoring/MessageRepository";
 import { UserRolesRepository } from "domain/repositories/user-monitoring/authorities-monitoring/UserRolesRepository";
 import { AuthoritiesMonitoringConfigRepository } from "domain/repositories/user-monitoring/authorities-monitoring/AuthoritiesMonitoringConfigRepository";
-import { MessageRepository } from "domain/repositories/user-monitoring/authorities-monitoring/MessageRepository";
-import { AuthoritiesMonitoringOptions } from "domain/entities/user-monitoring/authorities-monitoring/AuthoritiesMonitoringOptions";
+
 import { User } from "domain/entities/user-monitoring/authorities-monitoring/User";
+import { AuthoritiesMonitoringOptions } from "domain/entities/user-monitoring/authorities-monitoring/AuthoritiesMonitoringOptions";
+
 import { GetUsersByAuthoritiesUseCase } from "./GetUsersByAuthoritiesUseCase";
 import { CheckUserByAuthoritiesChangesUseCase } from "./CheckUserByAuthoritiesChangesUseCase";
+import { GetAuthoritiesMonitoringConfigUseCase } from "./GetAuthoritiesMonitoringConfigUseCase";
+import { SaveAuthoritiesMonitoringConfigUseCase } from "./SaveAuthoritiesMonitoringConfigUseCase";
 
 export class MonitorUsersByAuthorityUseCase {
     constructor(
@@ -15,6 +20,10 @@ export class MonitorUsersByAuthorityUseCase {
         private externalConfigRepository: AuthoritiesMonitoringConfigRepository,
         private MessageRepository: MessageRepository
     ) {}
+
+    private debugJSON(msg: string, data: any) {
+        log.debug(`${msg} ${JSON.stringify(data, null, 2)}`);
+    }
 
     private listUsers(users: User[]): string {
         return users
@@ -39,23 +48,17 @@ export class MonitorUsersByAuthorityUseCase {
         return messages.join("\n\n");
     }
 
-    private async saveAuthoritiesMonitor(
-        options: AuthoritiesMonitoringOptions,
-        usersByAuthority: UsersByAuthority
-    ): Async<void> {
-        options.lastExecution = logFormatDate(new Date());
-        options.usersByAuthority = usersByAuthority;
+    async execute(setDataStore: boolean): Async<void> {
+        const options: AuthoritiesMonitoringOptions = await new GetAuthoritiesMonitoringConfigUseCase(
+            this.externalConfigRepository
+        ).execute();
 
-        await this.externalConfigRepository.save(options);
-    }
-
-    async execute(options: AuthoritiesMonitoringOptions, setDataStore: boolean): Async<void> {
         log.info(`Get user roles by authorities: ${options.authoritiesToMonitor.join(",")}`);
 
         const getUsersUseCases = new GetUsersByAuthoritiesUseCase(this.userRolesRepository);
         const usersByAuthority = await getUsersUseCases.execute(options);
 
-        log.debug(`Users by authority: ${JSON.stringify(usersByAuthority, null, 2)}`);
+        this.debugJSON("Users by authority:", usersByAuthority);
 
         if (!setDataStore) {
             const checkUsersChangesUseCase = new CheckUserByAuthoritiesChangesUseCase();
@@ -64,35 +67,29 @@ export class MonitorUsersByAuthorityUseCase {
                 usersByAuthority
             );
 
-            log.debug(`New users: ${JSON.stringify(newUsers, null, 2)}`);
-            log.debug(`Lost users: ${JSON.stringify(usersLosingAuth, null, 2)}`);
+            this.debugJSON("New users:", newUsers);
+            this.debugJSON("Lost users:", usersLosingAuth);
 
             if (_.isEmpty(newUsers) && _.isEmpty(usersLosingAuth)) {
                 log.info("Report: No changes.");
             } else {
                 const messages = this.makeMessages(newUsers, usersLosingAuth);
-                // this.MessageRepository.sendMessage(messages);
+                const teamsStatus = await this.MessageRepository.sendMessage(messages);
+                if (teamsStatus) {
+                    log.info(`Message sent to MSTeams`);
+                }
 
                 log.info(`Report:\n${messages}`);
             }
         }
 
         log.info("Updating datastore...");
-        await this.saveAuthoritiesMonitor(options, usersByAuthority);
+        await new SaveAuthoritiesMonitoringConfigUseCase(this.externalConfigRepository).execute(
+            options,
+            usersByAuthority
+        );
     }
 }
 
 type Authority = string;
 type UsersByAuthority = Record<Authority, User[]>;
-
-function logFormatDate(date: Date): string {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
-    const hours = String(date.getHours()).padStart(2, "0");
-    const minutes = String(date.getMinutes()).padStart(2, "0");
-    const seconds = String(date.getSeconds()).padStart(2, "0");
-    const milliseconds = String(date.getMilliseconds()).padStart(3, "0");
-
-    return `${year}-${month}-${day}T${hours}:${minutes}:${seconds},${milliseconds}`;
-}

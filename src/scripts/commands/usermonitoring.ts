@@ -20,9 +20,8 @@ import { PermissionFixerUserD2Repository } from "data/user-monitoring/permission
 import { AuthoritiesMonitoringConfigD2Repository } from "data/user-monitoring/authorities-monitoring/AuthoritiesMonitoringConfigD2Repository";
 import { UserRolesD2Repository } from "data/user-monitoring/authorities-monitoring/UserRolesD2Repository";
 import { MessageMSTeamsRepository } from "data/user-monitoring/authorities-monitoring/MessageMSTeamsRepository";
-import { GetAuthoritiesMonitoringConfigUseCase } from "domain/usecases/user-monitoring/authorities-monitoring/GetAuthoritiesMonitoringConfigUseCase";
-import { MonitorUsersByAuthorityUseCase } from "domain/usecases/user-monitoring/authorities-monitoring/MonitorUsersByAuthorityUseCase";
 import { MSTeamsWebhookOptions } from "data/user-monitoring/entities/MSTeamsWebhookOptions";
+import { MonitorUsersByAuthorityUseCase } from "domain/usecases/user-monitoring/authorities-monitoring/MonitorUsersByAuthorityUseCase";
 
 export function getCommand() {
     return subcommands({
@@ -30,7 +29,7 @@ export function getCommand() {
         cmds: {
             "run-permissions-fixer": runUsersMonitoringCmd,
             "run-2fa-reporter": run2FAReporterCmd,
-            "authorities-monitoring": authoritiesMonitoring,
+            "run-authorities-monitoring": runAuthoritiesMonitoring,
         },
     });
 }
@@ -97,7 +96,7 @@ const runUsersMonitoringCmd = command({
     },
 });
 
-const authoritiesMonitoring = command({
+const runAuthoritiesMonitoring = command({
     name: "authorities-monitoring",
     description:
         "Run user authorities monitoring, a --config-file must be provided (usersmonitoring run-permissions-fixer --config-file config.json)",
@@ -124,16 +123,12 @@ const authoritiesMonitoring = command({
         const externalConfigRepository = new AuthoritiesMonitoringConfigD2Repository(api);
         const MessageRepository = new MessageMSTeamsRepository(webhook);
 
-        log.debug(`Get config: ${auth.apiurl}`);
-
         log.info(`Run user authorities monitoring`);
-        const config = await new GetAuthoritiesMonitoringConfigUseCase(externalConfigRepository).execute();
-
         await new MonitorUsersByAuthorityUseCase(
             UserRolesRepository,
             externalConfigRepository,
             MessageRepository
-        ).execute(config, args.setDataStore);
+        ).execute(args.setDataStore);
     },
 });
 

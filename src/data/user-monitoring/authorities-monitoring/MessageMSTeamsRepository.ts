@@ -7,7 +7,7 @@ import { MessageRepository } from "domain/repositories/user-monitoring/authoriti
 export class MessageMSTeamsRepository implements MessageRepository {
     constructor(private webhook: MSTeamsWebhookOptions) {}
 
-    async sendMessage(message: string): Async<void> {
+    async sendMessage(message: string): Async<boolean> {
         const httpProxy = this.webhook.proxy;
         const url = this.webhook.ms_url;
         const server_name = this.webhook.server_name;
@@ -30,10 +30,11 @@ export class MessageMSTeamsRepository implements MessageRepository {
         };
 
         try {
-            await fetch(url, requestOptions);
-            log.info(`Message sent to MSTeams`);
+            const response = await fetch(url, requestOptions);
+            return response.ok;
         } catch (error) {
             log.error(`Error sending message: ${error}`);
+            return false;
         }
     }
 }
