@@ -1,7 +1,7 @@
 import _ from "lodash";
 import { D2Api } from "types/d2-api";
 import { Async } from "domain/entities/Async";
-import { UserRole } from "domain/entities/user-monitoring/UserRole";
+import { UserRole } from "domain/entities/user-monitoring/authorities-monitoring/UserRole";
 import { UserRolesRepository } from "domain/repositories/user-monitoring/authorities-monitoring/UserRolesRepository";
 
 export class UserRolesD2Repository implements UserRolesRepository {

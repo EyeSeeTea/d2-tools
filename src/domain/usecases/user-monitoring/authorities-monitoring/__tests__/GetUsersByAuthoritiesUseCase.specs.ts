@@ -4,7 +4,7 @@ import { auth1Users, auth2Users, noneUsers, twoAuthUsers } from "./data";
 
 import { UserRolesD2Repository } from "data/user-monitoring/authorities-monitoring/UserRolesD2Repository";
 
-import { UserRole } from "domain/entities/user-monitoring/UserRole";
+import { UserRole } from "domain/entities/user-monitoring/authorities-monitoring/UserRole";
 import { AuthoritiesMonitoringOptions } from "domain/entities/user-monitoring/authorities-monitoring/AuthoritiesMonitoringOptions";
 
 import { GetUsersByAuthoritiesUseCase } from "../GetUsersByAuthoritiesUseCase";
