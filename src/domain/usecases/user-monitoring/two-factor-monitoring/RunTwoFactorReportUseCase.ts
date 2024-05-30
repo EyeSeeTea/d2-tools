@@ -19,25 +19,25 @@ export class RunTwoFactorReportUseCase {
     async execute(): Async<string> {
         const options = await this.configRepository.get();
 
-        const usersMustHave2FA = await this.userRepository.getUsersByGroupId([options.twoFactorGroup.id]);
-        if (usersMustHave2FA.length == 0) {
+        const twoFactorGroupUsers = await this.userRepository.getUsersByGroupId([options.twoFactorGroup.id]);
+        if (!twoFactorGroupUsers) {
             throw new NonUsersException(
                 "Users not found in the group. Check the group id. " + options.twoFactorGroup.id
             );
         }
 
-        const usersWithoutTwoFA = usersMustHave2FA.filter(user => {
+        const usersWithoutTwoFactor = twoFactorGroupUsers.filter(user => {
             return user.twoFA == false;
         });
-        const userItems = usersWithoutTwoFA.map(user => {
+        const userItems = usersWithoutTwoFactor.map(user => {
             return { id: user.id, name: user.username };
         });
         const response: TwoFactorUserReport = {
             invalidUsersCount: userItems.length,
             listOfAffectedUsers: userItems,
         };
-        log.info("Users without 2FA: " + userItems.length);
-        const programMetadata = await this.programRepository.get(options.pushProgramId.id);
+        log.info("Users without two factor: " + userItems.length);
+        const programMetadata = await this.programRepository.get(options.pushProgram.id);
         const saveResponse = await this.reportRepository.save(programMetadata, response);
         return saveResponse;
     }

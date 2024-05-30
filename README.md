@@ -458,7 +458,7 @@ The datastore must contain:
 
 ```
 {
-  "pushProgramId": {
+  "pushProgram": {
     "id": "uid",
     "name": "push program"
   },
@@ -551,11 +551,11 @@ Note: the names are used only to make easy understand and debug the keys.
       "name": "username"
     }
   ],
-  "minimalGroupId": {
+  "minimalGroup": {
     "id": "uid",
     "name": "Users"
   },
-  "minimalRoleId": {
+  "minimalRole": {
     "id": "uid",
     "name": "Role name"
   },
@@ -564,7 +564,7 @@ Note: the names are used only to make easy understand and debug the keys.
     "pushFixedUsersRoles": false,
     "pushReport": true
   },
-  "pushProgramId": {
+  "pushProgram": {
     "id": "uid",
     "name": "Program name"
   },

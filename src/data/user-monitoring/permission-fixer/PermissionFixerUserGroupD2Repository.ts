@@ -3,27 +3,35 @@ import log from "utils/log";
 import { PermissionFixerUserGroupExtended } from "domain/entities/user-monitoring/permission-fixer/PermissionFixerUserGroupExtended";
 import { PermissionFixerUserGroupRepository } from "domain/repositories/user-monitoring/permission-fixer/PermissionFixerUserGroupRepository";
 import { Async } from "domain/entities/Async";
+import { UserGroupNotFoundException } from "./exception/UserGroupNotFoundException";
 
 export class PermissionFixerUserGroupD2Repository implements PermissionFixerUserGroupRepository {
     constructor(private api: D2Api) {}
-    async getByIds(groupsIds: string[]): Async<PermissionFixerUserGroupExtended[]> {
+    async get(groupsIds: string): Async<PermissionFixerUserGroupExtended> {
         log.info(`Get metadata: All groups`);
 
         //todo use d2api filters
-        const responses = await this.api
-            .get<UserGroups>(
-                `/userGroups?filter=id:in:[${groupsIds.join(",")}]&fields=id,name,users,*&paging=false.json`
-            )
+        const userGroup = await this.api
+            .get<PermissionFixerUserGroupExtended>(`/userGroups/${groupsIds}.json?fields=id,name,users`)
             .getData();
 
-        return responses["userGroups"];
+        if (userGroup) {
+            return userGroup;
+        } else {
+            log.info(`Error getting user group: ${groupsIds}`);
+
+            throw new UserGroupNotFoundException("Error getting user group: " + groupsIds);
+        }
     }
     async save(userGroup: PermissionFixerUserGroupExtended): Async<string> {
         try {
             const response = await this.api.models.userGroups.put(userGroup).getData();
-            response.status == "OK"
-                ? log.info("Users added to minimal group")
-                : log.error("Error adding users to minimal group");
+            if (response.status == "OK") {
+                log.info("Users added to minimal group");
+            } else {
+                log.error("Error adding users to minimal group");
+            }
+
             log.info(JSON.stringify(response.response));
 
             return response.status;
@@ -33,5 +41,3 @@ export class PermissionFixerUserGroupD2Repository implements PermissionFixerUser
         }
     }
 }
-
-type UserGroups = { userGroups: PermissionFixerUserGroupExtended[] };

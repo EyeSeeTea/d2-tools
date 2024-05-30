@@ -1,37 +1,36 @@
 import { D2Api } from "types/d2-api";
 import log from "utils/log";
 import _ from "lodash";
-import { getUid } from "utils/uid";
-import { NamedRef } from "domain/entities/Base";
 import { TwoFactorUserReport } from "domain/entities/user-monitoring/two-factor-monitoring/TwoFactorUserReport";
 import { TwoFactorReportRepository } from "domain/repositories/user-monitoring/two-factor-monitoring/TwoFactorReportRepository";
 import { UserMonitoringProgramMetadata } from "domain/entities/user-monitoring/common/UserMonitoringProgramMetadata";
 import { UserMonitoringReportValues } from "domain/entities/user-monitoring/common/UserMonitoringReportValues";
 import { Async } from "domain/entities/Async";
+import { UserMonitoringFileResourceUtils } from "../common/UserMonitoringFileResourceUtils";
 
 const dataelement_invalid_two_factor_count_code = "ADMIN_users_without_two_factor_count_7_Events";
 const dataelement_invalid_two_factor_usernames_list_code = "ADMIN_users_without_two_factor_8_Events";
 
-const date = new Date()
-    .toLocaleString()
-    .replace(/ /g, "_")
-    .replace(/:/g, "_")
-    .replace(/\//g, "_")
-    .replace(/\\/, "_")
-    .replace("\\", "_")
-    .replace(/,/g, "")
-    .replace(/-/g, "_");
+const filenameUserReported = `_users_reported.csv`;
 type ServerResponse = { status: string; typeReports: object[] };
 
 export class TwoFactorReportD2Repository implements TwoFactorReportRepository {
     constructor(private api: D2Api) {}
     async save(program: UserMonitoringProgramMetadata, report: TwoFactorUserReport): Async<string> {
+        const twoFactorUsersFileResourceId = await UserMonitoringFileResourceUtils.saveFileResource(
+            report.listOfAffectedUsers
+                .map(user => {
+                    return user.name + "," + user.id;
+                })
+                .join("\n"),
+            filenameUserReported,
+            this.api
+        );
         const response = await this.push(
             report.invalidUsersCount.toString(),
-            report.listOfAffectedUsers,
+            twoFactorUsersFileResourceId,
             this.api,
-            program,
-            getUid(date)
+            program
         );
         if (response?.status != "OK") {
             throw new Error("Error on push report: " + JSON.stringify(response));
@@ -43,10 +42,9 @@ export class TwoFactorReportD2Repository implements TwoFactorReportRepository {
 
     private async push(
         invalidConfigNumber: string,
-        invalidConfigUsers: NamedRef[],
+        invalidConfigUsers: string,
         api: D2Api,
-        program: UserMonitoringProgramMetadata,
-        eventUid: string
+        program: UserMonitoringProgramMetadata
     ) {
         log.info(`Create and Pushing users without two factor report to DHIS2`);
 
@@ -58,11 +56,7 @@ export class TwoFactorReportD2Repository implements TwoFactorReportRepository {
                     case dataelement_invalid_two_factor_usernames_list_code:
                         return {
                             dataElement: item.id,
-                            value: invalidConfigUsers
-                                .map(item => {
-                                    return item.name + "(" + item.id + ")";
-                                })
-                                .join(","),
+                            value: invalidConfigUsers,
                         };
                     default:
                         return { dataElement: "", value: "" };
@@ -86,7 +80,6 @@ export class TwoFactorReportD2Repository implements TwoFactorReportRepository {
                 {
                     events: [
                         {
-                            event: eventUid,
                             program: program.id,
                             programStage: program.programStageId,
                             orgUnit: program.orgUnitId,
