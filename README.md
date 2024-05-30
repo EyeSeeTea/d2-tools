@@ -592,10 +592,10 @@ yarn install
 
 yarn build
 
-yarn start usermonitoring authorities-monitoring --config-file config.json
+yarn start usermonitoring run-authorities-monitoring --config-file config.json
 
 # To get the debug logs and store them in a file use:
-LOG_LEVEL=debug yarn start usermonitoring authorities-monitoring --config-file config.json &> authorities-monitoring.log
+LOG_LEVEL=debug yarn start usermonitoring run-authorities-monitoring --config-file config.json &> authorities-monitoring.log
 ```
 
 #### Parameters:

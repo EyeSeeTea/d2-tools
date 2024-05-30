@@ -97,7 +97,7 @@ const runUsersMonitoringCmd = command({
 });
 
 const runAuthoritiesMonitoring = command({
-    name: "authorities-monitoring",
+    name: "run-authorities-monitoring",
     description:
         "Run user authorities monitoring, a --config-file must be provided (usersmonitoring run-permissions-fixer --config-file config.json)",
     args: {
