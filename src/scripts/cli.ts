@@ -4,6 +4,7 @@ import { run, subcommands } from "cmd-ts";
 import * as datasets from "./commands/datasets";
 import * as programs from "./commands/programs";
 import * as orgunits from "./commands/orgunits";
+import * as usermonitoring from "./commands/usermonitoring";
 import * as translations from "./commands/translations";
 import * as dataValues from "./commands/dataValues";
 import * as notifications from "./commands/notifications";
@@ -27,6 +28,7 @@ export function runCli() {
             events: events.getCommand(),
             sync: sync.getCommand(),
             users: users.getCommand(),
+            usermonitoring: usermonitoring.getCommand(),
             loadTesting: loadTesting.getCommand(),
             categoryoptions: categoryoptions.getCommand(),
             indicators: indicators.getCommand(),

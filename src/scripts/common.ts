@@ -14,7 +14,7 @@ export function getD2Api(url: string): D2Api {
 function buildD2Api(options: { baseUrl: string; auth: Auth }): D2Api {
     const socksProxyUrl = process.env.ALL_PROXY;
     const agent = socksProxyUrl ? new SocksProxyAgent(socksProxyUrl) : undefined;
-    return new D2Api({ ...options, backend: "xhr", agent: agent });
+    return new D2Api({ ...options, backend: "fetch", agent: agent });
 }
 
 function getApiOptionsFromUrl(url: string): { baseUrl: string; auth: Auth } {

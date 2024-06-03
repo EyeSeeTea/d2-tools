@@ -399,6 +399,188 @@ yarn start users migrate \
 }
 ```
 
+## User monitoring
+
+### Execution:
+
+```
+yarn install
+
+yarn build
+
+yarn start usermonitoring run-permissions-fixer --config-file config.json
+or
+yarn start usermonitoring run-2fa-reporter --config-file config.json
+```
+
+### Debug:
+
+```
+yarn install
+
+yarn build:dev
+
+LOG_LEVEL=debug node --inspect-brk dist/index.js usermonitoring run-users-monitoring   --config-file config.json
+LOG_LEVEL=debug node --inspect-brk dist/index.js usermonitoring run-2fa-reporter   --config-file config.json
+```
+
+### Requirements:
+
+Use node 16:
+
+```
+nvm use 16
+```
+
+A config json file to get the user/password and server:
+
+```
+{
+    "URL": {
+        "username": "",
+        "password": "",
+        "server": "http://localhost:8080"
+    }
+}
+```
+
+### run-2fa-reporter Datastore:
+
+d2-tools -> two-factor-monitoring:
+
+A program id with the id of the program in dhis
+
+A group id to filter the users that should have two factor activated
+
+The datastore must contain:
+
+```
+{
+  "pushProgram": {
+    "id": "uid",
+    "name": "push program"
+  },
+  "twoFactorGroup": {
+    "id": "uid",
+    "name": "Auth control group"
+  }
+}
+```
+
+### run-users-monitoring Datastore:
+
+d2-tools -> permission-fixer:
+
+The datastore must contain:
+
+A list of excluded_roles (could be an empty list [])
+
+A list of excluded roles by group (could be an empty list [])
+
+A list of excluded roles by role (could be an empty list [])
+
+A list of excluded roles by user (could be an empty list [])
+
+List of excluded users (the script will ignore them) (could be an empty list [])
+
+A minimum group to add that group to the users without any template group (WIDP requirement)
+
+A minimum role to add that role to the users without any role (DHIS requirement)
+
+A boolean variable push_report to determine if the script must send the report after processing all users
+
+A push_program_id variable with the program ID to send the report
+
+A list of templates (user with the valid roles, and group to identify which users could use those roles).
+
+A list with flags to control the script (permissionFixerConfig).
+
+An example of the datastore:
+
+Note: the names are used only to make easy understand and debug the keys.
+
+```
+{
+  "excludedRoles": [
+    {
+      "id": "uid",
+      "name": "App - name"
+    }
+  ],
+  "excludedRolesByGroup": [
+    {
+      "group": {
+        "id": "uid",
+        "name": "User group name"
+      },
+      "role": {
+        "id": "hXY2OtVz70P",
+        "name": "App - name"
+      }
+    }
+  ],
+  "excludedRolesByRole": [
+    {
+      "active_role": {
+        "id": "uid",
+        "name": "App present in the user"
+      },
+      "ignore_role": {
+        "id": "uid",
+        "name": "App to be ignored"
+      }
+    }
+  ],
+  "excludedRolesByUser": [
+    {
+      "role": {
+        "id": "uid",
+        "name": "App - name"
+      },
+      "user": {
+        "id": "uid",
+        "name": "username"
+      }
+    }
+  ],
+  "excludedUsers": [
+    {
+      "id": "uid",
+      "name": "username"
+    }
+  ],
+  "minimalGroup": {
+    "id": "uid",
+    "name": "Users"
+  },
+  "minimalRole": {
+    "id": "uid",
+    "name": "Role name"
+  },
+  "permissionFixerConfig":{
+    "pushFixedUserGroups": false,
+    "pushFixedUsersRoles": false,
+    "pushReport": true
+  },
+  "pushProgram": {
+    "id": "uid",
+    "name": "Program name"
+  },
+  "templates": [
+    {
+      "group": {
+        "id": "uid",
+        "name": "user group name"
+      },
+      "template": {
+        "id": "uid",
+        "name": "user template username"
+      }
+    }
+  ]
+}
+```
+
 ## Move Attributes from a Program
 
 Get all the TEIS in the program and move the value from the attribute in the argument `--from-attribute-id` to the attribute `--to-attribute-id`. Then delete the value in `--from-attribute-id`.
@@ -442,10 +624,13 @@ $ LOG_LEVEL=debug node dist/index.js sync validate \
 [INFO 2024-03-19T09:16:35.509Z] # Check ID/code mismatch: 0
 [INFO 2024-03-19T09:16:35.510Z] Output report: sync-validate.json
 ```
+
 ## Indicators
 
 ### Get Indicators items report
+
 Get a CSV with the IDs of the items used by Indicators:
+
 ```console
 shell:~$ yarn start indicators get-ref-ids \
 --url='https://admin:district@play.dhis2.org/2.38.6/' \
@@ -453,6 +638,7 @@ shell:~$ yarn start indicators get-ref-ids \
 --ds-filter=QX4ZTUbOt3a,aLpVgfXiz0f \
 --file=./indicatorsRefIDs.csv
 ```
+
 Working items types: dataElements, programDataElements, programIndicator.
 
 The ds-filter option allows to filter which dataSets are used.
@@ -466,6 +652,7 @@ UID | Indicator | Numerator | Numerator Description | List of referenced dataEle
 ### Get Indicators dataElements values report
 
 Get a CSV with a report of the values of dataElements and categoryOptionCombos:
+
 ```console
 shell:~$ yarn start indicators get-de-values-report \
 --url='https://admin:district@play.dhis2.org/2.38.6/' \
