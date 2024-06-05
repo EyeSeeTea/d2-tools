@@ -1,3 +1,5 @@
+import { it, expect } from "vitest";
+
 import { isEqual } from "../valueEqualityChecker";
 
 it("objects are equal", () => {

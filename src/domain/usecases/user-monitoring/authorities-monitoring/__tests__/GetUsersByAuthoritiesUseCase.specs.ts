@@ -1,6 +1,6 @@
 import { mock, when, instance } from "ts-mockito";
 import { describe, it, expect } from "vitest";
-import { auth1Users, auth2Users, noneUsers, twoAuthUsers } from "./data";
+import { auth1Users, auth2Users, noneUsers, twoAuthUsers } from "./AuthoritiesMonitoringTests.data";
 
 import { UserRolesD2Repository } from "data/user-monitoring/authorities-monitoring/UserRolesD2Repository";
 

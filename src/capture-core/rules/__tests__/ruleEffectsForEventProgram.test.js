@@ -1,3 +1,5 @@
+import { describe, expect, test } from "vitest";
+
 import { rulesEngineEffectTargetDataTypes } from "capture-core-utils/rulesEngine";
 import { rulesEngine } from "../rulesEngine";
 

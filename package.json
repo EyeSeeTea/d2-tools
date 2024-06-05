@@ -13,8 +13,6 @@
         "test": "yarn test-unit",
         "test-unit": "vitest run --reporter=basic",
         "test-unit-watch": "vitest watch",
-        "test-fixtures-generate": "yarn run-script src/tests/manage.ts generate-fixtures",
-        "test-snapshots-delete": "yarn run-script src/tests/manage.ts delete",
         "prettify": "prettier \"./**/*.{js,jsx,json,css,ts,tsx}\" --write",
         "release": "standard-version"
     },
@@ -23,7 +21,6 @@
     "dependencies": {
         "@eyeseetea/d2-api": "1.14.1-beta.1",
         "@types/json-diff": "^0.7.0",
-        "@types/jest": "^29.5.12",
         "async-parallel": "^1.2.3",
         "cmd-ts": "^0.10.0",
         "csv-reader": "^1.0.8",
@@ -51,6 +48,7 @@
         "@types/random-seed": "^0.3.3",
         "@typescript-eslint/eslint-plugin": "^5.15.0",
         "@typescript-eslint/parser": "^5.15.0",
+        "core-js": "2.6.9",
         "dotenv": "^16.0.1",
         "eslint": "^8.11.0",
         "eslint-config-prettier": "^8.5.0",
@@ -59,17 +57,18 @@
         "eslint-plugin-node": "^11.1.0",
         "eslint-plugin-prettier": "^4.0.0",
         "eslint-plugin-promise": "^6.0.0",
+        "fake-indexeddb": "4.0.2",
         "flow-remove-types": "2.182.0",
+        "jsdom": "^22.1.0",
         "nodemon": "^2.0.15",
         "prettier": "^2.6.0",
+        "react-html-parser-ultimate": "^1.0.7",
         "ts-loader": "^9.2.8",
+        "ts-mockito": "^2.6.1",
         "ts-node": "^10.7.0",
         "tsconfig-paths": "^3.14.0",
         "tsconfig-paths-webpack-plugin": "^3.5.2",
         "typescript": "^4.6.2",
-        "webpack": "^5.70.0",
-        "webpack-cli": "^4.9.2",
-        "webpack-node-externals": "^3.0.0",
         "vite": "^4.2.0",
         "vite-bundle-visualizer": "^0.6.0",
         "vite-plugin-checker": "^0.6.2",
@@ -77,6 +76,8 @@
         "vite-plugin-node-stdlib-browser": "^0.2.1",
         "vite-tsconfig-paths": "4.0.0",
         "vitest": "^0.32.2",
-        "ts-mockito": "^2.6.1"
+        "webpack": "^5.70.0",
+        "webpack-cli": "^4.9.2",
+        "webpack-node-externals": "^3.0.0"
     }
 }

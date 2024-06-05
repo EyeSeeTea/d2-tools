@@ -1,3 +1,5 @@
+import { expect, it, beforeEach, afterEach } from "vitest";
+
 import { MemoryAdapter } from "../MemoryAdapter";
 
 const storeName = "testStore";
