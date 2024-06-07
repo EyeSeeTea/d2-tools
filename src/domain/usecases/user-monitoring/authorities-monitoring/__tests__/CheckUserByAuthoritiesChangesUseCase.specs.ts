@@ -1,6 +1,12 @@
 import { describe, it, expect } from "vitest";
 
-import { auth1Users, auth2Users, noneUsers, twoAuthUsers } from "./AuthoritiesMonitoringTests.data";
+import {
+    auth1Users,
+    auth2Users,
+    twoAuthUsers,
+    allAuthUsers,
+    noneUsers,
+} from "./AuthoritiesMonitoringTests.data";
 
 import { CheckUserByAuthoritiesChangesUseCase } from "../CheckUserByAuthoritiesChangesUseCase";
 
@@ -8,7 +14,7 @@ describe("CheckUserByAuthoritiesChangesUseCase", () => {
     it("Should find no changes in the same UsersByAuthority object", async () => {
         const useCase = new CheckUserByAuthoritiesChangesUseCase();
 
-        const { newUsers, usersLosingAuth } = await useCase.execute(twoAuthUsers, twoAuthUsers);
+        const { newUsers, usersLosingAuth } = await useCase.execute(allAuthUsers, allAuthUsers);
 
         expect(newUsers).toEqual(noChanges);
         expect(usersLosingAuth).toEqual(noChanges);
@@ -17,9 +23,9 @@ describe("CheckUserByAuthoritiesChangesUseCase", () => {
     it("Should find users with new authorities", async () => {
         const useCase = new CheckUserByAuthoritiesChangesUseCase();
 
-        const { newUsers, usersLosingAuth } = await useCase.execute(noneUsers, twoAuthUsers);
+        const { newUsers, usersLosingAuth } = await useCase.execute(noneUsers, allAuthUsers);
 
-        expect(newUsers).toEqual(twoAuthUsers);
+        expect(newUsers).toEqual(allAuthUsers);
         expect(usersLosingAuth).toEqual(noChanges);
     });
 
@@ -58,4 +64,4 @@ const auth1and2Users = {
     AUTH_2: auth2Users.AUTH_2 ? auth2Users.AUTH_2 : [],
 };
 
-const auth3Users = { AUTH_3: twoAuthUsers.AUTH_3 ? twoAuthUsers.AUTH_3 : [] };
+const auth3Users = { AUTH_3: allAuthUsers.AUTH_3 ? allAuthUsers.AUTH_3 : [] };

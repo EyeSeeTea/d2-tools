@@ -31,9 +31,42 @@ export class GetUsersByAuthoritiesUseCase {
             .value();
 
         const usersByAuthority: UsersByAuthority = _(usersWithAuthorities)
+            // used to avoid groupBy merging multiples authorities as a separate key
+            .flatMap(user => {
+                if (user.authorities.length > 1) {
+                    return user.authorities.map(auth => {
+                        return {
+                            ...user,
+                            authorities: [auth],
+                        };
+                    });
+                } else {
+                    return user;
+                }
+            })
             .groupBy(user => user.authorities)
+            // merge repeated users originating from different userRoles
             .mapValues(users =>
-                users.map(user => ({ id: user.id, name: user.name, userRoles: user.userRoles }))
+                _(users)
+                    .map(user => {
+                        const repeated = users
+                            .filter(u => u.id === user.id)
+                            .map(u => ({ id: u.id, name: u.name, userRoles: u.userRoles }));
+
+                        if (repeated.length > 1) {
+                            return repeated.reduce((acc, u) => {
+                                return {
+                                    id: u.id,
+                                    name: u.name,
+                                    userRoles: _.uniqBy([...acc.userRoles, ...u.userRoles], "id"),
+                                };
+                            });
+                        } else {
+                            return { id: user.id, name: user.name, userRoles: user.userRoles };
+                        }
+                    })
+                    .uniqBy("id")
+                    .value()
             )
             .value();
 

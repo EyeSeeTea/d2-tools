@@ -1,6 +1,6 @@
 import { mock, when, instance } from "ts-mockito";
 import { describe, it, expect } from "vitest";
-import { auth1Users, auth2Users, noneUsers, twoAuthUsers } from "./AuthoritiesMonitoringTests.data";
+import { auth1Users, auth2Users, noneUsers, allAuthUsers } from "./AuthoritiesMonitoringTests.data";
 
 import { UserRolesD2Repository } from "data/user-monitoring/authorities-monitoring/UserRolesD2Repository";
 
@@ -17,7 +17,7 @@ function givenAStubUserRolesRepository() {
     when(mockedRepository.getByAuthorities(auth2UsersDatastore.authoritiesToMonitor)).thenReturn(
         Promise.resolve([auth1UserRole, auth2UserRole])
     );
-    when(mockedRepository.getByAuthorities(twoAuthUsersDatastore.authoritiesToMonitor)).thenReturn(
+    when(mockedRepository.getByAuthorities(allAuthUsersDatastore.authoritiesToMonitor)).thenReturn(
         Promise.resolve([auth1UserRole, auth2UserRole, auth3UserRole])
     );
     when(mockedRepository.getByAuthorities(noUsersDatastore.authoritiesToMonitor)).thenReturn(
@@ -48,9 +48,9 @@ describe("GetUsersByAuthoritiesUseCase", () => {
     it("Should retrieve users for multiple auths", async () => {
         const useCase = new GetUsersByAuthoritiesUseCase(givenAStubUserRolesRepository());
 
-        const result = await useCase.execute(twoAuthUsersDatastore);
+        const result = await useCase.execute(allAuthUsersDatastore);
 
-        expect(result).toEqual(twoAuthUsers);
+        expect(result).toEqual(allAuthUsers);
     });
 
     it("Should handle user role with no users", async () => {
@@ -76,8 +76,8 @@ const auth2UsersDatastore: AuthoritiesMonitoringOptions = {
     usersByAuthority: {},
 };
 
-const twoAuthUsersDatastore: AuthoritiesMonitoringOptions = {
-    authoritiesToMonitor: ["AUTH_2", "AUTH_3"],
+const allAuthUsersDatastore: AuthoritiesMonitoringOptions = {
+    authoritiesToMonitor: ["AUTH_1", "AUTH_2", "AUTH_3"],
     lastExecution: "2024-05-28T22:14:36,492",
     usersByAuthority: {},
 };
@@ -89,7 +89,7 @@ const noUsersDatastore: AuthoritiesMonitoringOptions = {
 };
 
 const auth1UserRole: UserRole = {
-    name: "allUserRole",
+    name: "auth1UserRole",
     id: "FdKbkgGda2o",
     authorities: ["AUTH_2", "AUTH_1"],
     users: [
@@ -101,11 +101,15 @@ const auth1UserRole: UserRole = {
             id: "H4atNsEuKxP",
             name: "user auth1 2",
         },
+        {
+            id: "H4atNsEuKxW",
+            name: "user auth1_2 1",
+        },
     ],
 };
 
 const auth2UserRole: UserRole = {
-    name: "someUserRole",
+    name: "auth2UserRole",
     id: "FdKbkgGda21",
     authorities: ["AUTH_2"],
     users: [
@@ -117,11 +121,19 @@ const auth2UserRole: UserRole = {
             id: "H4atNsEuKx1",
             name: "user auth2 2",
         },
+        {
+            id: "H4atNsEuKxW",
+            name: "user auth1_2 1",
+        },
+        {
+            id: "H4atNsEuKxQ",
+            name: "user auth2_3 1",
+        },
     ],
 };
 
 const auth3UserRole: UserRole = {
-    name: "almostAllUserRole",
+    name: "auth3UserRole",
     id: "FdKbkgGda22",
     authorities: ["AUTH_3"],
     users: [
@@ -132,6 +144,10 @@ const auth3UserRole: UserRole = {
         {
             id: "H4atNsEuKx2",
             name: "user auth3 2",
+        },
+        {
+            id: "H4atNsEuKxQ",
+            name: "user auth2_3 1",
         },
     ],
 };
