@@ -111,13 +111,23 @@ export class RunUserPermissionUseCase {
         const {
             minimalGroup,
             minimalRole,
-            permissionFixerConfig: { pushFixedUsersRoles },
+            permissionFixerConfig: { pushFixedUsersRoles, forceMinimalGroupForUsersWithoutGroup },
             excludedRolesByRole,
             excludedRolesByUser,
             excludedRolesByGroup,
         } = options;
 
         log.info("Processing users...");
+        if (forceMinimalGroupForUsersWithoutGroup) {
+            log.info(
+                "forceMinimalGroupForUsersWithoutGroup is enabled. Adding minimal group to users without group."
+            );
+            this.addMinimalUserGroupToUsersWithoutUserGroup(
+                allUsers,
+                completeTemplateGroups,
+                minimalGroup.id
+            );
+        }
         this.validateUsers(allUsers, completeTemplateGroups, minimalGroup.id);
         const userinfo: UserMonitoringUserResponse[] = this.processUsers(
             allUsers,
@@ -320,6 +330,24 @@ export class RunUserPermissionUseCase {
             })
         );
         return processedUsers;
+    }
+
+    private addMinimalUserGroupToUsersWithoutUserGroup(
+        allUsers: PermissionFixerUser[],
+        completeTemplateGroups: PermissionFixerTemplateGroupExtended[],
+        minimalGroupId: string
+    ) {
+        allUsers.map(user => {
+            const templateGroupMatch = completeTemplateGroups.find(template => {
+                return user.userGroups.some(
+                    userGroup => userGroup != undefined && template.group.id == userGroup.id
+                );
+            });
+            if (templateGroupMatch == undefined) {
+                //template not found -> all roles are invalid except the minimal role
+                user.userGroups.push({ id: minimalGroupId, name: "Minimal Group" });
+            }
+        });
     }
 
     private validateUsers(
