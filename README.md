@@ -486,14 +486,19 @@ List of excluded users (the script will ignore them) (could be an empty list [])
 A minimum group to add that group to the users without any template group (WIDP requirement)
 
 A minimum role to add that role to the users without any role (DHIS requirement)
-
-A boolean variable push_report to determine if the script must send the report after processing all users
-
 A push_program_id variable with the program ID to send the report
 
 A list of templates (user with the valid roles, and group to identify which users could use those roles).
 
 A list with flags to control the script (permissionFixerConfig).
+
+A boolean variable push_report to determine if the script must send the report after processing all users
+
+A boolean variable pushFixedUserGroups to allow push the fixed usergroups (for those users without widp template user group)
+
+A boolean variable pushFixedUsersRoles to allow the push of the fixed users.
+
+A boolean variable forceMinimalGroupForUsersWithoutGroup to determine ignore the users with invalid usergroup exception, assuming for that users the minimal group
 
 An example of the datastore:
 
@@ -558,6 +563,7 @@ Note: the names are used only to make easy understand and debug the keys.
     "name": "Role name"
   },
   "permissionFixerConfig":{
+    "forceMinimalGroupForUsersWithoutGroup": true,
     "pushFixedUserGroups": false,
     "pushFixedUsersRoles": false,
     "pushReport": true
