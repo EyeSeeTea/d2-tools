@@ -102,7 +102,26 @@ export class RunUserPermissionUseCase {
             log.info(`Nothing to report. No invalid users found.`);
         }
     }
-
+    private preProcessUsers(
+        allUsers: PermissionFixerUser[],
+        completeTemplateGroups: PermissionFixerTemplateGroupExtended[],
+        forceMinimalGroupForUsersWithoutGroup: boolean,
+        minimalGroupId: string
+    ) {
+        if (forceMinimalGroupForUsersWithoutGroup) {
+            log.info(
+                "forceMinimalGroupForUsersWithoutGroup is enabled. Adding minimal group to users without group."
+            );
+            const usersWithForcedMinimalGroup = this.addMinimalUserGroupToUsersWithoutUserGroup(
+                allUsers,
+                completeTemplateGroups,
+                minimalGroupId
+            );
+            return usersWithForcedMinimalGroup;
+        } else {
+            return allUsers;
+        }
+    }
     async processUserRoles(
         options: PermissionFixerMetadataConfig,
         completeTemplateGroups: PermissionFixerTemplateGroupExtended[],
@@ -117,20 +136,16 @@ export class RunUserPermissionUseCase {
             excludedRolesByGroup,
         } = options;
 
-        log.info("Processing users...");
-        if (forceMinimalGroupForUsersWithoutGroup) {
-            log.info(
-                "forceMinimalGroupForUsersWithoutGroup is enabled. Adding minimal group to users without group."
-            );
-            this.addMinimalUserGroupToUsersWithoutUserGroup(
-                allUsers,
-                completeTemplateGroups,
-                minimalGroup.id
-            );
-        }
-        this.validateUsers(allUsers, completeTemplateGroups, minimalGroup.id);
-        const userinfo: UserMonitoringUserResponse[] = this.processUsers(
+        const allPreProcessedUsers = this.preProcessUsers(
             allUsers,
+            completeTemplateGroups,
+            forceMinimalGroupForUsersWithoutGroup,
+            minimalGroup.id
+        );
+
+        this.validateUsers(allPreProcessedUsers, completeTemplateGroups, minimalGroup.id);
+        const userinfo: UserMonitoringUserResponse[] = this.processUsers(
+            allPreProcessedUsers,
             completeTemplateGroups,
             excludedRolesByRole,
             excludedRolesByGroup,
@@ -196,6 +211,7 @@ export class RunUserPermissionUseCase {
         excludedRolesByUser: RolesByUser[],
         minimalRole: Ref
     ): UserMonitoringUserResponse[] {
+        log.info("Processing users...");
         const processedUsers = _.compact(
             allUsers.map(user => {
                 const templateGroupMatch = completeTemplateGroups.find(template => {
@@ -336,17 +352,25 @@ export class RunUserPermissionUseCase {
         allUsers: PermissionFixerUser[],
         completeTemplateGroups: PermissionFixerTemplateGroupExtended[],
         minimalGroupId: string
-    ) {
-        allUsers.map(user => {
-            const templateGroupMatch = completeTemplateGroups.find(template => {
-                return user.userGroups.some(
-                    userGroup => userGroup != undefined && template.group.id == userGroup.id
-                );
-            });
+    ): PermissionFixerUser[] {
+        return allUsers.map(user => {
+            const templateGroupMatch = this.findTemplateGroupMatch(completeTemplateGroups, user);
             if (templateGroupMatch == undefined) {
                 //template not found -> all roles are invalid except the minimal role
                 user.userGroups.push({ id: minimalGroupId, name: "Minimal Group" });
             }
+            return { ...user };
+        });
+    }
+
+    private findTemplateGroupMatch(
+        completeTemplateGroups: PermissionFixerTemplateGroupExtended[],
+        user: PermissionFixerUser
+    ) {
+        return completeTemplateGroups.find(template => {
+            return user.userGroups.some(
+                userGroup => userGroup != undefined && template.group.id == userGroup.id
+            );
         });
     }
 
@@ -355,12 +379,9 @@ export class RunUserPermissionUseCase {
         completeTemplateGroups: PermissionFixerTemplateGroupExtended[],
         minimalGroupId: string
     ) {
+        log.info("Validating users...");
         allUsers.map(user => {
-            const templateGroupMatch = completeTemplateGroups.find(template => {
-                return user.userGroups.some(
-                    userGroup => userGroup != undefined && template.group.id == userGroup.id
-                );
-            });
+            const templateGroupMatch = this.findTemplateGroupMatch(completeTemplateGroups, user);
             if (templateGroupMatch == undefined) {
                 //template not found -> all roles are invalid except the minimal role
                 log.error(
