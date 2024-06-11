@@ -1,4 +1,3 @@
-import { FileUploadParameters, Files } from "@eyeseetea/d2-api/api/files";
 import { D2Api } from "types/d2-api";
 import log from "utils/log";
 import _ from "lodash";
