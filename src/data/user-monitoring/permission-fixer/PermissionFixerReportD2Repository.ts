@@ -71,27 +71,24 @@ export class PermissionFixerReportD2Repository implements PermissionFixerReportR
         );
 
         if (response?.status != "OK") {
-            await this.saveUserErrorsOnLogFile(responseRoles.userProcessed);
+            this.saveUserErrorsOnLogFile(responseRoles.userProcessed);
             throw new Error("Error on push report: " + JSON.stringify(response));
         } else {
             return response.status;
         }
     }
 
-    private async saveUserErrorsOnLogFile(userActionRequired: UserMonitoringUserResponse[]) {
+    private saveUserErrorsOnLogFile(userActionRequired: UserMonitoringUserResponse[]) {
         const userToPost: PermissionFixerUser[] = userActionRequired.map(item => {
             return item.fixedUser;
         });
         log.error(`Save jsons on import error: ${filenameErrorOnPush}`);
-        await UserMonitoringFileResourceUtils.saveInJsonFormat(
+        UserMonitoringFileResourceUtils.saveInJsonFormat(
             JSON.stringify({ userToPost }, null, 4),
             filenameErrorOnPush
         );
         log.error(`Save errors in csv: `);
-        await UserMonitoringFileResourceUtils.savePermissionFixerToCsv(
-            userActionRequired,
-            `${csvErrorFilename}`
-        );
+        UserMonitoringFileResourceUtils.savePermissionFixerToCsv(userActionRequired, `${csvErrorFilename}`);
     }
 
     private async pushReportToDhis(
