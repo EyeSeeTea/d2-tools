@@ -102,6 +102,7 @@ export class RunUserPermissionUseCase {
             log.info(`Nothing to report. No invalid users found.`);
         }
     }
+
     private preProcessUsers(
         allUsers: PermissionFixerUser[],
         completeTemplateGroups: PermissionFixerTemplateGroupExtended[],
@@ -122,6 +123,7 @@ export class RunUserPermissionUseCase {
             return allUsers;
         }
     }
+
     async processUserRoles(
         options: PermissionFixerMetadataConfig,
         completeTemplateGroups: PermissionFixerTemplateGroupExtended[],
