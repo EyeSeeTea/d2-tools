@@ -70,14 +70,14 @@ export class PermissionFixerReportD2Repository implements PermissionFixerReportR
         );
 
         if (response?.status != "OK") {
-            this.saveUserErrorsOnLogFile(responseRoles.userProcessed);
+            await this.saveUserErrorsOnLogFile(responseRoles.userProcessed);
             throw new Error("Error on push report: " + JSON.stringify(response));
         } else {
             return response.status;
         }
     }
 
-    private saveUserErrorsOnLogFile(userActionRequired: UserMonitoringUserResponse[]) {
+    private async saveUserErrorsOnLogFile(userActionRequired: UserMonitoringUserResponse[]) {
         const userToPost: PermissionFixerUser[] = userActionRequired.map(item => {
             return item.fixedUser;
         });
@@ -87,7 +87,10 @@ export class PermissionFixerReportD2Repository implements PermissionFixerReportR
             filenameErrorOnPush
         );
         log.error(`Save errors in csv: `);
-        UserMonitoringFileResourceUtils.savePermissionFixerToCsv(userActionRequired, `${csvErrorFilename}`);
+        await UserMonitoringFileResourceUtils.savePermissionFixerToCsv(
+            userActionRequired,
+            `${csvErrorFilename}`
+        );
     }
 
     private async pushReportToDhis(
