@@ -1,8 +1,9 @@
+import { expect, it, beforeEach, afterEach } from "vitest";
+
 import { DomLocalStorageAdapter } from "../DomLocalStorageAdapter";
 
 const storeName = "testStore";
 const options = { name: "testDB", version: 1, keyPath: "id", objectStores: [storeName] };
-DomLocalStorageAdapter.localStorage = localStorage;
 
 let testCnt = 0;
 beforeEach(() => {

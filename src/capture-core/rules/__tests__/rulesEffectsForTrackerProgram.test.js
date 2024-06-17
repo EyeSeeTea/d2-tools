@@ -1,3 +1,5 @@
+import { expect, test } from "vitest";
+
 import { rulesEngine } from "../rulesEngine";
 
 test("TEI rules engine effects with functions and effects", () => {

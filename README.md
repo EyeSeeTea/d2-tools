@@ -401,7 +401,9 @@ yarn start users migrate \
 
 ## User monitoring
 
-### Execution:
+### Users Permissions Fixer and 2FA Reporter
+
+#### Execution:
 
 ```
 yarn install
@@ -413,7 +415,7 @@ or
 yarn start usermonitoring run-2fa-reporter --config-file config.json
 ```
 
-### Debug:
+#### Debug:
 
 ```
 yarn install
@@ -424,7 +426,7 @@ LOG_LEVEL=debug node --inspect-brk dist/index.js usermonitoring run-users-monito
 LOG_LEVEL=debug node --inspect-brk dist/index.js usermonitoring run-2fa-reporter   --config-file config.json
 ```
 
-### Requirements:
+#### Requirements:
 
 Use node 16:
 
@@ -444,7 +446,7 @@ A config json file to get the user/password and server:
 }
 ```
 
-### run-2fa-reporter Datastore:
+#### run-2fa-reporter Datastore:
 
 d2-tools -> two-factor-monitoring:
 
@@ -467,7 +469,7 @@ The datastore must contain:
 }
 ```
 
-### run-users-monitoring Datastore:
+#### run-users-monitoring Datastore:
 
 d2-tools -> permission-fixer:
 
@@ -584,6 +586,91 @@ Note: the names are used only to make easy understand and debug the keys.
       }
     }
   ]
+}
+```
+
+### Users Authorities Monitoring
+
+#### Execution:
+
+```bash
+yarn install
+
+yarn build
+
+yarn start usermonitoring run-authorities-monitoring --config-file config.json
+
+# To get the debug logs and store them in a file use:
+LOG_LEVEL=debug yarn start usermonitoring run-authorities-monitoring --config-file config.json &> authorities-monitoring.log
+```
+
+#### Parameters:
+
+-   `--config-file`: Connection and webhook config file.
+-   `-s` | `--set-datastore`: Write users data to datastore, use in script setup. It assumes there is a monitoring config in d2-tools/authorities-monitor.
+
+#### Requirements:
+
+A config file with the access info of the server and the message webhook details:
+
+```JSON
+{
+    "URL": {
+        "username": "user",
+        "password": "passwd",
+        "server": "https://dhis.url/"
+    },
+    "WEBHOOK": {
+        "ms_url": "http://webhook.url/",
+        "proxy": "http://proxy.url/",
+        "server_name": "INSTANCE_NAME"
+    }
+}
+```
+
+This reports stores data into the `d2-tools.authorities-monitor` datastore. This key needs to be setup before the first run to get a correct report.
+Its possible to leave `usersByAuthority` empty and use the `-s` flag to populate it.
+
+A sample:
+
+```JSON
+{
+  "usersByAuthority": {
+    "AUTH1": [
+      {
+        "id": "lJf6FW6vtDD",
+        "name": "fake user 1",
+        "userRoles": [
+          {
+            "id": "So7ZSqi9ovy",
+            "name": "Role 1"
+          }
+        ]
+      },
+      {
+        "id": "wXGwwP53ngu",
+        "name": "fake user 2",
+        "userRoles": [
+          {
+            "id": "So7ZSqi9ovy",
+            "name": "Role 1"
+          }
+        ]
+      }
+    ],
+    "AUTH2": [
+      {
+        "id": "wXGwwP53ngu",
+        "name": "fake user 2",
+        "userRoles": [
+          {
+            "id": "So7ZSqi9ovy",
+            "name": "Role 1"
+          }
+        ]
+      }
+    ]
+  }
 }
 ```
 

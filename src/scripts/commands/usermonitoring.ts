@@ -1,5 +1,5 @@
 import "json5/lib/register";
-import { command, subcommands, option, string } from "cmd-ts";
+import { command, subcommands, option, string, boolean, flag } from "cmd-ts";
 
 import { getD2Api } from "scripts/common";
 import log from "utils/log";
@@ -17,12 +17,19 @@ import { UserMonitoringProgramD2Repository } from "data/user-monitoring/common/U
 import { TwoFactorUserD2Repository } from "data/user-monitoring/two-factor-monitoring/TwoFactorUserD2Repository";
 import { PermissionFixerUserD2Repository } from "data/user-monitoring/permission-fixer/PermissionFixerUserD2Repository";
 
+import { AuthoritiesMonitoringConfigD2Repository } from "data/user-monitoring/authorities-monitoring/AuthoritiesMonitoringConfigD2Repository";
+import { UserRolesD2Repository } from "data/user-monitoring/authorities-monitoring/UserRolesD2Repository";
+import { MessageMSTeamsRepository } from "data/user-monitoring/authorities-monitoring/MessageMSTeamsRepository";
+import { MSTeamsWebhookOptions } from "data/user-monitoring/entities/MSTeamsWebhookOptions";
+import { MonitorUsersByAuthorityUseCase } from "domain/usecases/user-monitoring/authorities-monitoring/MonitorUsersByAuthorityUseCase";
+
 export function getCommand() {
     return subcommands({
         name: "users-monitoring",
         cmds: {
             "run-permissions-fixer": runUsersMonitoringCmd,
             "run-2fa-reporter": run2FAReporterCmd,
+            "run-authorities-monitoring": runAuthoritiesMonitoring,
         },
     });
 }
@@ -89,6 +96,42 @@ const runUsersMonitoringCmd = command({
     },
 });
 
+const runAuthoritiesMonitoring = command({
+    name: "run-authorities-monitoring",
+    description:
+        "Run user authorities monitoring, a --config-file must be provided (usersmonitoring run-permissions-fixer --config-file config.json)",
+    args: {
+        config_file: option({
+            type: string,
+            long: "config-file",
+            description: "Config file",
+        }),
+        setDataStore: flag({
+            type: boolean,
+            short: "s",
+            long: "set-datastore",
+            description:
+                "Write users data to datastore, use in script setup. It assumes there is a monitoring config in d2-tools/user-monitoring",
+        }),
+    },
+
+    handler: async args => {
+        const auth = getAuthFromFile(args.config_file);
+        const webhook = getWebhookConfFromFile(args.config_file);
+        const api = getD2Api(auth.apiurl);
+        const UserRolesRepository = new UserRolesD2Repository(api);
+        const externalConfigRepository = new AuthoritiesMonitoringConfigD2Repository(api);
+        const MessageRepository = new MessageMSTeamsRepository(webhook);
+
+        log.info(`Run user authorities monitoring`);
+        await new MonitorUsersByAuthorityUseCase(
+            UserRolesRepository,
+            externalConfigRepository,
+            MessageRepository
+        ).execute(args.setDataStore);
+    },
+});
+
 function getAuthFromFile(config_file: string): UserMonitoringAuth {
     const fs = require("fs");
     const configJSON = JSON.parse(fs.readFileSync("./" + config_file, "utf8"));
@@ -99,6 +142,20 @@ function getAuthFromFile(config_file: string): UserMonitoringAuth {
 
     return {
         apiurl: apiurl,
+    };
+}
+
+function getWebhookConfFromFile(config_file: string): MSTeamsWebhookOptions {
+    const fs = require("fs");
+    const configJSON = JSON.parse(fs.readFileSync("./" + config_file, "utf8"));
+    const ms_url = configJSON["WEBHOOK"]["ms_url"];
+    const proxy = configJSON["WEBHOOK"]["proxy"];
+    const server_name = configJSON["WEBHOOK"]["server_name"];
+
+    return {
+        ms_url: ms_url,
+        proxy: proxy,
+        server_name: server_name,
     };
 }
 

@@ -1,3 +1,5 @@
+import { it, expect, test, beforeEach, afterEach } from "vitest";
+
 import indexedDB from "fake-indexeddb";
 import { IndexedDBAdapter } from "../IndexedDBAdapter";
 
@@ -21,6 +23,7 @@ Tests are disabled because fake-indexeddb is having issues with jest 27 (that is
 https://github.com/dumbmatter/fakeIndexedDB/issues/64
 https://github.com/dumbmatter/fakeIndexedDB/issues/67
 
+*/
 
 it('open IndexedDB without error', async () => {
     const idbAdapter = new IndexedDBAdapter(options);
@@ -131,4 +134,3 @@ it('set to fail because db not open', async () => {
         expect(error).toBeDefined();
     }
 });
-*/
