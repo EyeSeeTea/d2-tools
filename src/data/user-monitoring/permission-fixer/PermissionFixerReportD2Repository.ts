@@ -1,4 +1,3 @@
-import { FileUploadParameters, Files } from "@eyeseetea/d2-api/api/files";
 import { D2Api } from "types/d2-api";
 import log from "utils/log";
 import _ from "lodash";
@@ -83,7 +82,7 @@ export class PermissionFixerReportD2Repository implements PermissionFixerReportR
             return item.fixedUser;
         });
         log.error(`Save jsons on import error: ${filenameErrorOnPush}`);
-        await UserMonitoringFileResourceUtils.saveInJsonFormat(
+        UserMonitoringFileResourceUtils.saveInJsonFormat(
             JSON.stringify({ userToPost }, null, 4),
             filenameErrorOnPush
         );
