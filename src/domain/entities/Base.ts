@@ -6,6 +6,7 @@ export type NamedRef = { id: Id; name: string };
 
 export type Path = string;
 export type Username = string;
+export type StringDateTime = string;
 
 export type IndexedById<T> = Record<Id, T>;
 

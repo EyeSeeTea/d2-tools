@@ -1,4 +1,111 @@
-// Jest Snapshot v1, https://goo.gl/fbAQLP
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`getApplicableRuleEffectsForEventProgram > RulesEngine called with computed arguments from getApplicableRuleEffectsForEventProgram 1`] = `
+{
+  "currentEvent": {
+    "da1Id": "currentEventText",
+    "dueDate": "2021-05-31T09:51:38.134",
+    "enrollmentId": "vVtmDlsu3me",
+    "enrollmentStatus": "ACTIVE",
+    "eventDate": "2021-05-31T00:00:00.000",
+    "eventId": "BxGzDJK3JqN",
+    "orgUnitId": "DiszpKrYNg8",
+    "orgUnitName": "Ngelehun CHC",
+    "programId": "IpHINAT79UW",
+    "programStageId": "A03MvHHogjR",
+    "programStageName": undefined,
+    "status": "ACTIVE",
+    "trackedEntityInstanceId": "vCGpQAWG17I",
+  },
+  "dataElements": {
+    "da1Id": {
+      "id": "da1Id",
+      "optionSetId": undefined,
+      "valueType": "TEXT",
+    },
+  },
+  "optionSets": {
+    "0": {
+      "displayName": undefined,
+      "id": "optionSet1",
+      "options": [],
+    },
+  },
+  "otherEvents": undefined,
+  "programRulesContainer": {
+    "constants": [
+      {
+        "id": "constantId1",
+        "value": "1",
+      },
+    ],
+    "programRuleVariables": [
+      {
+        "dataElementId": "UXz7xuGCEhU",
+        "displayName": "Test",
+        "id": "PUQZWgmQ0jx",
+        "programId": "IpHINAT79UW",
+        "programRuleVariableSourceType": "DATAELEMENT_NEWEST_EVENT_PROGRAM",
+        "useNameForOptionSet": true,
+      },
+      {
+        "dataElementId": "H6uSAMO5WLD",
+        "displayName": "apgarcomment",
+        "id": "aKpfPKSRQnv",
+        "programId": "IpHINAT79UW",
+        "programRuleVariableSourceType": "DATAELEMENT_NEWEST_EVENT_PROGRAM",
+        "useNameForOptionSet": true,
+      },
+      {
+        "dataElementId": "a3kGcGDCuk6",
+        "displayName": "apgarscore",
+        "id": "g2GooOydipB",
+        "programId": "IpHINAT79UW",
+        "programRuleVariableSourceType": "DATAELEMENT_NEWEST_EVENT_PROGRAM",
+        "useNameForOptionSet": true,
+      },
+    ],
+    "programRules": [
+      {
+        "condition": "true",
+        "displayName": "TestRule",
+        "id": "JJDQxgHuuL2",
+        "programId": "IpHINAT79UW",
+        "programRuleActions": [
+          {
+            "data": "#{Test}",
+            "id": "CQaifjkoFEU",
+            "location": "feedback",
+            "programRuleActionType": "DISPLAYTEXT",
+          },
+        ],
+      },
+    ],
+  },
+  "selectedEnrollment": undefined,
+  "selectedEntity": undefined,
+  "selectedOrgUnit": {
+    "code": "Ngelehun CHC",
+    "id": "DiszpKrYNg8",
+  },
+  "selectedUserRoles": [
+    "UYXOT4A7JMI",
+    "Ufph3mGRmMo",
+    "Euq3XfEIEbx",
+    "cUlTcejWree",
+    "aNk5AyC7ydy",
+    "TMK9CMZ2V98",
+    "Ql6Gew7eaX6",
+    "Pqoy4DLOdMK",
+    "DRdaVRtwmG5",
+    "jRWSNIHdKww",
+    "txB7vu1w2Pr",
+    "xJZBzAHI88H",
+    "XS0dNzuZmfH",
+  ],
+  "trackedEntityAttributes": undefined,
+}
+`;
 
 exports[`getApplicableRuleEffectsForEventProgram RulesEngine called with computed arguments from getApplicableRuleEffectsForEventProgram 1`] = `
 Object {

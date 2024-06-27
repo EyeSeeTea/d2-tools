@@ -1,3 +1,5 @@
+import { vi, describe, expect, test } from "vitest";
+
 import { setD2 } from "capture-core/d2/d2Instance";
 import {
     EventProgram,
@@ -11,7 +13,8 @@ import {
 } from "../../metaData";
 import { getApplicableRuleEffectsForEventProgram } from "..";
 
-const mockGetProgramRuleEffects = jest.fn().mockImplementation(() => [
+
+const mockGetProgramRuleEffects = vi.fn().mockImplementation(() => [
     {
         id: "effectId",
         type: "DISPLAYTEXT",
@@ -20,19 +23,19 @@ const mockGetProgramRuleEffects = jest.fn().mockImplementation(() => [
 ]);
 
 const mockOptionSet = new OptionSet("optionSet1", [new Option("option1", "opt1")]);
-jest.mock("capture-core-utils/rulesEngine/RulesEngine", () => ({
-    RulesEngine: jest
+vi.mock("capture-core-utils/rulesEngine/RulesEngine", () => ({
+    RulesEngine: vi
         .fn()
         .mockImplementation(() => ({
             getProgramRuleEffects: (...args) => mockGetProgramRuleEffects(...args),
         })),
 }));
 
-jest.mock("../../metaDataMemoryStores/constants/constants.store", () => ({
+vi.mock("../../metaDataMemoryStores/constants/constants.store", () => ({
     constantsStore: { get: () => [{ id: "constantId1", value: "1" }] },
 }));
 
-jest.mock("../../metaDataMemoryStores/optionSets/optionSets.store", () => ({
+vi.mock("../../metaDataMemoryStores/optionSets/optionSets.store", () => ({
     optionSetStore: { get: () => [mockOptionSet] },
 }));
 

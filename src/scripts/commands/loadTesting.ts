@@ -21,7 +21,7 @@ const homepagePlan: Plan = {
 
 This defines three sequential executions of src/hars/homepage.har, with 1/50/100 concurrent users that start the HAR at random points in the 0<->60secs interval.
 
-2) Run: npx ts-node src/scripts/run-load-testing.ts http://host-used-in-har:8080 http://host-to-test:8081 hars homepagePlan
+2) Run script
 
 Plan-results: homepage - window=60 secs - users=1 | mean-time=6.4 s | errors=0/72 (0.00 %)
 Plan-results: homepage - window=60 secs - users=10 | mean-time=8.8 s | errors=0/720 (0.00 %)
@@ -29,7 +29,7 @@ Plan-results: homepage - window=60 secs - users=50 | mean-time=7.0 s | errors=0/
 
 IDEA for the next iteration: to make the request more real, we could run real scenarios
 using a real browser (for example: headless chrome with puppeteer). Instead of HAR, we'd
-run javascript code that runs the scenario.
+execute javascript code that simulates the scenario.
 */
 
 export function getCommand() {

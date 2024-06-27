@@ -1,4 +1,4 @@
-import { Id, Identifiable } from "domain/entities/Base";
+import { Id, Identifiable, Ref } from "domain/entities/Base";
 import { DataSet, DataSetMetadata, DataSetToCompare } from "domain/entities/DataSet";
 
 export interface DataSetsRepository {
@@ -8,6 +8,7 @@ export interface DataSetsRepository {
     getComparableDataSets(ids: Id[]): Promise<Record<Id, DataSetToCompare>>;
     getSchema(): object;
     getByIdentifiables(values: Identifiable[]): Promise<DataSet[]>;
+    getByDataElements(dataSetElements: Id[]): Promise<Ref[]>;
 }
 
 export type OUCopyResult = "OK" | "ERROR" | "NO_CHANGE";
