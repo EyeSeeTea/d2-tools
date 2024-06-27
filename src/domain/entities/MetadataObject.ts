@@ -2,7 +2,7 @@ import { Maybe } from "utils/ts-utils";
 import { Id } from "./Base";
 import { Translation } from "./Translation";
 
-export type MetadataModel = string; // In DHIS2 backend, it's plural name. Ex: "dataElements".
+export type MetadataModel = string; // Ex: "dataElements".
 
 export interface MetadataObject {
     model: MetadataModel;
