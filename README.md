@@ -321,7 +321,7 @@ Save a HAR file in a browser (Chrome: Developer Tools -> Network tab -> Export H
 ]
 ```
 
-And run the scenarios against the same or a different DHIS2 instance:
+And run the specificied scenarios against the same or a different DHIS2 instance:
 
 ```shell
 $ yarn start loadTesting run \
