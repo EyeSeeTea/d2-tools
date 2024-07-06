@@ -2,7 +2,7 @@ import _ from "lodash";
 import log from "utils/log";
 import { Async } from "domain/entities/Async";
 
-import { MessageRepository } from "domain/repositories/user-monitoring/authorities-monitoring/MessageRepository";
+import { MessageRepository } from "domain/repositories/user-monitoring/common/MessageRepository";
 import { UserRolesRepository } from "domain/repositories/user-monitoring/authorities-monitoring/UserRolesRepository";
 import { AuthoritiesMonitoringConfigRepository } from "domain/repositories/user-monitoring/authorities-monitoring/AuthoritiesMonitoringConfigRepository";
 
