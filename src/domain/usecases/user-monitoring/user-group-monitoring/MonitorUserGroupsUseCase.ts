@@ -107,19 +107,19 @@ export class MonitorUserGroupsUseCase {
                 log.info("Report: No changes.");
             } else {
                 const messages = this.makeMessages(userGroupsChanges);
-                // const teamsStatus = await this.MessageRepository.sendMessage(messages);
-                // if (teamsStatus) {
-                //     log.info(`Message sent to MSTeams`);
-                // }
+                const teamsStatus = await this.MessageRepository.sendMessage(messages);
+                if (teamsStatus) {
+                    log.info(`Message sent to MSTeams`);
+                }
 
                 log.info(`Report:\n${messages}`);
             }
         }
 
-        // log.info("Updating datastore...");
-        // await new SaveUserGroupsMonitoringConfigUseCase(this.externalConfigRepository).execute(
-        //     options,
-        //     userGroups
-        // );
+        log.info("Updating datastore...");
+        await new SaveUserGroupsMonitoringConfigUseCase(this.externalConfigRepository).execute(
+            options,
+            userGroups
+        );
     }
 }

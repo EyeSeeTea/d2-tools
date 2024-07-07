@@ -668,6 +668,58 @@ A sample:
 }
 ```
 
+### User Groups Monitoring
+
+This script will compare the metadata of the monitored userGroups with the version stored in the datastore and generate a report of the changes. This report will be sent to the MS Teams channel set in the webhook config section. Then the new version of the metadata will be stored in the datastore.
+
+#### Execution:
+
+```bash
+yarn install
+
+yarn build
+
+yarn start usermonitoring run-user-group-monitoring --config-file config.json
+
+# To get the debug logs and store them in a file use:
+LOG_LEVEL=debug yarn start usermonitoring run-user-group-monitoring --config-file config.json &> user-group-monitoring.log
+```
+
+#### Parameters:
+
+-   `--config-file`: Connection and webhook config file.
+-   `-s` | `--set-datastore`: Write usergroups data to datastore, use in script setup. It assumes there is a monitoring config in d2-tools/user-groups-monitoring.
+
+#### Requirements:
+
+A config file with the access info of the server and the message webhook details:
+
+```JSON
+{
+    "URL": {
+        "username": "user",
+        "password": "passwd",
+        "server": "https://dhis.url/"
+    },
+    "WEBHOOK": {
+        "ms_url": "http://webhook.url/",
+        "proxy": "http://proxy.url/",
+        "server_name": "INSTANCE_NAME"
+    }
+}
+```
+
+This reports stores data into the `d2-tools.user-groups-monitoring` datastore. This key needs to be setup before the first run to get a correct report.
+Its possible to leave `monitoredUserGroups` empty and use the `-s` flag to populate it.
+
+The report, potentially, has tree sections for each user group:
+
+-   New entries: JSON with the properties that were unset or empty and changed.
+-   Modified fields: This section has two JSONs, one showing the old values and one with the news.
+-   User assignment changes: This section will show the users lost and added to the group.
+
+If a section is empty it will be omited.
+
 ## Move Attributes from a Program
 
 Get all the TEIS in the program and move the value from the attribute in the argument `--from-attribute-id` to the attribute `--to-attribute-id`. Then delete the value in `--from-attribute-id`.
