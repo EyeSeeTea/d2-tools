@@ -1,32 +1,37 @@
 import { UserGroup, UserGroupDiff } from "domain/entities/user-monitoring/user-group-monitoring/UserGroups";
 
 export const emptyDiff: UserGroupDiff = {
-    id: "UfhhwZK73Lg",
+    id: "QW4BriFFvLi",
     name: "WIDP IT team",
-    changedProps: {},
+    changedPropsLost: {},
+    changedPropsAdded: {},
+    usersChanges: {
+        users_Lost: [],
+        users_Added: [],
+    },
     newProps: {},
 };
 
 export const minimalUserGroup: UserGroup = {
-    id: "UfhhwZK73Lg",
+    id: "QW4BriFFvLi",
     name: "WIDP IT team",
 };
 
 export const userGroup1: UserGroup = {
     created: "2020-01-06T09:56:43.579",
     lastUpdated: "2024-06-10T21:31:09.850",
-    name: "WIDP IT team",
-    id: "UfhhwZK73Lg",
-    href: "http://localhost:8080/api/userGroups/UfhhwZK73Lg",
-    displayName: "WIDP IT team",
+    name: "Tech Team Alpha",
+    id: "id123",
+    href: "http://example.com/api/userGroups/id123",
+    displayName: "Tech Team Alpha",
     publicAccess: "--------",
     externalAccess: false,
     favorite: false,
     lastUpdatedBy: {
-        displayName: "Ignacio del Cano Costa",
-        name: "Ignacio del Cano Costa",
-        id: "kD52FGwJgDF",
-        username: "idelcano",
+        displayName: "User Alpha",
+        name: "User Alpha",
+        id: "user01",
+        username: "user.alpha",
     },
     access: {
         read: true,
@@ -37,27 +42,27 @@ export const userGroup1: UserGroup = {
         manage: true,
     },
     sharing: {
-        owner: "ilJDyuqlwDC",
+        owner: "owner01",
         userGroups: {
-            L2K8KDwssiB: {
-                displayName: "NTD user management",
+            group01: {
+                displayName: "Project Management Team",
                 access: "r-------",
-                id: "L2K8KDwssiB",
+                id: "group01",
             },
-            L5dlGQ4m5av: {
-                displayName: "WIDP User Manager",
+            group02: {
+                displayName: "Development Team",
                 access: "r-------",
-                id: "L5dlGQ4m5av",
+                id: "group02",
             },
-            UfhhwZK73Lg: {
-                displayName: "WIDP IT team",
+            id123: {
+                displayName: "Tech Team Alpha",
                 access: "rw------",
-                id: "UfhhwZK73Lg",
+                id: "id123",
             },
-            sCjEPgiOhP1: {
-                displayName: "WIDP admins",
+            group03: {
+                displayName: "Operations Team",
                 access: "r-------",
-                id: "sCjEPgiOhP1",
+                id: "group03",
             },
         },
         external: false,
@@ -65,78 +70,78 @@ export const userGroup1: UserGroup = {
         users: {},
     },
     createdBy: {
-        displayName: "Lise GROUT",
-        name: "Lise GROUT",
-        id: "ilJDyuqlwDC",
-        username: "lise.grout",
+        displayName: "Alex Doe",
+        name: "Alex Doe",
+        id: "owner01",
+        username: "alex.doe",
     },
     user: {
-        displayName: "Lise GROUT",
-        name: "Lise GROUT",
-        id: "ilJDyuqlwDC",
-        username: "lise.grout",
+        displayName: "Alex Doe",
+        name: "Alex Doe",
+        id: "owner01",
+        username: "alex.doe",
     },
     favorites: [],
     userGroupAccesses: [
         {
             access: "r-------",
-            userGroupUid: "L2K8KDwssiB",
-            displayName: "NTD user management",
-            id: "L2K8KDwssiB",
+            userGroupUid: "group01",
+            displayName: "Project Management Team",
+            id: "group01",
         },
         {
             access: "r-------",
-            userGroupUid: "L5dlGQ4m5av",
-            displayName: "WIDP User Manager",
-            id: "L5dlGQ4m5av",
+            userGroupUid: "group02",
+            displayName: "Development Team",
+            id: "group02",
         },
         {
             access: "r-------",
-            userGroupUid: "sCjEPgiOhP1",
-            displayName: "WIDP admins",
-            id: "sCjEPgiOhP1",
+            userGroupUid: "group03",
+            displayName: "Operations Team",
+            id: "group03",
         },
         {
             access: "rw------",
-            userGroupUid: "UfhhwZK73Lg",
-            displayName: "WIDP IT team",
-            id: "UfhhwZK73Lg",
+            userGroupUid: "id123",
+            displayName: "Tech Team Alpha",
+            id: "id123",
         },
     ],
     managedByGroups: [
         {
-            id: "JusJWdDa1LM",
+            id: "managerGroup01",
         },
     ],
     attributeValues: [],
     users: [
         {
-            name: "Foche Ignacio",
-            id: "H4atNsEuKxP",
+            name: "John Smith",
+            id: "user02",
         },
         {
-            name: "Nazar Shandra",
-            id: "hfaMYUsDm8u",
+            name: "Jane Doe",
+            id: "user03",
         },
         {
-            name: "Marc GARNICA CAPARROS",
-            id: "UrYtDCrhioH",
+            name: "Mike Johnson",
+            id: "user04",
         },
         {
-            name: "Pablo Foche",
-            id: "Qu9goywu6cV",
+            name: "Emily Davis",
+            id: "user05",
         },
         {
-            name: "Bot Basic access",
-            id: "QiUHDbdHdBU",
+            name: "Chris Brown",
+            id: "user06",
         },
         {
-            name: "user dev",
-            id: "smGarTiKDdV",
+            name: "Pat Taylor",
+            id: "user07",
         },
         {
-            name: "Bot Automated-Tasks",
-            id: "bI1uY3KuAKV",
+            name: "Sam Robin",
+            id: "user08",
         },
     ],
     managedGroups: [],
