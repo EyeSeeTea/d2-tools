@@ -1,8 +1,8 @@
 import { UserGroup, UserGroupDiff } from "domain/entities/user-monitoring/user-group-monitoring/UserGroups";
 
 export const emptyDiff: UserGroupDiff = {
-    id: "QW4BriFFvLi",
-    name: "WIDP IT team",
+    id: "id123",
+    name: "Tech Team Alpha",
     changedPropsLost: {},
     changedPropsAdded: {},
     usersChanges: {
@@ -13,8 +13,8 @@ export const emptyDiff: UserGroupDiff = {
 };
 
 export const minimalUserGroup: UserGroup = {
-    id: "QW4BriFFvLi",
-    name: "WIDP IT team",
+    id: "id123",
+    name: "Tech Team Alpha",
 };
 
 export const userGroup1: UserGroup = {
