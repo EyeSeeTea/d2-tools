@@ -28,6 +28,7 @@
         "d2-utilizr": "^0.2.16",
         "file-system-cache": "^2.0.0",
         "json-diff": "^0.7.3",
+        "jsonfile": "^6.1.0",
         "lodash": "^4.17.21",
         "loglevel": "^1.8.0",
         "luxon": "3.4.2",
