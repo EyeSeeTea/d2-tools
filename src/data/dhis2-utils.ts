@@ -1,7 +1,5 @@
-import { HttpResponse } from "@eyeseetea/d2-api/api/common";
 import { EventsPostResponse } from "@eyeseetea/d2-api/api/events";
 import { CancelableResponse } from "@eyeseetea/d2-api/repositories/CancelableResponse";
-import { Id } from "domain/entities/Base";
 import _ from "lodash";
 import { MetadataResponse } from "../types/d2-api";
 import log from "utils/log";
