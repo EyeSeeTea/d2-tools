@@ -763,3 +763,17 @@ File option can be a file or directory path, if its a directory path the file wi
 CSV headers:
 
 dataElement ID | dataElement Name | categoryOptionCombo ID | categoryOptionCombo Name | Value
+
+## Tracked Entities
+
+### Transfer
+
+Transfer tracked entities to another org unit, using a CSV as source data (expected columns: trackedEntityId, newOrgUnitId):
+
+```console
+shell:~$ yarn start trackedEntities transfer \
+  --url=http://localhost:8080 \
+  --auth="USER:PASSWORD"  \
+  --input-file=transfers.csv \
+  --post
+```
