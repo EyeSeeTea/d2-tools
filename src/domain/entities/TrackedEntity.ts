@@ -13,3 +13,8 @@ export type AttributeValue = {
     value: string;
     storedBy: string;
 };
+
+export type TrackedEntityTransfer = {
+    trackedEntityId: Id;
+    newOrgUnitId: Id;
+};

@@ -33,7 +33,7 @@ export class UserMonitoringFileResourceUtils {
     private static formatDate(date: Date): string {
         return date
             .toLocaleString()
-            .replace(/[ :\/\\,-]/g, "_")
+            .replace(/[ :/\\,-]/g, "_")
             .replace("\\", "_");
     }
 

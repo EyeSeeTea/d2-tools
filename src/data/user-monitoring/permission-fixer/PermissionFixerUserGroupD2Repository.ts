@@ -1,3 +1,4 @@
+import _ from "lodash";
 import { D2Api } from "@eyeseetea/d2-api/2.36";
 import log from "utils/log";
 import { PermissionFixerUserGroupExtended } from "domain/entities/user-monitoring/permission-fixer/PermissionFixerUserGroupExtended";
@@ -26,15 +27,15 @@ export class PermissionFixerUserGroupD2Repository implements PermissionFixerUser
     async save(userGroup: PermissionFixerUserGroupExtended): Async<string> {
         try {
             const response = await this.api.models.userGroups.put(userGroup).getData();
-            if (response.status == "OK") {
+            if (_.isEmpty(response.errorReports)) {
                 log.info("Users added to minimal group");
             } else {
                 log.error("Error adding users to minimal group");
             }
 
-            log.info(JSON.stringify(response.response));
+            log.info(JSON.stringify(response));
 
-            return response.status;
+            return "OK";
         } catch (error) {
             console.debug(error);
             return "ERROR";

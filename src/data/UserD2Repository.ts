@@ -70,7 +70,7 @@ export class UserD2Repository implements UserRepository {
 
     async saveAll(users: User[]): Async<Stats> {
         const userToSaveIds = users.map(user => user.id);
-        const stats = await getInChunks<Stats>(userToSaveIds, async userIds => {
+        const stats = await getInChunks<string, Stats>(userToSaveIds, async userIds => {
             return this.api.metadata
                 .get({
                     users: {
