@@ -1,4 +1,3 @@
-import { HttpResponse } from "@eyeseetea/d2-api/api/common";
 import { EventsPostResponse } from "@eyeseetea/d2-api/api/events";
 import { CancelableResponse } from "@eyeseetea/d2-api/repositories/CancelableResponse";
 import { Id } from "domain/entities/Base";
@@ -29,8 +28,8 @@ export function getData<T>(d2Response: CancelableResponse<T>): Promise<T> {
     return d2Response.getData();
 }
 
-export function checkPostEventsResponse(res: HttpResponse<EventsPostResponse>): void {
-    const importMessages = _(res.response.importSummaries || [])
+export function checkPostEventsResponse(res: EventsPostResponse): void {
+    const importMessages = _(res.importSummaries || [])
         .map(importSummary =>
             importSummary.status !== "SUCCESS"
                 ? _.compact([
@@ -42,8 +41,8 @@ export function checkPostEventsResponse(res: HttpResponse<EventsPostResponse>): 
         .compact()
         .value();
 
-    if (res.status !== "OK") {
-        const msg = [`POST /events error`, res.message, ...importMessages].join("\n") || "Unknown error";
+    if (res.status !== "SUCCESS") {
+        const msg = [`POST /events error`, ...importMessages].join("\n") || "Unknown error";
         log.error(msg);
     }
 }
