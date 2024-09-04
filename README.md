@@ -321,7 +321,7 @@ Save a HAR file in a browser (Chrome: Developer Tools -> Network tab -> Export H
 ]
 ```
 
-And run the scenarios against the same or a different DHIS2 instance:
+And run the specificied scenarios against the same or a different DHIS2 instance:
 
 ```shell
 $ yarn start loadTesting run \
@@ -450,9 +450,9 @@ A config json file to get the user/password and server:
 
 d2-tools -> two-factor-monitoring:
 
-A program id with the id of the program in dhis
+A push program variable with the id of the program in dhis
 
-A group id to filter the users that should have two factor activated
+A two factor group to filter the users that should have two factor activated
 
 The datastore must contain:
 
@@ -488,14 +488,19 @@ List of excluded users (the script will ignore them) (could be an empty list [])
 A minimum group to add that group to the users without any template group (WIDP requirement)
 
 A minimum role to add that role to the users without any role (DHIS requirement)
-
-A boolean variable push_report to determine if the script must send the report after processing all users
-
-A push_program_id variable with the program ID to send the report
+A pushProgram variable with the program ID to send the report
 
 A list of templates (user with the valid roles, and group to identify which users could use those roles).
 
 A list with flags to control the script (permissionFixerConfig).
+
+The pushReport boolean variable determines whether the script should send the report after processing all users.
+
+The pushFixedUserGroups boolean variable enables pushing fixed user groups for users who do not have a WIDP template user group.
+
+The pushFixedUsersRoles boolean variable allows the pushing of fixed user roles.
+
+The forceMinimalGroupForUsersWithoutGroup boolean variable determines how to handle users with invalid user groups. If set to true, it treats these users as if they are assigned to the minimal group without updating their user group. If set to false, it assigns the minimal group to users without a template user group on the server.
 
 An example of the datastore:
 
@@ -560,6 +565,7 @@ Note: the names are used only to make easy understand and debug the keys.
     "name": "Role name"
   },
   "permissionFixerConfig":{
+    "forceMinimalGroupForUsersWithoutGroup": true,
     "pushFixedUserGroups": false,
     "pushFixedUsersRoles": false,
     "pushReport": true

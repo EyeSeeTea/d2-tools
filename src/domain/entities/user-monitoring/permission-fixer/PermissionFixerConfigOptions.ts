@@ -21,4 +21,5 @@ export interface PermissionFixerConfig {
     pushReport: boolean;
     pushFixedUsersRoles: boolean;
     pushFixedUserGroups: boolean;
+    forceMinimalGroupForUsersWithoutGroup: boolean;
 }
