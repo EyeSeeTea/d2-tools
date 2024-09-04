@@ -19,10 +19,11 @@ export class TwoFactorUserD2Repository implements TwoFactorUserRepository {
             )
             .getData();
         return responses["users"].map(user => {
+            const twoFA = user.userCredentials.twoFA || user.userCredentials.twoFactorEnabled;
             return {
                 id: user.id,
                 username: user.username,
-                twoFA: user.twoFA,
+                twoFA: twoFA ?? false,
             };
         });
     }
