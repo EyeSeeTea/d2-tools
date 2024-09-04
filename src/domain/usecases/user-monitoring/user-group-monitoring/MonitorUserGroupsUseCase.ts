@@ -1,7 +1,6 @@
 import _ from "lodash";
 import log from "utils/log";
 
-import { Id } from "domain/entities/Base";
 import { Async } from "domain/entities/Async";
 import { UserGroup, UserGroupDiff } from "domain/entities/user-monitoring/user-group-monitoring/UserGroups";
 import { UserGroupsMonitoringOptions } from "domain/entities/user-monitoring/user-group-monitoring/UserGroupsMonitoringOptions";
@@ -10,10 +9,10 @@ import { MessageRepository } from "domain/repositories/user-monitoring/common/Me
 import { UserGroupRepository } from "domain/repositories/user-monitoring/user-group-monitoring/UserGroupRepository";
 import { UserGroupsMonitoringConfigRepository } from "domain/repositories/user-monitoring/user-group-monitoring/UserGroupsMonitoringConfigRepository";
 
-import { GetUserGroupsMonitoringConfigUseCase } from "./GetUserGroupsMonitoringConfigUseCase";
 import { GetUserGroupsUseCase } from "./GetUserGroupsUseCase";
-import { SaveUserGroupsMonitoringConfigUseCase } from "./SaveUserGroupsMonitoringConfigUseCase";
 import { CompareUserGroupsUseCase } from "./CompareUserGroupsUseCase";
+import { GetUserGroupsMonitoringConfigUseCase } from "./GetUserGroupsMonitoringConfigUseCase";
+import { SaveUserGroupsMonitoringConfigUseCase } from "./SaveUserGroupsMonitoringConfigUseCase";
 
 export class MonitorUserGroupsUseCase {
     constructor(
@@ -79,7 +78,7 @@ export class MonitorUserGroupsUseCase {
         const compareUserGroupsUseCase = new CompareUserGroupsUseCase();
 
         const userGroups: UserGroup[] = await getGroupsUseCase.execute(options.groupsToMonitor);
-        log.info("Retrieved user groups:");
+        log.info(`Retrieved user groups: ${userGroups.map(g => g.id).join(", ")}`);
 
         if (!setDataStore) {
             const userGroupsChanges = userGroups.flatMap(group => {

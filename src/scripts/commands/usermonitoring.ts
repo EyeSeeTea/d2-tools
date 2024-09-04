@@ -27,6 +27,10 @@ import { UserGroupD2Repository } from "data/user-monitoring/user-group-monitorin
 import { UserGroupsMonitoringConfigD2Repository } from "data/user-monitoring/user-group-monitoring/UserGroupsMonitoringConfigD2Repository";
 import { MonitorUserGroupsUseCase } from "domain/usecases/user-monitoring/user-group-monitoring/MonitorUserGroupsUseCase";
 
+import { UserD2Repository } from "data/user-monitoring/user-template-monitoring/UserD2Repository";
+import { UserTemplatesMonitoringConfigD2Repository } from "data/user-monitoring/user-template-monitoring/UserTemplatesMonitoringConfigD2Repository";
+import { MonitorUserTemplatesUseCase } from "domain/usecases/user-monitoring/user-template-monitoring/MonitorUserTemplatesUseCase";
+
 export function getCommand() {
     return subcommands({
         name: "users-monitoring",
@@ -35,6 +39,7 @@ export function getCommand() {
             "run-2fa-reporter": run2FAReporterCmd,
             "run-authorities-monitoring": runAuthoritiesMonitoring,
             "run-user-group-monitoring": runUserGroupMonitoringCmd,
+            "run-user-template-monitoring": runUserTemplateMonitoringCmd,
         },
     });
 }
@@ -126,13 +131,13 @@ const runAuthoritiesMonitoring = command({
         const api = getD2Api(auth.apiurl);
         const UserRolesRepository = new UserRolesD2Repository(api);
         const externalConfigRepository = new AuthoritiesMonitoringConfigD2Repository(api);
-        const MessageRepository = new MessageMSTeamsRepository(webhook);
+        const messageRepository = new MessageMSTeamsRepository(webhook);
 
         log.info(`Run user authorities monitoring`);
         await new MonitorUsersByAuthorityUseCase(
             UserRolesRepository,
             externalConfigRepository,
-            MessageRepository
+            messageRepository
         ).execute(args.setDataStore);
     },
 });
@@ -163,13 +168,50 @@ const runUserGroupMonitoringCmd = command({
 
         const userGroupsRepository = new UserGroupD2Repository(api);
         const externalConfigRepository = new UserGroupsMonitoringConfigD2Repository(api);
-        const MessageRepository = new MessageMSTeamsRepository(webhook);
+        const messageRepository = new MessageMSTeamsRepository(webhook);
 
         log.info(`Run User group monitoring`);
         await new MonitorUserGroupsUseCase(
             userGroupsRepository,
             externalConfigRepository,
-            MessageRepository
+            messageRepository
+        ).execute(args.setDataStore);
+    },
+});
+
+const runUserTemplateMonitoringCmd = command({
+    name: "run-user-template-monitoring",
+    description:
+        "Run user template monitoring, a --config-file must be provided (usermonitoring run-user-template-monitoring --config-file config.json)",
+    args: {
+        config_file: option({
+            type: string,
+            long: "config-file",
+            description: "Config file",
+        }),
+        setDataStore: flag({
+            type: boolean,
+            short: "s",
+            long: "set-datastore",
+            description:
+                "Write users templates to datastore, use in script setup. It assumes there is a monitoring config in d2-tools/user-groups-monitoring",
+        }),
+    },
+
+    handler: async args => {
+        const auth = getAuthFromFile(args.config_file);
+        const webhook = getWebhookConfFromFile(args.config_file);
+        const api = getD2Api(auth.apiurl);
+
+        const usersRepository = new UserD2Repository(api);
+        const externalConfigRepository = new UserTemplatesMonitoringConfigD2Repository(api);
+        const messageRepository = new MessageMSTeamsRepository(webhook);
+
+        log.info(`Run User template monitoring`);
+        await new MonitorUserTemplatesUseCase(
+            usersRepository,
+            externalConfigRepository,
+            messageRepository
         ).execute(args.setDataStore);
     },
 });

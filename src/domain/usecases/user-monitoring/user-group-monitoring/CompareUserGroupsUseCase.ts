@@ -57,7 +57,7 @@ export class CompareUserGroupsUseCase {
 
         _.forOwn(oldUserGroup, (value, key) => {
             if (_.has(newUserGroup, key)) {
-                const newValue = _.get(newUserGroup, key, undefined);
+                const newValue: any = _.get(newUserGroup, key, undefined);
 
                 if (!_.isEqual(value, newValue)) {
                     if (key === "users") {
