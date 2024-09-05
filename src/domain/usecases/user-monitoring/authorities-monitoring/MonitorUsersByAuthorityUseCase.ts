@@ -74,7 +74,10 @@ export class MonitorUsersByAuthorityUseCase {
                 log.info("Report: No changes.");
             } else {
                 const messages = this.makeMessages(newUsers, usersLosingAuth);
-                const teamsStatus = await this.MessageRepository.sendMessage(messages);
+                const teamsStatus = await this.MessageRepository.sendMessage(
+                    "AUTHORITIES-MONITORING",
+                    messages
+                );
                 if (teamsStatus) {
                     log.info(`Message sent to MSTeams`);
                 }

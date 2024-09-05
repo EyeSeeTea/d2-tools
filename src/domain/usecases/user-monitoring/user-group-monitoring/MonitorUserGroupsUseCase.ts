@@ -106,7 +106,10 @@ export class MonitorUserGroupsUseCase {
                 log.info("Report: No changes.");
             } else {
                 const messages = this.makeMessages(userGroupsChanges);
-                const teamsStatus = await this.MessageRepository.sendMessage(messages);
+                const teamsStatus = await this.MessageRepository.sendMessage(
+                    "USERGROUPS-MONITORING",
+                    messages
+                );
                 if (teamsStatus) {
                     log.info(`Message sent to MSTeams`);
                 }
