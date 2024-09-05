@@ -1,8 +1,8 @@
 import { D2UserGroup } from "@eyeseetea/d2-api/2.36";
-import { Access, Id, NamedRef, Ref } from "domain/entities/Base";
+import { Id, NamedRef, Ref } from "domain/entities/Base";
 export interface Sharing {
     owner: Id;
-    public: Access;
+    public: string;
     external: boolean;
     users: Record<Id, SharingUser>;
     userGroups: Record<Id, SharingUser>;
@@ -31,7 +31,7 @@ export type UserDetails = NamedRef & {
 
 export type SharingUser = {
     id: Id;
-    access: Access;
+    access: string;
     displayName: string;
 };
 

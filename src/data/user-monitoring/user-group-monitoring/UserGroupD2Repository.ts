@@ -2,7 +2,7 @@ import { Id } from "domain/entities/Base";
 import { Async } from "domain/entities/Async";
 import { UserGroup } from "domain/entities/user-monitoring/user-group-monitoring/UserGroups";
 import { UserGroupRepository } from "domain/repositories/user-monitoring/user-group-monitoring/UserGroupRepository";
-import { D2Api } from "@eyeseetea/d2-api/2.36";
+import { D2Api, MetadataPick, D2UserGroupSchema } from "@eyeseetea/d2-api/2.36";
 
 export class UserGroupD2Repository implements UserGroupRepository {
     constructor(private api: D2Api) {}
@@ -11,12 +11,25 @@ export class UserGroupD2Repository implements UserGroupRepository {
         const { userGroups } = await this.api.metadata
             .get({
                 userGroups: {
-                    fields: { $all: true, users: { id: true, name: true } },
+                    fields: userFields,
                     filter: { id: { in: ids } },
                 },
             })
             .getData();
 
-        return userGroups as UserGroup[];
+        return userGroups.map((userGroup: D2UserGroup) => {
+            return {
+                ...userGroup,
+                id: userGroup.id,
+                name: userGroup.name,
+            } as UserGroup;
+        });
     }
 }
+
+const userFields = { $all: true, users: { id: true, name: true } } as const;
+
+type D2UserGroup = {
+    id: Id;
+    name: string;
+} & Partial<MetadataPick<{ userGroups: { fields: typeof userFields } }>["userGroups"][number]>;
