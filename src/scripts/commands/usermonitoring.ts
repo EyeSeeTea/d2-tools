@@ -39,7 +39,7 @@ export function getCommand() {
             "run-2fa-reporter": run2FAReporterCmd,
             "run-authorities-monitoring": runAuthoritiesMonitoring,
             "run-user-group-monitoring": runUserGroupMonitoringCmd,
-            "run-user-template-monitoring": runUserTemplateMonitoringCmd,
+            "run-user-templates-monitoring": runUserTemplateMonitoringCmd,
         },
     });
 }
@@ -180,7 +180,7 @@ const runUserGroupMonitoringCmd = command({
 });
 
 const runUserTemplateMonitoringCmd = command({
-    name: "run-user-template-monitoring",
+    name: "run-user-templates-monitoring",
     description:
         "Run user template monitoring, a --config-file must be provided (usermonitoring run-user-template-monitoring --config-file config.json)",
     args: {
