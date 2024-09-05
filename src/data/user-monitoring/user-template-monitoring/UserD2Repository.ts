@@ -12,6 +12,7 @@ export class UserD2Repository implements UserRepository {
             .get({
                 fields: userFields,
                 filter: { username: { in: usernames } },
+                paging: false,
             })
             .getData();
 
