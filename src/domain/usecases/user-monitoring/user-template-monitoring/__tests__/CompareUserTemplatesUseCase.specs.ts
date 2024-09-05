@@ -34,7 +34,6 @@ describe("CompareUserTemplatesUseCase", () => {
 
     it("should compare user templates and return the differences", () => {
         const diff = useCase.execute(user1, user1Updated);
-        console.log(JSON.stringify(diff, null, 2));
 
         expect(diff).toEqual(expectedDiff);
     });

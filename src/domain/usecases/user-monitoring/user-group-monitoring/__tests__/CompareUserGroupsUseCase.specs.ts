@@ -34,5 +34,3 @@ describe("CompareUserGroupsUseCase", () => {
         expect(result).toEqual(userGroup1Diff);
     });
 });
-
-// TODO: Finish the tests
