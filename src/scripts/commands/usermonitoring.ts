@@ -23,13 +23,13 @@ import { MessageMSTeamsRepository } from "data/user-monitoring/common/MessageMST
 import { MSTeamsWebhookOptions } from "data/user-monitoring/entities/MSTeamsWebhookOptions";
 import { MonitorUsersByAuthorityUseCase } from "domain/usecases/user-monitoring/authorities-monitoring/MonitorUsersByAuthorityUseCase";
 
-import { UserGroupD2Repository } from "data/user-monitoring/user-group-monitoring/UserGroupD2Repository";
-import { UserGroupsMonitoringConfigD2Repository } from "data/user-monitoring/user-group-monitoring/UserGroupsMonitoringConfigD2Repository";
-import { MonitorUserGroupsUseCase } from "domain/usecases/user-monitoring/user-group-monitoring/MonitorUserGroupsUseCase";
+import { UserGroupD2Repository } from "data/user-monitoring/user-groups-monitoring/UserGroupD2Repository";
+import { UserGroupsMonitoringConfigD2Repository } from "data/user-monitoring/user-groups-monitoring/UserGroupsMonitoringConfigD2Repository";
+import { MonitorUserGroupsUseCase } from "domain/usecases/user-monitoring/user-groups-monitoring/MonitorUserGroupsUseCase";
 
-import { UserD2Repository } from "data/user-monitoring/user-template-monitoring/UserD2Repository";
-import { UserTemplatesMonitoringConfigD2Repository } from "data/user-monitoring/user-template-monitoring/UserTemplatesMonitoringConfigD2Repository";
-import { MonitorUserTemplatesUseCase } from "domain/usecases/user-monitoring/user-template-monitoring/MonitorUserTemplatesUseCase";
+import { UserD2Repository } from "data/user-monitoring/user-templates-monitoring/UserD2Repository";
+import { UserTemplatesMonitoringConfigD2Repository } from "data/user-monitoring/user-templates-monitoring/UserTemplatesMonitoringConfigD2Repository";
+import { MonitorUserTemplatesUseCase } from "domain/usecases/user-monitoring/user-templates-monitoring/MonitorUserTemplatesUseCase";
 
 export function getCommand() {
     return subcommands({
@@ -38,7 +38,7 @@ export function getCommand() {
             "run-permissions-fixer": runUsersMonitoringCmd,
             "run-2fa-reporter": run2FAReporterCmd,
             "run-authorities-monitoring": runAuthoritiesMonitoring,
-            "run-user-group-monitoring": runUserGroupMonitoringCmd,
+            "run-user-groups-monitoring": runUserGroupMonitoringCmd,
             "run-user-templates-monitoring": runUserTemplateMonitoringCmd,
         },
     });
@@ -143,9 +143,9 @@ const runAuthoritiesMonitoring = command({
 });
 
 const runUserGroupMonitoringCmd = command({
-    name: "run-user-group-monitoring",
+    name: "run-user-groups-monitoring",
     description:
-        "Run user group monitoring, a --config-file must be provided (usermonitoring run-user-group-monitoring --config-file config.json)",
+        "Run user group monitoring, a --config-file must be provided (usermonitoring run-user-groups-monitoring --config-file config.json)",
     args: {
         config_file: option({
             type: string,
@@ -182,7 +182,7 @@ const runUserGroupMonitoringCmd = command({
 const runUserTemplateMonitoringCmd = command({
     name: "run-user-templates-monitoring",
     description:
-        "Run user template monitoring, a --config-file must be provided (usermonitoring run-user-template-monitoring --config-file config.json)",
+        "Run user template monitoring, a --config-file must be provided (usermonitoring run-user-templates-monitoring --config-file config.json)",
     args: {
         config_file: option({
             type: string,
@@ -194,7 +194,7 @@ const runUserTemplateMonitoringCmd = command({
             short: "s",
             long: "set-datastore",
             description:
-                "Write users templates to datastore, use in script setup. It assumes there is a monitoring config in d2-tools/user-groups-monitoring",
+                "Write users templates to datastore, use in script setup. It assumes there is a monitoring config in d2-tools/user-templates-monitoring",
         }),
     },
 

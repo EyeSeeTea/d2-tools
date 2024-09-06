@@ -3,7 +3,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { user1, user1Updated, expectedDiff } from "./CompareUserTemplatesUseCase.data";
 
 import { CompareUserTemplatesUseCase } from "../CompareUserTemplatesUseCase";
-import { User, UserTemplateDiff } from "domain/entities/user-monitoring/user-template-monitoring/Users";
+import { User, UserTemplateDiff } from "domain/entities/user-monitoring/user-templates-monitoring/Users";
 
 describe("CompareUserTemplatesUseCase", () => {
     let useCase: CompareUserTemplatesUseCase;

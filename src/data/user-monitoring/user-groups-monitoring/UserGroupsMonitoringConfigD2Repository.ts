@@ -5,8 +5,8 @@ import { D2Api } from "@eyeseetea/d2-api/2.36";
 import { Async } from "domain/entities/Async";
 import { getObject } from "../common/GetDataStoreObjectByKey";
 import { d2ToolsNamespace, Namespace } from "data/externalConfig/Namespaces";
-import { UserGroupsMonitoringOptions } from "domain/entities/user-monitoring/user-group-monitoring/UserGroupsMonitoringOptions";
-import { UserGroupsMonitoringConfigRepository } from "domain/repositories/user-monitoring/user-group-monitoring/UserGroupsMonitoringConfigRepository";
+import { UserGroupsMonitoringOptions } from "domain/entities/user-monitoring/user-groups-monitoring/UserGroupsMonitoringOptions";
+import { UserGroupsMonitoringConfigRepository } from "domain/repositories/user-monitoring/user-groups-monitoring/UserGroupsMonitoringConfigRepository";
 
 export class UserGroupsMonitoringConfigD2Repository implements UserGroupsMonitoringConfigRepository {
     private api: D2Api;

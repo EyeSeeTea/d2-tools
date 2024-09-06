@@ -1,4 +1,4 @@
-import { User, UserTemplateDiff } from "domain/entities/user-monitoring/user-template-monitoring/Users";
+import { User, UserTemplateDiff } from "domain/entities/user-monitoring/user-templates-monitoring/Users";
 
 export const user1: User = {
     lastUpdated: "2024-06-10T10:25:27.228",

@@ -2,12 +2,12 @@ import _ from "lodash";
 import log from "utils/log";
 
 import { Async } from "domain/entities/Async";
-import { UserGroup, UserGroupDiff } from "domain/entities/user-monitoring/user-group-monitoring/UserGroups";
-import { UserGroupsMonitoringOptions } from "domain/entities/user-monitoring/user-group-monitoring/UserGroupsMonitoringOptions";
+import { UserGroup, UserGroupDiff } from "domain/entities/user-monitoring/user-groups-monitoring/UserGroups";
+import { UserGroupsMonitoringOptions } from "domain/entities/user-monitoring/user-groups-monitoring/UserGroupsMonitoringOptions";
 
 import { MessageRepository } from "domain/repositories/user-monitoring/common/MessageRepository";
-import { UserGroupRepository } from "domain/repositories/user-monitoring/user-group-monitoring/UserGroupRepository";
-import { UserGroupsMonitoringConfigRepository } from "domain/repositories/user-monitoring/user-group-monitoring/UserGroupsMonitoringConfigRepository";
+import { UserGroupRepository } from "domain/repositories/user-monitoring/user-groups-monitoring/UserGroupRepository";
+import { UserGroupsMonitoringConfigRepository } from "domain/repositories/user-monitoring/user-groups-monitoring/UserGroupsMonitoringConfigRepository";
 
 import { GetUserGroupsUseCase } from "./GetUserGroupsUseCase";
 import { CompareUserGroupsUseCase } from "./CompareUserGroupsUseCase";

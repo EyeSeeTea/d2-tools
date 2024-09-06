@@ -1,8 +1,8 @@
-import { UserGroupsMonitoringConfigRepository } from "domain/repositories/user-monitoring/user-group-monitoring/UserGroupsMonitoringConfigRepository";
+import { UserGroupsMonitoringConfigRepository } from "domain/repositories/user-monitoring/user-groups-monitoring/UserGroupsMonitoringConfigRepository";
 
 import { Async } from "domain/entities/Async";
-import { UserGroupsMonitoringOptions } from "domain/entities/user-monitoring/user-group-monitoring/UserGroupsMonitoringOptions";
-import { UserGroup } from "domain/entities/user-monitoring/user-group-monitoring/UserGroups";
+import { UserGroupsMonitoringOptions } from "domain/entities/user-monitoring/user-groups-monitoring/UserGroupsMonitoringOptions";
+import { UserGroup } from "domain/entities/user-monitoring/user-groups-monitoring/UserGroups";
 
 import { GetLogFormatDateUseCase } from "../GetLogFormatDateUseCase";
 

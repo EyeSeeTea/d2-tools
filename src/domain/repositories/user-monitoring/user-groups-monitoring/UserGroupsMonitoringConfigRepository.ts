@@ -1,4 +1,4 @@
-import { UserGroupsMonitoringOptions } from "domain/entities/user-monitoring/user-group-monitoring/UserGroupsMonitoringOptions";
+import { UserGroupsMonitoringOptions } from "domain/entities/user-monitoring/user-groups-monitoring/UserGroupsMonitoringOptions";
 
 export interface UserGroupsMonitoringConfigRepository {
     get(): Promise<UserGroupsMonitoringOptions>;

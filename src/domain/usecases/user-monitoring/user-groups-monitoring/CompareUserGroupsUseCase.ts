@@ -1,5 +1,5 @@
 import _ from "lodash";
-import { UserGroup, UserGroupDiff } from "domain/entities/user-monitoring/user-group-monitoring/UserGroups";
+import { UserGroup, UserGroupDiff } from "domain/entities/user-monitoring/user-groups-monitoring/UserGroups";
 
 export class CompareUserGroupsUseCase {
     constructor() {}

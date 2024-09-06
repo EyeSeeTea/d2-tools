@@ -3,12 +3,12 @@ import log from "utils/log";
 
 import { Async } from "domain/entities/Async";
 import { NamedRef } from "domain/entities/Base";
-import { User, UserTemplateDiff } from "domain/entities/user-monitoring/user-template-monitoring/Users";
-import { UserTemplatesMonitoringOptions } from "domain/entities/user-monitoring/user-template-monitoring/UserTemplatesMonitoringOptions";
+import { User, UserTemplateDiff } from "domain/entities/user-monitoring/user-templates-monitoring/Users";
+import { UserTemplatesMonitoringOptions } from "domain/entities/user-monitoring/user-templates-monitoring/UserTemplatesMonitoringOptions";
 
 import { MessageRepository } from "domain/repositories/user-monitoring/common/MessageRepository";
-import { UserRepository } from "domain/repositories/user-monitoring/user-template-monitoring/UserRepository";
-import { UserTemplatesMonitoringConfigRepository } from "domain/repositories/user-monitoring/user-template-monitoring/UserTemplatesMonitoringConfigRepository";
+import { UserRepository } from "domain/repositories/user-monitoring/user-templates-monitoring/UserRepository";
+import { UserTemplatesMonitoringConfigRepository } from "domain/repositories/user-monitoring/user-templates-monitoring/UserTemplatesMonitoringConfigRepository";
 
 import { GetUserTemplatesUseCase } from "./GetUserTemplatesUseCase";
 import { CompareUserTemplatesUseCase } from "./CompareUserTemplatesUseCase";

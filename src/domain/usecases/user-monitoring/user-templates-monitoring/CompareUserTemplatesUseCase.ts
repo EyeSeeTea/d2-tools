@@ -1,5 +1,5 @@
 import _ from "lodash";
-import { User, UserTemplateDiff } from "domain/entities/user-monitoring/user-template-monitoring/Users";
+import { User, UserTemplateDiff } from "domain/entities/user-monitoring/user-templates-monitoring/Users";
 
 export class CompareUserTemplatesUseCase {
     constructor() {}
