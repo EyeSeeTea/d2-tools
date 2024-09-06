@@ -8,6 +8,7 @@ import log from "utils/log";
 import { promiseMap, runMetadata } from "./dhis2-utils";
 import { D2ProgramRules } from "./d2-program-rules/D2ProgramRules";
 import { D2Tracker } from "./D2Tracker";
+import { Program, ProgramType } from "domain/entities/Program";
 
 type MetadataRes = { date: string } & { [k: string]: Array<{ id: string }> };
 
@@ -16,6 +17,25 @@ export class ProgramsD2Repository implements ProgramsRepository {
 
     constructor(private api: D2Api) {
         this.d2Tracker = new D2Tracker(this.api);
+    }
+
+    async get(options: { programTypes?: ProgramType[] }): Async<Program[]> {
+        const { programs } = await this.api.metadata
+            .get({
+                programs: {
+                    fields: {
+                        id: true,
+                        name: true,
+                        programType: true,
+                    },
+                    filter: {
+                        ...(options.programTypes ? { programType: { in: options.programTypes } } : {}),
+                    },
+                },
+            })
+            .getData();
+
+        return programs;
     }
 
     async export(options: { ids: Id[]; orgUnitIds: Id[] | undefined }): Async<ProgramExport> {

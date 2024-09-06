@@ -1,12 +1,23 @@
 import _ from "lodash";
 import { command, string, subcommands, option, optional, flag } from "cmd-ts";
 
-import { getApiUrlOption, getD2Api, StringsSeparatedByCommas } from "scripts/common";
+import {
+    getApiUrlOption,
+    getApiUrlOptions,
+    getD2Api,
+    getD2ApiFromArgs,
+    StringsSeparatedByCommas,
+} from "scripts/common";
 import { ProgramEventsD2Repository } from "data/ProgramEventsD2Repository";
 import { MoveEventsToOrgUnitUseCase } from "domain/usecases/MoveEventsToOrgUnitUseCase";
 import logger from "utils/log";
 import { UpdateEventDataValueUseCase } from "domain/usecases/UpdateEventDataValueUseCase";
 import { EventExportSpreadsheetRepository } from "data/EventExportSpreadsheetRepository";
+import { D2Api } from "types/d2-api";
+import { Id } from "domain/entities/Base";
+import { promiseMap } from "data/dhis2-utils";
+import { DetectExternalOrgUnitUseCase } from "domain/usecases/ProcessEventsOutsideEnrollmentOrgUnitUseCase";
+import { ProgramsD2Repository } from "data/ProgramsD2Repository";
 
 export function getCommand() {
     return subcommands({
@@ -14,9 +25,28 @@ export function getCommand() {
         cmds: {
             "move-to-org-unit": moveOrgUnitCmd,
             "update-events": updateEventsDataValues,
+            "detect-external-orgunits": detectExternalOrgUnitCmd,
         },
     });
 }
+
+const detectExternalOrgUnitCmd = command({
+    name: "detect-external-orgunits",
+    description: "Detect external organisation units",
+    args: {
+        ...getApiUrlOptions(),
+        post: flag({
+            long: "post",
+            description: "Fix events",
+            defaultValue: () => false,
+        }),
+    },
+    handler: async args => {
+        const api = getD2ApiFromArgs(args);
+        const programsRepository = new ProgramsD2Repository(api);
+        return new DetectExternalOrgUnitUseCase(api, programsRepository).execute(args);
+    },
+});
 
 const moveOrgUnitCmd = command({
     name: "move-to-org-unit",
