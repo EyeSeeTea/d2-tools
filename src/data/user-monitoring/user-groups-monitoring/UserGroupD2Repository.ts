@@ -2,7 +2,7 @@ import { Id } from "domain/entities/Base";
 import { Async } from "domain/entities/Async";
 import { UserGroup } from "domain/entities/user-monitoring/user-groups-monitoring/UserGroups";
 import { UserGroupRepository } from "domain/repositories/user-monitoring/user-groups-monitoring/UserGroupRepository";
-import { D2Api, MetadataPick, D2UserGroupSchema } from "@eyeseetea/d2-api/2.36";
+import { D2Api, MetadataPick } from "@eyeseetea/d2-api/2.36";
 
 export class UserGroupD2Repository implements UserGroupRepository {
     constructor(private api: D2Api) {}
