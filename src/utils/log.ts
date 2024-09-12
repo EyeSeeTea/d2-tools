@@ -3,6 +3,7 @@ import { isElementOfUnion, UnionFromValues } from "./ts-utils";
 const logLevels = ["debug", "info", "warn", "error"] as const;
 export type LogLevel = UnionFromValues<typeof logLevels>;
 
+// data layer -> domain layer
 const levelFromEnv = process.env["LOG_LEVEL"] || "";
 const level = isElementOfUnion(levelFromEnv, logLevels) ? levelFromEnv : "info";
 const levelIndex = logLevels.indexOf(level);
