@@ -18,6 +18,7 @@ import { Id } from "domain/entities/Base";
 import { promiseMap } from "data/dhis2-utils";
 import { DetectExternalOrgUnitUseCase } from "domain/usecases/ProcessEventsOutsideEnrollmentOrgUnitUseCase";
 import { ProgramsD2Repository } from "data/ProgramsD2Repository";
+import { RecodeBooleanDataValuesInEventsUseCase } from "domain/usecases/RecodeBooleanDataValuesInEventsUseCase";
 
 export function getCommand() {
     return subcommands({
@@ -26,6 +27,7 @@ export function getCommand() {
             "move-to-org-unit": moveOrgUnitCmd,
             "update-events": updateEventsDataValues,
             "detect-external-orgunits": detectExternalOrgUnitCmd,
+            "recode-boolean-data-values": recodeBooleanDataValues,
         },
     });
 }
@@ -142,5 +144,36 @@ const updateEventsDataValues = command({
         if (!args.csvPath) {
             logger.info(`Add --csv-path to generate a csv report`);
         }
+    },
+});
+
+const recodeBooleanDataValues = command({
+    name: "recode-boolean-data-values",
+    description: "Recode boolean data values",
+    args: {
+        ...getApiUrlOptions(),
+        programId: option({
+            type: string,
+            long: "program-id",
+            description: "Program ID to recode",
+        }),
+        ternaryOptionSetId: option({
+            type: string,
+            long: "ternary-optionset-id",
+            description: "ID of the ternary option set (Yes/No/NA) to recode",
+        }),
+        post: flag({
+            long: "post",
+            description: "Fix events",
+            defaultValue: () => false,
+        }),
+    },
+    handler: async args => {
+        const api = getD2ApiFromArgs(args);
+        const eventsRepository = new ProgramEventsD2Repository(api);
+        const programsRepository = new ProgramsD2Repository(api);
+        return new RecodeBooleanDataValuesInEventsUseCase(api, programsRepository, eventsRepository).execute(
+            args
+        );
     },
 });

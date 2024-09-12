@@ -19,7 +19,7 @@ export class ProgramsD2Repository implements ProgramsRepository {
         this.d2Tracker = new D2Tracker(this.api);
     }
 
-    async get(options: { programTypes?: ProgramType[] }): Async<Program[]> {
+    async get(options: { ids?: Id[]; programTypes?: ProgramType[] }): Async<Program[]> {
         const { programs } = await this.api.metadata
             .get({
                 programs: {
@@ -27,8 +27,22 @@ export class ProgramsD2Repository implements ProgramsRepository {
                         id: true,
                         name: true,
                         programType: true,
+                        programStages: {
+                            id: true,
+                            name: true,
+                            programStageDataElements: {
+                                dataElement: {
+                                    id: true,
+                                    name: true,
+                                    code: true,
+                                    valueType: true,
+                                    optionSet: { id: true, name: true },
+                                },
+                            },
+                        },
                     },
                     filter: {
+                        ...(options.ids ? { id: { in: options.ids } } : {}),
                         ...(options.programTypes ? { programType: { in: options.programTypes } } : {}),
                     },
                 },
