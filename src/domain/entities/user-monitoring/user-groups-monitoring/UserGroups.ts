@@ -42,7 +42,7 @@ export type UserGroupDiff = {
     changedPropsLost: Partial<UserGroup>;
     changedPropsAdded: Partial<UserGroup>;
     usersChanges: {
-        users_Lost: NamedRef[];
-        users_Added: NamedRef[];
+        usersLost: NamedRef[];
+        usersAdded: NamedRef[];
     };
 };

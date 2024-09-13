@@ -406,10 +406,6 @@ yarn start users migrate \
 #### Execution:
 
 ```
-yarn install
-
-yarn build
-
 yarn start usermonitoring run-permissions-fixer --config-file config.json
 or
 yarn start usermonitoring run-2fa-reporter --config-file config.json
@@ -418,10 +414,6 @@ yarn start usermonitoring run-2fa-reporter --config-file config.json
 #### Debug:
 
 ```
-yarn install
-
-yarn build:dev
-
 LOG_LEVEL=debug node --inspect-brk dist/index.js usermonitoring run-users-monitoring   --config-file config.json
 LOG_LEVEL=debug node --inspect-brk dist/index.js usermonitoring run-2fa-reporter   --config-file config.json
 ```
@@ -594,10 +586,6 @@ Note: the names are used only to make easy understand and debug the keys.
 #### Execution:
 
 ```bash
-yarn install
-
-yarn build
-
 yarn start usermonitoring run-authorities-monitoring --config-file config.json
 
 # To get the debug logs and store them in a file use:
@@ -629,7 +617,7 @@ A config file with the access info of the server and the message webhook details
 ```
 
 This reports stores data into the `d2-tools.authorities-monitor` datastore. This key needs to be setup before the first run to get a correct report.
-Its possible to leave `usersByAuthority` empty and use the `-s` flag to populate it.
+It's possible to leave `usersByAuthority` empty and use the `-s` flag to populate it.
 
 A sample:
 
@@ -681,10 +669,6 @@ This script will compare the metadata of the monitored userGroups with the versi
 #### Execution:
 
 ```bash
-yarn install
-
-yarn build
-
 yarn start usermonitoring run-user-groups-monitoring --config-file config.json
 
 # To get the debug logs and store them in a file use:
@@ -733,10 +717,6 @@ The User Templates Monitoring script is used to compare user templates with the 
 #### Execution:
 
 ```bash
-yarn install
-
-yarn build
-
 yarn start usermonitoring run-user-templates-monitoring --config-file config.json
 
 # To get the debug logs and store them in a file use:

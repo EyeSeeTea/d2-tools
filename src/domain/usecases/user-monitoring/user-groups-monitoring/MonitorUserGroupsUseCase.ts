@@ -48,16 +48,14 @@ export class MonitorUserGroupsUseCase {
                 message.push(changedPropsAddedMsg);
             }
 
-            if (!_.isEmpty(changes.usersChanges.users_Lost) || !_.isEmpty(changes.usersChanges.users_Added)) {
+            if (!_.isEmpty(changes.usersChanges.usersLost) || !_.isEmpty(changes.usersChanges.usersAdded)) {
                 message.push("User assignment changes:\n");
 
-                const usersLostMsg = `Users lost:\n${this.stringifyObject(
-                    changes.usersChanges.users_Lost
-                )}\n`;
+                const usersLostMsg = `Users lost:\n${this.stringifyObject(changes.usersChanges.usersLost)}\n`;
                 message.push(usersLostMsg);
 
                 const usersAddedMsg = `Users added:\n${this.stringifyObject(
-                    changes.usersChanges.users_Added
+                    changes.usersChanges.usersAdded
                 )}\n`;
                 message.push(usersAddedMsg);
             }

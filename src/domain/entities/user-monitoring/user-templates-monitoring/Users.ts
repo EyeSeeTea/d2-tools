@@ -85,10 +85,10 @@ type UserCredentials = {
 };
 
 type MembershipChanges = {
-    userRoles_Lost: NamedRef[];
-    userRoles_Added: NamedRef[];
-    userGroups_Lost: NamedRef[];
-    userGroups_Added: NamedRef[];
+    userRolesLost: NamedRef[];
+    userRolesAdded: NamedRef[];
+    userGroupsLost: NamedRef[];
+    userGroupsAdded: NamedRef[];
 };
 
 export type UserTemplateDiff = {

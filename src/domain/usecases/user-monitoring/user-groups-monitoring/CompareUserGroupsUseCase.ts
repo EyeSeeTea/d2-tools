@@ -51,8 +51,8 @@ export class CompareUserGroupsUseCase {
         let changedPropsLost: Partial<UserGroup> = {};
         let changedPropsAdded: Partial<UserGroup> = {};
         let usersChanges = {
-            users_Lost: [],
-            users_Added: [],
+            usersLost: [],
+            usersAdded: [],
         };
 
         _.forOwn(oldUserGroup, (value, key) => {
@@ -63,12 +63,12 @@ export class CompareUserGroupsUseCase {
                     if (key === "users") {
                         usersChanges = _.set(
                             usersChanges,
-                            `${key}_Lost`,
+                            `${key}Lost`,
                             _.differenceBy(value as any, newValue, "id")
                         );
                         usersChanges = _.set(
                             usersChanges,
-                            `${key}_Added`,
+                            `${key}Added`,
                             _.differenceBy(newValue, value as any, "id")
                         );
                     } else {

@@ -33,10 +33,10 @@ export class CompareUserTemplatesUseCase {
         let changedPropsLost: Partial<User> = {};
         let changedPropsAdded: Partial<User> = {};
         let membershipChanges = {
-            userRoles_Lost: [],
-            userRoles_Added: [],
-            userGroups_Lost: [],
-            userGroups_Added: [],
+            userRolesLost: [],
+            userRolesAdded: [],
+            userGroupsLost: [],
+            userGroupsAdded: [],
         };
 
         _.forOwn(oldUserTemplate, (value, key) => {
@@ -47,12 +47,12 @@ export class CompareUserTemplatesUseCase {
                     if (this.membershipKeys.includes(key)) {
                         membershipChanges = _.set(
                             membershipChanges,
-                            `${key}_Lost`,
+                            `${key}Lost`,
                             _.differenceBy(value as any, newValue, "id")
                         );
                         membershipChanges = _.set(
                             membershipChanges,
-                            `${key}_Added`,
+                            `${key}Added`,
                             _.differenceBy(newValue, value as any, "id")
                         );
                     } else {

@@ -22,8 +22,8 @@ export class MonitorUserTemplatesUseCase {
         private MessageRepository: MessageRepository
     ) {}
 
-    private stringifyObject(ojb: any) {
-        return JSON.stringify(ojb, null, 2);
+    private stringifyObject(obj: any) {
+        return JSON.stringify(obj, null, 2);
     }
 
     private checkMembershipChanges(
@@ -70,14 +70,14 @@ export class MonitorUserTemplatesUseCase {
             }
 
             const rolesMembershipMessage = this.checkMembershipChanges(
-                changes.membershipChanges.userRoles_Lost,
-                changes.membershipChanges.userRoles_Added,
+                changes.membershipChanges.userRolesLost,
+                changes.membershipChanges.userRolesAdded,
                 "User Roles"
             );
 
             const groupsMembershipMessage = this.checkMembershipChanges(
-                changes.membershipChanges.userRoles_Lost,
-                changes.membershipChanges.userRoles_Added,
+                changes.membershipChanges.userRolesLost,
+                changes.membershipChanges.userRolesAdded,
                 "User Groups"
             );
 
