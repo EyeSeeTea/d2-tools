@@ -3,22 +3,50 @@ import { promiseMap } from "data/dhis2-utils";
 import { NamedRef } from "domain/entities/Base";
 import { D2Api } from "types/d2-api";
 import logger from "utils/log";
-import { D2TrackerTrackedEntity } from "@eyeseetea/d2-api/api/trackerTrackedEntities";
-import { D2TrackerEnrollment } from "@eyeseetea/d2-api/api/trackerEnrollments";
-import { D2TrackerEvent } from "@eyeseetea/d2-api/api/trackerEvents";
+import { D2TrackerTrackedEntitySchema } from "@eyeseetea/d2-api/api/trackerTrackedEntities";
 import { ProgramsRepository } from "domain/repositories/ProgramsRepository";
+import { SelectedPick } from "@eyeseetea/d2-api/api/inference";
+import { D2TrackerEventSchema } from "@eyeseetea/d2-api/api/trackerEvents";
+import { NotificationsRepository } from "domain/repositories/NotificationsRepository";
+import { Maybe } from "utils/ts-utils";
 
 export class DetectExternalOrgUnitUseCase {
     pageSize = 1000;
 
-    constructor(private api: D2Api, private programRepository: ProgramsRepository) {}
+    constructor(
+        private api: D2Api,
+        private programRepository: ProgramsRepository,
+        private notificationRepository: NotificationsRepository
+    ) {}
 
-    async execute(options: { post: boolean }) {
+    async execute(options: {
+        post: boolean;
+        notification: Maybe<{ subject: string; recipients: string[] }>;
+    }) {
         const programs = await this.getPrograms();
 
-        await promiseMap(programs, async program => {
-            await this.fixEventsInProgram({ program: program, post: options.post });
-        });
+        const report = joinReports(
+            await promiseMap(programs, async program => {
+                return this.fixEventsInProgram({ program: program, post: options.post });
+            })
+        );
+
+        if (report.events > 0 && options.notification) {
+            const status = options.post ? "fixed" : "detected";
+
+            const body = [
+                `${report.events} events outside its enrollment organisation unit [${status}]`,
+                "",
+                report.contents,
+            ];
+
+            await this.notificationRepository.send({
+                recipients: options.notification.recipients,
+                subject: options.notification.subject,
+                body: { type: "text", contents: body.join("\n") },
+                attachments: [],
+            });
+        }
     }
 
     private async getPrograms() {
@@ -28,12 +56,14 @@ export class DetectExternalOrgUnitUseCase {
         return programs;
     }
 
-    async fixEventsInProgram(options: { program: NamedRef; post: boolean }) {
+    async fixEventsInProgram(options: { program: NamedRef; post: boolean }): Promise<Report> {
         const pageCount = await this.getPageCount(options);
 
-        await promiseMap(_.range(1, pageCount + 1), async page => {
-            await this.fixEventsForPage({ ...options, page: page, pageCount: pageCount });
+        const reports = await promiseMap(_.range(1, pageCount + 1), async page => {
+            return this.fixEventsForPage({ ...options, page: page, pageCount: pageCount });
         });
+
+        return joinReports(reports);
     }
 
     private async getPageCount(options: { program: NamedRef; post: boolean }) {
@@ -50,12 +80,16 @@ export class DetectExternalOrgUnitUseCase {
         return Math.ceil((response.total || 0) / this.pageSize);
     }
 
-    async fixEventsForPage(options: { program: NamedRef; page: number; pageCount: number; post: boolean }) {
+    async fixEventsForPage(options: {
+        program: NamedRef;
+        page: number;
+        pageCount: number;
+        post: boolean;
+    }): Promise<Report> {
         const trackedEntities = await this.getTrackedEntities(options);
         const mismatchRecords = this.getMismatchRecords(trackedEntities);
         const report = this.buildReport(mismatchRecords);
         logger.info(`Events outside its enrollment orgUnit: ${mismatchRecords.length}`);
-        console.log(report);
 
         if (_(mismatchRecords).isEmpty()) {
             logger.debug(`No events outside its enrollment orgUnit`);
@@ -64,6 +98,8 @@ export class DetectExternalOrgUnitUseCase {
         } else {
             await this.fixMismatchEvents(mismatchRecords);
         }
+
+        return { contents: report, events: mismatchRecords.length };
     }
 
     private async fixMismatchEvents(mismatchRecords: MismatchRecord[]) {
@@ -84,8 +120,8 @@ export class DetectExternalOrgUnitUseCase {
         await this.saveEvents(fixedEvents);
     }
 
-    private async saveEvents(fixedEvents: D2TrackerEvent[]) {
-        logger.info(`Post events: ${fixedEvents.length}`);
+    private async saveEvents(events: D2TrackerToSave[]) {
+        logger.info(`Post events: ${events.length}`);
 
         const response = await this.api.tracker
             .post(
@@ -96,7 +132,7 @@ export class DetectExternalOrgUnitUseCase {
                     skipRuleEngine: true,
                     importMode: "COMMIT",
                 },
-                { events: fixedEvents }
+                { events: events }
             )
             .getData();
 
@@ -162,12 +198,6 @@ export class DetectExternalOrgUnitUseCase {
     }
 }
 
-type MismatchRecord = {
-    trackedEntity: D2TrackerTrackedEntity;
-    enrollment: D2TrackerEnrollment;
-    event: D2TrackerEvent;
-};
-
 const params = {
     ouMode: "ALL",
     fields: {
@@ -186,3 +216,30 @@ const params = {
         },
     },
 } as const;
+
+type D2TrackerTrackedEntity = SelectedPick<D2TrackerTrackedEntitySchema, typeof params["fields"]>;
+type D2TrackerEnrollment = D2TrackerTrackedEntity["enrollments"][number];
+type D2TrackerEvent = D2TrackerEnrollment["events"][number];
+type D2TrackerToSave = SelectedPick<D2TrackerEventSchema, { $all: true }>;
+
+type T1 = D2TrackerToSave["geometry"];
+
+type MismatchRecord = {
+    trackedEntity: D2TrackerTrackedEntity;
+    enrollment: D2TrackerEnrollment;
+    event: D2TrackerEvent;
+};
+
+type Report = { contents: string; events: number };
+
+function joinReports(reports: Report[]): Report {
+    return {
+        contents: _(reports)
+            .map(report => report.contents)
+            .compact()
+            .join("\n"),
+        events: _(reports)
+            .map(report => report.events)
+            .sum(),
+    };
+}

@@ -13,11 +13,9 @@ import { MoveEventsToOrgUnitUseCase } from "domain/usecases/MoveEventsToOrgUnitU
 import logger from "utils/log";
 import { UpdateEventDataValueUseCase } from "domain/usecases/UpdateEventDataValueUseCase";
 import { EventExportSpreadsheetRepository } from "data/EventExportSpreadsheetRepository";
-import { D2Api } from "types/d2-api";
-import { Id } from "domain/entities/Base";
-import { promiseMap } from "data/dhis2-utils";
 import { DetectExternalOrgUnitUseCase } from "domain/usecases/ProcessEventsOutsideEnrollmentOrgUnitUseCase";
 import { ProgramsD2Repository } from "data/ProgramsD2Repository";
+import { NotificationsEmailRepository } from "data/NotificationsEmailRepository";
 
 export function getCommand() {
     return subcommands({
@@ -25,14 +23,14 @@ export function getCommand() {
         cmds: {
             "move-to-org-unit": moveOrgUnitCmd,
             "update-events": updateEventsDataValues,
-            "detect-external-orgunits": detectExternalOrgUnitCmd,
+            "detect-orgunits-outside-enrollment": detectEventsOutsideOrgUnitEnrollmentCmd,
         },
     });
 }
 
-const detectExternalOrgUnitCmd = command({
+const detectEventsOutsideOrgUnitEnrollmentCmd = command({
     name: "detect-external-orgunits",
-    description: "Detect external organisation units",
+    description: "Detect events assigned to organisation units outside their enrollment",
     args: {
         ...getApiUrlOptions(),
         post: flag({
@@ -40,11 +38,25 @@ const detectExternalOrgUnitCmd = command({
             description: "Fix events",
             defaultValue: () => false,
         }),
+        notifyEmail: option({
+            type: StringsSeparatedByCommas,
+            long: "notify-email",
+            description: "SUBJECT,EMAIL1,EMAIL2,...",
+        }),
     },
     handler: async args => {
         const api = getD2ApiFromArgs(args);
         const programsRepository = new ProgramsD2Repository(api);
-        return new DetectExternalOrgUnitUseCase(api, programsRepository).execute(args);
+        const notificationRepository = new NotificationsEmailRepository();
+        const { notifyEmail } = args;
+        const [subject, ...recipients] = notifyEmail;
+        const notification =
+            subject && recipients.length > 0 ? { subject: subject, recipients: recipients } : undefined;
+
+        return new DetectExternalOrgUnitUseCase(api, programsRepository, notificationRepository).execute({
+            ...args,
+            notification: notification,
+        });
     },
 });
 
