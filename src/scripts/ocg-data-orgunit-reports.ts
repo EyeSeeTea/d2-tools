@@ -15,8 +15,8 @@ const cmd = command({
         ...getApiUrlOptions(),
         orgUnitId: option({
             type: string,
-            long: "orgunits-ids",
-            description: "List of organisation units (comma-separated)",
+            long: "orgunit-id",
+            description: "Parent orgunit ID",
         }),
     },
     handler: async args => {
@@ -319,6 +319,7 @@ class DataReport {
         const dataElementGroup = {
             id: getUid("dataElementGroup", "ALL"),
             name: "All data elements",
+            shortName: "All",
             dataElements: dataElements.map(de => ({ id: de.id })),
         };
 
