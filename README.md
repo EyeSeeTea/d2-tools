@@ -763,3 +763,14 @@ File option can be a file or directory path, if its a directory path the file wi
 CSV headers:
 
 dataElement ID | dataElement Name | categoryOptionCombo ID | categoryOptionCombo Name | Value
+
+### Generate a report of data
+
+Generate a simple text report on console with info about dataValues/events/trackedEntities for some
+org units branch (pass the parent orgunit ID):
+
+```console
+shell$ npx ts-node src/scripts/ocg-data-orgunit-reports.ts \
+  --url=https://play.im.dhis2.org/stable-2-40-4-1 --auth="admin:district" \
+  --orgunit-id=DiszpKrYNg8
+```
