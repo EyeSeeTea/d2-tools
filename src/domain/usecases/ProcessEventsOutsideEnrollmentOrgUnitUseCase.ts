@@ -90,6 +90,7 @@ export class DetectExternalOrgUnitUseCase {
         const mismatchRecords = this.getMismatchRecords(trackedEntities);
         const report = this.buildReport(mismatchRecords);
         logger.info(`Events outside its enrollment orgUnit: ${mismatchRecords.length}`);
+        logger.info(report);
 
         if (_(mismatchRecords).isEmpty()) {
             logger.debug(`No events outside its enrollment orgUnit`);

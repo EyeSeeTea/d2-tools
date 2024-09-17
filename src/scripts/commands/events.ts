@@ -39,7 +39,7 @@ const detectEventsOutsideOrgUnitEnrollmentCmd = command({
             defaultValue: () => false,
         }),
         notifyEmail: option({
-            type: StringsSeparatedByCommas,
+            type: optional(StringsSeparatedByCommas),
             long: "notify-email",
             description: "SUBJECT,EMAIL1,EMAIL2,...",
         }),
@@ -49,7 +49,7 @@ const detectEventsOutsideOrgUnitEnrollmentCmd = command({
         const programsRepository = new ProgramsD2Repository(api);
         const notificationRepository = new NotificationsEmailRepository();
         const { notifyEmail } = args;
-        const [subject, ...recipients] = notifyEmail;
+        const [subject, ...recipients] = notifyEmail || [];
         const notification =
             subject && recipients.length > 0 ? { subject: subject, recipients: recipients } : undefined;
 
