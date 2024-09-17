@@ -109,7 +109,7 @@ export class DetectExternalOrgUnitUseCase {
 
         logger.info(`Get events to update: ${eventIds.join(",")}`);
         const { instances: events } = await this.api.tracker.events
-            .get({ fields: { $all: true }, event: eventIds.join(";") })
+            .get({ fields: { $all: true }, event: eventIds.join(";"), pageSize: eventIds.length })
             .getData();
 
         const fixedEvents = events.map((event): typeof event => {
