@@ -1,38 +1,47 @@
-import { D2UserGroup } from "@eyeseetea/d2-api/2.36";
 import { Id, NamedRef, Ref } from "domain/entities/Base";
-export interface Sharing {
+
+import { UserReference } from "domain/entities/UserReference";
+import { AttributeValue } from "domain/entities/AttributeValue";
+import { Access, AccessString, UserAccess, UserGroupAccess } from "domain/entities/Access";
+import { Translation } from "domain/entities/Translation";
+
+export type UserGroup = {
+    id: Id;
+    name: string;
+    access: Access;
+    attributeValues: AttributeValue[];
+    created: string;
+    createdBy: UserReference;
+    displayName: string;
+    externalAccess?: boolean;
+    favorite: boolean;
+    favorites: string[];
+    lastUpdated: string;
+    lastUpdatedBy: UserReference;
+    managedByGroups: Ref[];
+    managedGroups: Ref[];
+    sharing: Sharing;
+    user: UserReference;
+    users: NamedRef[];
+    translations: Translation[];
+    code?: Id;
+    publicAccess?: AccessString;
+    userAccesses?: UserAccess[];
+    userGroupAccesses?: UserGroupAccess[];
+};
+
+type Sharing = {
     owner: Id;
     public: string;
     external: boolean;
     users: Record<Id, SharingUser>;
     userGroups: Record<Id, SharingUser>;
-}
-
-export type UserGroup = Pick<D2UserGroup, "id" | "name"> &
-    Partial<
-        Omit<
-            D2UserGroup,
-            "users" | "lastUpdatedBy" | "managedByGroups" | "sharing" | "createdBy" | "user"
-        > & {
-            created: string;
-            lastUpdatedBy: UserDetails;
-            managedByGroups: Ref[];
-            users: NamedRef[];
-            sharing: Sharing;
-            createdBy: UserDetails;
-            user: UserDetails;
-        }
-    >;
-
-export type UserDetails = NamedRef & {
-    username: string;
-    displayName: string;
 };
 
-export type SharingUser = {
+type SharingUser = {
     id: Id;
     access: string;
-    displayName: string;
+    displayName?: string;
 };
 
 export type UserGroupDiff = {

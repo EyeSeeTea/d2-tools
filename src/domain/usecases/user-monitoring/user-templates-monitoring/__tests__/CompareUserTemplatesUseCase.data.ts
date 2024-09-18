@@ -232,6 +232,20 @@ export const user1Updated: User = {
     ],
 };
 
+export const noChangesDiff: UserTemplateDiff = {
+    id: user1.id,
+    username: user1.username,
+    changedPropsLost: {},
+    changedPropsAdded: {},
+    membershipChanges: {
+        userRolesLost: [],
+        userRolesAdded: [],
+        userGroupsLost: [],
+        userGroupsAdded: [],
+    },
+    newProps: {},
+};
+
 export const expectedDiff: UserTemplateDiff = {
     id: "cNtWc18LXBS",
     username: "user.template",
@@ -396,7 +410,7 @@ export const expectedDiff: UserTemplateDiff = {
         ],
     },
     membershipChanges: {
-        userRoles_Lost: [
+        userRolesLost: [
             {
                 name: "Role 1",
                 id: "role_id_1",
@@ -410,7 +424,7 @@ export const expectedDiff: UserTemplateDiff = {
                 id: "role_id_3",
             },
         ],
-        userRoles_Added: [
+        userRolesAdded: [
             {
                 name: "Updated Role 1",
                 id: "updated_role_id_1",
@@ -424,7 +438,7 @@ export const expectedDiff: UserTemplateDiff = {
                 id: "updated_role_id_3",
             },
         ],
-        userGroups_Lost: [
+        userGroupsLost: [
             {
                 name: "User Group 1",
                 id: "user_group_id_1",
@@ -434,7 +448,7 @@ export const expectedDiff: UserTemplateDiff = {
                 id: "user_group_id_2",
             },
         ],
-        userGroups_Added: [
+        userGroupsAdded: [
             {
                 name: "Updated User Group 1",
                 id: "updated_user_group_id_1",

@@ -1,8 +1,9 @@
+import { D2Api } from "@eyeseetea/d2-api/2.36";
+
 import { Id } from "domain/entities/Base";
 import { Async } from "domain/entities/Async";
 import { UserGroup } from "domain/entities/user-monitoring/user-groups-monitoring/UserGroups";
 import { UserGroupRepository } from "domain/repositories/user-monitoring/user-groups-monitoring/UserGroupRepository";
-import { D2Api, MetadataPick } from "@eyeseetea/d2-api/2.36";
 
 export class UserGroupD2Repository implements UserGroupRepository {
     constructor(private api: D2Api) {}
@@ -17,19 +18,26 @@ export class UserGroupD2Repository implements UserGroupRepository {
             })
             .getData();
 
-        return userGroups.map((userGroup: D2UserGroup) => {
+        return userGroups.map((userGroup): UserGroup => {
             return {
                 ...userGroup,
-                id: userGroup.id,
-                name: userGroup.name,
-            } as UserGroup;
+                attributeValues: userGroup.attributeValues.map(attributeValue => ({
+                    attribute: attributeValue.attribute.name,
+                    value: attributeValue.value,
+                })),
+            };
         });
     }
 }
 
-const userFields = { $all: true, users: { id: true, name: true } } as const;
-
-type D2UserGroup = {
-    id: Id;
-    name: string;
-} & Partial<MetadataPick<{ userGroups: { fields: typeof userFields } }>["userGroups"][number]>;
+const userFields = {
+    $all: true,
+    sharing: { userGroups: true, external: true, users: true, owner: true, public: true },
+    AttributeValue: { attribute: { name: true }, value: true },
+    user: { id: true, name: true, username: true, displayName: true },
+    createdBy: { id: true, name: true, username: true, displayName: true },
+    lastUpdatedBy: { id: true, name: true, username: true, displayName: true },
+    userAccesses: { id: true, access: true, displayName: true, userUid: true },
+    userGroupAccesses: { id: true, access: true, displayName: true, userUid: true },
+    users: { id: true, name: true },
+} as const;

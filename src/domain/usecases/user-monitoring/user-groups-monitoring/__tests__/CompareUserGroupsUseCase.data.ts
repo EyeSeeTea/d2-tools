@@ -6,8 +6,8 @@ export const emptyDiff: UserGroupDiff = {
     changedPropsLost: {},
     changedPropsAdded: {},
     usersChanges: {
-        users_Lost: [],
-        users_Added: [],
+        usersLost: [],
+        usersAdded: [],
     },
     newProps: {},
 };
@@ -142,8 +142,18 @@ export const userGroup1Diff: UserGroupDiff = {
         ],
     },
     usersChanges: {
-        users_Lost: [],
-        users_Added: [],
+        usersAdded: [
+            {
+                id: "user09",
+                name: "Pat Robin",
+            },
+        ],
+        usersLost: [
+            {
+                id: "user08",
+                name: "Sam Robin",
+            },
+        ],
     },
     newProps: {},
 };
@@ -151,6 +161,49 @@ export const userGroup1Diff: UserGroupDiff = {
 export const minimalUserGroup: UserGroup = {
     id: "id123",
     name: "Tech Team Alpha",
+    created: "2024-09-18T12:27:50.328",
+    lastUpdated: "2024-09-18T12:27:50.358",
+    createdBy: {
+        id: "USER_ID_1",
+        name: "John Doe",
+        displayName: "John Doe",
+        username: "admin",
+    },
+    favorites: [],
+    lastUpdatedBy: {
+        id: "USER_ID_1",
+        name: "John Doe",
+        displayName: "John Doe",
+        username: "admin",
+    },
+    sharing: {
+        owner: "USER_ID_1",
+        external: false,
+        users: {},
+        userGroups: {},
+        public: "rw------",
+    },
+    displayName: "TEST GROUP",
+    access: {
+        manage: true,
+        externalize: false,
+        write: true,
+        read: true,
+        update: true,
+        delete: true,
+    },
+    favorite: false,
+    user: {
+        id: "USER_ID_1",
+        name: "John Doe",
+        displayName: "John Doe",
+        username: "admin",
+    },
+    attributeValues: [],
+    users: [],
+    managedGroups: [],
+    managedByGroups: [],
+    translations: [],
 };
 
 export const userGroup1: UserGroup = {
@@ -158,7 +211,6 @@ export const userGroup1: UserGroup = {
     lastUpdated: "2024-06-10T21:31:09.850",
     name: "Tech Team Alpha",
     id: "id123",
-    href: "http://example.com/api/userGroups/id123",
     displayName: "Tech Team Alpha",
     publicAccess: "--------",
     externalAccess: false,
@@ -290,7 +342,6 @@ export const userGroup1Updated: UserGroup = {
     lastUpdated: "2024-06-10T21:31:09.850",
     name: "Tech Team Alpha",
     id: "id123",
-    href: "http://example.com/api/userGroups/id123",
     displayName: "Tech Team Beta",
     publicAccess: "--------",
     externalAccess: false,
@@ -408,8 +459,8 @@ export const userGroup1Updated: UserGroup = {
             id: "user07",
         },
         {
-            name: "Sam Robin",
-            id: "user08",
+            name: "Pat Robin",
+            id: "user09",
         },
     ],
     managedGroups: [],

@@ -2,7 +2,7 @@ import { Username } from "domain/entities/Base";
 import { Async } from "domain/entities/Async";
 import { User } from "domain/entities/user-monitoring/user-templates-monitoring/Users";
 import { UserRepository } from "domain/repositories/user-monitoring/user-templates-monitoring/UserRepository";
-import { D2Api, SelectedPick, D2UserSchema } from "@eyeseetea/d2-api/2.36";
+import { D2Api } from "@eyeseetea/d2-api/2.36";
 
 export class UserD2Repository implements UserRepository {
     constructor(private api: D2Api) {}
@@ -16,24 +16,68 @@ export class UserD2Repository implements UserRepository {
             })
             .getData();
 
-        return users.objects.map((user: D2User) => {
+        return users.objects.map((user): User => {
             return {
                 ...user,
-                id: user.id,
-                username: user.username,
+                username: user.userCredentials.username,
+                disabled: user.userCredentials.disabled,
+                twoFA: user.userCredentials.twoFA,
+                userRoles: user.userCredentials.userRoles,
+                invitation: user.userCredentials.invitation,
+                externalAuth: user.userCredentials.externalAuth,
+                selfRegistered: user.userCredentials.selfRegistered,
+                catDimensionConstraints: user.userCredentials.catDimensionConstraints,
+                cogsDimensionConstraints: user.userCredentials.cogsDimensionConstraints,
+                attributeValues: user.attributeValues.map(attributeValue => ({
+                    attribute: attributeValue.attribute.name,
+                    value: attributeValue.value,
+                })),
                 userCredentials: {
-                    ...user.userCredentials,
+                    externalAuth: user.userCredentials.externalAuth,
+                    disabled: user.userCredentials.disabled,
+                    id: user.userCredentials.id,
+                    twoFA: user.userCredentials.twoFA,
+                    invitation: user.userCredentials.invitation,
+                    selfRegistered: user.userCredentials.selfRegistered,
+                    username: user.userCredentials.username,
+                    access: user.userCredentials.access,
+                    sharing: user.userCredentials.sharing,
+                    cogsDimensionConstraints: user.userCredentials.cogsDimensionConstraints,
+                    catDimensionConstraints: user.userCredentials.catDimensionConstraints,
                 },
-            } as User;
+            };
         });
     }
 }
 
 const userFields = {
-    $all: true,
-    username: true,
-    userRoles: { id: true, name: true },
+    id: true,
+    lastUpdated: true,
+    created: true,
+    invitation: true,
+    selfRegistered: true,
+    firstName: true,
+    name: true,
+    favorite: true,
+    displayName: true,
+    externalAuth: true,
+    externalAccess: true,
+    surname: true,
+    disabled: true,
+    sharing: true,
+    access: true,
+    translations: true,
+    favorites: true,
+    organisationUnits: { id: true },
     userGroups: { id: true, name: true },
+    dataViewOrganisationUnits: { id: true },
+    teiSearchOrganisationUnits: { id: true },
+    attributeValues: { attribute: { name: true }, value: true },
+    user: { id: true, name: true, username: true, displayName: true },
+    createdBy: { id: true, name: true, username: true, displayName: true },
+    lastUpdatedBy: { id: true, name: true, username: true, displayName: true },
+    userAccesses: { id: true, access: true, displayName: true, userUid: true },
+    userGroupAccesses: { id: true, access: true, displayName: true, userUid: true },
     userCredentials: {
         access: true,
         accountExpiry: true,
@@ -70,10 +114,6 @@ const userFields = {
         userGroupAccesses: true,
         userInfo: true,
         username: true,
-        userRoles: false,
+        userRoles: { id: true, name: true },
     },
 } as const;
-
-type D2User = {
-    username?: string;
-} & Partial<SelectedPick<D2UserSchema, typeof userFields>>;
