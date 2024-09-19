@@ -28,7 +28,7 @@ export interface ProgramEventToSave {
     dueDate: Timestamp;
 }
 
-type EventStatus = "ACTIVE" | "COMPLETED" | "VISITED" | "SCHEDULED" | "OVERDUE" | "SKIPPED";
+type EventStatus = "ACTIVE" | "COMPLETED" | "VISITED" | "SCHEDULE" | "OVERDUE" | "SKIPPED";
 
 export const orgUnitModes = ["SELECTED", "CHILDREN", "DESCENDANTS"] as const;
 
