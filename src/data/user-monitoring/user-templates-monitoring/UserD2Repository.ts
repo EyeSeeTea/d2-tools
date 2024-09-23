@@ -109,6 +109,8 @@ const userFields = {
         sharing: true,
         translations: true,
         twoFA: true,
+        // NOTE: twoFA changes to twoFactorEnabled in 2.4x
+        // twoFactorEnabled: true,
         user: true,
         userAccesses: true,
         userGroupAccesses: true,
