@@ -92,7 +92,8 @@ export class MonitorUserGroupsUseCase {
                     _.isEmpty(changes.changedPropsAdded) &&
                     _.isEmpty(changes.changedPropsLost) &&
                     _.isEmpty(changes.newProps) &&
-                    _.isEmpty(changes.usersChanges)
+                    _.isEmpty(changes.usersChanges.usersAdded) &&
+                    _.isEmpty(changes.usersChanges.usersLost)
                 ) {
                     return [];
                 }

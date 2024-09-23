@@ -117,7 +117,10 @@ export class MonitorUserTemplatesUseCase {
                     _.isEmpty(changes.changedPropsAdded) &&
                     _.isEmpty(changes.changedPropsLost) &&
                     _.isEmpty(changes.newProps) &&
-                    _.isEmpty(changes.membershipChanges)
+                    _.isEmpty(changes.membershipChanges.userGroupsAdded) &&
+                    _.isEmpty(changes.membershipChanges.userGroupsLost) &&
+                    _.isEmpty(changes.membershipChanges.userRolesAdded) &&
+                    _.isEmpty(changes.membershipChanges.userRolesLost)
                 ) {
                     return [];
                 }
