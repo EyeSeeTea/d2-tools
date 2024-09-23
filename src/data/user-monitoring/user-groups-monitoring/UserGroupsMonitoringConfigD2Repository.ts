@@ -9,11 +9,7 @@ import { UserGroupsMonitoringOptions } from "domain/entities/user-monitoring/use
 import { UserGroupsMonitoringConfigRepository } from "domain/repositories/user-monitoring/user-groups-monitoring/UserGroupsMonitoringConfigRepository";
 
 export class UserGroupsMonitoringConfigD2Repository implements UserGroupsMonitoringConfigRepository {
-    private api: D2Api;
-
-    constructor(api: D2Api) {
-        this.api = api;
-    }
+    constructor(private api: D2Api) {}
 
     public async get(): Async<UserGroupsMonitoringOptions> {
         const config = await getObject<UserGroupsMonitoringOptions>(

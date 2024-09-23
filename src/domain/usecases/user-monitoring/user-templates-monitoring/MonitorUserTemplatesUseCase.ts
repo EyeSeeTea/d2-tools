@@ -11,7 +11,7 @@ import { UserRepository } from "domain/repositories/user-monitoring/user-templat
 import { UserTemplatesMonitoringConfigRepository } from "domain/repositories/user-monitoring/user-templates-monitoring/UserTemplatesMonitoringConfigRepository";
 
 import { GetUserTemplatesUseCase } from "./GetUserTemplatesUseCase";
-import { CompareUserTemplatesUseCase } from "./CompareUserTemplatesUseCase";
+import { CompareUserTemplates } from "./CompareUserTemplates";
 import { GetUserTemplatesMonitoringConfigUseCase } from "./GetUserTemplatesMonitoringConfigUseCase";
 import { SaveUserTemplatesMonitoringConfigUseCase } from "./SaveUserTemplatesMonitoringConfigUseCase";
 
@@ -97,7 +97,7 @@ export class MonitorUserTemplatesUseCase {
         log.info(`Get user groups with usernames: ${options.templatesToMonitor.join(", ")}`);
 
         const getTemplatesUseCase = new GetUserTemplatesUseCase(this.usersRepository);
-        const compareUserTemplatesUseCase = new CompareUserTemplatesUseCase();
+        const compareUserTemplatesUseCase = new CompareUserTemplates();
 
         const userTemplates: User[] = await getTemplatesUseCase.execute(options.templatesToMonitor);
         log.info(`Retrieved user templates: ${userTemplates.map(g => g.username).join(", ")}`);

@@ -6,6 +6,7 @@ import { UserReference } from "domain/entities/UserReference";
 
 export type User = {
     id: Id;
+    code?: Id;
     username: Username;
     lastUpdated: StringDateTime;
     created: string;
@@ -50,16 +51,19 @@ type Sharing = {
 type IdAccess = { id: Id; access: AccessString };
 
 type UserCredentials = {
-    externalAuth: boolean;
-    disabled: boolean;
-    id: string;
-    twoFA?: boolean;
-    twoFactorEnabled?: boolean;
-    invitation: boolean;
-    selfRegistered: boolean;
-    username: string;
+    id: Id;
+    code?: Id;
+    ldapId?: string;
+    openId?: string;
     access: Access;
+    twoFA?: boolean;
+    username: string;
     sharing: Sharing;
+    disabled: boolean;
+    invitation: boolean;
+    externalAuth: boolean;
+    selfRegistered: boolean;
+    twoFactorEnabled?: boolean;
     cogsDimensionConstraints: Ref[];
     catDimensionConstraints: Ref[];
     previousPasswords?: string[];

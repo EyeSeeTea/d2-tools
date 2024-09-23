@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import _ from "lodash";
 
-import { CompareUserGroupsUseCase } from "../CompareUserGroupsUseCase";
+import { CompareUserGroups } from "../CompareUserGroups";
 import {
     emptyDiff,
     userGroup1Diff,
@@ -12,7 +12,7 @@ import {
 
 describe("CompareUserGroupsUseCase", () => {
     it("Should return empty array when comparing the same objects", () => {
-        const useCase = new CompareUserGroupsUseCase();
+        const useCase = new CompareUserGroups();
 
         const minUserGroup2 = _.cloneDeep(minimalUserGroup);
 
@@ -27,7 +27,7 @@ describe("CompareUserGroupsUseCase", () => {
     });
 
     it("Should return the differences between two user groups", () => {
-        const useCase = new CompareUserGroupsUseCase();
+        const useCase = new CompareUserGroups();
 
         const result = useCase.execute(userGroup1, userGroup1Updated);
 

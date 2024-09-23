@@ -2,13 +2,13 @@ import { describe, it, expect, beforeEach } from "vitest";
 
 import { user1, user1Updated, noChangesDiff, expectedDiff } from "./CompareUserTemplatesUseCase.data";
 
-import { CompareUserTemplatesUseCase } from "../CompareUserTemplatesUseCase";
+import { CompareUserTemplates } from "../CompareUserTemplates";
 
 describe("CompareUserTemplatesUseCase", () => {
-    let useCase: CompareUserTemplatesUseCase;
+    let useCase: CompareUserTemplates;
 
     beforeEach(() => {
-        useCase = new CompareUserTemplatesUseCase();
+        useCase = new CompareUserTemplates();
     });
 
     it("should not fild differences between the same user templates", () => {

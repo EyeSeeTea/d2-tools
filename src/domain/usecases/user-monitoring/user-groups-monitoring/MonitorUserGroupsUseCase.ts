@@ -10,7 +10,7 @@ import { UserGroupRepository } from "domain/repositories/user-monitoring/user-gr
 import { UserGroupsMonitoringConfigRepository } from "domain/repositories/user-monitoring/user-groups-monitoring/UserGroupsMonitoringConfigRepository";
 
 import { GetUserGroupsUseCase } from "./GetUserGroupsUseCase";
-import { CompareUserGroupsUseCase } from "./CompareUserGroupsUseCase";
+import { CompareUserGroups } from "./CompareUserGroups";
 import { GetUserGroupsMonitoringConfigUseCase } from "./GetUserGroupsMonitoringConfigUseCase";
 import { SaveUserGroupsMonitoringConfigUseCase } from "./SaveUserGroupsMonitoringConfigUseCase";
 
@@ -73,7 +73,7 @@ export class MonitorUserGroupsUseCase {
         log.info(`Get user groups with ids: ${options.groupsToMonitor.join(", ")}`);
 
         const getGroupsUseCase = new GetUserGroupsUseCase(this.userGroupRepository);
-        const compareUserGroupsUseCase = new CompareUserGroupsUseCase();
+        const compareUserGroupsUseCase = new CompareUserGroups();
 
         const userGroups: UserGroup[] = await getGroupsUseCase.execute(options.groupsToMonitor);
         log.info(`Retrieved user groups: ${userGroups.map(g => g.id).join(", ")}`);

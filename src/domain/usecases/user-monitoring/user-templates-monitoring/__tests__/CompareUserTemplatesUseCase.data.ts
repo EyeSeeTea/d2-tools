@@ -3,6 +3,7 @@ import { User, UserTemplateDiff } from "domain/entities/user-monitoring/user-tem
 export const user1: User = {
     lastUpdated: "2024-06-10T10:25:27.228",
     id: "cNtWc18LXBS",
+    code: "User_Template",
     created: "2018-06-09T01:05:48.008",
     twoFA: false,
     invitation: false,
@@ -119,6 +120,7 @@ export const user1: User = {
 export const user1Updated: User = {
     lastUpdated: "2024-06-11T10:25:27.228",
     id: "cNtWc18LXBS",
+    code: "Updated_User_Template",
     created: "2018-06-09T01:05:48.008",
     twoFA: true,
     invitation: true,
@@ -256,6 +258,7 @@ export const expectedDiff: UserTemplateDiff = {
         selfRegistered: false,
         firstName: "User Template",
         name: "User Template",
+        code: "User_Template",
         favorite: false,
         displayName: "User Template",
         externalAuth: false,
@@ -336,6 +339,7 @@ export const expectedDiff: UserTemplateDiff = {
         selfRegistered: true,
         firstName: "Updated User Template",
         name: "Updated User Template",
+        code: "Updated_User_Template",
         favorite: true,
         displayName: "Updated User Template",
         externalAuth: true,

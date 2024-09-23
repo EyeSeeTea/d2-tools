@@ -1,7 +1,7 @@
 import _ from "lodash";
 import { User, UserTemplateDiff } from "domain/entities/user-monitoring/user-templates-monitoring/Users";
 
-export class CompareUserTemplatesUseCase {
+export class CompareUserTemplates {
     constructor() {}
 
     private membershipKeys = ["userRoles", "userGroups"];
