@@ -1,13 +1,12 @@
-export class GetLogFormatDate {
-    private logFormatDate(date: Date): string {
-        const isoString = date.toISOString();
+/**
+ * Formats a given date into a DHIS2 log timestamp.
+ *
+ * @param date - The date to be formatted.
+ * @returns The timestamp as a string.
+ */
 
-        return isoString.replace("Z", "");
-    }
+export function getLogFormatDate(date: Date): string {
+    const isoString = date.toISOString();
 
-    constructor() {}
-
-    execute(date: Date): string {
-        return this.logFormatDate(date);
-    }
+    return isoString.replace("Z", "").replace(".", ",");
 }

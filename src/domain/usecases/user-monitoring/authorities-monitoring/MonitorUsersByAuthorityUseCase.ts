@@ -10,7 +10,7 @@ import { User } from "domain/entities/user-monitoring/authorities-monitoring/Use
 import { AuthoritiesMonitoringOptions } from "domain/entities/user-monitoring/authorities-monitoring/AuthoritiesMonitoringOptions";
 
 import { GetUsersByAuthoritiesUseCase } from "./GetUsersByAuthoritiesUseCase";
-import { CheckUserByAuthoritiesChangesUseCase } from "./CheckUserByAuthoritiesChangesUseCase";
+import { CheckUserByAuthoritiesChanges } from "./CheckUserByAuthoritiesChanges";
 import { GetAuthoritiesMonitoringConfigUseCase } from "./GetAuthoritiesMonitoringConfigUseCase";
 import { SaveAuthoritiesMonitoringConfigUseCase } from "./SaveAuthoritiesMonitoringConfigUseCase";
 
@@ -61,8 +61,8 @@ export class MonitorUsersByAuthorityUseCase {
         this.debugJSON("Users by authority:", usersByAuthority);
 
         if (!setDataStore) {
-            const checkUsersChangesUseCase = new CheckUserByAuthoritiesChangesUseCase();
-            const { newUsers, usersLosingAuth } = await checkUsersChangesUseCase.execute(
+            const checkUsersChanges = new CheckUserByAuthoritiesChanges();
+            const { newUsers, usersLosingAuth } = await checkUsersChanges.execute(
                 options.usersByAuthority,
                 usersByAuthority
             );

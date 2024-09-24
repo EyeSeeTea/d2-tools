@@ -97,7 +97,7 @@ export class MonitorUserTemplatesUseCase {
         log.info(`Get user groups with usernames: ${options.templatesToMonitor.join(", ")}`);
 
         const getTemplatesUseCase = new GetUserTemplatesUseCase(this.usersRepository);
-        const compareUserTemplatesUseCase = new CompareUserTemplates();
+        const compareUserTemplates = new CompareUserTemplates();
 
         const userTemplates: User[] = await getTemplatesUseCase.execute(options.templatesToMonitor);
         log.info(`Retrieved user templates: ${userTemplates.map(g => g.username).join(", ")}`);
@@ -111,7 +111,7 @@ export class MonitorUserTemplatesUseCase {
                     return [];
                 }
 
-                const changes = compareUserTemplatesUseCase.execute(orig, user);
+                const changes = compareUserTemplates.execute(orig, user);
 
                 if (
                     _.isEmpty(changes.changedPropsAdded) &&
@@ -128,7 +128,7 @@ export class MonitorUserTemplatesUseCase {
                 return changes;
             });
 
-            log.info(`userGroupsChanges: ${this.stringifyObject(userGroupsChanges)}`);
+            log.debug(`userGroupsChanges: ${this.stringifyObject(userGroupsChanges)}`);
 
             if (_.isEmpty(userGroupsChanges)) {
                 log.info("Report: No changes.");

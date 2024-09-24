@@ -73,7 +73,7 @@ export class MonitorUserGroupsUseCase {
         log.info(`Get user groups with ids: ${options.groupsToMonitor.join(", ")}`);
 
         const getGroupsUseCase = new GetUserGroupsUseCase(this.userGroupRepository);
-        const compareUserGroupsUseCase = new CompareUserGroups();
+        const compareUserGroups = new CompareUserGroups();
 
         const userGroups: UserGroup[] = await getGroupsUseCase.execute(options.groupsToMonitor);
         log.info(`Retrieved user groups: ${userGroups.map(g => g.id).join(", ")}`);
@@ -86,7 +86,7 @@ export class MonitorUserGroupsUseCase {
                     return [];
                 }
 
-                const changes = compareUserGroupsUseCase.execute(orig, group);
+                const changes = compareUserGroups.execute(orig, group);
 
                 if (
                     _.isEmpty(changes.changedPropsAdded) &&

@@ -17,21 +17,25 @@ export class UserD2Repository implements UserRepository {
             .getData();
 
         return users.objects.map((user): User => {
+            // used to avoid repeating userRoles in userCredentials
+            const { userRoles, ...userCredentials } = user.userCredentials;
+
             return {
                 ...user,
-                username: user.userCredentials.username,
-                disabled: user.userCredentials.disabled,
-                twoFA: user.userCredentials.twoFA,
-                userRoles: user.userCredentials.userRoles,
-                invitation: user.userCredentials.invitation,
-                externalAuth: user.userCredentials.externalAuth,
-                selfRegistered: user.userCredentials.selfRegistered,
-                catDimensionConstraints: user.userCredentials.catDimensionConstraints,
-                cogsDimensionConstraints: user.userCredentials.cogsDimensionConstraints,
+                username: userCredentials.username,
+                disabled: userCredentials.disabled,
+                twoFA: userCredentials.twoFA,
+                userRoles: userRoles,
+                invitation: userCredentials.invitation,
+                externalAuth: userCredentials.externalAuth,
+                selfRegistered: userCredentials.selfRegistered,
+                catDimensionConstraints: userCredentials.catDimensionConstraints,
+                cogsDimensionConstraints: userCredentials.cogsDimensionConstraints,
                 attributeValues: user.attributeValues.map(attributeValue => ({
                     attribute: attributeValue.attribute.name,
                     value: attributeValue.value,
                 })),
+                userCredentials: userCredentials,
             };
         });
     }

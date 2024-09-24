@@ -4,18 +4,18 @@ import { Async } from "domain/entities/Async";
 import { UserGroupsMonitoringOptions } from "domain/entities/user-monitoring/user-groups-monitoring/UserGroupsMonitoringOptions";
 import { UserGroup } from "domain/entities/user-monitoring/user-groups-monitoring/UserGroups";
 
-import { GetLogFormatDate } from "../GetLogFormatDate";
+import { getLogFormatDate } from "../GetLogFormatDate";
 
 export class SaveUserGroupsMonitoringConfigUseCase {
     constructor(private configRepository: UserGroupsMonitoringConfigRepository) {}
 
     async execute(options: UserGroupsMonitoringOptions, monitoredUserGroups: UserGroup[]): Async<void> {
-        const new_options = {
+        const newOptions = {
             ...options,
-            lastExecution: new GetLogFormatDate().execute(new Date()),
+            lastExecution: getLogFormatDate(new Date()),
             monitoredUserGroups: monitoredUserGroups,
         };
 
-        await this.configRepository.save(new_options);
+        await this.configRepository.save(newOptions);
     }
 }

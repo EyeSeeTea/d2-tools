@@ -232,14 +232,14 @@ function getAuthFromFile(configFile: string): UserMonitoringAuth {
 function getWebhookConfFromFile(configFile: string): MSTeamsWebhookOptions {
     const fs = require("fs");
     const configJSON = JSON.parse(fs.readFileSync("./" + configFile, "utf8"));
-    const ms_url = configJSON["WEBHOOK"]["ms_url"];
+    const msUrl = configJSON["WEBHOOK"]["ms_url"];
     const proxy = configJSON["WEBHOOK"]["proxy"];
-    const server_name = configJSON["WEBHOOK"]["server_name"];
+    const serverName = configJSON["WEBHOOK"]["server_name"];
 
     return {
-        ms_url: ms_url,
+        msUrl: msUrl,
         proxy: proxy,
-        server_name: server_name,
+        serverName: serverName,
     };
 }
 

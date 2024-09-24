@@ -9,8 +9,8 @@ export class MessageMSTeamsRepository implements MessageRepository {
 
     async sendMessage(messageType: string, message: string): Async<boolean> {
         const httpProxy = this.webhook.proxy;
-        const url = this.webhook.ms_url;
-        const server_name = this.webhook.server_name;
+        const url = this.webhook.msUrl;
+        const serverName = this.webhook.serverName;
 
         if (!isEmpty(httpProxy)) {
             process.env["http_proxy"] = httpProxy;
@@ -18,7 +18,7 @@ export class MessageMSTeamsRepository implements MessageRepository {
         }
 
         const postData = JSON.stringify({
-            text: `[*${messageType}* - ${server_name}] - ${message}`,
+            text: `[*${messageType}* - ${serverName}] - ${message}`,
         });
 
         const requestOptions = {

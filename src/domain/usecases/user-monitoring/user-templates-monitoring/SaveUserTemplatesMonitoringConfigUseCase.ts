@@ -4,18 +4,18 @@ import { Async } from "domain/entities/Async";
 import { UserTemplatesMonitoringOptions } from "domain/entities/user-monitoring/user-templates-monitoring/UserTemplatesMonitoringOptions";
 import { User } from "domain/entities/user-monitoring/user-templates-monitoring/Users";
 
-import { GetLogFormatDate } from "../GetLogFormatDate";
+import { getLogFormatDate } from "../GetLogFormatDate";
 
 export class SaveUserTemplatesMonitoringConfigUseCase {
     constructor(private configRepository: UserTemplatesMonitoringConfigRepository) {}
 
     async execute(options: UserTemplatesMonitoringOptions, monitoredUserTemplates: User[]): Async<void> {
-        const new_options = {
+        const newOptions = {
             ...options,
-            lastExecution: new GetLogFormatDate().execute(new Date()),
+            lastExecution: getLogFormatDate(new Date()),
             monitoredUserTemplates: monitoredUserTemplates,
         };
 
-        await this.configRepository.save(new_options);
+        await this.configRepository.save(newOptions);
     }
 }

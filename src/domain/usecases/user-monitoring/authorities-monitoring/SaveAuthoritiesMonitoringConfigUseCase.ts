@@ -6,18 +6,18 @@ import {
     UsersByAuthority,
 } from "domain/entities/user-monitoring/authorities-monitoring/AuthoritiesMonitoringOptions";
 
-import { GetLogFormatDate } from "../GetLogFormatDate";
+import { getLogFormatDate } from "../GetLogFormatDate";
 
 export class SaveAuthoritiesMonitoringConfigUseCase {
     constructor(private configRepository: AuthoritiesMonitoringConfigRepository) {}
 
     async execute(options: AuthoritiesMonitoringOptions, usersByAuthority: UsersByAuthority): Async<void> {
-        const new_options = {
+        const newOptions = {
             ...options,
-            lastExecution: new GetLogFormatDate().execute(new Date()),
+            lastExecution: getLogFormatDate(new Date()),
             usersByAuthority: usersByAuthority,
         };
 
-        await this.configRepository.save(new_options);
+        await this.configRepository.save(newOptions);
     }
 }
