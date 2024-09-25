@@ -18,7 +18,7 @@ import { UserMonitoringProgramD2Repository } from "data/user-monitoring/common/U
 import { TwoFactorUser } from "domain/entities/user-monitoring/two-factor-monitoring/TwoFactorUser";
 
 describe("TwoFactorReportUseCase", () => {
-    it("Should push report with 0 affected users and empty affected user list if all the users has two factor activated", async () => {
+    it("Should push report with 0 affected users and empty affected user list if one user has two factor activated", async () => {
         const useCase = givenUsers([userWithTwoFA]);
 
         const result = await useCase.execute();
@@ -30,7 +30,19 @@ describe("TwoFactorReportUseCase", () => {
 });
 
 describe("TwoFactorReportUseCase", () => {
-    it("Should push report with 1 affected users and 1 affected user list if 1 the users has two factor deactivated", async () => {
+    it("Should push report with 0 affected users and empty affected user list if all the users has two factor activated", async () => {
+        const useCase = givenUsers([userWithTwoFA, userWithTwoFA]);
+
+        const result = await useCase.execute();
+
+        expect(result.report.invalidUsersCount).toEqual(0);
+        expect(result.report.listOfAffectedUsers).toEqual([]);
+        expect(result.message).toEqual("OK");
+    });
+});
+
+describe("TwoFactorReportUseCase", () => {
+    it("Should push report with 1 affected users and 1 affected user list if 1 user has two factor deactivated", async () => {
         const useCase = givenUsers([userWithoutTwoFA]);
 
         const result = await useCase.execute();
