@@ -16,6 +16,7 @@ import { TwoFactorUserD2Repository } from "data/user-monitoring/two-factor-monit
 import { TwoFactorReportD2Repository } from "data/user-monitoring/two-factor-monitoring/TwoFactorReportD2Repository";
 import { UserMonitoringProgramD2Repository } from "data/user-monitoring/common/UserMonitoringProgramD2Repository";
 import { TwoFactorUser } from "domain/entities/user-monitoring/two-factor-monitoring/TwoFactorUser";
+import { NonUsersException } from "domain/entities/user-monitoring/two-factor-monitoring/exception/NonUsersException";
 
 describe("TwoFactorReportUseCase", () => {
     it("Should push report with 0 affected users and empty affected user list if one user has two factor activated", async () => {
@@ -95,9 +96,29 @@ describe("TwoFactorReportUseCase", () => {
         expect(result.message).toEqual("OK");
     });
 });
+
+describe("TwoFactorReportUseCase", () => {
+    it("Should thorw exception if no users in the given usergroup", async () => {
+        const useCase = givenInvalidUserGroupId();
+
+        await expect(async () => {
+            await useCase.execute();
+        }).rejects.toThrow(NonUsersException);
+    });
+});
+
 function givenUsers(users: TwoFactorUser[]) {
     const useCase = new RunTwoFactorReportUseCase(
-        givenUserRepository(users),
+        givenUserRepository(users, config.twoFactorGroup.id),
+        givenTwoFactorReportD2Repository(),
+        givenConfigRepository(),
+        givenUserMonitoringProgramD2Repository()
+    );
+    return useCase;
+}
+function givenInvalidUserGroupId() {
+    const useCase = new RunTwoFactorReportUseCase(
+        givenUserRepository([], "invalidGroupId"),
         givenTwoFactorReportD2Repository(),
         givenConfigRepository(),
         givenUserMonitoringProgramD2Repository()
@@ -105,11 +126,9 @@ function givenUsers(users: TwoFactorUser[]) {
     return useCase;
 }
 
-function givenUserRepository(users: TwoFactorUser[]) {
+function givenUserRepository(users: TwoFactorUser[], groupId = config.twoFactorGroup.id) {
     const mockedRepository = mock(TwoFactorUserD2Repository);
-    when(mockedRepository.getUsersByGroupId(deepEqual([config.twoFactorGroup.id]))).thenReturn(
-        Promise.resolve(users)
-    );
+    when(mockedRepository.getUsersByGroupId(deepEqual([groupId]))).thenReturn(Promise.resolve(users));
     const configRepository = instance(mockedRepository);
     return configRepository;
 }
