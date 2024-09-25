@@ -19,16 +19,6 @@ export const NoUsersReport = {
     listOfAffectedUsers: [],
 };
 
-export const oneInvalidUserTwoFactorReport = {
-    invalidUsersCount: 1,
-    listOfAffectedUsers: [
-        {
-            id: "userUid",
-            name: "username",
-        },
-    ],
-};
-
 export const programMetadata: UserMonitoringProgramMetadata = {
     id: "IKpEgoQ4S0r",
     programStageId: "aHbPlvAb2bu",
@@ -46,16 +36,6 @@ export const programMetadata: UserMonitoringProgramMetadata = {
     ],
     orgUnitId: "wLoK6XpZq8I",
 };
-export interface UserMonitoringDataElement {
-    id: string;
-    code: string;
-    name: string;
-}
-
-export const zeroInvalidUserTwoFactorReport = {
-    invalidUsersCount: 0,
-    listOfAffectedUsers: [],
-};
 
 export const userWithTwoFA: TwoFactorUser = {
     id: "userUid",
@@ -68,3 +48,5 @@ export const userWithoutTwoFA: TwoFactorUser = {
     twoFA: false,
     username: "username2",
 };
+
+export const listOfUsers: TwoFactorUser[] = [userWithTwoFA, userWithoutTwoFA];
