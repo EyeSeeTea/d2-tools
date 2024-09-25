@@ -3,7 +3,15 @@ import { describe, it, expect } from "vitest";
 import { RunTwoFactorReportUseCase } from "../RunTwoFactorReportUseCase";
 import { TwoFactorConfigD2Repository } from "data/user-monitoring/two-factor-monitoring/TwoFactorConfigD2Repository";
 import { anything, deepEqual, instance, mock, when } from "ts-mockito";
-import { config, listOfUsers, programMetadata, userWithoutTwoFA, userWithTwoFA } from "./TwoFactorTest.data";
+import {
+    config,
+    listOfUsers,
+    listOfUsersWithTwoInvalid,
+    listOfUsersWithTwoValid,
+    programMetadata,
+    userWithoutTwoFA,
+    userWithTwoFA,
+} from "./TwoFactorTest.data";
 import { TwoFactorUserD2Repository } from "data/user-monitoring/two-factor-monitoring/TwoFactorUserD2Repository";
 import { TwoFactorReportD2Repository } from "data/user-monitoring/two-factor-monitoring/TwoFactorReportD2Repository";
 import { UserMonitoringProgramD2Repository } from "data/user-monitoring/common/UserMonitoringProgramD2Repository";
@@ -47,6 +55,34 @@ describe("TwoFactorReportUseCase", () => {
     });
 });
 
+describe("TwoFactorReportUseCase", () => {
+    it("Should push report with 1 affected users and 1 affected user list if 2 user has two factor deactivate and 1 activated", async () => {
+        const useCase = givenUsers(listOfUsersWithTwoInvalid);
+
+        const result = await useCase.execute();
+
+        const expectedReport = [
+            { id: userWithoutTwoFA.id, name: userWithoutTwoFA.username },
+            { id: userWithoutTwoFA.id, name: userWithoutTwoFA.username },
+        ];
+        expect(result.report.invalidUsersCount).toEqual(2);
+        expect(result.report.listOfAffectedUsers).toEqual(expectedReport);
+        expect(result.message).toEqual("OK");
+    });
+});
+
+describe("TwoFactorReportUseCase", () => {
+    it("Should push report with 1 affected users and 1 affected user list if 1 user has two factor deactivate and 2 activated", async () => {
+        const useCase = givenUsers(listOfUsersWithTwoValid);
+
+        const result = await useCase.execute();
+
+        const expectedReport = [{ id: userWithoutTwoFA.id, name: userWithoutTwoFA.username }];
+        expect(result.report.invalidUsersCount).toEqual(1);
+        expect(result.report.listOfAffectedUsers).toEqual(expectedReport);
+        expect(result.message).toEqual("OK");
+    });
+});
 function givenUsers(users: TwoFactorUser[]) {
     const useCase = new RunTwoFactorReportUseCase(
         givenUserRepository(users),

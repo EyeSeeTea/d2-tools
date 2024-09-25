@@ -50,3 +50,5 @@ export const userWithoutTwoFA: TwoFactorUser = {
 };
 
 export const listOfUsers: TwoFactorUser[] = [userWithTwoFA, userWithoutTwoFA];
+export const listOfUsersWithTwoInvalid: TwoFactorUser[] = [userWithTwoFA, userWithoutTwoFA, userWithoutTwoFA];
+export const listOfUsersWithTwoValid: TwoFactorUser[] = [userWithTwoFA, userWithTwoFA, userWithoutTwoFA];
