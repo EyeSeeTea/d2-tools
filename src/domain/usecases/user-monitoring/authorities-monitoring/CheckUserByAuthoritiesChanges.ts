@@ -2,7 +2,7 @@ import _ from "lodash";
 import { Async } from "../../../entities/Async";
 import { UsersByAuthority } from "../../../entities/user-monitoring/authorities-monitoring/AuthoritiesMonitoringOptions";
 
-export class CheckUserByAuthoritiesChangesUseCase {
+export class CheckUserByAuthoritiesChanges {
     constructor() {}
 
     private compareDicts(dict1: UsersByAuthority, dict2: UsersByAuthority) {
