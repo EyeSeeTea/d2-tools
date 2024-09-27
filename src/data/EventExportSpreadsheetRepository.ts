@@ -32,10 +32,10 @@ export class EventExportSpreadsheetRepository implements EventExportRepository {
         const csvData = _(events)
             .flatMap(event => {
                 return event.dataValues
-                    .filter(dv => dv.dataElementId === options.dataElementId)
+                    .filter(dv => dv.dataElement.id === options.dataElementId)
                     .map(dv => ({
                         event: event.id,
-                        dataElement: dv.dataElementId,
+                        dataElement: dv.dataElement.id,
                         oldValue: dv.oldValue,
                         value: options.newValue,
                     }));

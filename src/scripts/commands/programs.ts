@@ -15,10 +15,10 @@ import { ImportProgramsUseCase } from "domain/usecases/ImportProgramsUseCase";
 import { RunProgramRulesUseCase } from "domain/usecases/RunProgramRulesUseCase";
 import { GetDuplicatedEventsUseCase, orgUnitModes } from "domain/usecases/GetDuplicatedEventsUseCase";
 import { ProgramEventsD2Repository } from "data/ProgramEventsD2Repository";
-import { ProgramEventsExportCsvRepository } from "data/ProgramEventsExportCsvRepository";
 import { DeleteProgramDataValuesUseCase } from "domain/usecases/DeleteProgramDataValuesUseCase";
 import { MoveProgramAttributeUseCase } from "domain/usecases/MoveProgramAttributeUseCase";
 import { TrackedEntityD2Repository } from "data/TrackedEntityD2Repository";
+import { DuplicatedProgramsSpreadsheetExport } from "scripts/programs/DuplicatedProgramsSpreadsheetExport";
 
 export function getCommand() {
     return subcommands({
@@ -199,10 +199,8 @@ const getDuplicatedEventsCmd = command({
     handler: async args => {
         const api = getD2ApiFromArgs(args);
         const eventsRepository = new ProgramEventsD2Repository(api);
-        const eventsExportRepository = new ProgramEventsExportCsvRepository();
-        const options = _.omit(args, ["url"]);
-
-        new GetDuplicatedEventsUseCase(eventsRepository, eventsExportRepository).execute(options);
+        const duplicated = await new GetDuplicatedEventsUseCase(eventsRepository).execute(args);
+        await new DuplicatedProgramsSpreadsheetExport(duplicated).export(args.saveReport);
     },
 });
 
