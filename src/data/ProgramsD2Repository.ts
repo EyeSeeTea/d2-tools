@@ -9,6 +9,9 @@ import { promiseMap, runMetadata } from "./dhis2-utils";
 import { D2ProgramRules } from "./d2-program-rules/D2ProgramRules";
 import { D2Tracker } from "./D2Tracker";
 import { Program, ProgramType } from "domain/entities/Program";
+import { D2TrackerEnrollmentToPost } from "@eyeseetea/d2-api/api/trackerEnrollments";
+import { D2TrackerEventToPost } from "@eyeseetea/d2-api/api/trackerEvents";
+import { D2TrackedEntityInstanceToPost } from "@eyeseetea/d2-api/api/trackerTrackedEntities";
 
 type MetadataRes = { date: string } & { [k: string]: Array<{ id: string }> };
 
@@ -43,12 +46,9 @@ export class ProgramsD2Repository implements ProgramsRepository {
         const metadata = await this.getMetadata(programIds);
 
         const getOptions = { programIds, orgUnitIds };
-        const events = await this.d2Tracker.getFromTracker<object>("events", getOptions);
-        const enrollments = await this.d2Tracker.getFromTracker<D2Enrollment>("enrollments", getOptions);
-        const trackedEntities = await this.d2Tracker.getFromTracker<D2TrackedEntity>(
-            "trackedEntities",
-            getOptions
-        );
+        const events = await this.d2Tracker.getFromTracker("events", getOptions);
+        const enrollments = await this.d2Tracker.getFromTracker("enrollments", getOptions);
+        const trackedEntities = await this.d2Tracker.getFromTracker("trackedEntities", getOptions);
 
         /* Remove redundant enrollments info from TEIs */
         const trackedEntitiesWithoutEnrollments = trackedEntities.map(trackedEntity => ({
@@ -59,7 +59,7 @@ export class ProgramsD2Repository implements ProgramsRepository {
         return {
             metadata,
             data: {
-                events,
+                events: events,
                 enrollments: enrollments,
                 trackedEntities: trackedEntitiesWithoutEnrollments,
             },
@@ -98,7 +98,7 @@ export class ProgramsD2Repository implements ProgramsRepository {
         // DHIS2 exports enrollments without attributes, but requires it on import, add from TEI
         const enrollmentsWithAttributes = enrollments.map(enrollment => ({
             ...enrollment,
-            attributes: teisById[enrollment.trackedEntity]?.attributes || [],
+            attributes: (enrollment.trackedEntity && teisById[enrollment.trackedEntity]?.attributes) || [],
         }));
 
         log.info(`Import data`);
@@ -119,15 +119,10 @@ interface D2ProgramExport {
 }
 
 type D2ProgramData = {
-    events: object[];
-    enrollments: D2Enrollment[];
-    trackedEntities: D2TrackedEntity[];
+    events: D2TrackerEventToPost[];
+    enrollments: D2TrackerEnrollmentToPost[];
+    trackedEntities: D2TrackedEntityInstanceToPost[];
 };
-
-interface D2Enrollment {
-    enrollment: string;
-    trackedEntity: string;
-}
 
 export interface D2TrackedEntity {
     trackedEntity: Id;

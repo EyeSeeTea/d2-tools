@@ -16,6 +16,7 @@ import { EventExportSpreadsheetRepository } from "data/EventExportSpreadsheetRep
 import { DetectExternalOrgUnitUseCase } from "domain/usecases/ProcessEventsOutsideEnrollmentOrgUnitUseCase";
 import { ProgramsD2Repository } from "data/ProgramsD2Repository";
 import { NotificationsEmailRepository } from "data/NotificationsEmailRepository";
+import { TrackedEntityD2Repository } from "data/TrackedEntityD2Repository";
 
 export function getCommand() {
     return subcommands({
@@ -48,12 +49,19 @@ const detectEventsOutsideOrgUnitEnrollmentCmd = command({
         const api = getD2ApiFromArgs(args);
         const programsRepository = new ProgramsD2Repository(api);
         const notificationRepository = new NotificationsEmailRepository();
+        const eventsRepository = new ProgramEventsD2Repository(api);
+        const trackedEntitiesRepository = new TrackedEntityD2Repository(api);
         const { notifyEmail } = args;
         const [subject, ...recipients] = notifyEmail || [];
         const notification =
             subject && recipients.length > 0 ? { subject: subject, recipients: recipients } : undefined;
 
-        return new DetectExternalOrgUnitUseCase(api, programsRepository, notificationRepository).execute({
+        return new DetectExternalOrgUnitUseCase(
+            programsRepository,
+            trackedEntitiesRepository,
+            eventsRepository,
+            notificationRepository
+        ).execute({
             ...args,
             notification: notification,
         });
