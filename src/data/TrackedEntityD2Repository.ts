@@ -8,9 +8,9 @@ import {
     TrackedEntityFilterParams,
     TrackedEntityRepository,
 } from "domain/repositories/TrackedEntityRepository";
-import { TrackedEntity } from "domain/entities/TrackedEntity";
-import { D2TrackedEntity } from "./ProgramsD2Repository";
+import { Enrollment, TrackedEntity } from "domain/entities/TrackedEntity";
 import { D2Tracker } from "./D2Tracker";
+import { D2EventsMapper } from "./ProgramEventsD2Repository";
 
 export class TrackedEntityD2Repository implements TrackedEntityRepository {
     private d2Tracker: D2Tracker;
@@ -20,15 +20,26 @@ export class TrackedEntityD2Repository implements TrackedEntityRepository {
     }
 
     async getAll(params: TrackedEntityFilterParams): Async<TrackedEntity[]> {
-        const trackedEntities = await this.d2Tracker.getFromTracker<D2TrackedEntity>("trackedEntities", {
+        const trackedEntities = await this.d2Tracker.getFromTracker("trackedEntities", {
             orgUnitIds: undefined,
             programIds: [params.programId],
         });
+
+        const d2EventsMapper = await D2EventsMapper.build(this.api);
 
         return trackedEntities.map(tei => {
             return {
                 id: tei.trackedEntity,
                 orgUnit: tei.orgUnit,
+                enrollments: tei.enrollments.map(
+                    (enrollment): Enrollment => ({
+                        id: enrollment.enrollment,
+                        orgUnit: { id: enrollment.orgUnit, name: enrollment.orgUnitName },
+                        events: enrollment.events.map(event =>
+                            d2EventsMapper.getEventEntityFromD2Object(event)
+                        ),
+                    })
+                ),
                 trackedEntityType: tei.trackedEntityType,
                 attributes: tei.attributes.map(attribute => {
                     return {
@@ -55,7 +66,7 @@ export class TrackedEntityD2Repository implements TrackedEntityRepository {
             .value();
 
         const stats = await getInChunks<Stats>(teisToFetch, async teiIds => {
-            const trackedEntities = await this.d2Tracker.getFromTracker<D2TrackedEntity>("trackedEntities", {
+            const trackedEntities = await this.d2Tracker.getFromTracker("trackedEntities", {
                 orgUnitIds: undefined,
                 programIds: programsIds,
                 trackedEntity: teiIds.join(";"),
@@ -69,6 +80,7 @@ export class TrackedEntityD2Repository implements TrackedEntityRepository {
                 });
 
                 return {
+                    ...tei,
                     trackedEntity: currentProgram.id,
                     orgUnit: tei.orgUnit,
                     trackedEntityType: tei.trackedEntityType,
@@ -80,13 +92,14 @@ export class TrackedEntityD2Repository implements TrackedEntityRepository {
 
             return _(response)
                 .map(item => {
-                    const isError = item.status === "ERROR";
                     return new Stats({
                         created: item.stats.created,
                         updated: item.stats.updated,
                         ignored: item.stats.ignored,
-                        errorMessage: isError ? item.status : "",
-                        recordsSkipped: isError ? teisToSave.map(tei => tei.trackedEntity) : [],
+                        deleted: item.stats.deleted,
+                        total: item.stats.total,
+                        recordsSkipped: [],
+                        errorMessage: "",
                     });
                 })
                 .value();

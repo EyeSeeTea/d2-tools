@@ -116,7 +116,7 @@ export class UserD2Repository implements UserRepository {
                             return { usersToSave, response };
                         });
                 })
-                .then(result => {
+                .then((result): Stats[] => {
                     const response = result.response.data;
                     const errorMessage = response.typeReports
                         .flatMap(x => x.objectReports)
@@ -129,22 +129,19 @@ export class UserD2Repository implements UserRepository {
                             recordsSkipped:
                                 response.status === "ERROR" ? result.usersToSave.map(user => user.id) : [],
                             errorMessage,
-                            created: response.stats.created,
-                            ignored: response.stats.ignored,
-                            updated: response.stats.updated,
+                            ...response.stats,
                         },
                     ];
                 })
-                .catch(err => {
+                .catch((err): Stats[] => {
                     const errorMessage = `Error getting users ${userIds.join(",")}`;
                     console.error(errorMessage, err);
                     return [
                         {
+                            ...Stats.empty(),
                             recordsSkipped: userIds,
                             errorMessage,
-                            created: 0,
                             ignored: userIds.length,
-                            updated: 0,
                         },
                     ];
                 });
