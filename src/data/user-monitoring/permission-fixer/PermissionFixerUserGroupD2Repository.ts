@@ -1,9 +1,10 @@
-import { D2Api } from "@eyeseetea/d2-api/2.36";
+import { D2Api, D2ApiResponse, Stats } from "@eyeseetea/d2-api/2.36";
 import log from "utils/log";
 import { PermissionFixerUserGroupExtended } from "domain/entities/user-monitoring/permission-fixer/PermissionFixerUserGroupExtended";
 import { PermissionFixerUserGroupRepository } from "domain/repositories/user-monitoring/permission-fixer/PermissionFixerUserGroupRepository";
 import { Async } from "domain/entities/Async";
 import { UserGroupNotFoundException } from "./exception/UserGroupNotFoundException";
+import { Id, Ref } from "domain/entities/Base";
 
 export class PermissionFixerUserGroupD2Repository implements PermissionFixerUserGroupRepository {
     constructor(private api: D2Api) {}
@@ -23,21 +24,45 @@ export class PermissionFixerUserGroupD2Repository implements PermissionFixerUser
             throw new UserGroupNotFoundException("Error getting user group: " + groupsIds);
         }
     }
-    async save(userGroup: PermissionFixerUserGroupExtended): Async<string> {
+    async save(userGroup: PermissionFixerUserGroupExtended, users: Ref[]): Async<string> {
         try {
-            const response = await this.api.models.userGroups.put(userGroup).getData();
-            if (response.status == "OK") {
+            const response = await this.appendUsersInUsergroup(userGroup, users);
+            if (response == "OK") {
                 log.info("Users added to minimal group");
             } else {
                 log.error("Error adding users to minimal group");
             }
 
-            log.info(JSON.stringify(response.response));
+            log.info(JSON.stringify(response));
 
-            return response.status;
+            return response;
         } catch (error) {
             console.debug(error);
             return "ERROR";
         }
     }
+
+    private async appendUsersInUsergroup(
+        userGroup: PermissionFixerUserGroupExtended,
+        users: Ref[]
+    ): Async<string> {
+        const usersIds = users.map(({ id }) => ({ id: id }));
+        const response = await this.api
+            .post<UserGroupResponse>(
+                `/userGroups/${userGroup.id}/users/`,
+                { async: false },
+                {
+                    additions: usersIds,
+                }
+            )
+            .getData();
+        log.info(response.status);
+        return response.status;
+    }
 }
+
+type UserGroupResponse = {
+    status: string;
+    typeReports: object[];
+    stats: Stats;
+};
