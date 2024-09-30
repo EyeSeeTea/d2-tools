@@ -1,4 +1,4 @@
-import { D2Api, D2ApiResponse, Stats } from "@eyeseetea/d2-api/2.36";
+import { D2Api, Stats } from "@eyeseetea/d2-api/2.36";
 import log from "utils/log";
 import { PermissionFixerUserGroupExtended } from "domain/entities/user-monitoring/permission-fixer/PermissionFixerUserGroupExtended";
 import { PermissionFixerUserGroupRepository } from "domain/repositories/user-monitoring/permission-fixer/PermissionFixerUserGroupRepository";
