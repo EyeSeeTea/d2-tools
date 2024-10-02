@@ -228,14 +228,14 @@ async function importEvents(api: D2Api, events: EventToPost[], params?: EventsPo
 
     const resList = await promiseMap(_.chunk(events, 100), async eventsGroup => {
         const res = await api.events.post(params || {}, { events: eventsGroup }).getData();
-        if (res.response.status === "SUCCESS") {
+        if (res.status === "SUCCESS") {
             const message = JSON.stringify(
-                _.pick(res.response, ["status", "imported", "updated", "deleted", "ignored"])
+                _.pick(res, ["status", "imported", "updated", "deleted", "ignored"])
             );
             logger.info(`Post events OK: ${message}`);
             return true;
         } else {
-            const message = JSON.stringify(res.response, null, 4);
+            const message = JSON.stringify(res, null, 4);
             logger.info(`Post events ERROR: ${message}`);
             return false;
         }
