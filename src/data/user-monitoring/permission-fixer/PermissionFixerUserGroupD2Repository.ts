@@ -4,7 +4,7 @@ import { PermissionFixerUserGroupExtended } from "domain/entities/user-monitorin
 import { PermissionFixerUserGroupRepository } from "domain/repositories/user-monitoring/permission-fixer/PermissionFixerUserGroupRepository";
 import { Async } from "domain/entities/Async";
 import { UserGroupNotFoundException } from "./exception/UserGroupNotFoundException";
-import { Id, Ref } from "domain/entities/Base";
+import { Ref } from "domain/entities/Base";
 
 export class PermissionFixerUserGroupD2Repository implements PermissionFixerUserGroupRepository {
     constructor(private api: D2Api) {}
@@ -26,7 +26,7 @@ export class PermissionFixerUserGroupD2Repository implements PermissionFixerUser
     }
     async save(userGroup: PermissionFixerUserGroupExtended, users: Ref[]): Async<string> {
         try {
-            const response = await this.appendUsersInUsergroup(userGroup, users);
+            const response = await this.appendUsersToUsergroup(userGroup, users);
             if (response == "OK") {
                 log.info("Users added to minimal group");
             } else {
@@ -42,7 +42,7 @@ export class PermissionFixerUserGroupD2Repository implements PermissionFixerUser
         }
     }
 
-    private async appendUsersInUsergroup(
+    private async appendUsersToUsergroup(
         userGroup: PermissionFixerUserGroupExtended,
         users: Ref[]
     ): Async<string> {
@@ -50,7 +50,7 @@ export class PermissionFixerUserGroupD2Repository implements PermissionFixerUser
         const response = await this.api
             .post<UserGroupResponse>(
                 `/userGroups/${userGroup.id}/users/`,
-                { async: false },
+                {},
                 {
                     additions: usersIds,
                 }
