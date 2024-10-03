@@ -35,7 +35,9 @@ export class PermissionFixerTemplateD2Repository implements PermissionFixerTempl
         return completeTemplateGroups;
     }
 
-    async getAllUserRoles(options: PermissionFixerMetadataConfig): Async<PermissionFixerUserRoleAuthority[]> {
+    private async getAllUserRoles(
+        options: PermissionFixerMetadataConfig
+    ): Async<PermissionFixerUserRoleAuthority[]> {
         log.info(`Get metadata: All roles excluding ids: ${options.excludedRoles.join(", ")}`);
         const excludeRoles = options.excludedRoles;
         if (excludeRoles.length == 0) {
