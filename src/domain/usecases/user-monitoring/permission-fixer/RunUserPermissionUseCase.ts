@@ -22,6 +22,12 @@ import { Async } from "domain/entities/Async";
 import { UserTemplateNotFoundException } from "domain/entities/user-monitoring/two-factor-monitoring/exception/UserTemplateNotFoundException";
 import _ from "lodash";
 
+type RunUserPermissionResponse = {
+    message: string;
+    rolesReport?: PermissionFixerExtendedReport;
+    groupsReport?: PermissionFixerReport;
+};
+
 export class RunUserPermissionUseCase {
     constructor(
         private configRepository: PermissionFixerConfigRepository,
@@ -32,7 +38,7 @@ export class RunUserPermissionUseCase {
         private programRepository: UserMonitoringProgramRepository
     ) {}
 
-    async execute() {
+    async execute(): Async<RunUserPermissionResponse> {
         const options = await this.configRepository.get();
 
         const programMetadata = await this.programRepository.get(options.pushProgram.id);
@@ -97,9 +103,16 @@ export class RunUserPermissionUseCase {
             (finalUserGroup.invalidUsersCount > 0 || finalUserRoles.invalidUsersCount > 0)
         ) {
             log.info(`Sending user-monitoring user-permissions report results`);
-            await this.reportRepository.save(programMetadata, finalUserGroup, finalUserRoles);
+            const response = await this.reportRepository.save(
+                programMetadata,
+                finalUserGroup,
+                finalUserRoles
+            );
+
+            return { message: response, groupsReport: finalUserGroup, rolesReport: finalUserRoles };
         } else {
             log.info(`Nothing to report. No invalid users found.`);
+            return { message: "" };
         }
     }
 
