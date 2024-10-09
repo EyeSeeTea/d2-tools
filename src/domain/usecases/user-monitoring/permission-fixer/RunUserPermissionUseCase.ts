@@ -24,6 +24,10 @@ import _ from "lodash";
 
 type RunUserPermissionResponse = {
     message: string;
+    allUsersToProcessGroups: PermissionFixerUser[];
+    allUsersToProcessRoles: PermissionFixerUser[];
+    excludedUsers: PermissionFixerUser[];
+    userTemplates: PermissionFixerUser[];
     rolesReport?: PermissionFixerExtendedReport;
     groupsReport?: PermissionFixerReport;
 };
@@ -48,20 +52,33 @@ export class RunUserPermissionUseCase {
         const userTemplateIds = options.templates.map(template => {
             return template.template.id;
         });
+        const allUser = await this.userRepository.getAllUsers();
 
-        const allUserTemplates = await this.userRepository.getAllUsers(userTemplateIds, false);
+        const excludedUsersId = options.excludedUsers.map(excludedUser => excludedUser.id);
+
+        const excludedUsers = allUser.filter(user => {
+            return excludedUsersId.includes(user.id);
+        });
+
+        const allUserTemplates = allUser.filter(user => {
+            return userTemplateIds.includes(user.id);
+        });
+
+        const allUserTemplatesId = allUserTemplates.map(templateUser => templateUser.id);
+
+        const usersToProcessGroups = allUser.filter(user => {
+            return excludedUsersId.includes(user.id) === false && allUserTemplatesId.includes(user.id);
+        });
 
         const templatesWithAuthorities = await this.templateRepository.getTemplateAuthorities(
             options,
             allUserTemplates
         );
 
-        const usersToProcessGroups = await this.userRepository.getAllUsers(
-            options.excludedUsers.map(item => {
-                return item.id;
-            }),
-            true
-        );
+        options.excludedUsers.map(item => {
+            return item.id;
+        }),
+            true;
 
         log.info(`Processing userGroups (all users must have at least one template user group)`);
         const responseUserGroups = await this.processUserGroups(
@@ -70,13 +87,13 @@ export class RunUserPermissionUseCase {
             usersToProcessGroups
         );
 
+        //todo review if it is required
         log.info(`Run user Role monitoring`);
-        const usersToProcessRoles = await this.userRepository.getAllUsers(
-            options.excludedUsers.map(item => {
-                return item.id;
-            }),
-            true
-        );
+        const allUserAfterProccessgGroups = await this.userRepository.getAllUsers();
+
+        const usersToProcessRoles = allUserAfterProccessgGroups.filter(user => {
+            return excludedUsersId.includes(user.id) === false && allUserTemplatesId.includes(user.id);
+        });
 
         const responseUserRolesProcessed = await this.processUserRoles(
             options,
@@ -108,11 +125,27 @@ export class RunUserPermissionUseCase {
                 finalUserGroup,
                 finalUserRoles
             );
-
-            return { message: response, groupsReport: finalUserGroup, rolesReport: finalUserRoles };
+            //todo
+            return {
+                message: response,
+                allUsersToProcessGroups: usersToProcessGroups,
+                allUsersToProcessRoles: usersToProcessGroups,
+                excludedUsers: excludedUsers,
+                userTemplates: allUserTemplates,
+                groupsReport: finalUserGroup,
+                rolesReport: finalUserRoles,
+            };
         } else {
             log.info(`Nothing to report. No invalid users found.`);
-            return { message: "" };
+            return {
+                message: "",
+                allUsersToProcessGroups: usersToProcessGroups,
+                allUsersToProcessRoles: usersToProcessRoles,
+                excludedUsers: excludedUsers,
+                userTemplates: allUserTemplates,
+                groupsReport: undefined,
+                rolesReport: undefined,
+            };
         }
     }
 
