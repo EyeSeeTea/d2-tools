@@ -98,7 +98,7 @@ describe("TwoFactorReportUseCase", () => {
 });
 
 describe("TwoFactorReportUseCase", () => {
-    it("Should thorw exception if no users in the given usergroup", async () => {
+    it("Should throw exception if no users in the given usergroup", async () => {
         const useCase = givenInvalidUserGroupId();
 
         await expect(async () => {
