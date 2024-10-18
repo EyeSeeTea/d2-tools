@@ -26,12 +26,11 @@ describe("RunUserPermissionUseCase", () => {
 
         const result = await useCase.execute();
         console.log(JSON.stringify(result));
-        expect(result.templateUsers).toEqual();
-        expect(result.excludedUsers).toEqual();
-        expect(result.proccesedUsers).toEqual();
+        expect(result.userTemplates).toEqual([]);
+        expect(result.excludedUsers[0]).toEqual(fakeValidUser);
         expect(result.groupsReport).toEqual(undefined);
         expect(result.rolesReport).toEqual(undefined);
-        expect(result.message).toEqual("");
+        expect(result.message).toEqual("Nothing to report. No invalid users found.");
     });
 });
 
@@ -137,7 +136,7 @@ function givenUserGroupRepository() {
 }
 function givenUserRepository(users: PermissionFixerUser[]) {
     const mockedRepository = mock(PermissionFixerUserD2Repository);
-    when(mockedRepository.getAllUsers(anything(), anything())).thenReturn(Promise.resolve(users));
+    when(mockedRepository.getAllUsers()).thenReturn(Promise.resolve(users));
     const reportRepository = instance(mockedRepository);
     return reportRepository;
 }

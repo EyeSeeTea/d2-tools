@@ -87,7 +87,7 @@ export class RunUserPermissionUseCase {
             usersToProcessGroups
         );
 
-        //todo review if it is required
+        //todo: second call, to have the users in the last version after update the missing usergroups, review if it is required
         log.info(`Run user Role monitoring`);
         const allUserAfterProccessgGroups = await this.userRepository.getAllUsers();
 
@@ -125,7 +125,7 @@ export class RunUserPermissionUseCase {
                 finalUserGroup,
                 finalUserRoles
             );
-            //todo
+
             return {
                 message: response,
                 allUsersToProcessGroups: usersToProcessGroups,
@@ -138,7 +138,7 @@ export class RunUserPermissionUseCase {
         } else {
             log.info(`Nothing to report. No invalid users found.`);
             return {
-                message: "",
+                message: "Nothing to report. No invalid users found.",
                 allUsersToProcessGroups: usersToProcessGroups,
                 allUsersToProcessRoles: usersToProcessRoles,
                 excludedUsers: excludedUsers,
