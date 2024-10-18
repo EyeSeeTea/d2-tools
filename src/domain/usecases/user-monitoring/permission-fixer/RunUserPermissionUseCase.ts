@@ -66,8 +66,13 @@ export class RunUserPermissionUseCase {
 
         const allUserTemplatesId = allUserTemplates.map(templateUser => templateUser.id);
 
+        log.info(JSON.stringify(allUser));
+        //excluded users and template users to the proccess
         const usersToProcessGroups = allUser.filter(user => {
-            return excludedUsersId.includes(user.id) === false && allUserTemplatesId.includes(user.id);
+            log.info(user.username);
+            return (
+                excludedUsersId.includes(user.id) === false && allUserTemplatesId.includes(user.id) === false
+            );
         });
 
         const templatesWithAuthorities = await this.templateRepository.getTemplateAuthorities(
@@ -81,6 +86,7 @@ export class RunUserPermissionUseCase {
             true;
 
         log.info(`Processing userGroups (all users must have at least one template user group)`);
+        log.info(JSON.stringify(options));
         const responseUserGroups = await this.processUserGroups(
             options,
             templatesWithAuthorities,
@@ -90,17 +96,20 @@ export class RunUserPermissionUseCase {
         //todo: second call, to have the users in the last version after update the missing usergroups, review if it is required
         log.info(`Run user Role monitoring`);
         const allUserAfterProccessgGroups = await this.userRepository.getAllUsers();
-
         const usersToProcessRoles = allUserAfterProccessgGroups.filter(user => {
-            return excludedUsersId.includes(user.id) === false && allUserTemplatesId.includes(user.id);
+            log.info(JSON.stringify(allUserTemplatesId));
+            return (
+                excludedUsersId.includes(user.id) === false && allUserTemplatesId.includes(user.id) === false
+            );
         });
 
+        log.info("process 2roles" + usersToProcessRoles.length);
         const responseUserRolesProcessed = await this.processUserRoles(
             options,
             templatesWithAuthorities,
             usersToProcessRoles
         );
-
+        log.info(JSON.stringify(responseUserRolesProcessed));
         const finalUserGroup = responseUserGroups ?? {
             listOfAffectedUsers: [],
             invalidUsersCount: 0,
@@ -120,11 +129,15 @@ export class RunUserPermissionUseCase {
             (finalUserGroup.invalidUsersCount > 0 || finalUserRoles.invalidUsersCount > 0)
         ) {
             log.info(`Sending user-monitoring user-permissions report results`);
+            log.info(JSON.stringify(finalUserGroup));
+            log.info(JSON.stringify(finalUserRoles));
             const response = await this.reportRepository.save(
                 programMetadata,
                 finalUserGroup,
                 finalUserRoles
             );
+            log.info(JSON.stringify(response));
+            log.info("---------------------------------------");
 
             return {
                 message: response,
@@ -166,6 +179,7 @@ export class RunUserPermissionUseCase {
             );
             return usersWithForcedMinimalGroup;
         } else {
+            log.info("forceMinimalGroupForUsersWithoutGroup is disabled.");
             return allUsers;
         }
     }
@@ -184,6 +198,8 @@ export class RunUserPermissionUseCase {
             excludedRolesByGroup,
         } = options;
 
+        log.info("Preprocess users..." + JSON.stringify(options));
+        log.info("Preprocess users..." + allUsers.length);
         const allPreProcessedUsers = this.preProcessUsers(
             allUsers,
             completeTemplateGroups,
@@ -191,6 +207,7 @@ export class RunUserPermissionUseCase {
             minimalGroup.id
         );
 
+        log.info("Validating users..." + allPreProcessedUsers.length);
         this.validateUsers(allPreProcessedUsers, completeTemplateGroups, minimalGroup.id);
         const userinfo: UserMonitoringUserResponse[] = this.processUsers(
             allPreProcessedUsers,
@@ -428,7 +445,9 @@ export class RunUserPermissionUseCase {
         minimalGroupId: string
     ) {
         log.info("Validating users...");
+        log.info("Lenght" + allUsers.length);
         allUsers.map(user => {
+            log.info(user.username);
             const templateGroupMatch = this.findTemplateGroupMatch(completeTemplateGroups, user);
             if (templateGroupMatch == undefined) {
                 //template not found -> all roles are invalid except the minimal role

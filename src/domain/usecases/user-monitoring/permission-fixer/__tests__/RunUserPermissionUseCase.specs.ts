@@ -1,13 +1,14 @@
 import { UserMonitoringProgramD2Repository } from "data/user-monitoring/common/UserMonitoringProgramD2Repository";
 import { RunUserPermissionUseCase } from "../RunUserPermissionUseCase";
 import {
+    fakeInvalidUser,
+    fakeTemplateUser,
     fakeUserWithoutUserGroup,
     fakeValidUser,
     metadataConfig,
-    metadataConfigDisabledUsergroupFix,
+    metadataConfigWrongMinimaLUserGroup as metadataConfigWrongMinimalUserGroup,
     permissionFixerTemplateGroupExtended,
     programMetadata,
-    templateGroupsExtended,
 } from "./RunUserPermissionTest.data";
 import { describe, it, expect } from "vitest";
 import { anything, deepEqual, instance, mock, when } from "ts-mockito";
@@ -25,6 +26,7 @@ describe("RunUserPermissionUseCase", () => {
         const useCase = givenUseCaseIgnoreUser();
 
         const result = await useCase.execute();
+
         console.log(JSON.stringify(result));
         expect(result.userTemplates).toEqual([]);
         expect(result.excludedUsers[0]).toEqual(fakeValidUser);
@@ -35,10 +37,63 @@ describe("RunUserPermissionUseCase", () => {
 });
 
 describe("RunUserPermissionUseCase", () => {
+    it("Should ignore user if the user has valid roles", async () => {
+        const useCase = givenUseCaseValidUser();
+
+        const result = await useCase.execute();
+
+        expect(result.userTemplates).toEqual([]);
+        expect(result.groupsReport).toEqual(undefined);
+        expect(result.rolesReport).toEqual(undefined);
+        console.log(JSON.stringify(result));
+        expect(result.message).toEqual("Nothing to report. No invalid users found.");
+    });
+});
+
+describe("RunUserPermissionUseCase", () => {
+    it("Should fix user if the user has invalid authorities", async () => {
+        const useCase = givenUseCaseInvalidUser();
+
+        const result = await useCase.execute();
+
+        console.log(JSON.stringify(result));
+        expect(result.groupsReport?.invalidUsersCount).toEqual(0);
+        expect(result.rolesReport?.invalidUsersCount).toEqual(1);
+        expect(result.rolesReport?.usersBackup[0]?.userRoles).toEqual([
+            {
+                id: "invalidRoleId",
+                name: "invalid userRole name",
+            },
+            {
+                id: "tocVqzvmpI0",
+                name: "userRole name",
+            },
+        ]);
+        expect(result.rolesReport?.usersFixed[0]?.userRoles).toEqual([]);
+        //todo -> add to the test the list of userRoles, but we need mock the userRole-authorities call
+    });
+});
+
+describe("RunUserPermissionUseCase", () => {
     it("Should throw exception if some user dont have valid user template groups and user group fix is disabled", async () => {
+        const useCase = givenUseCaseUserWithoutTemplateUserGroupAndIgnorefix();
+
+        const result = useCase.execute();
+
+        await expect(result).rejects.toThrowError("User: userusername don't have valid groups");
+    });
+});
+describe("RunUserPermissionUseCase", () => {
+    it("Should fix add minimal group if a user dont have any control template user group", async () => {
         const useCase = givenUseCaseUserWithoutTemplateUserGroup();
 
-        await expect(useCase.execute()).rejects.toThrowError("User: userusername don't have valid groups");
+        const result = await useCase.execute();
+
+        expect(result.groupsReport?.invalidUsersCount).toEqual(1);
+        expect(result.groupsReport?.listOfAffectedUsers).toEqual(undefined);
+        expect(result.rolesReport?.invalidUsersCount).toEqual(undefined);
+        expect(result.rolesReport?.listOfAffectedUsers).toEqual(undefined);
+        expect(result.message).toEqual("Nothing to report. No invalid users found.");
     });
 });
 
@@ -47,28 +102,13 @@ describe("RunUserPermissionUseCase", () => {
         const useCase = givenUseCaseUserWithoutTemplateUserGroup();
 
         const result = await useCase.execute();
-        console.log(JSON.stringify(result));
-        expect(result.groupsReport?.invalidUsersCount).toEqual(undefined);
+        expect(result.groupsReport?.invalidUsersCount).toEqual(result);
         expect(result.groupsReport?.listOfAffectedUsers).toEqual(undefined);
         expect(result.rolesReport?.invalidUsersCount).toEqual(undefined);
         expect(result.rolesReport?.listOfAffectedUsers).toEqual(undefined);
-        expect(result.message).toEqual("");
+        expect(result.message).toEqual("Nothing to report. No invalid users found.");
     });
 });
-
-/* describe("RunUserPermissionUseCase", () => {
-    it("Should push fixed user if the user has a invalid authority", async () => {
-        const useCase = givenUseCaseUserWithInvalidAuthority();
-
-        const result = await useCase.execute();
-        console.log(JSON.stringify(result));
-        expect(result.groupsReport?.invalidUsersCount).toEqual(undefined);
-        expect(result.groupsReport?.listOfAffectedUsers).toEqual(undefined);
-        expect(result.rolesReport?.invalidUsersCount).toEqual(undefined);
-        expect(result.rolesReport?.listOfAffectedUsers).toEqual(undefined);
-        expect(result.message).toEqual("");
-    });
-}); */
 
 function givenUseCaseIgnoreUser() {
     const useCase = new RunUserPermissionUseCase(
@@ -82,9 +122,56 @@ function givenUseCaseIgnoreUser() {
     return useCase;
 }
 
+function givenUseCaseValidUser() {
+    const useCase = new RunUserPermissionUseCase(
+        givenConfigRepositoryExcludeUser(undefined),
+        givenReportRepository(),
+        givenTemplateRepository(),
+        givenUserGroupRepository(),
+        givenUserRepository([fakeValidUser, fakeTemplateUser]),
+        givenUserMonitoringProgramD2Repository()
+    );
+    return useCase;
+}
+
+function givenUseCaseInvalidUser() {
+    const useCase = new RunUserPermissionUseCase(
+        givenConfigRepositoryExcludeUser(undefined),
+        givenReportRepository(),
+        givenTemplateRepository(),
+        givenUserGroupRepository(),
+        givenUserRepository([fakeInvalidUser, fakeTemplateUser]),
+        givenUserMonitoringProgramD2Repository()
+    );
+    return useCase;
+}
+
+function givenUseCaseFixUser() {
+    const useCase = new RunUserPermissionUseCase(
+        givenConfigRepositoryExcludeUser(fakeInvalidUser),
+        givenReportRepository(),
+        givenTemplateRepository(),
+        givenUserGroupRepository(),
+        givenUserRepository([fakeInvalidUser, fakeTemplateUser]),
+        givenUserMonitoringProgramD2Repository()
+    );
+    return useCase;
+}
 function givenUseCaseUserWithoutTemplateUserGroup() {
     const useCase = new RunUserPermissionUseCase(
-        givenConfigRepository(metadataConfigDisabledUsergroupFix),
+        givenConfigRepository(metadataConfig),
+        givenReportRepository(),
+        givenTemplateRepository(),
+        givenUserGroupRepository(),
+        givenUserRepository([fakeUserWithoutUserGroup]),
+        givenUserMonitoringProgramD2Repository()
+    );
+    return useCase;
+}
+
+function givenUseCaseUserWithoutTemplateUserGroupAndIgnorefix() {
+    const useCase = new RunUserPermissionUseCase(
+        givenConfigRepository(metadataConfigWrongMinimalUserGroup),
         givenReportRepository(),
         givenTemplateRepository(),
         givenUserGroupRepository(),
@@ -106,9 +193,9 @@ function givenUseCaseUserWithInvalidAuthority() {
     return useCase;
 }
 
-function givenConfigRepositoryExcludeUser(excludedUser: NamedRef) {
+function givenConfigRepositoryExcludeUser(excludedUser: NamedRef | undefined) {
     const mockedRepository = mock(PermissionFixerConfigD2Repository);
-    metadataConfig.excludedUsers = [excludedUser];
+    if (excludedUser) metadataConfig.excludedUsers = [excludedUser];
     when(mockedRepository.get()).thenReturn(Promise.resolve(metadataConfig));
     const reportRepository = instance(mockedRepository);
     return reportRepository;
