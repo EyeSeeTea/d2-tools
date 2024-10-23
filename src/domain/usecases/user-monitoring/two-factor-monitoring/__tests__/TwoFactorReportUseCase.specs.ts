@@ -8,7 +8,6 @@ import {
     listOfUsers,
     listOfUsersWithTwoInvalid,
     listOfUsersWithTwoValid,
-    programMetadata,
     userWithoutTwoFA,
     userWithTwoFA,
 } from "./TwoFactorTest.data";
@@ -128,7 +127,6 @@ function givenTwoFactorReportD2Repository() {
 }
 function givenUserMonitoringProgramD2Repository() {
     const mockedRepository = mock(UserMonitoringProgramD2Repository);
-    when(mockedRepository.get(deepEqual(config.pushProgram.id))).thenReturn(Promise.resolve(programMetadata));
     const reportRepository = instance(mockedRepository);
     return reportRepository;
 }
