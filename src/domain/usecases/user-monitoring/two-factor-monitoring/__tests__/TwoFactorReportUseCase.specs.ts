@@ -28,9 +28,7 @@ describe("TwoFactorReportUseCase", () => {
         expect(result.report.listOfAffectedUsers).toEqual([]);
         expect(result.message).toEqual("OK");
     });
-});
 
-describe("TwoFactorReportUseCase", () => {
     it("Should push report with 0 affected users and empty affected user list if all the users has two factor activated", async () => {
         const useCase = givenUsers([userWithTwoFA, userWithTwoFA]);
 
@@ -40,9 +38,7 @@ describe("TwoFactorReportUseCase", () => {
         expect(result.report.listOfAffectedUsers).toEqual([]);
         expect(result.message).toEqual("OK");
     });
-});
-
-describe("TwoFactorReportUseCase", () => {
+    
     it("Should push report with 1 affected users and 1 affected user list if 1 user has two factor deactivated", async () => {
         const useCase = givenUsers([userWithoutTwoFA]);
 
@@ -53,9 +49,7 @@ describe("TwoFactorReportUseCase", () => {
         expect(result.report.listOfAffectedUsers).toEqual([expectedReport]);
         expect(result.message).toEqual("OK");
     });
-});
-
-describe("TwoFactorReportUseCase", () => {
+    
     it("Should push report with 1 affected users and 1 affected user list if one user has two factor activated and other deactivated", async () => {
         const useCase = givenUsers(listOfUsers);
 
@@ -66,9 +60,7 @@ describe("TwoFactorReportUseCase", () => {
         expect(result.report.listOfAffectedUsers).toEqual([expectedReport]);
         expect(result.message).toEqual("OK");
     });
-});
-
-describe("TwoFactorReportUseCase", () => {
+    
     it("Should push report with 1 affected users and 1 affected user list if 2 user has two factor deactivate and 1 activated", async () => {
         const useCase = givenUsers(listOfUsersWithTwoInvalid);
 
@@ -82,9 +74,7 @@ describe("TwoFactorReportUseCase", () => {
         expect(result.report.listOfAffectedUsers).toEqual(expectedReport);
         expect(result.message).toEqual("OK");
     });
-});
-
-describe("TwoFactorReportUseCase", () => {
+    
     it("Should push report with 1 affected users and 1 affected user list if 1 user has two factor deactivate and 2 activated", async () => {
         const useCase = givenUsers(listOfUsersWithTwoValid);
 
@@ -95,9 +85,7 @@ describe("TwoFactorReportUseCase", () => {
         expect(result.report.listOfAffectedUsers).toEqual(expectedReport);
         expect(result.message).toEqual("OK");
     });
-});
-
-describe("TwoFactorReportUseCase", () => {
+    
     it("Should thorw exception if no users in the given usergroup", async () => {
         const useCase = givenInvalidUserGroupId();
 
