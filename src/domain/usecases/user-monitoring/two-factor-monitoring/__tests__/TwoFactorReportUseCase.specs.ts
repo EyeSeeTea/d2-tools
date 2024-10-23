@@ -50,7 +50,7 @@ describe("TwoFactorReportUseCase", () => {
         expect(result.message).toEqual("OK");
     });
     
-    it("Should push report with 1 affected users and 1 affected user list if one user has two factor activated and other deactivated", async () => {
+    it("Should push report 1 affected user if we provide a list with two users, and only one has two-factor authentication disabled.", async () => {
         const useCase = givenUsers(listOfUsers);
 
         const result = await useCase.execute();
@@ -61,7 +61,7 @@ describe("TwoFactorReportUseCase", () => {
         expect(result.message).toEqual("OK");
     });
     
-    it("Should push report with 1 affected users and 1 affected user list if 2 user has two factor deactivate and 1 activated", async () => {
+    it("Should push report 2 affected users and a list of 2 affected user if 2 user has two factor deactivate and 1 activated", async () => {
         const useCase = givenUsers(listOfUsersWithTwoInvalid);
 
         const result = await useCase.execute();
@@ -75,7 +75,7 @@ describe("TwoFactorReportUseCase", () => {
         expect(result.message).toEqual("OK");
     });
     
-    it("Should push report with 1 affected users and 1 affected user list if 1 user has two factor deactivate and 2 activated", async () => {
+    it("Should push report 1 affected users and a list of 1 affected user if 1 user has two factor deactivate and 2 activated", async () => {
         const useCase = givenUsers(listOfUsersWithTwoValid);
 
         const result = await useCase.execute();
@@ -86,9 +86,9 @@ describe("TwoFactorReportUseCase", () => {
         expect(result.message).toEqual("OK");
     });
     
-    it("Should thorw exception if no users in the given usergroup", async () => {
+    it("Should throw exception if no users in the given usergroup", async () => {
         const useCase = givenInvalidUserGroupId();
-
+        
         await expect(async () => {
             await useCase.execute();
         }).rejects.toThrow(NonUsersException);
