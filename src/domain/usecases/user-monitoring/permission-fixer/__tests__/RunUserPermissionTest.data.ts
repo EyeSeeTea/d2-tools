@@ -10,19 +10,6 @@ import {
 } from "domain/entities/user-monitoring/permission-fixer/PermissionFixerTemplates";
 import { PermissionFixerUser } from "domain/entities/user-monitoring/permission-fixer/PermissionFixerUser";
 
-export const config: PermissionFixerConfig = {
-    pushReport: true,
-    pushFixedUsersRoles: true,
-    pushFixedUserGroups: true,
-    forceMinimalGroupForUsersWithoutGroup: true,
-};
-
-export const configFixUserGroupDisabled: PermissionFixerConfig = {
-    pushReport: true,
-    pushFixedUsersRoles: true,
-    pushFixedUserGroups: true,
-    forceMinimalGroupForUsersWithoutGroup: false,
-};
 
 export const templateGroup: PermissionFixerTemplateGroup = {
     group: {
@@ -34,94 +21,6 @@ export const templateGroup: PermissionFixerTemplateGroup = {
         name: "user_template_name",
     },
 };
-
-export const metadataConfigDisabledUsergroupFix: PermissionFixerMetadataConfig = {
-    templates: [templateGroup],
-    excludedRoles: [],
-    excludedUsers: [],
-    excludedRolesByUser: [],
-    excludedRolesByGroup: [],
-    excludedRolesByRole: [],
-    pushProgram: {
-        id: "IKpEgoQ4S0r",
-        name: "Event program uid",
-    },
-    minimalGroup: {
-        id: "IKpEgoQ4S02",
-        name: "Minimal group uid",
-    },
-    minimalRole: {
-        id: "IKpEgoQ4S03",
-        name: "Minimal role uid",
-    },
-    permissionFixerConfig: configFixUserGroupDisabled,
-};
-export const metadataConfigWrongMinimaLUserGroup: PermissionFixerMetadataConfig = {
-    templates: [templateGroup],
-    excludedRoles: [],
-    excludedUsers: [],
-    excludedRolesByUser: [],
-    excludedRolesByGroup: [],
-    excludedRolesByRole: [],
-    pushProgram: {
-        id: "IKpEgoQ4S0r",
-        name: "Event program uid",
-    },
-    minimalGroup: {
-        id: "IKpEgoQ4S03",
-        name: "WrongMinimal group uid",
-    },
-    minimalRole: {
-        id: "IKpEgoQ4S03",
-        name: "Minimal role uid",
-    },
-    permissionFixerConfig: config,
-};
-export const metadataConfigEnabledUsergroupFix: PermissionFixerMetadataConfig = {
-    templates: [templateGroup],
-    excludedRoles: [],
-    excludedUsers: [],
-    excludedRolesByUser: [],
-    excludedRolesByGroup: [],
-    excludedRolesByRole: [],
-    pushProgram: {
-        id: "IKpEgoQ4S0r",
-        name: "Event program uid",
-    },
-    minimalGroup: {
-        id: "IKpEgoQ4S02",
-        name: "Minimal group uid",
-    },
-    minimalRole: {
-        id: "IKpEgoQ4S03",
-        name: "Minimal role uid",
-    },
-    permissionFixerConfig: config,
-};
-
-export const metadataConfig: PermissionFixerMetadataConfig = {
-    templates: [templateGroup],
-    excludedRoles: [],
-    excludedUsers: [],
-    excludedRolesByUser: [],
-    excludedRolesByGroup: [],
-    excludedRolesByRole: [],
-
-    pushProgram: {
-        id: "IKpEgoQ4S0r",
-        name: "Event program uid",
-    },
-    minimalGroup: {
-        id: "IKpEgoQ4S02",
-        name: "Minimal group uid",
-    },
-    minimalRole: {
-        id: "IKpEgoQ4S03",
-        name: "Minimal role uid",
-    },
-    permissionFixerConfig: config,
-};
-
 export const programMetadata: UserMonitoringProgramMetadata = {
     id: "IKpEgoQ4S0r",
     programStageId: "aHbPlvAb2bu",
@@ -522,4 +421,159 @@ export const permissionFixerTemplateGroupExtended: PermissionFixerTemplateGroupE
     ],
     validRolesById: ["BQEME6bsUpZ"],
     invalidRolesById: ["invalidRoleId"],
+};
+/* 
+export const config: PermissionFixerConfig = {
+    pushReport: true,
+    pushFixedUsersRoles: true,
+    pushFixedUserGroups: true,
+    forceMinimalGroupForUsersWithoutGroup: true,
+};
+
+export const configFixUserGroupDisabled: PermissionFixerConfig = {
+    pushReport: true,
+    pushFixedUsersRoles: true,
+    pushFixedUserGroups: true,
+    forceMinimalGroupForUsersWithoutGroup: false,
+};
+
+export const metadataConfigDisabledUsergroupFix: PermissionFixerMetadataConfig = {
+    templates: [templateGroup],
+    excludedRoles: [],
+    excludedUsers: [],
+    excludedRolesByUser: [],
+    excludedRolesByGroup: [],
+    excludedRolesByRole: [],
+    pushProgram: {
+        id: "IKpEgoQ4S0r",
+        name: "Event program uid",
+    },
+    minimalGroup: {
+        id: "IKpEgoQ4S02",
+        name: "Minimal group uid",
+    },
+    minimalRole: {
+        id: "IKpEgoQ4S03",
+        name: "Minimal role uid",
+    },
+    permissionFixerConfig: configFixUserGroupDisabled,
+};
+export const metadataConfigWrongMinimaLUserGroup: PermissionFixerMetadataConfig = {
+    templates: [templateGroup],
+    excludedRoles: [],
+    excludedUsers: [],
+    excludedRolesByUser: [],
+    excludedRolesByGroup: [],
+    excludedRolesByRole: [],
+    pushProgram: {
+        id: "IKpEgoQ4S0r",
+        name: "Event program uid",
+    },
+    minimalGroup: {
+        id: "IKpEgoQ4S03",
+        name: "WrongMinimal group uid",
+    },
+    minimalRole: {
+        id: "IKpEgoQ4S03",
+        name: "Minimal role uid",
+    },
+    permissionFixerConfig: config,
+};
+export const metadataConfigEnabledUsergroupFix: PermissionFixerMetadataConfig = {
+    templates: [templateGroup],
+    excludedRoles: [],
+    excludedUsers: [],
+    excludedRolesByUser: [],
+    excludedRolesByGroup: [],
+    excludedRolesByRole: [],
+    pushProgram: {
+        id: "IKpEgoQ4S0r",
+        name: "Event program uid",
+    },
+    minimalGroup: {
+        id: "IKpEgoQ4S02",
+        name: "Minimal group uid",
+    },
+    minimalRole: {
+        id: "IKpEgoQ4S03",
+        name: "Minimal role uid",
+    },
+    permissionFixerConfig: config,
+};
+
+export const metadataConfig: PermissionFixerMetadataConfig = {
+    templates: [templateGroup],
+    excludedRoles: [],
+    excludedUsers: [],
+    excludedRolesByUser: [],
+    excludedRolesByGroup: [],
+    excludedRolesByRole: [],
+
+    pushProgram: {
+        id: "IKpEgoQ4S0r",
+        name: "Event program uid",
+    },
+    minimalGroup: {
+        id: "IKpEgoQ4S02",
+        name: "Minimal group uid",
+    },
+    minimalRole: {
+        id: "IKpEgoQ4S03",
+        name: "Minimal role uid",
+    },
+    permissionFixerConfig: config,
+};
+
+
+export const metadataConfigExcludedUser: PermissionFixerMetadataConfig = {
+    templates: [templateGroup],
+    excludedRoles: [],
+    excludedUsers: [fakeValidUser],
+    excludedRolesByUser: [],
+    excludedRolesByGroup: [],
+    excludedRolesByRole: [],
+
+    pushProgram: {
+        id: "IKpEgoQ4S0r",
+        name: "Event program uid",
+    },
+    minimalGroup: {
+        id: "IKpEgoQ4S02",
+        name: "Minimal group uid",
+    },
+    minimalRole: {
+        id: "IKpEgoQ4S03",
+        name: "Minimal role uid",
+    },
+    permissionFixerConfig: config,
+}; */
+
+
+export const baseConfig: PermissionFixerConfig = {
+    pushReport: true,
+    pushFixedUsersRoles: true,
+    pushFixedUserGroups: true,
+    forceMinimalGroupForUsersWithoutGroup: true,
+};
+
+export const baseMetadataConfig: PermissionFixerMetadataConfig = {
+    templates: [templateGroup],
+    excludedRoles: [],
+    excludedUsers: [],
+    excludedRolesByUser: [],
+    excludedRolesByGroup: [],
+    excludedRolesByRole: [],
+    pushProgram: {
+        id: "IKpEgoQ4S0r",
+        name: "Event program uid",
+    },
+    minimalGroup: {
+        id: "IKpEgoQ4S02",
+        name: "Minimal group uid",
+    },
+    minimalRole: {
+        id: "IKpEgoQ4S03",
+        name: "Minimal role uid",
+    },
+    permissionFixerConfig: baseConfig,
 };

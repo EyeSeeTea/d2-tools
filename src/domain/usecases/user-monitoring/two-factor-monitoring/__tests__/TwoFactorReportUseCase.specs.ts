@@ -8,7 +8,6 @@ import {
     listOfUsers,
     listOfUsersWithTwoInvalid,
     listOfUsersWithTwoValid,
-    programMetadata,
     userWithoutTwoFA,
     userWithTwoFA,
 } from "./TwoFactorTest.data";
@@ -28,9 +27,7 @@ describe("TwoFactorReportUseCase", () => {
         expect(result.report.listOfAffectedUsers).toEqual([]);
         expect(result.message).toEqual("OK");
     });
-});
 
-describe("TwoFactorReportUseCase", () => {
     it("Should push report with 0 affected users and empty affected user list if all the users has two factor activated", async () => {
         const useCase = givenUsers([userWithTwoFA, userWithTwoFA]);
 
@@ -40,9 +37,7 @@ describe("TwoFactorReportUseCase", () => {
         expect(result.report.listOfAffectedUsers).toEqual([]);
         expect(result.message).toEqual("OK");
     });
-});
-
-describe("TwoFactorReportUseCase", () => {
+    
     it("Should push report with 1 affected users and 1 affected user list if 1 user has two factor deactivated", async () => {
         const useCase = givenUsers([userWithoutTwoFA]);
 
@@ -53,10 +48,8 @@ describe("TwoFactorReportUseCase", () => {
         expect(result.report.listOfAffectedUsers).toEqual([expectedReport]);
         expect(result.message).toEqual("OK");
     });
-});
-
-describe("TwoFactorReportUseCase", () => {
-    it("Should push report with 1 affected users and 1 affected user list if one user has two factor activated and other deactivated", async () => {
+    
+    it("Should push report 1 affected user if we provide a list with two users, and only one has two-factor authentication disabled.", async () => {
         const useCase = givenUsers(listOfUsers);
 
         const result = await useCase.execute();
@@ -66,10 +59,8 @@ describe("TwoFactorReportUseCase", () => {
         expect(result.report.listOfAffectedUsers).toEqual([expectedReport]);
         expect(result.message).toEqual("OK");
     });
-});
-
-describe("TwoFactorReportUseCase", () => {
-    it("Should push report with 1 affected users and 1 affected user list if 2 user has two factor deactivate and 1 activated", async () => {
+    
+    it("Should push report 2 affected users and a list of 2 affected user if 2 user has two factor deactivate and 1 activated", async () => {
         const useCase = givenUsers(listOfUsersWithTwoInvalid);
 
         const result = await useCase.execute();
@@ -82,10 +73,8 @@ describe("TwoFactorReportUseCase", () => {
         expect(result.report.listOfAffectedUsers).toEqual(expectedReport);
         expect(result.message).toEqual("OK");
     });
-});
-
-describe("TwoFactorReportUseCase", () => {
-    it("Should push report with 1 affected users and 1 affected user list if 1 user has two factor deactivate and 2 activated", async () => {
+    
+    it("Should push report 1 affected users and a list of 1 affected user if 1 user has two factor deactivate and 2 activated", async () => {
         const useCase = givenUsers(listOfUsersWithTwoValid);
 
         const result = await useCase.execute();
@@ -95,12 +84,10 @@ describe("TwoFactorReportUseCase", () => {
         expect(result.report.listOfAffectedUsers).toEqual(expectedReport);
         expect(result.message).toEqual("OK");
     });
-});
-
-describe("TwoFactorReportUseCase", () => {
+    
     it("Should throw exception if no users in the given usergroup", async () => {
         const useCase = givenInvalidUserGroupId();
-
+        
         await expect(async () => {
             await useCase.execute();
         }).rejects.toThrow(NonUsersException);
@@ -140,7 +127,6 @@ function givenTwoFactorReportD2Repository() {
 }
 function givenUserMonitoringProgramD2Repository() {
     const mockedRepository = mock(UserMonitoringProgramD2Repository);
-    when(mockedRepository.get(deepEqual(config.pushProgram.id))).thenReturn(Promise.resolve(programMetadata));
     const reportRepository = instance(mockedRepository);
     return reportRepository;
 }
