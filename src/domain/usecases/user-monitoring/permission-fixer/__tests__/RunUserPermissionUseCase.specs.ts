@@ -112,17 +112,22 @@ describe("RunUserPermissionUseCase", () => {
         expect(result.message).toEqual("OK");
     });
     
-    /*
+    
     it("Should push fixed usergroup if the user has no template usergroups", async () => {
         const useCase = givenUseCaseUserWithoutTemplateUserGroup();
 
         const result = await useCase.execute();
-        expect(result.groupsReport?.invalidUsersCount).toEqual(0);
-        expect(result.groupsReport?.listOfAffectedUsers).toEqual(undefined);
-        expect(result.rolesReport?.invalidUsersCount).toEqual(undefined);
-        expect(result.rolesReport?.listOfAffectedUsers).toEqual(undefined);
-        expect(result.message).toEqual("Nothing to report. No invalid users found.");
-    }); */
+        expect(result.groupsReport?.invalidUsersCount).toEqual(1);
+        expect(result.groupsReport?.listOfAffectedUsers).toEqual([
+            {
+              "id": "CHbcHcmgoZ5",
+              "name": "userusername",
+            },
+          ]);
+        expect(result.rolesReport?.invalidUsersCount).toEqual(0);
+        expect(result.rolesReport?.listOfAffectedUsers).toEqual([]);
+        expect(result.message).toEqual("OK");
+    });
 });
 
 

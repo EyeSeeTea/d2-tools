@@ -66,8 +66,6 @@ export class RunUserPermissionUseCase {
 
         const allUserTemplatesId = allUserTemplates.map(templateUser => templateUser.id);
 
-        log.info(JSON.stringify(allUser));
-        //excluded users and template users to the proccess
         const usersToProcessGroups = allUser.filter(user => {
             log.info(user.username);
             return (
@@ -81,7 +79,6 @@ export class RunUserPermissionUseCase {
         );
 
         log.info(`Processing userGroups (all users must have at least one template user group)`);
-        log.info(JSON.stringify(options));
         const responseUserGroups = await this.processUserGroups(
             options,
             templatesWithAuthorities,
@@ -99,13 +96,12 @@ export class RunUserPermissionUseCase {
             );
         });
 
-        log.info("process 2roles" + usersToProcessRoles.length);
         const responseUserRolesProcessed = await this.processUserRoles(
             options,
             templatesWithAuthorities,
             usersToProcessRoles
         );
-        log.info(JSON.stringify(responseUserRolesProcessed));
+
         const finalUserGroup = responseUserGroups ?? {
             listOfAffectedUsers: [],
             invalidUsersCount: 0,
@@ -125,15 +121,12 @@ export class RunUserPermissionUseCase {
             (finalUserGroup.invalidUsersCount > 0 || finalUserRoles.invalidUsersCount > 0)
         ) {
             log.info(`Sending user-monitoring user-permissions report results`);
-            log.info(JSON.stringify(finalUserGroup));
-            log.info(JSON.stringify(finalUserRoles));
+            
             const response = await this.reportRepository.save(
                 programMetadata,
                 finalUserGroup,
                 finalUserRoles
             );
-            log.info(JSON.stringify(response));
-            log.info("---------------------------------------");
 
             return {
                 message: response,
