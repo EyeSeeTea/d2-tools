@@ -8,9 +8,8 @@ import {
     fakeValidUser,
     permissionFixerTemplateGroupExtended,
     programMetadata,
-    templateGroupsExtended,
 } from "./RunUserPermissionTest.data";
-import { describe, it, expect,beforeEach } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import { anything, instance, mock, when, deepEqual } from "ts-mockito";
 import { PermissionFixerUserD2Repository } from "data/user-monitoring/permission-fixer/PermissionFixerUserD2Repository";
 import { PermissionFixerUserGroupD2Repository } from "data/user-monitoring/permission-fixer/PermissionFixerUserGroupD2Repository";
@@ -19,23 +18,15 @@ import { PermissionFixerReportD2Repository } from "data/user-monitoring/permissi
 import { PermissionFixerConfigD2Repository } from "data/user-monitoring/permission-fixer/PermissionFixerConfigD2Repository";
 import { PermissionFixerUser } from "domain/entities/user-monitoring/permission-fixer/PermissionFixerUser";
 import { PermissionFixerMetadataConfig } from "domain/entities/user-monitoring/permission-fixer/PermissionFixerConfigOptions";
-import { fail } from "assert";
 import { PermissionFixerTemplateGroupExtended } from "domain/entities/user-monitoring/permission-fixer/PermissionFixerTemplates";
-
 
 let configWithUserExcluded: PermissionFixerMetadataConfig;
 let clonedBasicMetadata: PermissionFixerMetadataConfig;
 let configThrowInvalidUsergroupException: PermissionFixerMetadataConfig;
-
-let clonedMetadataConfig: PermissionFixerMetadataConfig;
-let clonedMetadataConfigWrongMinimalUserGroup : PermissionFixerMetadataConfig;
-let clonedFakeUserWithoutGroup : PermissionFixerUser;
-let clonedValidUser : PermissionFixerUser;
-let clonedTemplateUser : PermissionFixerUser;
-let clonedInvalidUser : PermissionFixerUser;
-let clonedWrongMinimalUserGroupConfig: PermissionFixerMetadataConfig;
-
-let configWithUserGroupDisabled: PermissionFixerMetadataConfig;
+let clonedFakeUserWithoutGroup: PermissionFixerUser;
+let clonedValidUser: PermissionFixerUser;
+let clonedTemplateUser: PermissionFixerUser;
+let clonedInvalidUser: PermissionFixerUser;
 let configWithWrongMinimalGroup: PermissionFixerMetadataConfig;
 let clonedTemplateAuthorities: PermissionFixerTemplateGroupExtended;
 
@@ -51,7 +42,7 @@ describe("RunUserPermissionUseCase", () => {
         expect(result.groupsReport).toEqual(undefined);
         expect(result.rolesReport).toEqual(undefined);
         expect(result.message).toEqual("Nothing to report. No invalid users found.");
-    }); 
+    });
 
     it("Should ignore user if the user has valid roles", async () => {
         const useCase = givenUseCaseValidUser();
@@ -85,12 +76,12 @@ describe("RunUserPermissionUseCase", () => {
         ]);
         expect(result.rolesReport?.usersFixed[0]?.userRoles).toEqual([
             {
-              id: "BQEME6bsUpZ",
-              name: "Dummy authority",
+                id: "BQEME6bsUpZ",
+                name: "Dummy authority",
             },
-          ]);
+        ]);
     });
-    
+
     it("Should throw exception if some user dont have valid user template groups and user group fix is disabled", async () => {
         const useCase = givenUseCaseUserWithoutTemplateUserGroupAndIgnorefix();
 
@@ -107,12 +98,11 @@ describe("RunUserPermissionUseCase", () => {
         expect(result.groupsReport?.listOfAffectedUsers[0]).toEqual({
             id: "CHbcHcmgoZ5",
             name: "userusername",
-          });
+        });
         expect(result.rolesReport?.invalidUsersCount).toEqual(0);
         expect(result.message).toEqual("OK");
     });
-    
-    
+
     it("Should push fixed usergroup if the user has no template usergroups", async () => {
         const useCase = givenUseCaseUserWithoutTemplateUserGroup();
 
@@ -120,43 +110,40 @@ describe("RunUserPermissionUseCase", () => {
         expect(result.groupsReport?.invalidUsersCount).toEqual(1);
         expect(result.groupsReport?.listOfAffectedUsers).toEqual([
             {
-              "id": "CHbcHcmgoZ5",
-              "name": "userusername",
+                id: "CHbcHcmgoZ5",
+                name: "userusername",
             },
-          ]);
+        ]);
         expect(result.rolesReport?.invalidUsersCount).toEqual(0);
         expect(result.rolesReport?.listOfAffectedUsers).toEqual([]);
         expect(result.message).toEqual("OK");
     });
 });
 
-
 beforeEach(() => {
     clonedFakeUserWithoutGroup = copyObject(fakeUserWithoutUserGroup);
     clonedValidUser = copyObject(fakeValidUser);
     clonedTemplateUser = copyObject(fakeTemplateUser);
     clonedInvalidUser = copyObject(fakeInvalidUser);
-    clonedFakeUserWithoutGroup = copyObject(fakeUserWithoutUserGroup)
+    clonedFakeUserWithoutGroup = copyObject(fakeUserWithoutUserGroup);
     clonedBasicMetadata = copyObject(baseMetadataConfig);
     configWithWrongMinimalGroup = copyObject(baseMetadataConfig);
     configWithWrongMinimalGroup.minimalGroup = {
         id: "IKpEgoQ4S03",
         name: "WrongMinimal group uid",
     };
-    configWithWrongMinimalGroup.permissionFixerConfig.forceMinimalGroupForUsersWithoutGroup = false
-    configWithWrongMinimalGroup.permissionFixerConfig.pushFixedUserGroups = true
+    configWithWrongMinimalGroup.permissionFixerConfig.forceMinimalGroupForUsersWithoutGroup = false;
+    configWithWrongMinimalGroup.permissionFixerConfig.pushFixedUserGroups = true;
 
     configWithUserExcluded = copyObject(baseMetadataConfig);
     configWithUserExcluded.excludedUsers = [copyObject(fakeValidUser)];
     configThrowInvalidUsergroupException = copyObject(baseMetadataConfig);
     clonedTemplateAuthorities = copyObject(permissionFixerTemplateGroupExtended);
-
 });
 
 function getMetadataConfig(): PermissionFixerMetadataConfig {
     return baseMetadataConfig;
 }
-
 
 function getMetataConfiThrowInvalidUsergroupException(): PermissionFixerMetadataConfig {
     return configThrowInvalidUsergroupException;
@@ -167,23 +154,16 @@ function getMetataConfigWithExcludedUser(): PermissionFixerMetadataConfig {
 }
 
 function getWrongMinimalUserGroupConfig(): PermissionFixerMetadataConfig {
-    return configWithWrongMinimalGroup
-}
-function getMetadata(): PermissionFixerMetadataConfig{
-    return clonedBasicMetadata;
-}
-function getValidUser(): PermissionFixerUser{
-    return clonedValidUser
+    return configWithWrongMinimalGroup;
 }
 
-function getTemplateUser(): PermissionFixerUser{
-    return clonedTemplateUser
+function getValidUser(): PermissionFixerUser {
+    return clonedValidUser;
 }
 
-function getInvalidUser(): PermissionFixerUser{
-    return clonedInvalidUser
+function getInvalidUser(): PermissionFixerUser {
+    return clonedInvalidUser;
 }
-
 
 function getUserWithoutGroup(): PermissionFixerUser {
     return clonedFakeUserWithoutGroup;
@@ -211,7 +191,7 @@ function givenUseCaseIgnoreUser() {
     );
     return useCase;
 }
-function givenUseCaseValidUser(){
+function givenUseCaseValidUser() {
     const useCase = new RunUserPermissionUseCase(
         givenBasicConfigRepository(),
         givenReportRepository(),
@@ -221,9 +201,8 @@ function givenUseCaseValidUser(){
         givenUserMonitoringProgramD2Repository()
     );
     return useCase;
-
 }
-function givenUseCaseInvalidUser(){
+function givenUseCaseInvalidUser() {
     const useCase = new RunUserPermissionUseCase(
         givenBasicConfigRepository(),
         givenReportRepository(),
@@ -233,10 +212,9 @@ function givenUseCaseInvalidUser(){
         givenUserMonitoringProgramD2Repository()
     );
     return useCase;
-
 }
 
-function givenUseCaseUserWithoutTemplateUserGroup(){
+function givenUseCaseUserWithoutTemplateUserGroup() {
     const useCase = new RunUserPermissionUseCase(
         givenConfigRepositoryWrongMinimalUserGroup(),
         givenReportRepository(),
@@ -261,14 +239,12 @@ function givenConfigRepositoryExcludeUser() {
     return reportRepository;
 }
 
-
 function givenConfigRepositoryWrongMinimalUserGroup() {
     const mockedRepository = mock(PermissionFixerConfigD2Repository);
     when(mockedRepository.get()).thenReturn(Promise.resolve(getWrongMinimalUserGroupConfig()));
     const reportRepository = instance(mockedRepository);
     return reportRepository;
 }
-
 
 function givenConfigRepositoryThrowException() {
     const mockedRepository = mock(PermissionFixerConfigD2Repository);
@@ -292,21 +268,24 @@ function givenUserGroupRepository() {
 }
 function givenUserRepository(users: PermissionFixerUser[]) {
     const mockedRepository = mock(PermissionFixerUserD2Repository);
-    when(mockedRepository.getAllUsers()).thenReturn(Promise.resolve(JSON.parse(JSON.stringify((users)))));
+    when(mockedRepository.getAllUsers()).thenReturn(Promise.resolve(JSON.parse(JSON.stringify(users))));
     const reportRepository = instance(mockedRepository);
     return reportRepository;
 }
 
 function givenUserRepositoryFixedUsergroup(users: PermissionFixerUser[]) {
     const mockedRepository = mock(PermissionFixerUserD2Repository);
-    when(mockedRepository.getAllUsers()).thenReturn(Promise.resolve(JSON.parse(JSON.stringify((users)))),Promise.resolve([JSON.parse(JSON.stringify((clonedValidUser)))]));
+    when(mockedRepository.getAllUsers()).thenReturn(
+        Promise.resolve(JSON.parse(JSON.stringify(users))),
+        Promise.resolve([JSON.parse(JSON.stringify(clonedValidUser))])
+    );
     const reportRepository = instance(mockedRepository);
     return reportRepository;
 }
 function givenTemplateRepository() {
     const mockedRepository = mock(PermissionFixerTemplateD2Repository);
     when(mockedRepository.getTemplateAuthorities(anything(), anything())).thenReturn(
-        Promise.resolve([JSON.parse(JSON.stringify((permissionFixerTemplateGroupExtended)))])
+        Promise.resolve([JSON.parse(JSON.stringify(permissionFixerTemplateGroupExtended))])
     );
     const reportRepository = instance(mockedRepository);
     return reportRepository;
@@ -324,13 +303,12 @@ function givenTemplateCustomRepository() {
 function givenUserMonitoringProgramD2Repository() {
     const mockedRepository = mock(UserMonitoringProgramD2Repository);
     when(mockedRepository.get(getMetadataConfig().pushProgram.id)).thenReturn(
-        Promise.resolve(JSON.parse(JSON.stringify((programMetadata))))
+        Promise.resolve(JSON.parse(JSON.stringify(programMetadata)))
     );
     const reportRepository = instance(mockedRepository);
     return reportRepository;
 }
 
-
-function copyObject (value:any){
-    return JSON.parse(JSON.stringify(value))
+function copyObject(value: any) {
+    return JSON.parse(JSON.stringify(value));
 }
