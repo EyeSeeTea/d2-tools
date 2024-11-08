@@ -80,11 +80,6 @@ export class RunUserPermissionUseCase {
             allUserTemplates
         );
 
-        options.excludedUsers.map(item => {
-            return item.id;
-        }),
-            true;
-
         log.info(`Processing userGroups (all users must have at least one template user group)`);
         log.info(JSON.stringify(options));
         const responseUserGroups = await this.processUserGroups(
@@ -95,8 +90,9 @@ export class RunUserPermissionUseCase {
 
         //todo: second call, to have the users in the last version after update the missing usergroups, review if it is required
         log.info(`Run user Role monitoring`);
-        const allUserAfterProccessgGroups = await this.userRepository.getAllUsers();
-        const usersToProcessRoles = allUserAfterProccessgGroups.filter(user => {
+        const allUserAfterProccessGroups = await this.userRepository.getAllUsers();
+        
+        const usersToProcessRoles = allUserAfterProccessGroups.filter(user => {
             log.info(JSON.stringify(allUserTemplatesId));
             return (
                 excludedUsersId.includes(user.id) === false && allUserTemplatesId.includes(user.id) === false

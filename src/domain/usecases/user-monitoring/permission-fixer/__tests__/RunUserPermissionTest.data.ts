@@ -213,11 +213,11 @@ export const fakeInvalidUser: PermissionFixerUser = {
         userRoles: [
             {
                 id: "invalidRoleId",
-                name: "invalid userRole name",
+                name: "Invalid dummy role",
             },
             {
-                id: "tocVqzvmpI0",
-                name: "userRole name",
+                id: "BQEME6bsUpZ",
+                name: "Dummy authority",
             },
         ],
         //this is a bit different in 2.38.7
@@ -242,11 +242,11 @@ export const fakeInvalidUser: PermissionFixerUser = {
     userRoles: [
         {
             id: "invalidRoleId",
-            name: "invalid userRole name",
+            name: "Invalid dummy role",
         },
         {
-            id: "tocVqzvmpI0",
-            name: "userRole name",
+            id: "BQEME6bsUpZ",
+            name: "Dummy authority",
         },
     ],
     selftRefistered: false,
