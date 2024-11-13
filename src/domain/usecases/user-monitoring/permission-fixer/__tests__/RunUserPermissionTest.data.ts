@@ -38,88 +38,13 @@ export const programMetadata: UserMonitoringProgramMetadata = {
     orgUnitId: "wLoK6XpZq8I",
 };
 
-export const fakeTemplateUser: PermissionFixerUser = {
-    //lastUpdated: "2024-09-16T14:51:06.958",
-    id: "CHbcHcmgoZ7",
-    //href: "https://server/api/users/CHbcHcmgoZ5",
-    //created: "2018-05-02T11:33:24.434",
-    //lastLogin: "2024-09-16T14:51:06.955",
-    twoFA: false,
-    invitation: false,
-    //selfRegistered: false,
-    firstName: "Fake",
-    name: "Fake Dummy TEMPLATE",
-    favorite: false,
-    //openId: "dummy@email.com",
-    displayName: "Fake Dummy TEMPLATE",
-    externalAuth: false,
-    externalAccess: false,
-    surname: "TEMPLATE",
-    disabled: false,
-    email: "TEMPLATE@email.com",
-    username: "TEMPLATE",
-    lastUpdatedBy: {
-        displayName: "fake complete name",
-        name: "fake complete name",
-        id: "TuqkLj1igOH",
-        username: "fakeusername",
-    },
-    userCredentials: {
-        //openId: "dummy@email.com",
-        lastLogin: "2024-09-16T14:51:06.955",
-        invitation: false,
-        disabled: false,
-        twoFA: false,
-        username: "TEMPLATE",
-        userRoles: [
-            {
-                id: "IKpEgoQ4S03",
-                name: "Minimal role uid",
-            },
-        ],
-        //this is a bit different in 2.38.7
-        lastUpdated: "",
-        passwordLastUpdated: "",
-        selfRegisterd: false,
-        uid: "",
-        twoFactorEnabled: false,
-    },
-    createdBy: {
-        displayName: "fake complete name",
-        name: "fake complete name",
-        id: "TuqkLj1igOH",
-        username: "fakeusername",
-    },
-    userGroups: [
-        {
-            id: "dhWMtH5yC2h",
-            name: "userGroup name",
-        },
-    ],
-    userRoles: [
-        {
-            id: "IKpEgoQ4S03",
-            name: "Minimal role uid",
-        },
-    ],
-    selftRefistered: false,
-    phoneNumber: "",
-    passwordLastUpdated: "",
-};
-
 export const fakeValidUser: PermissionFixerUser = {
-    //lastUpdated: "2024-09-16T14:51:06.958",
     id: "CHbcHcmgoZ5",
-    //href: "https://server/api/users/CHbcHcmgoZ5",
-    //created: "2018-05-02T11:33:24.434",
-    //lastLogin: "2024-09-16T14:51:06.955",
     twoFA: false,
     invitation: false,
-    //selfRegistered: false,
     firstName: "Fake",
     name: "Fake Dummy",
     favorite: false,
-    //openId: "dummy@email.com",
     displayName: "Fake Dummy",
     externalAuth: false,
     externalAccess: false,
@@ -134,7 +59,6 @@ export const fakeValidUser: PermissionFixerUser = {
         username: "fakeusername",
     },
     userCredentials: {
-        //openId: "dummy@email.com",
         lastLogin: "2024-09-16T14:51:06.955",
         invitation: false,
         disabled: false,
@@ -146,7 +70,6 @@ export const fakeValidUser: PermissionFixerUser = {
                 name: "userRole name",
             },
         ],
-        //this is a bit different in 2.38.7
         lastUpdated: "",
         passwordLastUpdated: "",
         selfRegisterd: false,
@@ -177,18 +100,12 @@ export const fakeValidUser: PermissionFixerUser = {
 };
 
 export const fakeInvalidUser: PermissionFixerUser = {
-    //lastUpdated: "2024-09-16T14:51:06.958",
     id: "CHbcHcmgoZ5",
-    //href: "https://server/api/users/CHbcHcmgoZ5",
-    //created: "2018-05-02T11:33:24.434",
-    //lastLogin: "2024-09-16T14:51:06.955",
     twoFA: false,
     invitation: false,
-    //selfRegistered: false,
     firstName: "Fake",
     name: "Fake Dummy",
     favorite: false,
-    //openId: "dummy@email.com",
     displayName: "Fake Dummy",
     externalAuth: false,
     externalAccess: false,
@@ -203,7 +120,6 @@ export const fakeInvalidUser: PermissionFixerUser = {
         username: "fakeusername",
     },
     userCredentials: {
-        //openId: "dummy@email.com",
         lastLogin: "2024-09-16T14:51:06.955",
         invitation: false,
         disabled: false,
@@ -219,7 +135,6 @@ export const fakeInvalidUser: PermissionFixerUser = {
                 name: "Dummy authority",
             },
         ],
-        //this is a bit different in 2.38.7
         lastUpdated: "",
         passwordLastUpdated: "",
         selfRegisterd: false,
@@ -254,18 +169,12 @@ export const fakeInvalidUser: PermissionFixerUser = {
 };
 
 export const fakeUserWithoutUserGroup: PermissionFixerUser = {
-    //lastUpdated: "2024-09-16T14:51:06.958",
     id: "CHbcHcmgoZ5",
-    //href: "https://server/api/users/CHbcHcmgoZ5",
-    //created: "2018-05-02T11:33:24.434",
-    //lastLogin: "2024-09-16T14:51:06.955",
     twoFA: false,
     invitation: false,
-    //selfRegistered: false,
     firstName: "Fake",
     name: "Fake Dummy",
     favorite: false,
-    //openId: "dummy@email.com",
     displayName: "Fake Dummy",
     externalAuth: false,
     externalAccess: false,
@@ -280,7 +189,6 @@ export const fakeUserWithoutUserGroup: PermissionFixerUser = {
         username: "fakeusername",
     },
     userCredentials: {
-        //openId: "dummy@email.com",
         lastLogin: "2024-09-16T14:51:06.955",
         invitation: false,
         disabled: false,
@@ -292,7 +200,6 @@ export const fakeUserWithoutUserGroup: PermissionFixerUser = {
                 name: "userRole name",
             },
         ],
-        //this is a bit different in 2.38.7
         lastUpdated: "",
         passwordLastUpdated: "",
         selfRegisterd: false,
@@ -317,26 +224,53 @@ export const fakeUserWithoutUserGroup: PermissionFixerUser = {
     passwordLastUpdated: "",
 };
 
-export const permissionFixerTemplateGroupExtended: PermissionFixerTemplateGroupExtended = {
-    group: { id: "dhWMtH5yC2h", name: "userGroup name" },
-    template: { id: "dhWMtH5yC2h_user", name: "template user username" },
-    validRolesByAuthority: [
-        {
-            id: "BQEME6bsUpZ",
-            name: "Dummy authority",
-            authorities: ["VALID_AUTH", "OTHER_VALID_AUTH"],
-        },
-    ],
-    invalidRolesByAuthority: [
-        {
-            id: "invalidRoleId",
-            authorities: ["INVALID_AUTH"],
-            name: "Invalid dummy role",
-        },
-    ],
-    validRolesById: ["BQEME6bsUpZ"],
-    invalidRolesById: ["invalidRoleId"],
-};
+export const permissionFixerTemplateGroupsExtended: PermissionFixerTemplateGroupExtended[] = [
+    {
+        group: { id: "dhWMtH5yC2h", name: "userGroup name" },
+        template: { id: "dhWMtH5yC2h_user", name: "template user username" },
+        validRolesByAuthority: [
+            {
+                id: "BQEME6bsUpZ",
+                name: "Dummy authority",
+                authorities: ["VALID_AUTH", "OTHER_VALID_AUTH"],
+            },
+        ],
+        invalidRolesByAuthority: [
+            {
+                id: "invalidRoleId",
+                authorities: ["INVALID_AUTH"],
+                name: "Invalid dummy role",
+            },
+        ],
+        validRolesById: ["BQEME6bsUpZ"],
+        invalidRolesById: ["invalidRoleId"],
+    },
+    {
+        group: { id: "minimalUID", name: "minimal user group" },
+        template: { id: "Minimal_user", name: "minimal template user username" },
+        validRolesByAuthority: [
+            {
+                id: "BASIC_UidZ",
+                name: "Basic authority",
+                authorities: ["BASIC_AUTH"],
+            },
+        ],
+        invalidRolesByAuthority: [
+            {
+                id: "BQEME6bsUpZ",
+                name: "Dummy authority",
+                authorities: ["VALID_AUTH", "OTHER_VALID_AUTH"],
+            },
+            {
+                id: "invalidRoleId",
+                authorities: ["INVALID_AUTH"],
+                name: "Invalid dummy role",
+            },
+        ],
+        validRolesById: ["BASIC_UidZ"],
+        invalidRolesById: ["invalidRoleId", "BQEME6bsUpZ"],
+    },
+];
 
 export const baseConfig: PermissionFixerConfig = {
     pushReport: true,
@@ -357,8 +291,8 @@ export const baseMetadataConfig: PermissionFixerMetadataConfig = {
         name: "Event program uid",
     },
     minimalGroup: {
-        id: "IKpEgoQ4S02",
-        name: "Minimal group uid",
+        id: "minimalUID",
+        name: "minimal user group",
     },
     minimalRole: {
         id: "IKpEgoQ4S03",

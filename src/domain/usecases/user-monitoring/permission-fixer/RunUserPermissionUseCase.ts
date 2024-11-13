@@ -263,7 +263,7 @@ export class RunUserPermissionUseCase {
         excludedRolesByUser: RolesByUser[],
         minimalRole: Ref
     ): UserMonitoringUserResponse[] {
-        log.info("ValidProcessingating " + allUsers.length + " users...");
+        log.info("Processing " + allUsers.length + " users...");
         const processedUsers = _.compact(
             allUsers.map(user => {
                 const templateGroupMatch = completeTemplateGroups.find(template => {
