@@ -85,7 +85,6 @@ export class RunUserPermissionUseCase {
             usersToProcessGroups
         );
 
-        //todo: second call, to have the users in the last version after update the missing usergroups, review if it is required
         log.info(`Run user Role monitoring`);
         const allUserAfterProccessGroups = await this.userRepository.getAllUsers();
 
