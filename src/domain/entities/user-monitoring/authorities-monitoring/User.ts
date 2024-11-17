@@ -1,3 +1,7 @@
-import { NamedRef } from "domain/entities/Base";
+import { Id, NamedRef } from "domain/entities/Base";
 
-export type User = NamedRef & { userRoles: NamedRef[] };
+export type User = {
+    id: Id;
+    username: string;
+    userRoles: NamedRef[];
+};
