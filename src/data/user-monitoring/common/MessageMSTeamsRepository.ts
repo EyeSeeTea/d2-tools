@@ -1,7 +1,6 @@
 import _, { isEmpty } from "lodash";
 import log from "utils/log";
-// NOTE: Needed for fetch with custom agent
-import fetch from "node-fetch";
+import { HttpProxyAgent } from "http-proxy-agent";
 import { HttpsProxyAgent } from "https-proxy-agent";
 
 import { Async } from "domain/entities/Async";
@@ -31,12 +30,13 @@ export class MessageMSTeamsRepository implements MessageRepository {
                 "Content-Type": "application/json",
             },
             body: postData,
+            agent: url.startsWith("https")
+                ? new HttpsProxyAgent(process.env["https_proxy"] || "")
+                : new HttpProxyAgent(process.env["http_proxy"] || ""),
         };
 
-        const agent = new HttpsProxyAgent(process.env["https_proxy"] || "");
-
         try {
-            const response = await fetch(url, { ...requestOptions, agent });
+            const response = await fetch(url, requestOptions);
             return response.ok;
         } catch (error) {
             log.error(`Error sending message: ${error}`);
