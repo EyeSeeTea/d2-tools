@@ -14,6 +14,7 @@ import * as users from "./commands/users";
 import * as loadTesting from "./commands/loadTesting";
 import * as categoryoptions from "./commands/categoryoptions";
 import * as indicators from "./commands/indicators";
+import * as enrollments from "./commands/enrollments";
 
 export function runCli() {
     const cliSubcommands = subcommands({
@@ -32,6 +33,7 @@ export function runCli() {
             loadTesting: loadTesting.getCommand(),
             categoryoptions: categoryoptions.getCommand(),
             indicators: indicators.getCommand(),
+            enrollments: enrollments.getCommand(),
         },
     });
 
