@@ -1,5 +1,8 @@
 import _, { isEmpty } from "lodash";
 import log from "utils/log";
+import { HttpProxyAgent } from "http-proxy-agent";
+import { HttpsProxyAgent } from "https-proxy-agent";
+
 import { Async } from "domain/entities/Async";
 import { MSTeamsWebhookOptions } from "data/user-monitoring/entities/MSTeamsWebhookOptions";
 import { MessageRepository } from "domain/repositories/user-monitoring/common/MessageRepository";
@@ -27,6 +30,9 @@ export class MessageMSTeamsRepository implements MessageRepository {
                 "Content-Type": "application/json",
             },
             body: postData,
+            agent: url.startsWith("https")
+                ? new HttpsProxyAgent(process.env["https_proxy"] || "")
+                : new HttpProxyAgent(process.env["http_proxy"] || ""),
         };
 
         try {
