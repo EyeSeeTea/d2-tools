@@ -1,5 +1,5 @@
 import { Id } from "domain/entities/Base";
-import { enrollmentStatus } from "domain/entities/enrollments/Enrollment";
+import { EnrollmentStatus } from "domain/entities/enrollments/Enrollment";
 
 export interface Event {
     event: Id;
@@ -8,5 +8,5 @@ export interface Event {
     orgUnit: Id;
     updatedAt: string;
     enrollment: Id;
-    enrollmentStatus: enrollmentStatus;
+    enrollmentStatus: EnrollmentStatus;
 }

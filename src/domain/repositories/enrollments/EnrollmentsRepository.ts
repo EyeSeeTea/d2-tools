@@ -1,12 +1,13 @@
 import { Id } from "domain/entities/Base";
 import { Async } from "domain/entities/Async";
-import { Enrollment } from "domain/entities/enrollments/Enrollment";
-// import { Stats } from "domain/entities/Stats";
+import { Enrollment, EnrollmentStatusRef } from "domain/entities/enrollments/Enrollment";
 
 export interface EnrollmentsRepository {
-    getList(params: EnrollmentsRepositoryParams, enrollmentsIds: Id[]): Async<Enrollment[]>;
-    getAll(params: EnrollmentsRepositoryParams): Async<Enrollment[]>;
+    getAllActiveRef(params: EnrollmentsRepositoryParams): Async<EnrollmentStatusRef[]>;
+    getAllActive(params: EnrollmentsRepositoryParams): Async<Enrollment[]>;
+    getRecentlyUpdated(params: EnrollmentsRepositoryParams): Async<Enrollment[]>;
     closeEnrollment(enrollmentId: Id): Async<TrackerResponse>;
+    bulkCloseEnrollments(enrollments: Enrollment[]): Async<TrackerResponse>;
 }
 
 export type EnrollmentsRepositoryParams = {
@@ -17,4 +18,5 @@ export type EnrollmentsRepositoryParams = {
 export type TrackerResponse = {
     status: "OK" | "ERROR";
     message?: string;
+    stats?: any;
 };

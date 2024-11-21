@@ -188,10 +188,12 @@ function isValidDate(str: string): boolean {
 
 export const MetadataDate: Type<string, string> = {
     async from(str) {
-        if (!isValidDate(str)) throw new Error(`Invalid date format: ${str}`);
-        if (!str.includes("T")) {
-            str += "T00:00:00.000";
+        if (!isValidDate(str)) {
+            throw new Error(`Invalid date format: ${str}`);
+        } else if (!str.includes("T")) {
+            return str + "T00:00:00.000";
+        } else {
+            return str;
         }
-        return str;
     },
 };
