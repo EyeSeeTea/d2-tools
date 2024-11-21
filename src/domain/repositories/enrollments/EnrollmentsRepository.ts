@@ -18,5 +18,4 @@ export type EnrollmentsRepositoryParams = {
 export type TrackerResponse = {
     status: "OK" | "ERROR";
     message?: string;
-    stats?: any;
 };
