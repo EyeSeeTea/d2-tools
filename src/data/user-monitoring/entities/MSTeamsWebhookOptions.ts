@@ -1,5 +1,5 @@
 export interface MSTeamsWebhookOptions {
-    ms_url: string;
+    msUrl: string;
     proxy: string;
-    server_name: string;
+    serverName: string;
 }

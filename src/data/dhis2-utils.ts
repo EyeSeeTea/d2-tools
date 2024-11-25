@@ -41,7 +41,7 @@ export function checkPostEventsResponse(res: EventsPostResponse): void {
         .value();
 
     if (res.status !== "SUCCESS") {
-        const msg = [`POST /events error`, res.status, ...importMessages].join("\n") || "Unknown error";
+        const msg = [`POST /events error`, ...importMessages].join("\n") || "Unknown error";
         log.error(msg);
     }
 }

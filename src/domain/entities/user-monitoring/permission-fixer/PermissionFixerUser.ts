@@ -33,6 +33,7 @@ export interface PermissionFixerUserCredentials {
     uid: Id;
     disabled: boolean;
     twoFA: boolean;
+    twoFactorEnabled: boolean;
     username: string;
     userRoles: NamedRef[];
 }

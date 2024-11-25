@@ -406,10 +406,6 @@ yarn start users migrate \
 #### Execution:
 
 ```
-yarn install
-
-yarn build
-
 yarn start usermonitoring run-permissions-fixer --config-file config.json
 or
 yarn start usermonitoring run-2fa-reporter --config-file config.json
@@ -418,10 +414,6 @@ yarn start usermonitoring run-2fa-reporter --config-file config.json
 #### Debug:
 
 ```
-yarn install
-
-yarn build:dev
-
 LOG_LEVEL=debug node --inspect-brk dist/index.js usermonitoring run-users-monitoring   --config-file config.json
 LOG_LEVEL=debug node --inspect-brk dist/index.js usermonitoring run-2fa-reporter   --config-file config.json
 ```
@@ -594,10 +586,6 @@ Note: the names are used only to make easy understand and debug the keys.
 #### Execution:
 
 ```bash
-yarn install
-
-yarn build
-
 yarn start usermonitoring run-authorities-monitoring --config-file config.json
 
 # To get the debug logs and store them in a file use:
@@ -629,7 +617,7 @@ A config file with the access info of the server and the message webhook details
 ```
 
 This reports stores data into the `d2-tools.authorities-monitor` datastore. This key needs to be setup before the first run to get a correct report.
-Its possible to leave `usersByAuthority` empty and use the `-s` flag to populate it.
+It's possible to leave `usersByAuthority` empty and use the `-s` flag to populate it.
 
 A sample:
 
@@ -673,6 +661,105 @@ A sample:
   }
 }
 ```
+
+### User Groups Monitoring
+
+This script will compare the metadata of the monitored userGroups with the version stored in the datastore and generate a report of the changes. This report will be sent to the MS Teams channel set in the webhook config section. Then the new version of the metadata will be stored in the datastore.
+
+#### Execution:
+
+```bash
+yarn start usermonitoring run-user-groups-monitoring --config-file config.json
+
+# To get the debug logs and store them in a file use:
+LOG_LEVEL=debug yarn start usermonitoring run-user-groups-monitoring --config-file config.json &> user-groups-monitoring.log
+```
+
+#### Parameters:
+
+-   `--config-file`: Connection and webhook config file.
+-   `-s` | `--set-datastore`: Write usergroups data to datastore, use in script setup. It assumes there is a monitoring config in d2-tools/user-groups-monitoring.
+
+#### Requirements:
+
+A config file with the access info of the server and the message webhook details:
+
+```JSON
+{
+    "URL": {
+        "username": "user",
+        "password": "passwd",
+        "server": "https://dhis.url/"
+    },
+    "WEBHOOK": {
+        "ms_url": "http://webhook.url/",
+        "proxy": "http://proxy.url/",
+        "server_name": "INSTANCE_NAME"
+    }
+}
+```
+
+This reports stores data into the `d2-tools.user-groups-monitoring` datastore. This key needs to be setup before the first run to get a correct report.
+Its possible to leave `monitoredUserGroups` empty and use the `-s` flag to populate it.
+
+The report, potentially, has tree sections for each user group:
+
+-   New entries: JSON with the properties that were unset or empty and changed.
+-   Modified fields: This section has two JSONs, one showing the old values and one with the news.
+-   User assignment changes: This section will show the users lost and added to the group.
+
+If a section is empty it will be omitted.
+
+### User Templates Monitoring
+
+The User Templates Monitoring script is used to compare user templates with the version stored in the datastore and generate a report of the changes. The report includes information on modified fields, and a detailed report on user groups and roles added or lost. This report will be sent to the MS Teams channel set in the webhook config section. The new version of the metadata will be stored in the datastore.
+
+#### Execution:
+
+```bash
+yarn start usermonitoring run-user-templates-monitoring --config-file config.json
+
+# To get the debug logs and store them in a file use:
+LOG_LEVEL=debug yarn start usermonitoring run-user-templates-monitoring --config-file config.json &> user-templates-monitoring.log
+```
+
+#### Parameters:
+
+-   `--config-file`: Connection and webhook config file.
+-   `-s` | `--set-datastore`: Write user templates data to datastore, use in script setup. It assumes there is a monitoring config in d2-tools/user-templates-monitoring.
+
+#### Requirements:
+
+A config file with the access info of the server and the message webhook details:
+
+```JSON
+{
+    "URL": {
+        "username": "user",
+        "password": "passwd",
+        "server": "https://dhis.url/"
+    },
+    "WEBHOOK": {
+        "ms_url": "http://webhook.url/",
+        "proxy": "http://proxy.url/",
+        "server_name": "INSTANCE_NAME"
+    }
+}
+```
+
+#### Report
+
+This reports stores data into the `d2-tools.user-templates-monitoring` datastore. This key needs to be setup before the first run to get a correct report.
+
+Its possible to leave `monitoredUserTemplates` empty and use the `-s` flag to populate it.
+
+The report includes the following sections:
+
+-   New entries: This section lists new properties that didn't exist in the old version.
+-   Modified fields: This section shows the fields that have been modified in the user templates and shows the before/after values.
+-   User Membership changes: This section displays the changes in the template userGroups and userRoles membership.
+
+If a section is empty, it will be omitted from the report.
 
 ## Move Attributes from a Program
 
