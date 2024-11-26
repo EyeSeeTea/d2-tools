@@ -235,7 +235,7 @@ export class D2ProgramRules {
         const res = await this.api.events
             .post(postOptions, { events })
             .getData()
-            .catch(err => err.response.data as EventsPostResponse);
+            .catch(err => err.data as EventsPostResponse);
 
         log.info(`POST events: ${res.status}`);
         return checkPostEventsResponse(res);
@@ -249,7 +249,7 @@ export class D2ProgramRules {
         const res = await this.api.trackedEntityInstances
             .post(postOptions, { trackedEntityInstances: teis })
             .getData()
-            .catch(err => err.response.data as HttpResponse<TeiPostResponse>);
+            .catch(err => err.data as HttpResponse<TeiPostResponse>);
 
         log.info(`POST TEIs: ${res.status}`);
 
