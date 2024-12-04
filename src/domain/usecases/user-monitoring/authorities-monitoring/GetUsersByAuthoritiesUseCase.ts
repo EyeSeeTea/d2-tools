@@ -18,7 +18,7 @@ export class GetUsersByAuthoritiesUseCase {
                 return userRole.users.map(user => {
                     return {
                         id: user.id,
-                        name: user.name,
+                        username: user.username,
                         authorities: userRole.authorities.filter(authority =>
                             options.authoritiesToMonitor.includes(authority)
                         ),
@@ -51,18 +51,18 @@ export class GetUsersByAuthoritiesUseCase {
                     .map(user => {
                         const repeated = users
                             .filter(u => u.id === user.id)
-                            .map(u => ({ id: u.id, name: u.name, userRoles: u.userRoles }));
+                            .map(u => ({ id: u.id, username: u.username, userRoles: u.userRoles }));
 
                         if (repeated.length > 1) {
                             return repeated.reduce((acc, u) => {
                                 return {
                                     id: u.id,
-                                    name: u.name,
+                                    username: u.username,
                                     userRoles: _.uniqBy([...acc.userRoles, ...u.userRoles], "id"),
                                 };
                             });
                         } else {
-                            return { id: user.id, name: user.name, userRoles: user.userRoles };
+                            return { id: user.id, username: user.username, userRoles: user.userRoles };
                         }
                     })
                     .uniqBy("id")

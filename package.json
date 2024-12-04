@@ -19,7 +19,7 @@
     "author": "EyeSeeTea <arnau@eyeseetea.com>",
     "license": "MIT",
     "dependencies": {
-        "@eyeseetea/d2-api": "1.16.0-beta.2",
+        "@eyeseetea/d2-api": "1.16.0-beta.3",
         "@types/json-diff": "^0.7.0",
         "async-parallel": "^1.2.3",
         "cmd-ts": "^0.10.0",
@@ -28,6 +28,7 @@
         "d2-utilizr": "^0.2.16",
         "file-system-cache": "^2.0.0",
         "json-diff": "^0.7.3",
+        "jsonfile": "^6.1.0",
         "lodash": "^4.17.21",
         "loglevel": "^1.8.0",
         "luxon": "3.4.2",

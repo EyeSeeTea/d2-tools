@@ -64,12 +64,14 @@ const run2FAReporterCmd = command({
         const userMonitoringReportRepository = new TwoFactorReportD2Repository(api);
         const programRepository = new UserMonitoringProgramD2Repository(api);
         log.info(`Run Report users without 2FA`);
-        await new RunTwoFactorReportUseCase(
+        const response = await new RunTwoFactorReportUseCase(
             usersRepository,
             userMonitoringReportRepository,
             externalConfigRepository,
             programRepository
         ).execute();
+
+        log.info(JSON.stringify(response));
     },
 });
 

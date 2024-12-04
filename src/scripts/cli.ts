@@ -14,6 +14,7 @@ import * as users from "./commands/users";
 import * as loadTesting from "./commands/loadTesting";
 import * as categoryoptions from "./commands/categoryoptions";
 import * as indicators from "./commands/indicators";
+import * as trackedEntities from "./commands/trackedEntities";
 import * as enrollments from "./commands/enrollments";
 
 export function runCli() {
@@ -27,6 +28,7 @@ export function runCli() {
             datavalues: dataValues.getCommand(),
             notifications: notifications.getCommand(),
             events: events.getCommand(),
+            trackedEntities: trackedEntities.getCommand(),
             sync: sync.getCommand(),
             users: users.getCommand(),
             usermonitoring: userMonitoring.getCommand(),
