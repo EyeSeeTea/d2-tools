@@ -26,6 +26,9 @@ export class EnrollmentsD2Repository implements EnrollmentsRepository {
                 ouMode: "SELECTED",
                 programStatus: "ACTIVE",
                 fields: enrollmentsRefFields,
+                // NOTE: Fix for 2.37.8.1
+                page: 1,
+                pageSize: 100000,
                 // TODO: Remove enrolledBefore once d2-api is updated
                 enrolledBefore: new Date().toISOString().replace("Z", ""),
                 skipPaging: true,
@@ -35,7 +38,7 @@ export class EnrollmentsD2Repository implements EnrollmentsRepository {
         return enrollments;
     }
 
-    // NOTE: This method will be usesd with bulkCloseEnrollments
+    // NOTE: This method will be used with bulkCloseEnrollments
     async getAllActive(params: EnrollmentsRepositoryParams): Async<Enrollment[]> {
         return this.getEnrollments({ ...params, programStatus: "ACTIVE" });
     }
@@ -55,6 +58,9 @@ export class EnrollmentsD2Repository implements EnrollmentsRepository {
                 ouMode: "SELECTED",
                 programStatus: programStatus,
                 fields: enrollmentsFields,
+                // NOTE: Fix for 2.37.8.1
+                page: 1,
+                pageSize: 100000,
                 // TODO: Remove enrolledBefore once d2-api is updated
                 enrolledBefore: new Date().toISOString().replace("Z", ""),
                 updatedAfter: updatedAfter,

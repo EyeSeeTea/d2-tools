@@ -1,4 +1,5 @@
 import _ from "lodash";
+import log from "utils/log";
 import { command, option, subcommands } from "cmd-ts";
 import { getApiUrlOption, getD2Api, IDString, MetadataDate } from "scripts/common";
 import { EventsD2Repository } from "data/enrollments/EventsD2Repository";
@@ -39,7 +40,7 @@ const closeEnrollmentsCmd = command({
         }),
     },
     handler: async args => {
-        console.debug(args);
+        log.debug(JSON.stringify(args, null, 2));
         const api = getD2Api(args.url);
         const eventsRepository = new EventsD2Repository(api);
         const enrollmentsRepository = new EnrollmentsD2Repository(api);
