@@ -1,40 +1,7 @@
---
-CREATE OR REPLACE FUNCTION update_usernames_in_nested_json(table_name TEXT)
-RETURNS VOID AS $$
-DECLARE mapping RECORD;
-updated_count INTEGER;
-final_sql TEXT;
-BEGIN FOR mapping IN
-SELECT old_username,
-    new_username
-FROM username_mapping LOOP --
-    final_sql := format(
-    'UPDATE %I
-             SET jbvalue = REPLACE(
-                 jbvalue::TEXT,
-                 %L,
-                 %L
-             )::JSONB
-             WHERE jbvalue::TEXT LIKE %L',
-    table_name,
-    '\"' || mapping.old_username || '\"',
-    '\"' || mapping.new_username || '\"',
-    '%' || '\\"' || mapping.old_username || '\\"' || '%'
-);
--- Log the final SQL being executed
-RAISE NOTICE 'Executing SQL: %',
-final_sql;
-EXECUTE final_sql;
-GET DIAGNOSTICS updated_count = ROW_COUNT;
-RAISE NOTICE '%s.jbvalue[%] = %',
-table_name,
-mapping.old_username,
-updated_count;
-END LOOP;
-END;
-$$ LANGUAGE plpgsql;
 -- Functions
-CREATE OR REPLACE FUNCTION update_username_string(table_name TEXT, column_name TEXT) RETURNS VOID AS $$
+--
+-- Rename plain string username in 'table_name.column_name'
+CREATE OR REPLACE FUNCTION _update_username_string(table_name TEXT, column_name TEXT) RETURNS VOID AS $$
 DECLARE rows_updated INTEGER;
 BEGIN EXECUTE format(
     'UPDATE %I
@@ -54,7 +21,8 @@ rows_updated;
 END;
 $$ LANGUAGE plpgsql;
 --
-CREATE OR REPLACE FUNCTION update_username_values() RETURNS VOID AS $$
+-- Rename plain string username in aggregated data values if dataElement.valuetype is 'USERNAME'
+CREATE OR REPLACE FUNCTION _update_username_values() RETURNS VOID AS $$
 DECLARE rows_updated INTEGER;
 BEGIN
 UPDATE datavalue dv
@@ -70,7 +38,8 @@ rows_updated;
 END;
 $$ LANGUAGE plpgsql;
 ---
-CREATE OR REPLACE FUNCTION update_event_datavalues() RETURNS VOID AS $$
+-- Update string username in events data values if dataElement.valuetype is 'USERNAME'
+CREATE OR REPLACE FUNCTION _update_event_datavalues() RETURNS VOID AS $$
 DECLARE rows_updated INTEGER;
 BEGIN
 UPDATE programstageinstance
@@ -89,7 +58,8 @@ rows_updated;
 END;
 $$ LANGUAGE plpgsql;
 --
-CREATE OR REPLACE FUNCTION update_tracked_entity_attributes_values() RETURNS VOID AS $$
+-- Update tracked entity attributes values if the dataElement valuetype is 'USERNAME'
+CREATE OR REPLACE FUNCTION _update_tracked_entity_attributes_values() RETURNS VOID AS $$
 DECLARE rows_updated INTEGER;
 BEGIN WITH updated_values AS (
     SELECT teav.trackedentityattributeid,
@@ -109,10 +79,8 @@ rows_updated;
 END;
 $$ LANGUAGE plpgsql;
 --
-CREATE OR REPLACE FUNCTION update_username_jsonb(
-table_name TEXT,
-column_name TEXT
-) RETURNS VOID AS $$
+-- Rename username in JSONB table_name.column_name (key: "username")
+CREATE OR REPLACE FUNCTION _update_username_jsonb(table_name TEXT, column_name TEXT) RETURNS VOID AS $$
 DECLARE rows_updated INTEGER;
 BEGIN EXECUTE format(
     'UPDATE %I
@@ -131,45 +99,45 @@ column_name,
 rows_updated;
 END;
 $$ LANGUAGE plpgsql;
--- Actions
-SELECT update_username_string('audit', 'createdby');
-SELECT update_username_string('completedatasetregistration', 'lastupdatedby');
-SELECT update_username_string('completedatasetregistration', 'storedby');
-SELECT update_username_string('datastatisticsevent', 'username');
-SELECT update_username_string('datavalue', 'storedby');
-SELECT update_username_string('datavalueaudit', 'modifiedby');
-SELECT update_username_string('deletedobject', 'deleted_by');
-SELECT update_username_string('externalnotificationlogentry', 'triggerby');
-SELECT update_username_string('potentialduplicate', 'createdbyusername');
-SELECT update_username_string('potentialduplicate', 'lastupdatebyusername');
-SELECT update_username_string('programinstance', 'completedby');
-SELECT update_username_jsonb('programinstance', 'createdbyuserinfo');
-SELECT update_username_jsonb('programinstance', 'lastupdatedbyuserinfo');
-SELECT update_username_string('programinstance', 'storedby');
-SELECT update_username_string('programownershiphistory', 'createdby');
-SELECT update_username_string('programstageinstance', 'completedby');
-SELECT update_username_jsonb('programstageinstance', 'createdbyuserinfo');
-SELECT update_username_jsonb('programstageinstance', 'lastupdatedbyuserinfo');
-SELECT update_username_string('programstageinstance', 'storedby');
-SELECT update_username_string('programtempownershipaudit', 'accessedby');
-SELECT update_username_string('trackedentityattributevalue', 'storedby');
-SELECT update_username_string('trackedentityattributevalueaudit', 'modifiedby');
-SELECT update_username_string('trackedentitydatavalueaudit', 'modifiedby');
-SELECT update_username_jsonb('trackedentityinstance', 'createdbyuserinfo');
-SELECT update_username_jsonb('trackedentityinstance', 'lastupdatedbyuserinfo');
-SELECT update_username_string('trackedentityinstance', 'storedby');
-SELECT update_username_string('trackedentityinstanceaudit', 'accessedby');
-SELECT update_username_string('trackedentityprogramowner', 'createdby');
-SELECT update_username_string('userinfo', 'username');
-SELECT update_username_values();
-SELECT update_event_datavalues();
-SELECT update_tracked_entity_attributes_values();
----
-SELECT update_usernames_in_nested_json('keyjsonvalue');
 --
-DROP FUNCTION update_usernames_in_nested_json(TEXT);
-DROP FUNCTION update_username_string(TEXT, TEXT);
-DROP FUNCTION update_username_values();
-DROP FUNCTION update_event_datavalues();
-DROP FUNCTION update_tracked_entity_attributes_values();
-DROP FUNCTION update_username_jsonb(TEXT, TEXT);
+-- Actions
+--
+SELECT _update_username_string('audit', 'createdby');
+SELECT _update_username_string('completedatasetregistration', 'lastupdatedby');
+SELECT _update_username_string('completedatasetregistration', 'storedby');
+SELECT _update_username_string('datastatisticsevent', 'username');
+SELECT _update_username_string('datavalue', 'storedby');
+SELECT _update_username_string('datavalueaudit', 'modifiedby');
+SELECT _update_username_string('deletedobject', 'deleted_by');
+SELECT _update_username_string('externalnotificationlogentry', 'triggerby');
+SELECT _update_username_string('potentialduplicate', 'createdbyusername');
+SELECT _update_username_string('potentialduplicate', 'lastupdatebyusername');
+SELECT _update_username_string('programinstance', 'completedby');
+SELECT _update_username_jsonb('programinstance', 'createdbyuserinfo');
+SELECT _update_username_jsonb('programinstance', 'lastupdatedbyuserinfo');
+SELECT _update_username_string('programinstance', 'storedby');
+SELECT _update_username_string('programownershiphistory', 'createdby');
+SELECT _update_username_string('programstageinstance', 'completedby');
+SELECT _update_username_jsonb('programstageinstance', 'createdbyuserinfo');
+SELECT _update_username_jsonb('programstageinstance', 'lastupdatedbyuserinfo');
+SELECT _update_username_string('programstageinstance', 'storedby');
+SELECT _update_username_string('programtempownershipaudit', 'accessedby');
+SELECT _update_username_string('trackedentityattributevalue', 'storedby');
+SELECT _update_username_string('trackedentityattributevalueaudit', 'modifiedby');
+SELECT _update_username_string('trackedentitydatavalueaudit', 'modifiedby');
+SELECT _update_username_jsonb('trackedentityinstance', 'createdbyuserinfo');
+SELECT _update_username_jsonb('trackedentityinstance', 'lastupdatedbyuserinfo');
+SELECT _update_username_string('trackedentityinstance', 'storedby');
+SELECT _update_username_string('trackedentityinstanceaudit', 'accessedby');
+SELECT _update_username_string('trackedentityprogramowner', 'createdby');
+SELECT _update_username_string('userinfo', 'username');
+SELECT _update_username_values();
+SELECT _update_event_datavalues();
+SELECT _update_tracked_entity_attributes_values();
+-- Delete all functions
+SELECT pg_catalog.pg_get_function_identity_arguments(p.oid) AS arguments,
+    p.proname AS function_name,
+    n.nspname AS schema_name
+FROM pg_proc p
+    JOIN pg_namespace n ON p.pronamespace = n.oid
+WHERE p.proname LIKE '_update_%';
