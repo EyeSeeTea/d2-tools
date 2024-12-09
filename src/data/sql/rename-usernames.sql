@@ -93,7 +93,7 @@ BEGIN EXECUTE format(
     column_name
 );
 GET DIAGNOSTICS rows_updated = ROW_COUNT;
-RAISE NOTICE '%.%[username]: % rows updated',
+RAISE NOTICE '%.%[username]: %',
 table_name,
 column_name,
 rows_updated;
