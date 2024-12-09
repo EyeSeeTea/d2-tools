@@ -1,3 +1,38 @@
+--
+CREATE OR REPLACE FUNCTION update_usernames_in_nested_json(table_name TEXT)
+RETURNS VOID AS $$
+DECLARE mapping RECORD;
+updated_count INTEGER;
+final_sql TEXT;
+BEGIN FOR mapping IN
+SELECT old_username,
+    new_username
+FROM username_mapping LOOP --
+    final_sql := format(
+    'UPDATE %I
+             SET jbvalue = REPLACE(
+                 jbvalue::TEXT,
+                 %L,
+                 %L
+             )::JSONB
+             WHERE jbvalue::TEXT LIKE %L',
+    table_name,
+    '\"' || mapping.old_username || '\"',
+    '\"' || mapping.new_username || '\"',
+    '%' || '\\"' || mapping.old_username || '\\"' || '%'
+);
+-- Log the final SQL being executed
+RAISE NOTICE 'Executing SQL: %',
+final_sql;
+EXECUTE final_sql;
+GET DIAGNOSTICS updated_count = ROW_COUNT;
+RAISE NOTICE '%s.jbvalue[%] = %',
+table_name,
+mapping.old_username,
+updated_count;
+END LOOP;
+END;
+$$ LANGUAGE plpgsql;
 -- Functions
 CREATE OR REPLACE FUNCTION update_username_string(table_name TEXT, column_name TEXT) RETURNS VOID AS $$
 DECLARE rows_updated INTEGER;
@@ -97,10 +132,12 @@ rows_updated;
 END;
 $$ LANGUAGE plpgsql;
 -- Actions
+SELECT update_username_string('audit', 'createdby');
 SELECT update_username_string('completedatasetregistration', 'lastupdatedby');
 SELECT update_username_string('completedatasetregistration', 'storedby');
 SELECT update_username_string('datastatisticsevent', 'username');
 SELECT update_username_string('datavalue', 'storedby');
+SELECT update_username_string('datavalueaudit', 'modifiedby');
 SELECT update_username_string('deletedobject', 'deleted_by');
 SELECT update_username_string('externalnotificationlogentry', 'triggerby');
 SELECT update_username_string('potentialduplicate', 'createdbyusername');
@@ -127,3 +164,12 @@ SELECT update_username_string('userinfo', 'username');
 SELECT update_username_values();
 SELECT update_event_datavalues();
 SELECT update_tracked_entity_attributes_values();
+---
+SELECT update_usernames_in_nested_json('keyjsonvalue');
+--
+DROP FUNCTION update_usernames_in_nested_json(TEXT);
+DROP FUNCTION update_username_string(TEXT, TEXT);
+DROP FUNCTION update_username_values();
+DROP FUNCTION update_event_datavalues();
+DROP FUNCTION update_tracked_entity_attributes_values();
+DROP FUNCTION update_username_jsonb(TEXT, TEXT);

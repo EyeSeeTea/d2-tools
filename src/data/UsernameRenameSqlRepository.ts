@@ -16,6 +16,7 @@ export class UsernameRenameSqlRepository implements UsernameRenameRepository {
             return;
         }
 
+        logger.info(`Mapping: ${JSON.stringify(mapping)}`);
         const sqlMapping = getSqlForTemporalMappingTable(mapping);
         const sqlRename = getRenamingSql();
 
