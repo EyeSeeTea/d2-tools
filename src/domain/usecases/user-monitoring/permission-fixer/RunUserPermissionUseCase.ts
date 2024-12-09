@@ -466,7 +466,6 @@ export class RunUserPermissionUseCase {
             const userIds = userIdWithoutGroups.map(item => {
                 return { id: item.id };
             });
-            minimalUserGroup.users.push(...userIds);
 
             log.info("Pushing fixed users without groups");
             if (!pushFixedUserGroups) {
@@ -477,7 +476,7 @@ export class RunUserPermissionUseCase {
                 );
             }
 
-            const response = await this.userGroupRepository.save(minimalUserGroup);
+            const response = await this.userGroupRepository.save(minimalUserGroup, userIds);
             return this.getResponse(response, userIdWithoutGroups.length, userIdWithoutGroups);
         } else {
             return this.getResponse("No users without groups found.", 0, []);

@@ -174,7 +174,7 @@ export class ProgramEventsD2Repository implements ProgramEventsRepository {
             .keyBy(event => event.id)
             .value();
 
-        const resultsList = await getInChunks<Result>(eventsIdsToSave, async eventIds => {
+        const resultsList = await getInChunks<Id, Result>(eventsIdsToSave, async eventIds => {
             return this.getEvents(eventIds)
                 .then(res => {
                     const postEvents = eventIds.map((eventId): EventToPost => {

@@ -4,7 +4,7 @@ import { run, subcommands } from "cmd-ts";
 import * as datasets from "./commands/datasets";
 import * as programs from "./commands/programs";
 import * as orgunits from "./commands/orgunits";
-import * as usermonitoring from "./commands/usermonitoring";
+import * as userMonitoring from "./commands/userMonitoring";
 import * as translations from "./commands/translations";
 import * as dataValues from "./commands/dataValues";
 import * as notifications from "./commands/notifications";
@@ -14,6 +14,8 @@ import * as users from "./commands/users";
 import * as loadTesting from "./commands/loadTesting";
 import * as categoryoptions from "./commands/categoryoptions";
 import * as indicators from "./commands/indicators";
+import * as trackedEntities from "./commands/trackedEntities";
+import * as enrollments from "./commands/enrollments";
 
 export function runCli() {
     const cliSubcommands = subcommands({
@@ -26,12 +28,14 @@ export function runCli() {
             datavalues: dataValues.getCommand(),
             notifications: notifications.getCommand(),
             events: events.getCommand(),
+            trackedEntities: trackedEntities.getCommand(),
             sync: sync.getCommand(),
             users: users.getCommand(),
-            usermonitoring: usermonitoring.getCommand(),
+            usermonitoring: userMonitoring.getCommand(),
             loadTesting: loadTesting.getCommand(),
             categoryoptions: categoryoptions.getCommand(),
             indicators: indicators.getCommand(),
+            enrollments: enrollments.getCommand(),
         },
     });
 

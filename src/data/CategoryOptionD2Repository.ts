@@ -16,7 +16,7 @@ export class CategoryOptionD2Repository implements CategoryOptionRepository {
 
     async saveAll(categoryOptions: CategoryOption[]): Async<Stats> {
         const catOptionsIdsToSave = categoryOptions.map(getId);
-        const stats = await getInChunks<Stats>(catOptionsIdsToSave, async catOptionsIds => {
+        const stats = await getInChunks<string, Stats>(catOptionsIdsToSave, async catOptionsIds => {
             const response = await this.api.metadata
                 .get({
                     categoryOptions: {
