@@ -399,6 +399,26 @@ yarn start users migrate \
 }
 ```
 
+### Rename username
+
+DHIS2 does not support renaming usernames directly. While it is possible to update usernames through the API, this only modifies the main table. References in other tables, which rely on the hardcoded username (not `userinfoid` or `userinfo.uid`), will remain unchanged.
+
+To fully rename a username across all references, you need to execute a SQL script. Start by generating the script using the following command:
+
+```bash
+ yarn start users rename-username \
+  --mapping=user1old:user1new,user2old:user2new \
+  [--dry-run] --output=rename.sql
+```
+
+And then run the generated SQL script in your database to perform the actual renaming:
+
+```bash
+psql -U dhis dhis2 -f rename.sql
+```
+
+Replace `dhis` with your database username and `dhis2` with your database name if they differ. Ensure you have a backup of the database before applying the changes.
+
 ## User monitoring
 
 ### Users Permissions Fixer and 2FA Reporter
