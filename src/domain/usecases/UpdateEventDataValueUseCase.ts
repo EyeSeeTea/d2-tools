@@ -58,7 +58,7 @@ export class UpdateEventDataValueUseCase {
                         ...dv,
                         oldValue: dv.value,
                         value:
-                            dv.dataElementId === options.dataElementId && dv.value === options.condition
+                            dv.dataElement.id === options.dataElementId && dv.value === options.condition
                                 ? options.newValue
                                 : dv.value,
                     };
@@ -71,7 +71,7 @@ export class UpdateEventDataValueUseCase {
             .filter(
                 event =>
                     event.dataValues.filter(
-                        dv => dv.dataElementId === options.dataElementId && dv.value === options.newValue
+                        dv => dv.dataElement.id === options.dataElementId && dv.value === options.newValue
                     ).length > 0
             );
 

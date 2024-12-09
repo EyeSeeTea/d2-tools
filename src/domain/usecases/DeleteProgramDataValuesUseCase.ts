@@ -35,7 +35,7 @@ export class DeleteProgramDataValuesUseCase {
 
         return events.map((event): typeof event => {
             const dataValuesUpdated = event.dataValues.map((dataValue): typeof dataValue => {
-                return dataElementMatches(dataValue.dataElementId) ? { ...dataValue, value: "" } : dataValue;
+                return dataElementMatches(dataValue.dataElement.id) ? { ...dataValue, value: "" } : dataValue;
             });
 
             return { ...event, dataValues: dataValuesUpdated };
