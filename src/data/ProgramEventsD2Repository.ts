@@ -12,50 +12,6 @@ import { Timestamp } from "domain/entities/Date";
 import { getInChunks } from "./dhis2-utils";
 import { promiseMap } from "./dhis2-utils";
 
-const eventFields = {
-    created: true,
-    event: true,
-    status: true,
-    orgUnit: true,
-    orgUnitName: true,
-    program: true,
-    programStage: true,
-    eventDate: true,
-    dueDate: true,
-    lastUpdated: true,
-    trackedEntityInstance: true,
-    dataValues: {
-        dataElement: true,
-        value: true,
-        storedBy: true,
-        providedElsewhere: true,
-        lastUpdated: true,
-    },
-} as const;
-
-type Fields = typeof eventFields;
-
-type Event = EventsGetResponse<Fields>["events"][number];
-
-type DataValue = ProgramEvent["dataValues"][number];
-
-type D2DataValue = Event["dataValues"][number];
-
-const programFields = {
-    id: true,
-    name: true,
-    programType: true,
-    programStages: {
-        id: true,
-        name: true,
-        programStageSections: { dataElements: { id: true } },
-    },
-} as const;
-
-type D2Program = SelectedPick<D2ProgramSchema, typeof programFields>;
-
-type D2ProgramStage = D2Program["programStages"][number];
-
 export class ProgramEventsD2Repository implements ProgramEventsRepository {
     constructor(private api: D2Api) {}
 
@@ -327,3 +283,47 @@ async function importEvents(api: D2Api, events: EventToPost[], params?: EventsPo
         ? { type: "success", message: `${events.length} posted` }
         : { type: "error", message: "Error posting events" };
 }
+
+const eventFields = {
+    created: true,
+    event: true,
+    status: true,
+    orgUnit: true,
+    orgUnitName: true,
+    program: true,
+    programStage: true,
+    eventDate: true,
+    dueDate: true,
+    lastUpdated: true,
+    trackedEntityInstance: true,
+    dataValues: {
+        dataElement: true,
+        value: true,
+        storedBy: true,
+        providedElsewhere: true,
+        lastUpdated: true,
+    },
+} as const;
+
+type Fields = typeof eventFields;
+
+type Event = EventsGetResponse<Fields>["events"][number];
+
+type DataValue = ProgramEvent["dataValues"][number];
+
+type D2DataValue = Event["dataValues"][number];
+
+const programFields = {
+    id: true,
+    name: true,
+    programType: true,
+    programStages: {
+        id: true,
+        name: true,
+        programStageSections: { dataElements: { id: true } },
+    },
+} as const;
+
+type D2Program = SelectedPick<D2ProgramSchema, typeof programFields>;
+
+type D2ProgramStage = D2Program["programStages"][number];

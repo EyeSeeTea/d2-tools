@@ -9,20 +9,10 @@ export class DuplicatedProgramsSpreadsheetExport {
     constructor(private duplicated: DuplicatedEvents) {}
 
     async export(outputFilePath: string): Async<void> {
-        const programsById = _(this.duplicated.groups)
-            .flatMap(group => group.events)
-            .map(ev => ev.program)
-            .map(program => [program.id, program] as [Id, typeof program])
-            .fromPairs()
-            .value();
-
-        const rowsByProgramId = _(this.duplicated.groups)
-            .groupBy(group => group.events[0]?.program.id)
-            .value();
-
         const workbook = XLSX.utils.book_new();
+        const programsById = this.getProgramsById();
 
-        const sheets = _(rowsByProgramId)
+        const sheets = _(this.getRowsByProgram())
             .map((groups, programId) => {
                 if (groups.length === 0) return;
 
@@ -49,6 +39,21 @@ export class DuplicatedProgramsSpreadsheetExport {
 
         logger.info(`Save file ${outputFilePath}`);
         XLSX.writeFile(workbook, outputFilePath);
+    }
+
+    private getRowsByProgram() {
+        return _(this.duplicated.groups)
+            .groupBy(group => group.events[0]?.program.id)
+            .value();
+    }
+
+    private getProgramsById() {
+        return _(this.duplicated.groups)
+            .flatMap(group => group.events)
+            .map(ev => ev.program)
+            .map(program => [program.id, program] as [Id, typeof program])
+            .fromPairs()
+            .value();
     }
 }
 
