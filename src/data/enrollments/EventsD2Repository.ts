@@ -25,6 +25,9 @@ export class EventsD2Repository implements EventsRepository {
                     enrollmentStatus: true,
                 },
                 skipPaging: true,
+                // NOTE: Fix for 2.37.8.1
+                page: 1,
+                pageSize: 100000,
             })
             .getData()) as { instances: Event[] };
 
