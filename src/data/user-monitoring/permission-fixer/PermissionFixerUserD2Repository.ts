@@ -22,16 +22,11 @@ export class PermissionFixerUserD2Repository implements PermissionFixerUserRepos
         return responses["users"];
     }
 
-    async getAllUsers(excludedUsers: string[], exclude?: boolean): Async<PermissionFixerUser[]> {
-        log.info(`Get metadata: All users except: ${excludedUsers.join(",")}`);
-        const filterOption = exclude ? "!in" : "in";
+    async getAllUsers(): Async<PermissionFixerUser[]> {
+        log.info(`Get metadata: All users`);
         //todo use d2api filters
         const responses = await this.api
-            .get<Users>(
-                `/users.json?paging=false&fields=*,userCredentials[*]&filter=id:${filterOption}:[${excludedUsers.join(
-                    ","
-                )}]`
-            )
+            .get<Users>(`/users.json?paging=false&fields=*,userCredentials[*]`)
             .getData();
 
         return responses["users"];
