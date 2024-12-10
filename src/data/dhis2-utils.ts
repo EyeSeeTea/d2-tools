@@ -1,7 +1,5 @@
-import { HttpResponse } from "@eyeseetea/d2-api/api/common";
 import { EventsPostResponse } from "@eyeseetea/d2-api/api/events";
 import { CancelableResponse } from "@eyeseetea/d2-api/repositories/CancelableResponse";
-import { Id } from "domain/entities/Base";
 import _ from "lodash";
 import { MetadataResponse } from "../types/d2-api";
 import log from "utils/log";
@@ -29,8 +27,8 @@ export function getData<T>(d2Response: CancelableResponse<T>): Promise<T> {
     return d2Response.getData();
 }
 
-export function checkPostEventsResponse(res: HttpResponse<EventsPostResponse>): void {
-    const importMessages = _(res.response.importSummaries || [])
+export function checkPostEventsResponse(res: EventsPostResponse): void {
+    const importMessages = _(res.importSummaries || [])
         .map(importSummary =>
             importSummary.status !== "SUCCESS"
                 ? _.compact([
@@ -42,13 +40,13 @@ export function checkPostEventsResponse(res: HttpResponse<EventsPostResponse>): 
         .compact()
         .value();
 
-    if (res.status !== "OK") {
-        const msg = [`POST /events error`, res.message, ...importMessages].join("\n") || "Unknown error";
+    if (res.status !== "SUCCESS") {
+        const msg = [`POST /events error`, ...importMessages].join("\n") || "Unknown error";
         log.error(msg);
     }
 }
 
-export async function getInChunks<T>(ids: Id[], getter: (idsGroup: Id[]) => Promise<T[]>): Promise<T[]> {
+export async function getInChunks<T, U>(ids: T[], getter: (idsGroup: T[]) => Promise<U[]>): Promise<U[]> {
     const objsCollection = await promiseMap(_.chunk(ids, 300), idsGroup => getter(idsGroup));
     return _.flatten(objsCollection);
 }
@@ -62,4 +60,8 @@ export function promiseMap<T, S>(inputValues: T[], mapper: (value: T) => Promise
             })
         );
     return inputValues.reduce(reducer, Promise.resolve([]));
+}
+
+export function getPluralModel(model: string): string {
+    return model.endsWith("s") ? model : model + "s";
 }

@@ -5,6 +5,10 @@ import { StringsSeparatedByCommas, getApiUrlOption, getD2Api } from "scripts/com
 import { MigrateUserNameUseCase } from "domain/usecases/MigrateUserNameUseCase";
 import { NotificationsEmailRepository } from "data/NotificationsEmailRepository";
 import logger from "utils/log";
+import { RenameUsernameUseCase } from "domain/usecases/RenameUsernamesUseCase";
+import { UsernameRenameSqlRepository } from "data/UsernameRenameSqlRepository";
+import { Maybe } from "utils/ts-utils";
+import { UsernameRename } from "domain/entities/UsernameRename";
 
 export function getCommand() {
     const migrateUser = command({
@@ -99,8 +103,48 @@ export function getCommand() {
         },
     });
 
+    const renameUsername = command({
+        name: "Rename username",
+        description: "Rename occurences of a username in the DHIS2 database",
+        args: {
+            mapping: option({
+                type: string,
+                long: "mapping",
+                description: "oldusername:newusername,...",
+            }),
+            dryRun: flag({
+                type: boolean,
+                long: "dry-run",
+                description: "The SQL will be executed within a rollback transaction",
+            }),
+            sqlFilePath: option({
+                type: string,
+                long: "output",
+                description: "Path to the output file (SQL)",
+            }),
+        },
+        handler: async args => {
+            const mapping = getMappingFromCommaSeparatedKeyValues(args.mapping);
+            const repository = new UsernameRenameSqlRepository(args.sqlFilePath);
+            await new RenameUsernameUseCase(repository).execute(mapping, { dryRun: args.dryRun });
+        },
+    });
+
     return subcommands({
         name: "users",
-        cmds: { migrate: migrateUser },
+        cmds: {
+            migrate: migrateUser,
+            "rename-username": renameUsername,
+        },
     });
+}
+
+function getMappingFromCommaSeparatedKeyValues(strMapping: string) {
+    return _(strMapping.split(","))
+        .map((mapping: string): Maybe<UsernameRename> => {
+            const [from, to] = mapping.split(":");
+            return from && to ? { from, to } : undefined;
+        })
+        .compact()
+        .value();
 }

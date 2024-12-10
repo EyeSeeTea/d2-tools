@@ -1,4 +1,6 @@
 import { option, optional, string, Type } from "cmd-ts";
+import fs from "fs";
+import path from "path";
 import _ from "lodash";
 import { SocksProxyAgent } from "socks-proxy-agent";
 import { D2Api } from "types/d2-api";
@@ -12,7 +14,7 @@ export function getD2Api(url: string): D2Api {
 function buildD2Api(options: { baseUrl: string; auth: Auth }): D2Api {
     const socksProxyUrl = process.env.ALL_PROXY;
     const agent = socksProxyUrl ? new SocksProxyAgent(socksProxyUrl) : undefined;
-    return new D2Api({ ...options, backend: "xhr", agent: agent });
+    return new D2Api({ ...options, backend: "fetch", agent: agent });
 }
 
 function getApiOptionsFromUrl(url: string): { baseUrl: string; auth: Auth } {
@@ -142,3 +144,56 @@ export function choiceOf<T extends string>(values: readonly T[]): Type<string, T
         },
     };
 }
+
+export const periodYears: Type<string, string[]> = {
+    async from(str) {
+        const values = _.compact(str.split(","));
+        if (_(values).isEmpty()) throw new Error("Value cannot be empty");
+        if (!_.every(values, item => item.length === 4)) throw new Error("Year must be 4 char long");
+        return values;
+    },
+};
+
+function isDir(str: string): boolean {
+    const stat = fs.statSync(str);
+
+    return stat.isDirectory();
+}
+
+export const FilePath: Type<string, string> = {
+    async from(str) {
+        // path does not resolve ~ to home dir
+        if (str.includes("~")) {
+            str = str.replace("~", require("os").homedir());
+        }
+
+        const resolved = path.resolve(str);
+
+        if (!fs.existsSync(resolved)) {
+            const subPath = resolved.substring(0, resolved.lastIndexOf("/"));
+            if (fs.existsSync(subPath) && isDir(subPath)) {
+                return resolved;
+            }
+            throw new Error("Path doesn't exist");
+        }
+
+        return resolved;
+    },
+};
+
+function isValidDate(str: string): boolean {
+    const dateTimeRegex = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d{3})?)?$/;
+    return dateTimeRegex.test(str);
+}
+
+export const MetadataDate: Type<string, string> = {
+    async from(str) {
+        if (!isValidDate(str)) {
+            throw new Error(`Invalid date format: ${str}`);
+        } else if (!str.includes("T")) {
+            return str + "T00:00:00.000";
+        } else {
+            return str;
+        }
+    },
+};

@@ -215,7 +215,7 @@ yarn start events update-events \
 
 Get dangling data values and save them in a CSV file:
 
-```
+```console
 $ yarn start datavalues get-dangling-values \
   --url='http://USER:PASSWORD@HOST:PORT' \
   --dataelementgroup-ids=OUwLDu1i5xa,SMkbYuGmadE \
@@ -226,7 +226,7 @@ $ yarn start datavalues get-dangling-values \
 
 To delete the dangling data values, use the generated CSV as data source and this command:
 
-```
+```console
 $ yarn start datavalues post-dangling-values \
   --url='http://USER:PASSWORD@HOST:PORT' dataValues.csv
 ```
@@ -235,8 +235,8 @@ $ yarn start datavalues post-dangling-values \
 
 It reverts the last data values, using the data value audit. For each of these data values, it finds its N audit records, gets the last valid and first invalid audit record and use them to build an updated data value. Example:
 
-```
-$ yarn start datavalues revert \
+```console
+shell:~$ yarn start datavalues revert \
  --url='http://USER:PASSWORD@HOST:PORT' \
  --dataset-ids=Tu81BTLUuCT --orgunit-ids=XKKI1hhyFxk --periods=2020,2021 \
  --date=2022-06-01 --usernames="android" \
@@ -247,8 +247,8 @@ $ yarn start datavalues revert \
 
 It deletes the duplicated events for some events/tracker programs. An example:
 
-```
-$ yarn start programs get-duplicated-events \
+```console
+shell:~$ yarn start programs get-duplicated-events \
   --url='http://USER:PASSWORD@HOST:PORT' \
   --save-report=duplicated-events-ecare-pilot.csv \
   --programs-ids=vYRMQ43Zl3Y --org-units-ids=yT7tCISNWG6 \
@@ -321,7 +321,7 @@ Save a HAR file in a browser (Chrome: Developer Tools -> Network tab -> Export H
 ]
 ```
 
-And run the scenarios against the same or a different DHIS2 instance:
+And run the specificied scenarios against the same or a different DHIS2 instance:
 
 ```shell
 $ yarn start loadTesting run \
@@ -399,6 +399,388 @@ yarn start users migrate \
 }
 ```
 
+### Rename username
+
+DHIS2 does not support renaming usernames directly. While it is possible to update usernames through the API, this only modifies the main table. References in other tables, which rely on the hardcoded username (not `userinfoid` or `userinfo.uid`), will remain unchanged.
+
+To fully rename a username across all references, you need to execute a SQL script. Start by generating the script using the following command:
+
+```bash
+ yarn start users rename-username \
+  --mapping=user1old:user1new,user2old:user2new \
+  [--dry-run] --output=rename.sql
+```
+
+And then run the generated SQL script in your database to perform the actual renaming:
+
+```bash
+psql -U dhis dhis2 -f rename.sql
+```
+
+Replace `dhis` with your database username and `dhis2` with your database name if they differ. Ensure you have a backup of the database before applying the changes.
+
+## User monitoring
+
+### Users Permissions Fixer and 2FA Reporter
+
+#### Execution:
+
+```
+yarn start usermonitoring run-permissions-fixer --config-file config.json
+or
+yarn start usermonitoring run-2fa-reporter --config-file config.json
+```
+
+#### Debug:
+
+```
+LOG_LEVEL=debug node --inspect-brk dist/index.js usermonitoring run-users-monitoring   --config-file config.json
+LOG_LEVEL=debug node --inspect-brk dist/index.js usermonitoring run-2fa-reporter   --config-file config.json
+```
+
+#### Requirements:
+
+Use node 16:
+
+```
+nvm use 16
+```
+
+A config json file to get the user/password and server:
+
+```
+{
+    "URL": {
+        "username": "",
+        "password": "",
+        "server": "http://localhost:8080"
+    }
+}
+```
+
+#### run-2fa-reporter Datastore:
+
+d2-tools -> two-factor-monitoring:
+
+A push program variable with the id of the program in dhis
+
+A two factor group to filter the users that should have two factor activated
+
+The datastore must contain:
+
+```
+{
+  "pushProgram": {
+    "id": "uid",
+    "name": "push program"
+  },
+  "twoFactorGroup": {
+    "id": "uid",
+    "name": "Auth control group"
+  }
+}
+```
+
+#### run-users-monitoring Datastore:
+
+d2-tools -> permission-fixer:
+
+The datastore must contain:
+
+A list of excluded_roles (could be an empty list [])
+
+A list of excluded roles by group (could be an empty list [])
+
+A list of excluded roles by role (could be an empty list [])
+
+A list of excluded roles by user (could be an empty list [])
+
+List of excluded users (the script will ignore them) (could be an empty list [])
+
+A minimum group to add that group to the users without any template group (WIDP requirement)
+
+A minimum role to add that role to the users without any role (DHIS requirement)
+A pushProgram variable with the program ID to send the report
+
+A list of templates (user with the valid roles, and group to identify which users could use those roles).
+
+A list with flags to control the script (permissionFixerConfig).
+
+The pushReport boolean variable determines whether the script should send the report after processing all users.
+
+The pushFixedUserGroups boolean variable enables pushing fixed user groups for users who do not have a WIDP template user group.
+
+The pushFixedUsersRoles boolean variable allows the pushing of fixed user roles.
+
+The forceMinimalGroupForUsersWithoutGroup boolean variable determines how to handle users with invalid user groups. If set to true, it treats these users as if they are assigned to the minimal group without updating their user group. If set to false, it assigns the minimal group to users without a template user group on the server.
+
+An example of the datastore:
+
+Note: the names are used only to make easy understand and debug the keys.
+
+```
+{
+  "excludedRoles": [
+    {
+      "id": "uid",
+      "name": "App - name"
+    }
+  ],
+  "excludedRolesByGroup": [
+    {
+      "group": {
+        "id": "uid",
+        "name": "User group name"
+      },
+      "role": {
+        "id": "hXY2OtVz70P",
+        "name": "App - name"
+      }
+    }
+  ],
+  "excludedRolesByRole": [
+    {
+      "active_role": {
+        "id": "uid",
+        "name": "App present in the user"
+      },
+      "ignore_role": {
+        "id": "uid",
+        "name": "App to be ignored"
+      }
+    }
+  ],
+  "excludedRolesByUser": [
+    {
+      "role": {
+        "id": "uid",
+        "name": "App - name"
+      },
+      "user": {
+        "id": "uid",
+        "name": "username"
+      }
+    }
+  ],
+  "excludedUsers": [
+    {
+      "id": "uid",
+      "name": "username"
+    }
+  ],
+  "minimalGroup": {
+    "id": "uid",
+    "name": "Users"
+  },
+  "minimalRole": {
+    "id": "uid",
+    "name": "Role name"
+  },
+  "permissionFixerConfig":{
+    "forceMinimalGroupForUsersWithoutGroup": true,
+    "pushFixedUserGroups": false,
+    "pushFixedUsersRoles": false,
+    "pushReport": true
+  },
+  "pushProgram": {
+    "id": "uid",
+    "name": "Program name"
+  },
+  "templates": [
+    {
+      "group": {
+        "id": "uid",
+        "name": "user group name"
+      },
+      "template": {
+        "id": "uid",
+        "name": "user template username"
+      }
+    }
+  ]
+}
+```
+
+### Users Authorities Monitoring
+
+#### Execution:
+
+```bash
+yarn start usermonitoring run-authorities-monitoring --config-file config.json
+
+# To get the debug logs and store them in a file use:
+LOG_LEVEL=debug yarn start usermonitoring run-authorities-monitoring --config-file config.json &> authorities-monitoring.log
+```
+
+#### Parameters:
+
+-   `--config-file`: Connection and webhook config file.
+-   `-s` | `--set-datastore`: Write users data to datastore, use in script setup. It assumes there is a monitoring config in d2-tools/authorities-monitor.
+
+#### Requirements:
+
+A config file with the access info of the server and the message webhook details:
+
+```JSON
+{
+    "URL": {
+        "username": "user",
+        "password": "passwd",
+        "server": "https://dhis.url/"
+    },
+    "WEBHOOK": {
+        "ms_url": "http://webhook.url/",
+        "proxy": "http://proxy.url/",
+        "server_name": "INSTANCE_NAME"
+    }
+}
+```
+
+This reports stores data into the `d2-tools.authorities-monitor` datastore. This key needs to be setup before the first run to get a correct report.
+It's possible to leave `usersByAuthority` empty and use the `-s` flag to populate it.
+
+A sample:
+
+```JSON
+{
+  "usersByAuthority": {
+    "AUTH1": [
+      {
+        "id": "lJf6FW6vtDD",
+        "name": "fake user 1",
+        "userRoles": [
+          {
+            "id": "So7ZSqi9ovy",
+            "name": "Role 1"
+          }
+        ]
+      },
+      {
+        "id": "wXGwwP53ngu",
+        "name": "fake user 2",
+        "userRoles": [
+          {
+            "id": "So7ZSqi9ovy",
+            "name": "Role 1"
+          }
+        ]
+      }
+    ],
+    "AUTH2": [
+      {
+        "id": "wXGwwP53ngu",
+        "name": "fake user 2",
+        "userRoles": [
+          {
+            "id": "So7ZSqi9ovy",
+            "name": "Role 1"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+### User Groups Monitoring
+
+This script will compare the metadata of the monitored userGroups with the version stored in the datastore and generate a report of the changes. This report will be sent to the MS Teams channel set in the webhook config section. Then the new version of the metadata will be stored in the datastore.
+
+#### Execution:
+
+```bash
+yarn start usermonitoring run-user-groups-monitoring --config-file config.json
+
+# To get the debug logs and store them in a file use:
+LOG_LEVEL=debug yarn start usermonitoring run-user-groups-monitoring --config-file config.json &> user-groups-monitoring.log
+```
+
+#### Parameters:
+
+-   `--config-file`: Connection and webhook config file.
+-   `-s` | `--set-datastore`: Write usergroups data to datastore, use in script setup. It assumes there is a monitoring config in d2-tools/user-groups-monitoring.
+
+#### Requirements:
+
+A config file with the access info of the server and the message webhook details:
+
+```JSON
+{
+    "URL": {
+        "username": "user",
+        "password": "passwd",
+        "server": "https://dhis.url/"
+    },
+    "WEBHOOK": {
+        "ms_url": "http://webhook.url/",
+        "proxy": "http://proxy.url/",
+        "server_name": "INSTANCE_NAME"
+    }
+}
+```
+
+This reports stores data into the `d2-tools.user-groups-monitoring` datastore. This key needs to be setup before the first run to get a correct report.
+Its possible to leave `monitoredUserGroups` empty and use the `-s` flag to populate it.
+
+The report, potentially, has tree sections for each user group:
+
+-   New entries: JSON with the properties that were unset or empty and changed.
+-   Modified fields: This section has two JSONs, one showing the old values and one with the news.
+-   User assignment changes: This section will show the users lost and added to the group.
+
+If a section is empty it will be omitted.
+
+### User Templates Monitoring
+
+The User Templates Monitoring script is used to compare user templates with the version stored in the datastore and generate a report of the changes. The report includes information on modified fields, and a detailed report on user groups and roles added or lost. This report will be sent to the MS Teams channel set in the webhook config section. The new version of the metadata will be stored in the datastore.
+
+#### Execution:
+
+```bash
+yarn start usermonitoring run-user-templates-monitoring --config-file config.json
+
+# To get the debug logs and store them in a file use:
+LOG_LEVEL=debug yarn start usermonitoring run-user-templates-monitoring --config-file config.json &> user-templates-monitoring.log
+```
+
+#### Parameters:
+
+-   `--config-file`: Connection and webhook config file.
+-   `-s` | `--set-datastore`: Write user templates data to datastore, use in script setup. It assumes there is a monitoring config in d2-tools/user-templates-monitoring.
+
+#### Requirements:
+
+A config file with the access info of the server and the message webhook details:
+
+```JSON
+{
+    "URL": {
+        "username": "user",
+        "password": "passwd",
+        "server": "https://dhis.url/"
+    },
+    "WEBHOOK": {
+        "ms_url": "http://webhook.url/",
+        "proxy": "http://proxy.url/",
+        "server_name": "INSTANCE_NAME"
+    }
+}
+```
+
+#### Report
+
+This reports stores data into the `d2-tools.user-templates-monitoring` datastore. This key needs to be setup before the first run to get a correct report.
+
+Its possible to leave `monitoredUserTemplates` empty and use the `-s` flag to populate it.
+
+The report includes the following sections:
+
+-   New entries: This section lists new properties that didn't exist in the old version.
+-   Modified fields: This section shows the fields that have been modified in the user templates and shows the before/after values.
+-   User Membership changes: This section displays the changes in the template userGroups and userRoles membership.
+
+If a section is empty, it will be omitted from the report.
+
 ## Move Attributes from a Program
 
 Get all the TEIS in the program and move the value from the attribute in the argument `--from-attribute-id` to the attribute `--to-attribute-id`. Then delete the value in `--from-attribute-id`.
@@ -441,4 +823,64 @@ $ LOG_LEVEL=debug node dist/index.js sync validate \
 [INFO 2024-03-19T09:16:35.509Z] # Only in instance 2 (count): 0
 [INFO 2024-03-19T09:16:35.509Z] # Check ID/code mismatch: 0
 [INFO 2024-03-19T09:16:35.510Z] Output report: sync-validate.json
+```
+
+## Indicators
+
+### Get Indicators items report
+
+Get a CSV with the IDs of the items used by Indicators:
+
+```console
+shell:~$ yarn start indicators get-ref-ids \
+--url='https://admin:district@play.dhis2.org/2.38.6/' \
+--indicators=Uvn6LCg7dVU,ReUHfIn0pTQ \
+--ds-filter=QX4ZTUbOt3a,aLpVgfXiz0f \
+--file=./indicatorsRefIDs.csv
+```
+
+Working items types: dataElements, programDataElements, programIndicator.
+
+The ds-filter option allows to filter which dataSets are used.
+
+File option can be a file or directory path, if its a directory path the file will be named `indicatorsRefIDs.csv`
+
+CSV headers:
+
+UID | Indicator | Numerator | Numerator Description | List of referenced dataElements | List of referenced programDataElements | List of referenced categoryOptionCombos | List of referenced Indicators | List of referenced dataSets | List of referenced programs | Denominator | Denominator Description | List of referenced dataElements | List of referenced programDataElements | List of referenced categoryOptionCombos | List of referenced Indicators | List of referenced dataSets | List of referenced programs
+
+### Get Indicators dataElements values report
+
+Get a CSV with a report of the values of dataElements and categoryOptionCombos:
+
+```console
+shell:~$ yarn start indicators get-de-values-report \
+--url='https://admin:district@play.dhis2.org/2.38.6/' \
+--indicators=Uvn6LCg7dVU,ReUHfIn0pTQ \
+--org-unit=DiszpKrYNg8 \
+--period=2024 \
+--ds-filter=QX4ZTUbOt3a,aLpVgfXiz0f \
+--file=./indicatorsValuesReport.csv
+```
+
+The ds-filter option allows to filter which dataSets are used.
+
+File option can be a file or directory path, if its a directory path the file will be named `indicatorsValuesReport.csv`
+
+CSV headers:
+
+dataElement ID | dataElement Name | categoryOptionCombo ID | categoryOptionCombo Name | Value
+
+## Tracked Entities
+
+### Transfer
+
+Transfer tracked entities to another org unit, using a CSV as source data (expected columns: trackedEntityId, newOrgUnitId):
+
+```console
+shell:~$ yarn start trackedEntities transfer \
+  --url=http://localhost:8080 \
+  --auth="USER:PASSWORD"  \
+  --input-file=transfers.csv \
+  --post
 ```

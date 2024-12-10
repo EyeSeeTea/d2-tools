@@ -3,7 +3,7 @@ import { EventsGetResponse, PaginatedEventsGetResponse } from "@eyeseetea/d2-api
 import { Async } from "domain/entities/Async";
 import { ProgramEvent } from "domain/entities/ProgramEvent";
 import { GetOptions, ProgramEventsRepository } from "domain/repositories/ProgramEventsRepository";
-import { D2Api, EventsPostRequest, EventsPostParams, Ref } from "types/d2-api";
+import { D2Api, EventsPostRequest, EventsPostParams, Ref, SelectedPick, D2ProgramSchema } from "types/d2-api";
 import { cartesianProduct } from "utils/array";
 import logger from "utils/log";
 import { getId, Id } from "domain/entities/Base";
@@ -11,31 +11,6 @@ import { Result } from "domain/entities/Result";
 import { Timestamp } from "domain/entities/Date";
 import { getInChunks } from "./dhis2-utils";
 import { promiseMap } from "./dhis2-utils";
-
-const eventFields = {
-    created: true,
-    event: true,
-    status: true,
-    orgUnit: true,
-    orgUnitName: true,
-    program: true,
-    programStage: true,
-    eventDate: true,
-    dueDate: true,
-    lastUpdated: true,
-    trackedEntityInstance: true,
-    dataValues: {
-        dataElement: true,
-        value: true,
-        storedBy: true,
-        providedElsewhere: true,
-        lastUpdated: true,
-    },
-} as const;
-
-type Fields = typeof eventFields;
-
-type Event = EventsGetResponse<Fields>["events"][number];
 
 export class ProgramEventsD2Repository implements ProgramEventsRepository {
     constructor(private api: D2Api) {}
@@ -46,11 +21,7 @@ export class ProgramEventsD2Repository implements ProgramEventsRepository {
         const { programs } = await this.api.metadata
             .get({
                 programs: {
-                    fields: {
-                        id: true,
-                        name: true,
-                        programStages: { id: true, name: true },
-                    },
+                    fields: programFields,
                 },
             })
             .getData();
@@ -59,28 +30,93 @@ export class ProgramEventsD2Repository implements ProgramEventsRepository {
 
         const programStagesById = _(programs)
             .flatMap(program => program.programStages)
-            .uniqBy(getId)
             .keyBy(getId)
             .value();
 
-        return d2Events.map(event => ({
-            created: event.created,
-            id: event.event,
-            program: programsById[event.program] || { id: event.program, name: "" },
-            programStage: programStagesById[event.programStage] || { id: event.programStage, name: "" },
-            orgUnit: { id: event.orgUnit, name: event.orgUnitName },
-            trackedEntityInstanceId: (event as D2Event).trackedEntityInstance,
-            status: event.status,
-            date: event.eventDate,
-            dueDate: event.dueDate,
-            dataValues: event.dataValues.map(dv => ({
-                dataElementId: dv.dataElement,
-                value: dv.value,
-                storedBy: dv.storedBy,
-                providedElsewhere: dv.providedElsewhere,
-                lastUpdated: dv.lastUpdated,
-            })),
-        }));
+        const dataElementsById = await this.getDataElementsById(d2Events);
+
+        return d2Events.map((event): ProgramEvent => {
+            const program = programsById[event.program];
+            if (!program) throw new Error(`Cannot find program ${event.program}`);
+
+            return {
+                created: event.created,
+                id: event.event,
+                program: {
+                    id: event.program,
+                    name: program.name,
+                    type: program.programType === "WITH_REGISTRATION" ? "tracker" : "event",
+                },
+                programStage: {
+                    id: event.programStage,
+                    name: programStagesById[event.programStage]?.name || "",
+                },
+                orgUnit: { id: event.orgUnit, name: event.orgUnitName },
+                trackedEntityInstanceId: (event as D2Event).trackedEntityInstance,
+                lastUpdated: event.lastUpdated,
+                status: event.status,
+                date: event.eventDate,
+                dueDate: event.dueDate,
+                dataValues: this.getDataValuesOrderLikeDataEntryForm(event, programStagesById).map(
+                    (dv): DataValue => {
+                        const dataElement = dataElementsById[dv.dataElement];
+                        if (!dataElement) throw new Error(`Cannot find data element ${dv.dataElement}`);
+
+                        return {
+                            dataElement: {
+                                id: dv.dataElement,
+                                name: dataElement.formName || dataElement.name,
+                            },
+                            value: dv.value,
+                            storedBy: dv.storedBy,
+                            providedElsewhere: dv.providedElsewhere,
+                            lastUpdated: dv.lastUpdated,
+                        };
+                    }
+                ),
+            };
+        });
+    }
+
+    private getDataValuesOrderLikeDataEntryForm(
+        event: Event,
+        programStagesById: Record<Id, D2ProgramStage>
+    ): D2DataValue[] {
+        const programStage = programStagesById[event.programStage];
+        if (!programStage) throw new Error(`Cannot find program stage ${event.programStage}`);
+
+        const indexMapping = _(programStage.programStageSections)
+            .flatMap(pse => pse.dataElements)
+            .map((dataElement, index) => [dataElement.id, index] as [Id, number])
+            .fromPairs()
+            .value();
+
+        return _(event.dataValues)
+            .sortBy(dv => indexMapping[dv.dataElement] ?? 1000)
+            .value();
+    }
+
+    private async getDataElementsById(d2Events: Event[]) {
+        const dataElementIds = _(d2Events)
+            .flatMap(ev => ev.dataValues)
+            .map(dv => dv.dataElement)
+            .uniq()
+            .value();
+
+        const dataElements = await getInChunks(dataElementIds, async dataElementIdsGroup => {
+            const { dataElements } = await this.api.metadata
+                .get({
+                    dataElements: {
+                        fields: { id: true, name: true, formName: true },
+                        filter: { id: { in: dataElementIdsGroup } },
+                    },
+                })
+                .getData();
+
+            return dataElements;
+        });
+
+        return _.keyBy(dataElements, getId);
     }
 
     async delete(events: Ref[]): Async<Result> {
@@ -94,7 +130,7 @@ export class ProgramEventsD2Repository implements ProgramEventsRepository {
             .keyBy(event => event.id)
             .value();
 
-        const resultsList = await getInChunks<Result>(eventsIdsToSave, async eventIds => {
+        const resultsList = await getInChunks<Id, Result>(eventsIdsToSave, async eventIds => {
             return this.getEvents(eventIds)
                 .then(res => {
                     const postEvents = eventIds.map((eventId): EventToPost => {
@@ -114,7 +150,7 @@ export class ProgramEventsD2Repository implements ProgramEventsRepository {
                             eventDate: event.date,
                             dataValues: event.dataValues.map(dv => {
                                 return {
-                                    dataElement: dv.dataElementId,
+                                    dataElement: dv.dataElement.id,
                                     value: dv.value,
                                     storedBy: dv.storedBy,
                                     providedElsewhere: dv.providedElsewhere,
@@ -228,14 +264,14 @@ async function importEvents(api: D2Api, events: EventToPost[], params?: EventsPo
 
     const resList = await promiseMap(_.chunk(events, 100), async eventsGroup => {
         const res = await api.events.post(params || {}, { events: eventsGroup }).getData();
-        if (res.response.status === "SUCCESS") {
+        if (res.status === "SUCCESS") {
             const message = JSON.stringify(
-                _.pick(res.response, ["status", "imported", "updated", "deleted", "ignored"])
+                _.pick(res, ["status", "imported", "updated", "deleted", "ignored"])
             );
             logger.info(`Post events OK: ${message}`);
             return true;
         } else {
-            const message = JSON.stringify(res.response, null, 4);
+            const message = JSON.stringify(res, null, 4);
             logger.info(`Post events ERROR: ${message}`);
             return false;
         }
@@ -247,3 +283,47 @@ async function importEvents(api: D2Api, events: EventToPost[], params?: EventsPo
         ? { type: "success", message: `${events.length} posted` }
         : { type: "error", message: "Error posting events" };
 }
+
+const eventFields = {
+    created: true,
+    event: true,
+    status: true,
+    orgUnit: true,
+    orgUnitName: true,
+    program: true,
+    programStage: true,
+    eventDate: true,
+    dueDate: true,
+    lastUpdated: true,
+    trackedEntityInstance: true,
+    dataValues: {
+        dataElement: true,
+        value: true,
+        storedBy: true,
+        providedElsewhere: true,
+        lastUpdated: true,
+    },
+} as const;
+
+type Fields = typeof eventFields;
+
+type Event = EventsGetResponse<Fields>["events"][number];
+
+type DataValue = ProgramEvent["dataValues"][number];
+
+type D2DataValue = Event["dataValues"][number];
+
+const programFields = {
+    id: true,
+    name: true,
+    programType: true,
+    programStages: {
+        id: true,
+        name: true,
+        programStageSections: { dataElements: { id: true } },
+    },
+} as const;
+
+type D2Program = SelectedPick<D2ProgramSchema, typeof programFields>;
+
+type D2ProgramStage = D2Program["programStages"][number];

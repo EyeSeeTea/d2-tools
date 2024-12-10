@@ -7,6 +7,7 @@ import { Entry, Har } from "har-format";
 import axios, { AxiosRequestConfig, Method } from "axios";
 import { LoadingPlanRepository, Options } from "../domain/repositories/LoadingPlanRepository";
 import { LoadingPlan } from "../domain/entities/LoadingPlan";
+import { SocksProxyAgent } from "socks-proxy-agent";
 
 export interface RunHarResult {
     time: number;
@@ -20,8 +21,12 @@ interface RepoOptions {
     harUrl: string;
 }
 
+const socksProxyUrl = process.env.ALL_PROXY;
+const agent = socksProxyUrl ? new SocksProxyAgent(socksProxyUrl) : undefined;
+
 const axios2 = axios.create({
     //keepAlive pools and reuses TCP connections, so it's faster
+    httpAgent: agent,
     httpsAgent: new https.Agent({ keepAlive: true }),
     //timeout: 600 * 1000,
     //maxRedirects: 10,
@@ -49,7 +54,7 @@ export class LoadingPlanHarRepository implements LoadingPlanRepository {
         if (location && location.match(/failed/)) {
             throw new Error(`Login failed: ${config.data} -> location=${location}`);
         }
-        const cookie = res.headers["set-cookie"]?.[0].split(";")[0] || "";
+        const cookie = res.headers["set-cookie"]?.[0]?.split(";")[0] || "";
         console.debug(`Cookie from server: ${cookie}`);
         this.cookie = cookie;
     }
@@ -154,7 +159,7 @@ export class LoadingPlanHarRepository implements LoadingPlanRepository {
         console.debug(`[request-response:${index + 1}/${total}] ` + resInfo);
 
         const isSuccess =
-            [0, 200, 201, 304, 404, 409].includes(res?.status || 0) ||
+            [0, 200, 201, 302, 304, 404, 409].includes(res?.status || 0) ||
             request.url.includes("files/script") ||
             request.url.includes("staticContent");
 

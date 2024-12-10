@@ -235,9 +235,9 @@ export class D2ProgramRules {
         const res = await this.api.events
             .post(postOptions, { events })
             .getData()
-            .catch(err => err.response.data as HttpResponse<EventsPostResponse>);
+            .catch(err => err.data as EventsPostResponse);
 
-        log.info(`POST events: ${res.response.status}`);
+        log.info(`POST events: ${res.status}`);
         return checkPostEventsResponse(res);
     }
 
@@ -249,12 +249,11 @@ export class D2ProgramRules {
         const res = await this.api.trackedEntityInstances
             .post(postOptions, { trackedEntityInstances: teis })
             .getData()
-            .catch(err => err.response.data as HttpResponse<TeiPostResponse>);
+            .catch(err => err.data as HttpResponse<TeiPostResponse>);
 
-        log.info(`POST TEIs: ${res.response.status}`);
+        log.info(`POST TEIs: ${res.status}`);
 
-        if (res.response.status !== "SUCCESS")
-            log.error(JSON.stringify(res.response.importSummaries, null, 4));
+        if (res.status !== "SUCCESS") log.error(JSON.stringify(res, null, 4));
     }
 
     private async saveReport(reportPath: string, actions: UpdateAction[]) {
