@@ -1,6 +1,6 @@
 {
     "name": "d2-tools",
-    "version": "0.2.0",
+    "version": "0.3.0",
     "main": "src/index.ts",
     "description": "DHIS2 tools",
     "scripts": {
@@ -19,7 +19,7 @@
     "author": "EyeSeeTea <arnau@eyeseetea.com>",
     "license": "MIT",
     "dependencies": {
-        "@eyeseetea/d2-api": "1.16.0-beta.3",
+        "@eyeseetea/d2-api": "1.16.0",
         "@types/json-diff": "^0.7.0",
         "async-parallel": "^1.2.3",
         "cmd-ts": "^0.10.0",
