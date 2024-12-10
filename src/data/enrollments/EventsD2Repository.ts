@@ -16,7 +16,7 @@ export class EventsD2Repository implements EventsRepository {
                 updatedBefore: params.eventUpdateCutoff,
                 order: "enrollment,updatedAt",
                 fields: {
-                    events: true,
+                    event: true,
                     program: true,
                     orgUnit: true,
                     status: true,
