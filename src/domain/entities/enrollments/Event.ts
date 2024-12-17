@@ -7,6 +7,7 @@ export interface Event {
     program: Id;
     orgUnit: Id;
     updatedAt: string;
+    occurredAt: string;
     enrollment: Id;
     enrollmentStatus: EnrollmentStatus;
 }
