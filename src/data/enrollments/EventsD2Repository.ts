@@ -13,8 +13,7 @@ export class EventsD2Repository implements EventsRepository {
                 orgUnit: params.orgUnitId,
                 program: params.programId,
                 ouMode: "SELECTED",
-                occurredBefore: params.eventUpdateCutoff,
-                order: "enrollment,updatedAt",
+                order: "enrollment,occurredAt",
                 fields: {
                     event: true,
                     program: true,
