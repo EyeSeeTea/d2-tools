@@ -223,14 +223,14 @@ function givenUserGroupRepository(result: string) {
     return reportRepository;
 }
 
-function givenUserRepository(users: PermissionFixerUser[], mockedApiReturn?: PermissionFixerUser) {
+function givenUserRepository(users: PermissionFixerUser[], usersFromApi?: PermissionFixerUser) {
     const mockedRepository = mock(PermissionFixerUserD2Repository);
-    if (mockedApiReturn == undefined) {
+    if (usersFromApi == undefined) {
         when(mockedRepository.getAllUsers()).thenReturn(Promise.resolve(JSON.parse(JSON.stringify(users))));
     } else {
         when(mockedRepository.getAllUsers()).thenReturn(
             Promise.resolve(JSON.parse(JSON.stringify(users))),
-            Promise.resolve([JSON.parse(JSON.stringify(mockedApiReturn))])
+            Promise.resolve([JSON.parse(JSON.stringify(usersFromApi))])
         );
     }
     const reportRepository = instance(mockedRepository);
