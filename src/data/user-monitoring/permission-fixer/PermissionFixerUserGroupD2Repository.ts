@@ -1,3 +1,4 @@
+import _ from "lodash";
 import { D2Api, Stats } from "@eyeseetea/d2-api/2.36";
 import log from "utils/log";
 import { PermissionFixerUserGroupExtended } from "domain/entities/user-monitoring/permission-fixer/PermissionFixerUserGroupExtended";
@@ -24,10 +25,10 @@ export class PermissionFixerUserGroupD2Repository implements PermissionFixerUser
             throw new UserGroupNotFoundException("Error getting user group: " + groupsIds);
         }
     }
-    async save(userGroup: PermissionFixerUserGroupExtended, users: Ref[]): Async<string> {
+    async save(userGroup: PermissionFixerUserGroupExtended, _users: Ref[]): Async<string> {
         try {
-            const response = await this.appendUsersToUsergroup(userGroup, users);
-            if (response == "OK") {
+            const response = await this.api.models.userGroups.put(userGroup).getData();
+            if (_.isEmpty(response.errorReports)) {
                 log.info("Users added to minimal group");
             } else {
                 log.error("Error adding users to minimal group");
@@ -35,7 +36,7 @@ export class PermissionFixerUserGroupD2Repository implements PermissionFixerUser
 
             log.info(JSON.stringify(response));
 
-            return response;
+            return "OK";
         } catch (error) {
             console.debug(error);
             return "ERROR";

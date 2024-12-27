@@ -180,3 +180,20 @@ export const FilePath: Type<string, string> = {
         return resolved;
     },
 };
+
+function isValidDate(str: string): boolean {
+    const dateTimeRegex = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d{3})?)?$/;
+    return dateTimeRegex.test(str);
+}
+
+export const MetadataDate: Type<string, string> = {
+    async from(str) {
+        if (!isValidDate(str)) {
+            throw new Error(`Invalid date format: ${str}`);
+        } else if (!str.includes("T")) {
+            return str + "T00:00:00.000";
+        } else {
+            return str;
+        }
+    },
+};

@@ -29,7 +29,9 @@ export class MonitorUsersByAuthorityUseCase {
         return users
             .map(
                 u =>
-                    `- ${u.name} in role(s): ${u.userRoles.map(role => `${JSON.stringify(role)}`).join(", ")}`
+                    `- ${u.username} in role(s): ${u.userRoles
+                        .map(role => `${JSON.stringify(role)}`)
+                        .join(", ")}`
             )
             .join("\n");
     }

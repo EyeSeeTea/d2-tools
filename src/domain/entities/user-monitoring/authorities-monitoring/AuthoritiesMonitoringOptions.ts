@@ -1,4 +1,4 @@
-import { Id, NamedRef } from "domain/entities/Base";
+import { User } from "domain/entities/user-monitoring/authorities-monitoring/User";
 
 export interface AuthoritiesMonitoringOptions {
     authoritiesToMonitor: string[];
@@ -7,11 +7,5 @@ export interface AuthoritiesMonitoringOptions {
 }
 
 export interface UsersByAuthority {
-    [authority: string]: UserByAuthority[];
-}
-
-interface UserByAuthority {
-    id: Id;
-    name: string;
-    userRoles: NamedRef[];
+    [authority: string]: User[];
 }
