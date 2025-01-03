@@ -260,15 +260,15 @@ const copyDataValuesCmd = command({
             long: "post",
             description: "Post events updated with the copied data values",
         }),
-        reportPath: option({
+        saveReport: option({
             type: optional(string),
             long: "save-report",
-            description: "Save CSV report",
+            description: "Save TXT report",
         }),
-        payloadPath: option({
+        savePayload: option({
             type: optional(string),
             long: "save-payload",
-            description: "Save JSON payload with each event data values",
+            description: "Save JSON payload",
         }),
     },
     handler: async args => {

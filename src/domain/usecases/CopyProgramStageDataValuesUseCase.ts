@@ -1,10 +1,12 @@
 import _ from "lodash";
+import fs from "fs";
 import { Id } from "@eyeseetea/d2-api";
 import { DataElement } from "domain/entities/DataElement";
 import { DataElementsRepository } from "domain/repositories/DataElementsRepository";
 import { ProgramEventsRepository } from "domain/repositories/ProgramEventsRepository";
 import { OrgUnitRepository } from "domain/repositories/OrgUnitRepository";
 import { EventDataValue, ProgramEvent } from "domain/entities/ProgramEvent";
+import log from "utils/log";
 
 export class CopyProgramStageDataValuesUseCase {
     constructor(
@@ -14,7 +16,13 @@ export class CopyProgramStageDataValuesUseCase {
     ) {}
 
     async execute(options: CopyProgramStageDataValuesOptions): Promise<void> {
-        const { programStageId, dataElementIdPairs, post } = options;
+        const {
+            programStageId,
+            dataElementIdPairs,
+            post,
+            savePayload: payloadPath,
+            saveReport: reportPath,
+        } = options;
 
         const rootOrgUnit = await this.orgUnitRepository.getRoot();
         const dataElements = await this.dataElementsRepository.getByIds(dataElementIdPairs.flat());
@@ -23,18 +31,22 @@ export class CopyProgramStageDataValuesUseCase {
             mapDataElementPair(dataElements, sourceId, targetId)
         );
 
-        const targetBySourceId = new Map(dataElementIdPairs);
-
         // check each pair have the same type.
         dataElementPairs.forEach(pair => validateDataElementPair(pair));
+        const sourceDataElementIds = dataElementIdPairs.map(([sourceId, _targetId]) => sourceId);
 
-        const events = await this.programEventsRepository.get({
-            programStagesIds: [programStageId],
-            orgUnitsIds: [rootOrgUnit.id],
-            orgUnitMode: "DESCENDANTS",
-        });
-
-        console.log(events);
+        const events = await this.programEventsRepository
+            .get({
+                programStagesIds: [programStageId],
+                orgUnitsIds: [rootOrgUnit.id],
+                orgUnitMode: "DESCENDANTS",
+            })
+            .then(events =>
+                // filter events that have at least one data value of the source data elements
+                events.filter(event =>
+                    event.dataValues.some(dv => sourceDataElementIds.includes(dv.dataElement.id))
+                )
+            );
 
         // check if any data value of the destination data elements is not empty
         checkNonEmptyDataValues(
@@ -43,30 +55,67 @@ export class CopyProgramStageDataValuesUseCase {
         );
 
         // replace origin data element id with the destination data element id
-        const sourceDataElementIds = dataElementIdPairs.map(([sourceId, _targetId]) => sourceId);
         const eventsWithNewDataValues = events.map(event => {
-            return event.dataValues.flatMap(dataValue => {
-                if (sourceDataElementIds.includes(dataValue.dataElement.id)) {
-                    const targetId = targetBySourceId.get(dataValue.dataElement.id);
-                    if (!targetId)
-                        throw new Error(
-                            `Target data element not found for source id: ${dataValue.dataElement}`
-                        );
+            return {
+                ...event,
+                dataValues: event.dataValues.flatMap(dataValue => {
+                    if (sourceDataElementIds.includes(dataValue.dataElement.id)) {
+                        const [_source, target] =
+                            dataElementPairs.find(
+                                ([source, _target]) => source.id === dataValue.dataElement.id
+                            ) || [];
 
-                    return [{ ...dataValue, dataElement: targetId }];
-                } else return [];
-            });
+                        if (!target)
+                            throw new Error(
+                                `Target data element not found for source id: ${dataValue.dataElement.id}`
+                            );
+
+                        return [dataValue, { ...dataValue, dataElement: target }];
+                    } else return [dataValue];
+                }),
+            };
         });
 
-        console.log(eventsWithNewDataValues);
+        if (payloadPath) {
+            const payload = { events: eventsWithNewDataValues };
+            const json = JSON.stringify(payload, null, 4);
+            fs.writeFileSync(payloadPath, json);
+            log.info(`Written payload (${eventsWithNewDataValues.length} events): ${payloadPath}`);
+        } else if (post) {
+            const result = await this.programEventsRepository.save(eventsWithNewDataValues);
+            if (result.type === "success") log.info(JSON.stringify(result, null, 4));
+            else log.error(JSON.stringify(result, null, 4));
+        }
 
-        // post events in chunks (if post param)
-        // if (post) {
-        // }
-
-        // save report: Pair of data elements (ids, names), program stage (id, name), number of events updated for each pair (some data elements will not have data value yet), total of number of events updated
-        // save payload: events with the data values updated
+        if (reportPath) {
+            saveReport(reportPath, dataElementPairs, programStageId, eventsWithNewDataValues);
+        }
     }
+}
+
+function saveReport(
+    reportPath: string,
+    dataElementPairs: DataElementPair[],
+    programStageId: string,
+    eventsWithNewDataValues: ProgramEvent[]
+) {
+    const reportLines: string[] = [
+        `Program Stage ID: ${programStageId}`,
+        `Number of events updated: ${eventsWithNewDataValues.length}`,
+        "",
+    ];
+
+    const deLines = dataElementPairs.map(([source, target]) => {
+        const updatedEventsCount = eventsWithNewDataValues.filter(event =>
+            event.dataValues.some(dataValue => dataValue.dataElement.id === target.id)
+        ).length;
+
+        return `Source DataElement: ${source.id} (${source.name}), Target DataElement: ${target.id} (${target.name}), Found in ${updatedEventsCount} events`;
+    });
+
+    const reportContent = reportLines.concat(deLines).join("\n");
+    fs.writeFileSync(reportPath, reportContent);
+    log.info(`Written report: ${reportPath}`);
 }
 
 function mapDataElementPair(dataElements: DataElement[], sourceId: Id, targetId: Id): DataElementPair {
@@ -134,6 +183,8 @@ type CopyProgramStageDataValuesOptions = {
     programStageId: string;
     dataElementIdPairs: [Id, Id][]; // [sourceDataElementId, targetDataElementId]
     post: boolean;
+    savePayload?: string;
+    saveReport?: string;
 };
 
 type DataElementPair = [DataElement, DataElement];
