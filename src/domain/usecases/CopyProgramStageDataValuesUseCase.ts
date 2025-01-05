@@ -16,13 +16,7 @@ export class CopyProgramStageDataValuesUseCase {
     ) {}
 
     async execute(options: CopyProgramStageDataValuesOptions): Promise<void> {
-        const {
-            programStageId,
-            dataElementIdPairs,
-            post,
-            savePayload: payloadPath,
-            saveReport: reportPath,
-        } = options;
+        const { programStageId, dataElementIdPairs, post, saveReport: reportPath } = options;
 
         const rootOrgUnit = await this.orgUnitRepository.getRoot();
         const dataElements = await this.dataElementsRepository.getByIds(dataElementIdPairs.flat());
@@ -76,15 +70,18 @@ export class CopyProgramStageDataValuesUseCase {
             };
         });
 
-        if (payloadPath) {
-            const payload = { events: eventsWithNewDataValues };
-            const json = JSON.stringify(payload, null, 4);
-            fs.writeFileSync(payloadPath, json);
-            log.info(`Written payload (${eventsWithNewDataValues.length} events): ${payloadPath}`);
-        } else if (post) {
+        if (post) {
             const result = await this.programEventsRepository.save(eventsWithNewDataValues);
             if (result.type === "success") log.info(JSON.stringify(result, null, 4));
             else log.error(JSON.stringify(result, null, 4));
+        } else {
+            const payload = { events: eventsWithNewDataValues };
+            const json = JSON.stringify(payload, null, 4);
+            const now = new Date().toISOString().slice(0, 19).replace(/:/g, "-");
+            const payloadPath = `copy-program-stage-data-values-${now}.json`;
+
+            fs.writeFileSync(payloadPath, json);
+            log.info(`Written payload (${eventsWithNewDataValues.length} events): ${payloadPath}`);
         }
 
         if (reportPath) {
@@ -99,21 +96,32 @@ function saveReport(
     programStageId: string,
     eventsWithNewDataValues: ProgramEvent[]
 ) {
+    const deLines = dataElementPairs.map(
+        ([source, target]) =>
+            `Source DataElement: ${source.id} (${source.name}), Target DataElement: ${target.id} (${target.name})`
+    );
+
     const reportLines: string[] = [
         `Program Stage ID: ${programStageId}`,
-        `Number of events updated: ${eventsWithNewDataValues.length}`,
         "",
+        ...deLines,
+        "",
+        `Number of events: ${eventsWithNewDataValues.length}`,
+        "",
+        ...eventsWithNewDataValues.map(event => {
+            const orgUnitId = event.orgUnit.id;
+            const eventId = event.id;
+            const dataValueLines = dataElementPairs.flatMap(([source, target]) => {
+                const sourceValue = event.dataValues.find(dv => dv.dataElement.id === source.id)?.value;
+                const status = sourceValue ? `(${sourceValue})` : undefined;
+                return status ? [`\tCopy ${source.id} to ${target.id} ${status}`] : [];
+            });
+
+            return `Event ID: ${eventId}, OrgUnit ID: ${orgUnitId}\n${dataValueLines.join("\n")}`;
+        }),
     ];
 
-    const deLines = dataElementPairs.map(([source, target]) => {
-        const updatedEventsCount = eventsWithNewDataValues.filter(event =>
-            event.dataValues.some(dataValue => dataValue.dataElement.id === target.id)
-        ).length;
-
-        return `Source DataElement: ${source.id} (${source.name}), Target DataElement: ${target.id} (${target.name}), Found in ${updatedEventsCount} events`;
-    });
-
-    const reportContent = reportLines.concat(deLines).join("\n");
+    const reportContent = reportLines.join("\n");
     fs.writeFileSync(reportPath, reportContent);
     log.info(`Written report: ${reportPath}`);
 }
@@ -183,7 +191,6 @@ type CopyProgramStageDataValuesOptions = {
     programStageId: string;
     dataElementIdPairs: [Id, Id][]; // [sourceDataElementId, targetDataElementId]
     post: boolean;
-    savePayload?: string;
     saveReport?: string;
 };
 
