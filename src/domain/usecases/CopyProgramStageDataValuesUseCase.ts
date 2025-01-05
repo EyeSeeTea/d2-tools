@@ -15,7 +15,7 @@ export class CopyProgramStageDataValuesUseCase {
         private dataElementsRepository: DataElementsRepository
     ) {}
 
-    async execute(options: CopyProgramStageDataValuesOptions): Promise<void> {
+    async execute(options: CopyProgramStageDataValuesOptions): Promise<ProgramEvent[]> {
         const { programStageId, dataElementIdPairs: idPairs, post, saveReport: reportPath } = options;
 
         const rootOrgUnit = await this.orgUnitRepository.getRoot();
@@ -61,6 +61,8 @@ export class CopyProgramStageDataValuesUseCase {
         if (reportPath) {
             this.saveReport(reportPath, dataElementPairs, programStageId, eventsWithNewDataValues);
         }
+
+        return eventsWithNewDataValues;
     }
 
     private copyEventDataValues(
@@ -77,7 +79,13 @@ export class CopyProgramStageDataValuesUseCase {
                 if (!target)
                     throw new Error(`Target data element not found for source id: ${dv.dataElement.id}`);
 
-                return [dv, { ...dv, dataElement: target }];
+                return [
+                    dv,
+                    {
+                        ...dv,
+                        dataElement: _.omit(target, "valueType"),
+                    },
+                ];
             }),
         }));
     }
@@ -157,7 +165,7 @@ function checkTargetDataValuesAreEmpty(events: ProgramEvent[], targetIds: Id[]) 
     if (eventsWithNonEmptyTargetDataValues) throw new Error(error);
 }
 
-type CopyProgramStageDataValuesOptions = {
+export type CopyProgramStageDataValuesOptions = {
     programStageId: string;
     dataElementIdPairs: [Id, Id][]; // [sourceDataElementId, targetDataElementId]
     post: boolean;
