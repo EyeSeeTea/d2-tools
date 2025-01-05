@@ -1,12 +1,12 @@
 import _ from "lodash";
 import fs from "fs";
+import { Id } from "domain/entities/Base";
 import { DataElement } from "domain/entities/DataElement";
 import { DataElementsRepository } from "domain/repositories/DataElementsRepository";
 import { ProgramEventsRepository } from "domain/repositories/ProgramEventsRepository";
 import { OrgUnitRepository } from "domain/repositories/OrgUnitRepository";
-import { EventDataValue, ProgramEvent } from "domain/entities/ProgramEvent";
+import { ProgramEvent } from "domain/entities/ProgramEvent";
 import log from "utils/log";
-import { Id } from "domain/entities/Base";
 
 export class CopyProgramStageDataValuesUseCase {
     constructor(
@@ -38,27 +38,11 @@ export class CopyProgramStageDataValuesUseCase {
 
         checkTargetDataValuesAreEmpty(applicableEvents, targetIds);
 
-        // replace origin data element id with the destination data element id
-        const eventsWithNewDataValues = applicableEvents.map(event => {
-            return {
-                ...event,
-                dataValues: event.dataValues.flatMap(dataValue => {
-                    if (sourceIds.includes(dataValue.dataElement.id)) {
-                        const [_source, target] =
-                            dataElementPairs.find(
-                                ([source, _target]) => source.id === dataValue.dataElement.id
-                            ) || [];
-
-                        if (!target)
-                            throw new Error(
-                                `Target data element not found for source id: ${dataValue.dataElement.id}`
-                            );
-
-                        return [dataValue, { ...dataValue, dataElement: target }];
-                    } else return [dataValue];
-                }),
-            };
-        });
+        const eventsWithNewDataValues = this.copyEventDataValues(
+            applicableEvents,
+            sourceIds,
+            dataElementPairs
+        );
 
         if (post) {
             const result = await this.programEventsRepository.save(eventsWithNewDataValues);
@@ -79,6 +63,25 @@ export class CopyProgramStageDataValuesUseCase {
         }
     }
 
+    private copyEventDataValues(
+        applicableEvents: ProgramEvent[],
+        sourceIds: string[],
+        dataElementPairs: DataElementPair[]
+    ) {
+        return applicableEvents.map(event => ({
+            ...event,
+            dataValues: event.dataValues.flatMap(dv => {
+                if (!sourceIds.includes(dv.dataElement.id)) return [dv];
+                const target = dataElementPairs.find(([source, _]) => source.id === dv.dataElement.id)?.[1];
+
+                if (!target)
+                    throw new Error(`Target data element not found for source id: ${dv.dataElement.id}`);
+
+                return [dv, { ...dv, dataElement: target }];
+            }),
+        }));
+    }
+
     private mapDataElements(dataElements: DataElement[], pairs: [Id, Id][]): DataElementPair[] {
         const dataElementPairs = pairs.map(([sourceId, targetId]) => {
             const sourceElement = dataElements.find(de => de.id === sourceId);
@@ -96,39 +99,35 @@ export class CopyProgramStageDataValuesUseCase {
     }
 
     private saveReport(
-        reportPath: string,
+        path: string,
         dataElementPairs: DataElementPair[],
         programStageId: string,
         eventsWithNewDataValues: ProgramEvent[]
     ) {
-        const deLines = dataElementPairs.map(
+        const dataElementLines = dataElementPairs.map(
             ([source, target]) =>
                 `Source DataElement: ${source.id} (${source.name}), Target DataElement: ${target.id} (${target.name})`
         );
 
-        const reportLines: string[] = [
-            `Program Stage ID: ${programStageId}`,
-            "",
-            ...deLines,
-            "",
-            `Number of events: ${eventsWithNewDataValues.length}`,
-            "",
-            ...eventsWithNewDataValues.map(event => {
-                const orgUnitId = event.orgUnit.id;
-                const eventId = event.id;
-                const dataValueLines = dataElementPairs.flatMap(([source, target]) => {
-                    const sourceValue = event.dataValues.find(dv => dv.dataElement.id === source.id)?.value;
-                    const status = sourceValue ? `(${sourceValue})` : undefined;
-                    return status ? [`\tCopy ${source.id} to ${target.id} ${status}`] : [];
-                });
+        const eventLines = eventsWithNewDataValues.map(event => {
+            const dataValueLines = dataElementPairs.flatMap(([source, target]) => {
+                const sourceValue = event.dataValues.find(dv => dv.dataElement.id === source.id)?.value;
+                const status = sourceValue ? `(${sourceValue})` : undefined;
+                return status ? [`\tCopy ${source.id} to ${target.id} ${status}`] : [];
+            });
 
-                return `Event ID: ${eventId}, OrgUnit ID: ${orgUnitId}\n${dataValueLines.join("\n")}`;
-            }),
-        ];
+            return `Event ID: ${event.id}, OrgUnit ID: ${event.orgUnit.id}\n${dataValueLines.join("\n")}`;
+        });
 
-        const reportContent = reportLines.join("\n");
-        fs.writeFileSync(reportPath, reportContent);
-        log.info(`Written report: ${reportPath}`);
+        const content = [
+            "Program Stage ID: " + programStageId,
+            dataElementLines.join("\n"),
+            "Number of events: " + eventsWithNewDataValues.length,
+            eventLines.join("\n"),
+        ].join("\n\n");
+
+        fs.writeFileSync(path, content);
+        log.info(`Written report: ${path}`);
     }
 }
 
