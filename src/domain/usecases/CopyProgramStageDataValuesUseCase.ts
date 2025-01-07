@@ -16,40 +16,38 @@ export class CopyProgramStageDataValuesUseCase {
     ) {}
 
     async execute(options: CopyProgramStageDataValuesOptions): Promise<ProgramEvent[]> {
-        const { programStageId, dataElementIdPairs: idPairs, post, saveReport: reportPath } = options;
+        const { programStageId, dataElementIdMappings: idMappings, post, saveReport: reportPath } = options;
 
-        const { rootOrgUnit, dataElementPairs, sourceIds, targetIds } = await this.fetchElements(idPairs);
+        const { rootOrgUnit, deMappings, sourceIds, targetIds } = await this.fetchElements(idMappings);
 
-        checkDataElementTypes(dataElementPairs);
+        checkDataElementTypes(deMappings);
 
         const allEvents = await this.fetchEvents(programStageId, rootOrgUnit.id);
         const applicableEvents = this.filterApplicableEvents(allEvents, sourceIds);
 
         checkTargetDataValuesAreEmpty(applicableEvents, targetIds);
 
-        const eventsWithNewDataValues = this.copyEventDataValues(
-            applicableEvents,
-            sourceIds,
-            dataElementPairs
-        );
+        const eventsWithNewDataValues = this.copyEventDataValues({ applicableEvents, sourceIds, deMappings });
 
         await this.saveOrExport(eventsWithNewDataValues, post);
 
         if (reportPath) {
-            this.saveReport(reportPath, dataElementPairs, programStageId, eventsWithNewDataValues);
+            this.saveReport({ path: reportPath, deMappings, programStageId, eventsWithNewDataValues });
         }
 
         return eventsWithNewDataValues;
     }
 
-    private async fetchElements(idPairs: [Id, Id][]) {
+    private async fetchElements(idMappings: { source: Id; target: Id }[]) {
         const rootOrgUnit = await this.orgUnitRepository.getRoot();
-        const dataElements = await this.dataElementsRepository.getByIds(idPairs.flat());
-        const dataElementPairs = this.mapDataElements(dataElements, idPairs);
-        const sourceIds = idPairs.map(([sourceId, _]) => sourceId);
-        const targetIds = idPairs.map(([_, targetId]) => targetId);
+        const dataElements = await this.dataElementsRepository.getByIds(
+            idMappings.flatMap(({ source, target }) => [source, target])
+        );
+        const deMappings = this.mapDataElements(dataElements, idMappings);
+        const sourceIds = idMappings.map(({ source }) => source);
+        const targetIds = idMappings.map(({ target }) => target);
 
-        return { rootOrgUnit, dataElementPairs, sourceIds, targetIds };
+        return { rootOrgUnit, deMappings, sourceIds, targetIds };
     }
 
     private fetchEvents(programStageId: string, rootOrgUnitId: string): Promise<ProgramEvent[]> {
@@ -80,15 +78,17 @@ export class CopyProgramStageDataValuesUseCase {
         }
     }
 
-    private copyEventDataValues(
-        applicableEvents: ProgramEvent[],
-        sourceIds: string[],
-        dataElementPairs: DataElementPair[]
-    ): ProgramEvent[] {
+    private copyEventDataValues(args: {
+        applicableEvents: ProgramEvent[];
+        sourceIds: string[];
+        deMappings: DataElementMapping[];
+    }): ProgramEvent[] {
+        const { applicableEvents, sourceIds, deMappings } = args;
+
         return applicableEvents.map(event => ({
             ...event,
             dataValues: event.dataValues.flatMap(dv => {
-                const targetDe = dataElementPairs.find(([source, _]) => source.id === dv.dataElement.id)?.[1];
+                const targetDe = deMappings.find(({ source }) => source.id === dv.dataElement.id)?.target;
 
                 if (!sourceIds.includes(dv.dataElement.id)) return [dv];
                 else if (targetDe) return [dv, { ...dv, dataElement: _.omit(targetDe, "valueType") }];
@@ -97,35 +97,40 @@ export class CopyProgramStageDataValuesUseCase {
         }));
     }
 
-    private mapDataElements(dataElements: DataElement[], pairs: [Id, Id][]): DataElementPair[] {
-        const dataElementPairs = pairs.map(([sourceId, targetId]) => {
-            const sourceElement = dataElements.find(de => de.id === sourceId);
-            const targetElement = dataElements.find(de => de.id === targetId);
+    private mapDataElements(
+        dataElements: DataElement[],
+        idMappings: { source: Id; target: Id }[]
+    ): DataElementMapping[] {
+        const deMappings = idMappings.map(({ source, target }) => {
+            const sourceElement = dataElements.find(de => de.id === source);
+            const targetElement = dataElements.find(de => de.id === target);
 
             if (!sourceElement || !targetElement)
-                return `Data element not found for pair: [${sourceId}, ${targetId}]`;
-            else return [sourceElement, targetElement];
+                return `Data element not found for pair: ${source}-${target}`;
+            else return { source: sourceElement, target: targetElement };
         });
 
-        const errors = dataElementPairs.filter(pair => typeof pair === "string");
+        const errors = deMappings.filter(mapping => typeof mapping === "string");
         if (!_.isEmpty(errors)) throw new Error(errors.join("\n"));
 
-        return dataElementPairs.filter((pair): pair is DataElementPair => typeof pair !== "string");
+        return deMappings.filter((mapping): mapping is DataElementMapping => typeof mapping !== "string");
     }
 
-    private saveReport(
-        path: string,
-        dataElementPairs: DataElementPair[],
-        programStageId: string,
-        eventsWithNewDataValues: ProgramEvent[]
-    ) {
-        const dataElementLines = dataElementPairs.map(
-            ([source, target]) =>
+    private saveReport(args: {
+        path: string;
+        deMappings: DataElementMapping[];
+        programStageId: string;
+        eventsWithNewDataValues: ProgramEvent[];
+    }) {
+        const { path, deMappings, programStageId, eventsWithNewDataValues } = args;
+
+        const dataElementLines = deMappings.map(
+            ({ source, target }) =>
                 `Source DataElement: ${source.id} (${source.name}), Target DataElement: ${target.id} (${target.name})`
         );
 
         const eventLines = eventsWithNewDataValues.map(event => {
-            const dataValueLines = dataElementPairs.flatMap(([source, target]) => {
+            const dataValueLines = deMappings.flatMap(({ source, target }) => {
                 const sourceValue = event.dataValues.find(dv => dv.dataElement.id === source.id)?.value;
                 const status = sourceValue ? `(${sourceValue})` : undefined;
                 return status ? [`\tCopy ${source.id} to ${target.id} ${status}`] : [];
@@ -146,10 +151,10 @@ export class CopyProgramStageDataValuesUseCase {
     }
 }
 
-function checkDataElementTypes(dePairs: DataElementPair[]) {
-    const typeMismatchErrors = dePairs
-        .filter(([source, target]) => source.valueType !== target.valueType)
-        .map(([source, target]) => `Data elements [${source.id}, ${target.id}] do not have the same type.`);
+function checkDataElementTypes(deMappings: DataElementMapping[]) {
+    const typeMismatchErrors = deMappings
+        .filter(({ source, target }) => source.valueType !== target.valueType)
+        .map(({ source, target }) => `Data elements [${source.id}, ${target.id}] do not have the same type.`);
 
     if (!_.isEmpty(typeMismatchErrors)) throw new Error(typeMismatchErrors.join("\n"));
 }
@@ -174,9 +179,9 @@ function checkTargetDataValuesAreEmpty(events: ProgramEvent[], targetIds: Id[]) 
 
 export type CopyProgramStageDataValuesOptions = {
     programStageId: string;
-    dataElementIdPairs: [source: Id, target: Id][];
+    dataElementIdMappings: { source: Id; target: Id }[];
     post: boolean;
     saveReport?: string;
 };
 
-type DataElementPair = [source: DataElement, target: DataElement];
+type DataElementMapping = { source: DataElement; target: DataElement };

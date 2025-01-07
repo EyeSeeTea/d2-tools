@@ -277,11 +277,16 @@ const copyDataValuesCmd = command({
         const dataElementsRepository = new DataElementsD2Repository(api);
         const orgUnitRepository = new OrgUnitD2Repository(api);
 
+        const useCaseArgs = {
+            ...args,
+            dataElementIdMappings: args.dataElementIdPairs.map(([source, target]) => ({ source, target })),
+        };
+
         await new CopyProgramStageDataValuesUseCase(
             programEventsRepository,
             orgUnitRepository,
             dataElementsRepository
-        ).execute(args);
+        ).execute(useCaseArgs);
     },
 });
 

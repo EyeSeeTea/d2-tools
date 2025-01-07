@@ -86,9 +86,9 @@ describe("CopyProgramStageDataValuesUseCase", () => {
 
 const commonArgs: CopyProgramStageDataValuesOptions = {
     programStageId: "sgSKZRoWE9b",
-    dataElementIdPairs: [
-        ["qwfxR2TQkUn", "L5x9z9BAgR8"],
-        ["N0p2yOsEy7a", "wSCh46cADN6"],
+    dataElementIdMappings: [
+        { source: "qwfxR2TQkUn", target: "L5x9z9BAgR8" },
+        { source: "N0p2yOsEy7a", target: "wSCh46cADN6" },
     ],
     post: false,
 };
