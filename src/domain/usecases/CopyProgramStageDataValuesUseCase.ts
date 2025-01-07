@@ -18,23 +18,12 @@ export class CopyProgramStageDataValuesUseCase {
     async execute(options: CopyProgramStageDataValuesOptions): Promise<ProgramEvent[]> {
         const { programStageId, dataElementIdPairs: idPairs, post, saveReport: reportPath } = options;
 
-        const rootOrgUnit = await this.orgUnitRepository.getRoot();
-        const dataElements = await this.dataElementsRepository.getByIds(idPairs.flat());
-        const dataElementPairs = this.mapDataElements(dataElements, idPairs);
-        const sourceIds = idPairs.map(([sourceId, _]) => sourceId);
-        const targetIds = idPairs.map(([_, targetId]) => targetId);
+        const { rootOrgUnit, dataElementPairs, sourceIds, targetIds } = await this.fetchElements(idPairs);
 
         checkDataElementTypes(dataElementPairs);
 
-        const allEvents = await this.programEventsRepository.get({
-            programStagesIds: [programStageId],
-            orgUnitsIds: [rootOrgUnit.id],
-            orgUnitMode: "DESCENDANTS",
-        });
-
-        const applicableEvents = allEvents.filter(event =>
-            event.dataValues.some(dv => sourceIds.includes(dv.dataElement.id))
-        );
+        const allEvents = await this.fetchEvents(programStageId, rootOrgUnit.id);
+        const applicableEvents = this.filterApplicableEvents(allEvents, sourceIds);
 
         checkTargetDataValuesAreEmpty(applicableEvents, targetIds);
 
@@ -44,6 +33,38 @@ export class CopyProgramStageDataValuesUseCase {
             dataElementPairs
         );
 
+        await this.saveOrExport(eventsWithNewDataValues, post);
+
+        if (reportPath) {
+            this.saveReport(reportPath, dataElementPairs, programStageId, eventsWithNewDataValues);
+        }
+
+        return eventsWithNewDataValues;
+    }
+
+    private async fetchElements(idPairs: [Id, Id][]) {
+        const rootOrgUnit = await this.orgUnitRepository.getRoot();
+        const dataElements = await this.dataElementsRepository.getByIds(idPairs.flat());
+        const dataElementPairs = this.mapDataElements(dataElements, idPairs);
+        const sourceIds = idPairs.map(([sourceId, _]) => sourceId);
+        const targetIds = idPairs.map(([_, targetId]) => targetId);
+
+        return { rootOrgUnit, dataElementPairs, sourceIds, targetIds };
+    }
+
+    private async fetchEvents(programStageId: string, rootOrgUnitId: string) {
+        return this.programEventsRepository.get({
+            programStagesIds: [programStageId],
+            orgUnitsIds: [rootOrgUnitId],
+            orgUnitMode: "DESCENDANTS",
+        });
+    }
+
+    private filterApplicableEvents(allEvents: ProgramEvent[], sourceIds: string[]) {
+        return allEvents.filter(event => event.dataValues.some(dv => sourceIds.includes(dv.dataElement.id)));
+    }
+
+    private async saveOrExport(eventsWithNewDataValues: ProgramEvent[], post: boolean) {
         if (post) {
             const result = await this.programEventsRepository.save(eventsWithNewDataValues);
             if (result.type === "success") log.info(JSON.stringify(result, null, 4));
@@ -57,12 +78,6 @@ export class CopyProgramStageDataValuesUseCase {
             fs.writeFileSync(payloadPath, json);
             log.info(`Written payload (${eventsWithNewDataValues.length} events): ${payloadPath}`);
         }
-
-        if (reportPath) {
-            this.saveReport(reportPath, dataElementPairs, programStageId, eventsWithNewDataValues);
-        }
-
-        return eventsWithNewDataValues;
     }
 
     private copyEventDataValues(
