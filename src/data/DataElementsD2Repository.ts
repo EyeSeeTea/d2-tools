@@ -18,7 +18,7 @@ export class DataElementsD2Repository implements DataElementsRepository {
             },
         });
 
-        const dataElements = (await metadata$.getData()).dataElements;
+        const { dataElements } = await metadata$.getData();
         const dataElementsIds = dataElements.map(de => de.id);
         const dataElementsIdsNotFound = _.difference(ids, dataElementsIds);
 
