@@ -52,7 +52,7 @@ export class CopyProgramStageDataValuesUseCase {
         return { rootOrgUnit, dataElementPairs, sourceIds, targetIds };
     }
 
-    private async fetchEvents(programStageId: string, rootOrgUnitId: string) {
+    private fetchEvents(programStageId: string, rootOrgUnitId: string): Promise<ProgramEvent[]> {
         return this.programEventsRepository.get({
             programStagesIds: [programStageId],
             orgUnitsIds: [rootOrgUnitId],
@@ -60,7 +60,7 @@ export class CopyProgramStageDataValuesUseCase {
         });
     }
 
-    private filterApplicableEvents(allEvents: ProgramEvent[], sourceIds: string[]) {
+    private filterApplicableEvents(allEvents: ProgramEvent[], sourceIds: string[]): ProgramEvent[] {
         return allEvents.filter(event => event.dataValues.some(dv => sourceIds.includes(dv.dataElement.id)));
     }
 
@@ -84,7 +84,7 @@ export class CopyProgramStageDataValuesUseCase {
         applicableEvents: ProgramEvent[],
         sourceIds: string[],
         dataElementPairs: DataElementPair[]
-    ) {
+    ): ProgramEvent[] {
         return applicableEvents.map(event => ({
             ...event,
             dataValues: event.dataValues.flatMap(dv => {
