@@ -88,19 +88,11 @@ export class CopyProgramStageDataValuesUseCase {
         return applicableEvents.map(event => ({
             ...event,
             dataValues: event.dataValues.flatMap(dv => {
+                const targetDe = dataElementPairs.find(([source, _]) => source.id === dv.dataElement.id)?.[1];
+
                 if (!sourceIds.includes(dv.dataElement.id)) return [dv];
-                const target = dataElementPairs.find(([source, _]) => source.id === dv.dataElement.id)?.[1];
-
-                if (!target)
-                    throw new Error(`Target data element not found for source id: ${dv.dataElement.id}`);
-
-                return [
-                    dv,
-                    {
-                        ...dv,
-                        dataElement: _.omit(target, "valueType"),
-                    },
-                ];
+                else if (targetDe) return [dv, { ...dv, dataElement: _.omit(targetDe, "valueType") }];
+                else throw new Error(`Target data element not found for source id: ${dv.dataElement.id}`);
             }),
         }));
     }
