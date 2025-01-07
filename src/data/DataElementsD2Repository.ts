@@ -1,6 +1,5 @@
 import _ from "lodash";
 import { D2Api, Id, MetadataPick } from "types/d2-api";
-import { NamedRef } from "domain/entities/Base";
 import { DataElementsRepository } from "domain/repositories/DataElementsRepository";
 import { DataElement } from "domain/entities/DataElement";
 
@@ -9,12 +8,6 @@ export class DataElementsD2Repository implements DataElementsRepository {
 
     async getByIds(ids: Id[]): Promise<DataElement[]> {
         return this.getDataElements(ids);
-    }
-
-    async getDataElementsNames(ids: Id[]): Promise<NamedRef[]> {
-        return this.getDataElements(ids).then(dataElements =>
-            dataElements.map(de => ({ id: de.id, name: de.name }))
-        );
     }
 
     private async getDataElements(ids: Id[]): Promise<D2DataElement[]> {
