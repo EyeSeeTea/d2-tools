@@ -277,7 +277,7 @@ const copyDataValuesCmd = command({
         const dataElementsRepository = new DataElementsD2Repository(api);
         const orgUnitRepository = new OrgUnitD2Repository(api);
 
-        new CopyProgramStageDataValuesUseCase(
+        await new CopyProgramStageDataValuesUseCase(
             programEventsRepository,
             orgUnitRepository,
             dataElementsRepository
