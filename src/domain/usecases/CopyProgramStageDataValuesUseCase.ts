@@ -174,9 +174,9 @@ function checkTargetDataValuesAreEmpty(events: ProgramEvent[], targetIds: Id[]) 
 
 export type CopyProgramStageDataValuesOptions = {
     programStageId: string;
-    dataElementIdPairs: [Id, Id][]; // [sourceDataElementId, targetDataElementId]
+    dataElementIdPairs: [source: Id, target: Id][];
     post: boolean;
     saveReport?: string;
 };
 
-type DataElementPair = [DataElement, DataElement];
+type DataElementPair = [source: DataElement, target: DataElement];
