@@ -65,7 +65,7 @@ describe("CopyProgramStageDataValuesUseCase", () => {
         dataElementsRepository.getByIds = vi.fn().mockResolvedValue(missingDataElements);
 
         await expect(useCase.execute(commonArgs)).rejects.toThrow(
-            "Data element not found for pair: [qwfxR2TQkUn, L5x9z9BAgR8]"
+            "Data element not found for pair: qwfxR2TQkUn-L5x9z9BAgR8"
         );
     });
 
