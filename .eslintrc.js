@@ -4,7 +4,7 @@ module.exports = {
     extends: ["eslint:recommended", "plugin:@typescript-eslint/recommended"],
     parser: "@typescript-eslint/parser",
     rules: {
-        "no-console": ["warn", { allow: ["debug", "warn", "error", "info"] }],
+        "no-console": ["warn", { allow: ["debug", "warn", "error", "info", "table"] }],
         "@typescript-eslint/camelcase": "off",
         "@typescript-eslint/explicit-function-return-type": ["off"],
         "@typescript-eslint/no-this-alias": ["off"],

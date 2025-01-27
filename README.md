@@ -884,3 +884,64 @@ shell:~$ yarn start trackedEntities transfer \
   --input-file=transfers.csv \
   --post
 ```
+
+## SMS
+
+### Gateways
+
+#### List SMS Gateways
+
+```console
+shell:~$ yarn start gateways list \
+  --url="http://admin:district@localhost:8080"
+```
+
+#### View a SMS Gateway config
+
+View detailed configuration from a specific gateway.
+
+```console
+shell:~$ yarn start sms gateways info  \
+  --url="http://admin:district@localhost:8080" \
+  --uid="HW4X1IYOtK"
+```
+
+#### Save a SMS Gateway config to a config file
+
+```console
+shell:~$ yarn -s start sms gateways info  \
+  --url="http://admin:district@localhost:8080" \
+  --uid="HW4X1IYOtK" > custom-http-gateway.json
+```
+
+#### Create SMS Gateway from config file
+
+```console
+shell:~$ yarn start sms gateways create \
+  --url="http://admin:district@localhost:8080"
+  --config-file=custom-http-gateway.json
+```
+
+### Delete a SMS Gateway
+
+```console
+shell:~$ yarn start sms gateways delete  \
+  --url="http://admin:district@localhost:8080" \
+  --uid="HW4X1IYOtK"
+```
+
+### Send SMS
+
+```console
+shell:~$ yarn start sms send \
+  --url="http://admin:district@localhost:8080"
+  --to="123123123"
+  --message="This is a test message from d2-tools"
+```
+
+### List latest Outbound SMSs
+
+```console
+shell:~$ yarn start sms outbound \
+  --url="http://admin:district@localhost:8080"
+```
