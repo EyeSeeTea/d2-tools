@@ -56,20 +56,8 @@ export const expectedProgramEvents: ProgramEvent[] = [
         orgUnit: { id: "d8cvwcaxzRu", name: "Kaya - CM CHR - SV" },
         dataValues: [
             {
-                dataElement: { id: "qwfxR2TQkUn", name: "Hepatitis B test indicated" },
-                value: "true",
-                storedBy: "user1",
-                lastUpdated: "2025-01-02T01:12:02.609",
-            },
-            {
                 dataElement: { id: "L5x9z9BAgR8", name: "Follow up Hepatitis B test indicated" },
                 value: "true",
-                storedBy: "user1",
-                lastUpdated: "2025-01-02T01:12:02.609",
-            },
-            {
-                dataElement: { id: "N0p2yOsEy7a", name: "Hepatitis B test result" },
-                value: "patient_refused",
                 storedBy: "user1",
                 lastUpdated: "2025-01-02T01:12:02.609",
             },
