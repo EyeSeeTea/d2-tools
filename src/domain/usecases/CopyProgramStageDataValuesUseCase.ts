@@ -91,7 +91,7 @@ export class CopyProgramStageDataValuesUseCase {
                 const targetDe = deMappings.find(({ source }) => source.id === dv.dataElement.id)?.target;
 
                 if (!sourceIds.includes(dv.dataElement.id)) return [dv];
-                else if (targetDe) return [dv, { ...dv, dataElement: _.omit(targetDe, "valueType") }];
+                else if (targetDe) return [{ ...dv, dataElement: _.omit(targetDe, "valueType") }];
                 else throw new Error(`Target data element not found for source id: ${dv.dataElement.id}`);
             }),
         }));
