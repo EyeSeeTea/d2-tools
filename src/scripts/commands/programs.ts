@@ -20,7 +20,7 @@ import { DeleteProgramDataValuesUseCase } from "domain/usecases/DeleteProgramDat
 import { MoveProgramAttributeUseCase } from "domain/usecases/MoveProgramAttributeUseCase";
 import { TrackedEntityD2Repository } from "data/TrackedEntityD2Repository";
 import { DuplicatedProgramsSpreadsheetExport } from "scripts/programs/DuplicatedProgramsSpreadsheetExport";
-import { CopyProgramStageDataValuesUseCase } from "domain/usecases/CopyProgramStageDataValuesUseCase";
+import { MoveProgramStageDataValuesUseCase } from "domain/usecases/MoveProgramStageDataValuesUseCase";
 import { DataElementsD2Repository } from "data/DataElementsD2Repository";
 import { OrgUnitD2Repository } from "data/OrgUnitD2Repository";
 
@@ -34,7 +34,7 @@ export function getCommand() {
             "get-duplicated-events": getDuplicatedEventsCmd,
             "delete-data-values": deleteDataValuesCmd,
             "move-attribute": moveAttribute,
-            "copy-data-values": copyDataValuesCmd,
+            "move-data-values": moveDataValuesCmd,
         },
     });
 }
@@ -244,10 +244,10 @@ const moveAttribute = command({
     },
 });
 
-const copyDataValuesCmd = command({
-    name: "copy-data-values",
+const moveDataValuesCmd = command({
+    name: "move-data-values",
     description:
-        "Copy data values from specific data elements to different data elements within the same tracker program's program stage",
+        "Move data values from specific data elements to different data elements within the same tracker program's program stage",
     args: {
         url: getApiUrlOption(),
         programStageId: programStageIdArg,
@@ -282,7 +282,7 @@ const copyDataValuesCmd = command({
             dataElementIdMappings: args.dataElementIdPairs.map(([source, target]) => ({ source, target })),
         };
 
-        await new CopyProgramStageDataValuesUseCase(
+        await new MoveProgramStageDataValuesUseCase(
             programEventsRepository,
             orgUnitRepository,
             dataElementsRepository

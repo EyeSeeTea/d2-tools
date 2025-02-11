@@ -7,20 +7,20 @@ import {
     nonEmptyTargetDataValuesEvents,
     missingSourceDataValuesEvents,
     expectedProgramEvents,
-} from "./CopyProgramStageDataValuesUseCase.data";
+} from "./MoveProgramStageDataValuesUseCase.data";
 import {
-    CopyProgramStageDataValuesOptions,
-    CopyProgramStageDataValuesUseCase,
-} from "domain/usecases/CopyProgramStageDataValuesUseCase";
+    MoveProgramStageDataValuesOptions,
+    MoveProgramStageDataValuesUseCase,
+} from "domain/usecases/MoveProgramStageDataValuesUseCase";
 import { ProgramEventsRepository } from "domain/repositories/ProgramEventsRepository";
 import { OrgUnitRepository } from "domain/repositories/OrgUnitRepository";
 import { DataElementsRepository } from "domain/repositories/DataElementsRepository";
 
-describe("CopyProgramStageDataValuesUseCase", () => {
+describe("MoveProgramStageDataValuesUseCase", () => {
     let programEventsRepository: ProgramEventsRepository;
     let orgUnitRepository: OrgUnitRepository;
     let dataElementsRepository: DataElementsRepository;
-    let useCase: CopyProgramStageDataValuesUseCase;
+    let useCase: MoveProgramStageDataValuesUseCase;
 
     beforeEach(() => {
         programEventsRepository = {
@@ -36,14 +36,14 @@ describe("CopyProgramStageDataValuesUseCase", () => {
             getByIds: vi.fn().mockResolvedValue(successDataElements),
         } as unknown as DataElementsRepository;
 
-        useCase = new CopyProgramStageDataValuesUseCase(
+        useCase = new MoveProgramStageDataValuesUseCase(
             programEventsRepository,
             orgUnitRepository,
             dataElementsRepository
         );
     });
 
-    it("should copy data values successfully", async () => {
+    it("should move data values successfully", async () => {
         const eventsWithNewDataValues = await useCase.execute({
             ...commonArgs,
             post: true,
@@ -84,7 +84,7 @@ describe("CopyProgramStageDataValuesUseCase", () => {
     });
 });
 
-const commonArgs: CopyProgramStageDataValuesOptions = {
+const commonArgs: MoveProgramStageDataValuesOptions = {
     programStageId: "sgSKZRoWE9b",
     dataElementIdMappings: [
         { source: "qwfxR2TQkUn", target: "L5x9z9BAgR8" },

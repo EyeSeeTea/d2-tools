@@ -8,14 +8,14 @@ import { OrgUnitRepository } from "domain/repositories/OrgUnitRepository";
 import { ProgramEvent } from "domain/entities/ProgramEvent";
 import log from "utils/log";
 
-export class CopyProgramStageDataValuesUseCase {
+export class MoveProgramStageDataValuesUseCase {
     constructor(
         private programEventsRepository: ProgramEventsRepository,
         private orgUnitRepository: OrgUnitRepository,
         private dataElementsRepository: DataElementsRepository
     ) {}
 
-    async execute(options: CopyProgramStageDataValuesOptions): Promise<ProgramEvent[]> {
+    async execute(options: MoveProgramStageDataValuesOptions): Promise<ProgramEvent[]> {
         const { programStageId, dataElementIdMappings: idMappings, post, saveReport: reportPath } = options;
 
         const { rootOrgUnit, deMappings, sourceIds, targetIds } = await this.fetchElements(idMappings);
@@ -27,7 +27,7 @@ export class CopyProgramStageDataValuesUseCase {
 
         checkTargetDataValuesAreEmpty(applicableEvents, targetIds);
 
-        const eventsWithNewDataValues = this.copyEventDataValues({ applicableEvents, sourceIds, deMappings });
+        const eventsWithNewDataValues = this.moveEventDataValues({ applicableEvents, sourceIds, deMappings });
 
         await this.saveOrExport(eventsWithNewDataValues, post);
 
@@ -71,14 +71,14 @@ export class CopyProgramStageDataValuesUseCase {
             const payload = { events: eventsWithNewDataValues };
             const json = JSON.stringify(payload, null, 4);
             const now = new Date().toISOString().slice(0, 19).replace(/:/g, "-");
-            const payloadPath = `copy-program-stage-data-values-${now}.json`;
+            const payloadPath = `move-program-stage-data-values-${now}.json`;
 
             fs.writeFileSync(payloadPath, json);
             log.info(`Written payload (${eventsWithNewDataValues.length} events): ${payloadPath}`);
         }
     }
 
-    private copyEventDataValues(args: {
+    private moveEventDataValues(args: {
         applicableEvents: ProgramEvent[];
         sourceIds: string[];
         deMappings: DataElementMapping[];
@@ -133,7 +133,7 @@ export class CopyProgramStageDataValuesUseCase {
             const dataValueLines = deMappings.flatMap(({ source, target }) => {
                 const sourceValue = event.dataValues.find(dv => dv.dataElement.id === source.id)?.value;
                 const status = sourceValue ? `(${sourceValue})` : undefined;
-                return status ? [`\tCopy ${source.id} to ${target.id} ${status}`] : [];
+                return status ? [`\tMove ${source.id} to ${target.id} ${status}`] : [];
             });
 
             return `Event ID: ${event.id}, OrgUnit ID: ${event.orgUnit.id}\n${dataValueLines.join("\n")}`;
@@ -177,7 +177,7 @@ function checkTargetDataValuesAreEmpty(events: ProgramEvent[], targetIds: Id[]) 
     if (eventsWithNonEmptyTargetDataValues) throw new Error(error);
 }
 
-export type CopyProgramStageDataValuesOptions = {
+export type MoveProgramStageDataValuesOptions = {
     programStageId: string;
     dataElementIdMappings: { source: Id; target: Id }[];
     post: boolean;
