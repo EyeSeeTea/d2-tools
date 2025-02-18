@@ -1,5 +1,6 @@
-import { Id, NamedRef } from "domain/entities/Base";
+import { Id } from "domain/entities/Base";
+import { DataElement } from "domain/entities/DataElement";
 
 export interface DataElementsRepository {
-    getDataElementsNames(ids: Id[]): Promise<NamedRef[]>;
+    getByIds(ids: Id[]): Promise<DataElement[]>;
 }

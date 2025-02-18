@@ -1,5 +1,5 @@
 import _ from "lodash";
-import { command, string, subcommands, option, positional, optional, flag } from "cmd-ts";
+import { command, string, subcommands, option, positional, optional, flag, restPositionals } from "cmd-ts";
 
 import {
     choiceOf,
@@ -7,6 +7,7 @@ import {
     getApiUrlOptions,
     getD2Api,
     getD2ApiFromArgs,
+    StringPairSeparatedByDash,
     StringsSeparatedByCommas,
 } from "scripts/common";
 import { ProgramsD2Repository } from "data/ProgramsD2Repository";
@@ -19,6 +20,9 @@ import { DeleteProgramDataValuesUseCase } from "domain/usecases/DeleteProgramDat
 import { MoveProgramAttributeUseCase } from "domain/usecases/MoveProgramAttributeUseCase";
 import { TrackedEntityD2Repository } from "data/TrackedEntityD2Repository";
 import { DuplicatedProgramsSpreadsheetExport } from "scripts/programs/DuplicatedProgramsSpreadsheetExport";
+import { MoveProgramStageDataValuesUseCase } from "domain/usecases/MoveProgramStageDataValuesUseCase";
+import { DataElementsD2Repository } from "data/DataElementsD2Repository";
+import { OrgUnitD2Repository } from "data/OrgUnitD2Repository";
 
 export function getCommand() {
     return subcommands({
@@ -30,6 +34,7 @@ export function getCommand() {
             "get-duplicated-events": getDuplicatedEventsCmd,
             "delete-data-values": deleteDataValuesCmd,
             "move-attribute": moveAttribute,
+            "move-data-values": moveDataValuesCmd,
         },
     });
 }
@@ -204,6 +209,18 @@ const getDuplicatedEventsCmd = command({
     },
 });
 
+const programIdArg = option({
+    type: string,
+    long: "program-id",
+    description: "Program ID",
+});
+
+const programStageIdArg = option({
+    type: string,
+    long: "program-stage-id",
+    description: "Program Stage ID",
+});
+
 const moveAttribute = command({
     name: "move-attribute",
     handler: args => {
@@ -213,11 +230,7 @@ const moveAttribute = command({
     },
     args: {
         ...getApiUrlOptions(),
-        programId: option({
-            type: string,
-            long: "program-id",
-            description: "Program ID",
-        }),
+        programId: programIdArg,
         fromAttributeId: option({
             type: string,
             long: "from-attribute-id",
@@ -228,6 +241,52 @@ const moveAttribute = command({
             long: "to-attribute-id",
             description: "Attribute ID",
         }),
+    },
+});
+
+const moveDataValuesCmd = command({
+    name: "move-data-values",
+    description:
+        "Move data values from specific data elements to different data elements within the same tracker program's program stage",
+    args: {
+        url: getApiUrlOption(),
+        programStageId: programStageIdArg,
+        dataElementIdPairs: restPositionals({
+            type: StringPairSeparatedByDash,
+            displayName: "ID1-ID2",
+            description: "Pairs of data elements IDs (origin-destination)",
+        }),
+        post: flag({
+            long: "post",
+            description: "Post events updated with the copied data values",
+        }),
+        saveReport: option({
+            type: optional(string),
+            long: "save-report",
+            description: "Save TXT report",
+        }),
+        savePayload: option({
+            type: optional(string),
+            long: "save-payload",
+            description: "Save JSON payload",
+        }),
+    },
+    handler: async args => {
+        const api = getD2Api(args.url);
+        const programEventsRepository = new ProgramEventsD2Repository(api);
+        const dataElementsRepository = new DataElementsD2Repository(api);
+        const orgUnitRepository = new OrgUnitD2Repository(api);
+
+        const useCaseArgs = {
+            ...args,
+            dataElementIdMappings: args.dataElementIdPairs.map(([source, target]) => ({ source, target })),
+        };
+
+        await new MoveProgramStageDataValuesUseCase(
+            programEventsRepository,
+            orgUnitRepository,
+            dataElementsRepository
+        ).execute(useCaseArgs);
     },
 });
 
