@@ -44,7 +44,7 @@ export class EnrollmentsD2Repository implements EnrollmentsRepository {
     }
 
     async getRecentlyUpdated(params: EnrollmentsRepositoryParams): Async<Enrollment[]> {
-        const updatedAfter = getOneHourAgoDate();
+        const updatedAfter = getTwelveHoursAgoDate();
         return this.getEnrollments({ ...params, updatedAfter });
     }
 
@@ -135,8 +135,8 @@ export type getEnrollmentsParams = {
     updatedAfter?: string;
 };
 
-function getOneHourAgoDate() {
+function getTwelveHoursAgoDate() {
     const today = new Date();
-    const updatedAfter = new Date(today.getTime() - 1 * 60 * 60 * 1000).toISOString().replace("Z", "");
+    const updatedAfter = new Date(today.getTime() - 12 * 60 * 60 * 1000).toISOString().replace("Z", "");
     return updatedAfter;
 }

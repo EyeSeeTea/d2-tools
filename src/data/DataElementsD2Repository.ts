@@ -1,18 +1,19 @@
 import _ from "lodash";
-import { D2Api, Id } from "types/d2-api";
-import { NamedRef } from "domain/entities/Base";
+import { D2Api, Id, MetadataPick } from "types/d2-api";
 import { DataElementsRepository } from "domain/repositories/DataElementsRepository";
+import { DataElement } from "domain/entities/DataElement";
 
 export class DataElementsD2Repository implements DataElementsRepository {
     constructor(private api: D2Api) {}
 
-    async getDataElementsNames(ids: Id[]): Promise<NamedRef[]> {
+    async getByIds(ids: Id[]): Promise<DataElement[]> {
+        return this.getDataElements(ids);
+    }
+
+    private async getDataElements(ids: Id[]): Promise<D2DataElement[]> {
         const metadata$ = this.api.metadata.get({
             dataElements: {
-                fields: {
-                    id: true,
-                    name: true,
-                },
+                fields: dataElementFields,
                 filter: { id: { in: ids } },
             },
         });
@@ -28,3 +29,13 @@ export class DataElementsD2Repository implements DataElementsRepository {
         }
     }
 }
+
+const dataElementFields = {
+    id: true,
+    name: true,
+    valueType: true,
+} as const;
+
+type D2DataElement = MetadataPick<{
+    dataElements: { fields: typeof dataElementFields };
+}>["dataElements"][number];

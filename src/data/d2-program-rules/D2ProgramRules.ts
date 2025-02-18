@@ -481,7 +481,7 @@ export class D2ProgramRules {
             const res = await getData(
                 this.api.trackedEntityInstances.get({
                     program: program.id,
-                    order: "id:asc",
+                    order: "trackedEntity:asc",
                     ...orgUnitsFilter,
                     fields: "*,enrollments[events]",
                     programStartDate: startDate,
