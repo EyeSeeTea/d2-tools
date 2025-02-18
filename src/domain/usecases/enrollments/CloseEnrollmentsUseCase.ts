@@ -20,13 +20,36 @@ export class CloseEnrollmentsUseCase {
     ) {}
 
     async execute(params: EventsRepositoryParams): Async<void> {
-        // Get all events for the provided date
         const events = await this.eventsRepository.getAll(params);
-        const enrollmentsIDs = _.uniqBy(events, "enrollment").flatMap(event => event.enrollment);
+        log.info(`Found ${events.length} events for the provided program and orgUnit`);
+
+        // Get the newest event for each enrollment
+        const newestEventByEnrollment = _(events)
+            .groupBy("enrollment")
+            .mapValues(events => {
+                return events.reduce((newest, event) => {
+                    return new Date(event.occurredAt) > new Date(newest.occurredAt) ? event : newest;
+                });
+            })
+            .values()
+            .value();
+
+        // Discard events that occurred after the cutoff date
+        const cutoffDate = new Date(params.eventUpdateCutoff);
+        const eventsInCutoffRange = newestEventByEnrollment.filter(event => {
+            const eventDate = new Date(event.occurredAt);
+            return eventDate <= cutoffDate;
+        });
+
+        log.info(`Found ${eventsInCutoffRange.length} events before or at the provided date`);
+
+        const enrollmentsIDs = eventsInCutoffRange.flatMap(event => event.enrollment);
         if (enrollmentsIDs.length === 0) {
             log.info("No Enrollments for the provided date");
             return;
         }
+
+        log.info(`Found ${enrollmentsIDs.length} enrollments for the provided date`);
 
         // Get all active enrollments for the provided program and orgUnit
         const enrollmentsParams: EnrollmentsRepositoryParams = {

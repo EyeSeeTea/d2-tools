@@ -13,18 +13,21 @@ export class EventsD2Repository implements EventsRepository {
                 orgUnit: params.orgUnitId,
                 program: params.programId,
                 ouMode: "SELECTED",
-                updatedBefore: params.eventUpdateCutoff,
-                order: "enrollment,updatedAt",
+                order: "enrollment,occurredAt",
                 fields: {
                     event: true,
                     program: true,
                     orgUnit: true,
                     status: true,
                     updatedAt: true,
+                    occurredAt: true,
                     enrollment: true,
                     enrollmentStatus: true,
                 },
                 skipPaging: true,
+                // NOTE: Fix for 2.37.8.1
+                page: 1,
+                pageSize: 100000,
             })
             .getData()) as { instances: Event[] };
 
