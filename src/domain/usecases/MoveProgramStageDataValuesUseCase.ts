@@ -6,6 +6,7 @@ import { DataElementsRepository } from "domain/repositories/DataElementsReposito
 import { ProgramEventsRepository } from "domain/repositories/ProgramEventsRepository";
 import { OrgUnitRepository } from "domain/repositories/OrgUnitRepository";
 import { ProgramEvent } from "domain/entities/ProgramEvent";
+import { Timestamp } from "domain/entities/Date";
 import log from "utils/log";
 
 export class MoveProgramStageDataValuesUseCase {
@@ -22,7 +23,12 @@ export class MoveProgramStageDataValuesUseCase {
 
         checkDataElementTypes(deMappings);
 
-        const allEvents = await this.fetchEvents(programStageId, rootOrgUnit.id);
+        const allEvents = await this.fetchEvents({
+            programStageId: programStageId,
+            rootOrgUnitId: rootOrgUnit.id,
+            startDate: options.startDate,
+            endDate: options.endDate,
+        });
         const applicableEvents = this.filterApplicableEvents(allEvents, sourceIds);
 
         checkTargetDataValuesAreEmpty(applicableEvents, targetIds);
@@ -50,11 +56,19 @@ export class MoveProgramStageDataValuesUseCase {
         return { rootOrgUnit, deMappings, sourceIds, targetIds };
     }
 
-    private fetchEvents(programStageId: string, rootOrgUnitId: string): Promise<ProgramEvent[]> {
+    private fetchEvents(args: {
+        programStageId: string;
+        rootOrgUnitId: string;
+        startDate?: Timestamp;
+        endDate?: Timestamp;
+    }): Promise<ProgramEvent[]> {
+        const { programStageId, rootOrgUnitId, startDate, endDate } = args;
         return this.programEventsRepository.get({
             programStagesIds: [programStageId],
             orgUnitsIds: [rootOrgUnitId],
             orgUnitMode: "DESCENDANTS",
+            startDate,
+            endDate,
         });
     }
 
@@ -182,6 +196,8 @@ export type MoveProgramStageDataValuesOptions = {
     dataElementIdMappings: { source: Id; target: Id }[];
     post: boolean;
     saveReport?: string;
+    startDate?: string;
+    endDate?: string;
 };
 
 type DataElementMapping = { source: DataElement; target: DataElement };
