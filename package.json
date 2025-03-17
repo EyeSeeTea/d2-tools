@@ -1,6 +1,6 @@
 {
     "name": "d2-tools",
-    "version": "0.4.0",
+    "version": "0.5.0",
     "main": "src/index.ts",
     "description": "DHIS2 tools",
     "scripts": {
