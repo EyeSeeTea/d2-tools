@@ -270,6 +270,16 @@ const moveDataValuesCmd = command({
             long: "save-payload",
             description: "Save JSON payload",
         }),
+        startDate: option({
+            type: optional(string),
+            long: "start-date",
+            description: "Start date for events",
+        }),
+        endDate: option({
+            type: optional(string),
+            long: "end-date",
+            description: "End date for events",
+        }),
     },
     handler: async args => {
         const api = getD2Api(args.url);
