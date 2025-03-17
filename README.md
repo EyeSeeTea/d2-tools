@@ -884,3 +884,24 @@ shell:~$ yarn start trackedEntities transfer \
   --input-file=transfers.csv \
   --post
 ```
+
+## Options
+
+### rename
+
+Rename an option code (options are the children of option sets). Actions:
+
+-   metadata: rename the option code
+-   metadata: recode the attribute values associated with the option (TODO)
+-   data values: recode the associated code used as dataValues[].value
+-   events: recode the associated code used as dataValues[].value
+-   tracker: recode the associated tracked entity attributes (TODO)
+
+```console
+shell:~$ yarn start options rename-code \
+  --url=https://play.im.dhis2.org/stable-2-41-3 \
+  --auth="admin:distrct"  \
+   --id=YQe3PFbATvz \
+  --to-code="NVP" \
+  --post
+```
