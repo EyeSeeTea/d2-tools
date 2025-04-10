@@ -6,6 +6,7 @@ import { UsernameRenameRepository } from "domain/repositories/UsernameRenameRepo
 import logger from "utils/log";
 import _ from "lodash";
 import * as psqlformat from "psqlformat";
+import sqlRename from "./sql/rename-usernames.sql?raw";
 
 export class UsernameRenameSqlRepository implements UsernameRenameRepository {
     constructor(private sqlFile: Path) {}
@@ -18,7 +19,6 @@ export class UsernameRenameSqlRepository implements UsernameRenameRepository {
 
         logger.info(`Mapping: ${JSON.stringify(mapping)}`);
         const sqlMapping = getSqlForTemporalMappingTable(mapping);
-        const sqlRename = getRenamingSql();
 
         const fullSql = [
             sqlMapping, //
@@ -31,13 +31,6 @@ export class UsernameRenameSqlRepository implements UsernameRenameRepository {
         logger.info(`Writing SQL: ${this.sqlFile}`);
         fs.writeFileSync(this.sqlFile, formattedSql + "\n");
     }
-}
-
-function getRenamingSql() {
-    const sqlPath = path.join(__dirname, "./sql", "rename-usernames.sql");
-    logger.debug(`Template SQL: ${sqlPath}`);
-    const sqlRename = fs.readFileSync(sqlPath, "utf8");
-    return sqlRename;
 }
 
 function getSqlForTemporalMappingTable(mapping: UsernameRename[]) {
