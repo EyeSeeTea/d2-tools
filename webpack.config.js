@@ -15,6 +15,10 @@ module.exports = {
                     loader: "ts-loader",
                 },
             },
+            {
+                test: /\.sql$/i,
+                type: "asset/source",
+            },
         ],
     },
     node: {
