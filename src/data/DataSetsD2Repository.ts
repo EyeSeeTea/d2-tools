@@ -1,5 +1,5 @@
 import _ from "lodash";
-import { DataSetsRepository, OUCopyResult } from "domain/repositories/DataSetsRepository";
+import { DataSetsRepository, DataSetPostResult } from "domain/repositories/DataSetsRepository";
 import { D2Api, Id, PostOptions, Ref } from "types/d2-api";
 import { dataSetSchema } from "./DataSetSchema";
 import { DataSet, DataSetMetadata, DataSetToCompare } from "domain/entities/DataSet";
@@ -53,9 +53,9 @@ export class DataSetsD2Repository implements DataSetsRepository {
         }
     }
 
-    async post(data: DataSetMetadata): Promise<OUCopyResult> {
+    async post(data: DataSetMetadata, saveOptions?: Partial<PostOptions>): Promise<DataSetPostResult> {
         try {
-            const options: Partial<PostOptions> = { async: false };
+            const options: Partial<PostOptions> = { ...(saveOptions || {}), async: false };
             const response = await runMetadata(this.api.metadata.post(data, options));
 
             if (response.status !== "OK") {
@@ -63,8 +63,8 @@ export class DataSetsD2Repository implements DataSetsRepository {
             }
 
             return response.status;
-        } catch (errror) {
-            console.debug(errror);
+        } catch (error) {
+            console.debug(error);
             return "ERROR";
         }
     }
@@ -116,6 +116,6 @@ const fields = {
         },
         categoryCombo: { id: true, categoryOptionCombos: { id: true } },
     },
-    dataInputPeriods: { period: { id: true } },
+    dataInputPeriods: { period: { id: true }, openingDate: true, closingDate: true },
     organisationUnits: { id: true, name: true },
 } as const;
