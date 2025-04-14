@@ -1,7 +1,7 @@
 import { Identifiable } from "domain/entities/Base";
-import { OrgUnit, OrgUnitFields } from "domain/entities/OrgUnit";
+import { OrgUnit } from "domain/entities/OrgUnit";
 
 export interface OrgUnitRepository {
-    getByIdentifiables(ids: Identifiable[], fields?: OrgUnitFields): Promise<OrgUnit[]>;
+    getByIdentifiables(ids: Identifiable[]): Promise<OrgUnit[]>;
     getRoot(): Promise<OrgUnit>;
 }

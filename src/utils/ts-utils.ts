@@ -111,7 +111,3 @@ export function invertMapping<Key extends string, Value extends string>(
 }
 
 export type PartialBy<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
-
-export type BooleanTree<T> = {
-    [K in keyof T]: T[K] extends object ? boolean | BooleanTree<T[K]> : boolean;
-};
