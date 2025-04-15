@@ -13,7 +13,7 @@ export class SetSkipOfflineDataSetUseCase {
     constructor(private dataSetRepository: DataSetsRepository) {}
 
     async execute(options: SetSkipOfflineOptions): Promise<DataSetPostResult> {
-        log.info("Loading dataSets...");
+        log.info("Loading DataSets...");
         const updatedDataSets = await this.dataSetRepository
             .getAll()
             .then((dataSets: DataSet[]) => this.setSkipOffline(dataSets, options));
