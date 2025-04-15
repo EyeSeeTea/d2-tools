@@ -1,5 +1,5 @@
 import _ from "lodash";
-import { DataSetsRepository, DataSetPostResult } from "domain/repositories/DataSetsRepository";
+import { DataSetsRepository, DataSetPostResult, SaveOptions } from "domain/repositories/DataSetsRepository";
 import { D2Api, Id, PostOptions, Ref } from "types/d2-api";
 import { dataSetSchema } from "./DataSetSchema";
 import { DataSet, DataSetMetadata, DataSetToCompare } from "domain/entities/DataSet";
@@ -53,9 +53,12 @@ export class DataSetsD2Repository implements DataSetsRepository {
         }
     }
 
-    async post(data: DataSetMetadata, saveOptions?: Partial<PostOptions>): Promise<DataSetPostResult> {
+    async post(data: DataSetMetadata, saveOptions?: Partial<SaveOptions>): Promise<DataSetPostResult> {
         try {
-            const options: Partial<PostOptions> = { ...(saveOptions || {}), async: false };
+            const options: Partial<PostOptions> = {
+                ...(saveOptions?.skipPermissions ? { skipSharing: true } : {}),
+                async: false,
+            };
             const response = await runMetadata(this.api.metadata.post(data, options));
 
             if (response.status !== "OK") {

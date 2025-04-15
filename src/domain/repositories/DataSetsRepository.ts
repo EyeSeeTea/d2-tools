@@ -1,11 +1,10 @@
 import { Id, Identifiable, Ref } from "domain/entities/Base";
 import { DataSet, DataSetMetadata, DataSetToCompare } from "domain/entities/DataSet";
-import { PostOptions } from "../../types/d2-api";
 
 export interface DataSetsRepository {
     get(ids: Id[]): Promise<Record<Id, DataSet>>;
     getAll(): Promise<DataSet[]>;
-    post(data: DataSetMetadata, saveOptions?: Partial<PostOptions>): Promise<DataSetPostResult>;
+    post(data: DataSetMetadata, saveOptions?: Partial<SaveOptions>): Promise<DataSetPostResult>;
     getComparableDataSets(ids: Id[]): Promise<Record<Id, DataSetToCompare>>;
     getSchema(): object;
     getByIdentifiables(values: Identifiable[]): Promise<DataSet[]>;
@@ -13,3 +12,7 @@ export interface DataSetsRepository {
 }
 
 export type DataSetPostResult = "OK" | "ERROR" | "NO_CHANGE";
+
+export type SaveOptions = {
+    skipPermissions: boolean;
+};
