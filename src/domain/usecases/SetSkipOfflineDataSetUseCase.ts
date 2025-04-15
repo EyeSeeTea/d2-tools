@@ -20,7 +20,7 @@ export class SetSkipOfflineDataSetUseCase {
 
         if (!_.isEmpty(updatedDataSets)) {
             const metadata = { dataSets: updatedDataSets };
-            const result = await this.dataSetRepository.post(metadata, { skipSharing: true });
+            const result = await this.dataSetRepository.post(metadata, { skipPermissions: true });
 
             if (result === "ERROR") throw new Error("Error while posting the dataSets.");
 
