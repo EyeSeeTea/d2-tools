@@ -1,19 +1,19 @@
 import _ from "lodash";
 
-import { DataSetsRepository } from "../repositories/DataSetsRepository";
-import { Maybe } from "../../utils/ts-utils";
+import { DataSetPostResult, DataSetsRepository } from "../repositories/DataSetsRepository";
 import { DataSet } from "../entities/DataSet";
 import log from "../../utils/log";
 
 type SetSkipOfflineOptions = {
     year: number;
-    disable: Maybe<boolean>;
+    disable: boolean;
 };
 
 export class SetSkipOfflineDataSetUseCase {
     constructor(private dataSetRepository: DataSetsRepository) {}
 
-    async execute(options: SetSkipOfflineOptions) {
+    async execute(options: SetSkipOfflineOptions): Promise<DataSetPostResult> {
+        log.info("Loading dataSets...");
         const updatedDataSets = await this.dataSetRepository
             .getAll()
             .then((dataSets: DataSet[]) => this.setSkipOffline(dataSets, options));
