@@ -3,15 +3,17 @@ import { Async } from "domain/entities/Async";
 import { Id } from "domain/entities/Base";
 import { ProgramExport } from "domain/entities/ProgramExport";
 import { ProgramsRepository, RunRulesOptions } from "domain/repositories/ProgramsRepository";
-import { D2Api } from "types/d2-api";
+import {
+    D2Api,
+    D2TrackedEntityInstanceToPost,
+    D2TrackerEnrollmentToPost,
+    D2TrackerEventToPost,
+} from "types/d2-api";
 import log from "utils/log";
 import { promiseMap, runMetadata } from "./dhis2-utils";
 import { D2ProgramRules } from "./d2-program-rules/D2ProgramRules";
 import { D2Tracker } from "./D2Tracker";
 import { Program, ProgramType } from "domain/entities/Program";
-import { D2TrackerEnrollmentToPost } from "@eyeseetea/d2-api/api/trackerEnrollments";
-import { D2TrackerEventToPost } from "@eyeseetea/d2-api/api/trackerEvents";
-import { D2TrackedEntityInstanceToPost } from "@eyeseetea/d2-api/api/trackerTrackedEntities";
 
 type MetadataRes = { date: string } & { [k: string]: Array<{ id: string }> };
 

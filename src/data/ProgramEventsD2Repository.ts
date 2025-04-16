@@ -2,15 +2,13 @@ import _ from "lodash";
 import { Async } from "domain/entities/Async";
 import { ProgramEvent } from "domain/entities/ProgramEvent";
 import { GetOptions, ProgramEventsRepository } from "domain/repositories/ProgramEventsRepository";
-import { D2Api, Ref } from "types/d2-api";
+import { D2Api, Ref, TrackerEventsResponse, TrackerPostParams, TrackerPostRequest } from "types/d2-api";
 import { cartesianProduct } from "utils/array";
 import logger from "utils/log";
 import { getId, Id, NamedRef } from "domain/entities/Base";
 import { Result } from "domain/entities/Result";
 import { getInChunks } from "./dhis2-utils";
 import { promiseMap } from "./dhis2-utils";
-import { TrackerPostParams, TrackerPostRequest } from "@eyeseetea/d2-api/api/tracker";
-import { TrackerEventsResponse } from "@eyeseetea/d2-api/api/trackerEvents";
 
 const eventFields = {
     createdAt: true,

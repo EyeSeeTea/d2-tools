@@ -24,28 +24,42 @@ export class DetectExternalOrgUnitUseCase {
     }) {
         const programs = await this.getPrograms();
 
-        const report = joinReports(
-            await promiseMap(programs, async program => {
-                return this.fixEventsInProgram({ program: program, post: options.post });
-            })
-        );
+        const reports = await promiseMap(programs, async program => {
+            const { report, mismatchRecords } = await this.getEventsOutsideEnrollment({ program: program });
+
+            if (_(mismatchRecords).isEmpty()) {
+                logger.debug(`No events outside its enrollment orgUnit`);
+            } else if (!options.post) {
+                logger.info(`Add --post to update events (${mismatchRecords.length})`);
+            } else {
+                await this.fixMismatchEvents(mismatchRecords);
+            }
+
+            return report;
+        });
+
+        const report = joinReports(reports);
 
         if (report.events > 0 && options.notification) {
-            const status = options.post ? "fixed" : "detected";
-
-            const body = [
-                `${report.events} events outside its enrollment organisation unit [${status}]`,
-                "",
-                report.contents,
-            ];
-
-            await this.notificationRepository.send({
-                recipients: options.notification.recipients,
-                subject: options.notification.subject,
-                body: { type: "text", contents: body.join("\n") },
-                attachments: [],
-            });
+            await this.notify(report, { post: options.post, ...options.notification });
         }
+    }
+
+    private async notify(report: Report, options: { post: boolean; subject: string; recipients: string[] }) {
+        const status = options.post ? "fixed" : "detected";
+
+        const body = [
+            `${report.events} events outside its enrollment organisation unit [${status}]`,
+            "",
+            report.contents,
+        ];
+
+        await this.notificationRepository.send({
+            recipients: options.recipients,
+            subject: options.subject,
+            body: { type: "text", contents: body.join("\n") },
+            attachments: [],
+        });
     }
 
     private async getPrograms() {
@@ -55,22 +69,18 @@ export class DetectExternalOrgUnitUseCase {
         return programs;
     }
 
-    async fixEventsInProgram(options: { program: NamedRef; post: boolean }): Promise<Report> {
+    async getEventsOutsideEnrollment(options: {
+        program: NamedRef;
+    }): Promise<{ report: Report; mismatchRecords: MismatchRecord[] }> {
+        logger.debug(`Get tracked entities for program: ${options.program.id}`);
         const trackedEntities = await this.trackedEntityRepository.getAll({ programId: options.program.id });
         const mismatchRecords = this.getMismatchRecords(trackedEntities);
-        const report = this.buildReport(mismatchRecords);
+        const reportContents = this.getMismatchRecordsInfo(mismatchRecords);
         logger.info(`Events outside its enrollment orgUnit: ${mismatchRecords.length}`);
-        logger.info(report);
+        logger.info(reportContents);
+        const report: Report = { contents: reportContents, events: mismatchRecords.length };
 
-        if (_(mismatchRecords).isEmpty()) {
-            logger.debug(`No events outside its enrollment orgUnit`);
-        } else if (!options.post) {
-            logger.info(`Add --post to update events (${mismatchRecords.length})`);
-        } else {
-            await this.fixMismatchEvents(mismatchRecords);
-        }
-
-        return { contents: report, events: mismatchRecords.length };
+        return { report: report, mismatchRecords: mismatchRecords };
     }
 
     private async fixMismatchEvents(mismatchRecords: MismatchRecord[]) {
@@ -92,7 +102,7 @@ export class DetectExternalOrgUnitUseCase {
         logger.info(`Post result: ${JSON.stringify(response)}`);
     }
 
-    private buildReport(mismatchRecords: MismatchRecord[]): string {
+    private getMismatchRecordsInfo(mismatchRecords: MismatchRecord[]): string {
         return mismatchRecords
             .map(obj => {
                 const { trackedEntity: tei, enrollment: enrollment, event } = obj;
@@ -135,7 +145,10 @@ type MismatchRecord = {
     event: ProgramEvent;
 };
 
-type Report = { contents: string; events: number };
+type Report = {
+    contents: string;
+    events: number;
+};
 
 function joinReports(reports: Report[]): Report {
     return {

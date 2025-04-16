@@ -190,7 +190,8 @@ When enrollments are transferred to another org unit, the existing events keep t
 ```shell
 $ yarn start:dev events detect-orgunits-outside-enrollment \
   --url "http://localhost:8080" --auth "USER:PASS" \
-  --notify-email="SUBJECT,EMAIL1,EMAIL2,..."
+  --notify-email="SUBJECT,EMAIL1,EMAIL2,..." \
+  --post
 ```
 
 ### Move events from one orgunit to another

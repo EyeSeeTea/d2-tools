@@ -3,12 +3,14 @@ import fs from "fs";
 
 import { Async } from "domain/entities/Async";
 import { Stats } from "domain/entities/Stats";
-import { D2Api } from "types/d2-api";
+import {
+    D2Api,
+    TrackedEntitiesGetResponse,
+    TrackerEnrollmentsResponse,
+    TrackerEventsResponse,
+    TrackerPostRequest,
+} from "types/d2-api";
 import log from "utils/log";
-import { TrackerPostRequest } from "@eyeseetea/d2-api/api/tracker";
-import { TrackedEntitiesGetResponse } from "@eyeseetea/d2-api/api/trackerTrackedEntities";
-import { TrackerEnrollmentsResponse } from "@eyeseetea/d2-api/api/trackerEnrollments";
-import { TrackerEventsResponse } from "@eyeseetea/d2-api/api/trackerEvents";
 
 export class D2Tracker {
     constructor(private api: D2Api) {}
