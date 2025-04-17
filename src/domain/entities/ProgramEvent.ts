@@ -10,6 +10,7 @@ export interface ProgramEvent {
     programStage: NamedRef;
     dataValues: EventDataValue[];
     trackedEntityInstanceId?: Id;
+    enrollment?: Id;
     created: Timestamp;
     lastUpdated: Timestamp;
     status: EventStatus;

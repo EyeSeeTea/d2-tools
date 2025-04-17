@@ -23,6 +23,7 @@ const eventFields = {
     scheduledAt: true,
     updatedAt: true,
     trackedEntity: true,
+    enrollment: true,
     dataValues: {
         dataElement: true,
         value: true,
@@ -94,9 +95,9 @@ export class ProgramEventsD2Repository implements ProgramEventsRepository {
                 .then(responses => {
                     return [responses];
                 })
-                .catch(() => {
+                .catch(err => {
                     const message = `Error getting events: ${eventIds.join(",")}`;
-                    console.error(message);
+                    console.error(err);
                     return [{ type: "error", message }];
                 });
         });
@@ -205,13 +206,13 @@ export class D2EventsMapper {
             programStage: this.programStagesById[event.programStage] || { id: event.programStage, name: "" },
             orgUnit: { id: event.orgUnit, name: event.orgUnitName },
             trackedEntityInstanceId: event.trackedEntity,
+            enrollment: event.enrollment,
             status: event.status,
             date: event.occurredAt,
             dueDate: event.scheduledAt,
             dataValues: this.getDataValuesOrderLikeDataEntryForm(event, this.programStagesById).map(
                 (dv): DataValue => {
                     const dataElement = this.dataElementsById[dv.dataElement];
-                    if (!dataElement) console.debug(`Cannot find data element ${dv.dataElement}`);
 
                     return {
                         dataElement: {
