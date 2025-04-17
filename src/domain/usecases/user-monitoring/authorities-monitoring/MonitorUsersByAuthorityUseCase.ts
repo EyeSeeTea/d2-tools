@@ -2,7 +2,7 @@ import _ from "lodash";
 import log from "utils/log";
 import { Async } from "domain/entities/Async";
 
-import { MessageRepository } from "domain/repositories/user-monitoring/authorities-monitoring/MessageRepository";
+import { MessageRepository } from "domain/repositories/user-monitoring/common/MessageRepository";
 import { UserRolesRepository } from "domain/repositories/user-monitoring/authorities-monitoring/UserRolesRepository";
 import { AuthoritiesMonitoringConfigRepository } from "domain/repositories/user-monitoring/authorities-monitoring/AuthoritiesMonitoringConfigRepository";
 
@@ -10,7 +10,7 @@ import { User } from "domain/entities/user-monitoring/authorities-monitoring/Use
 import { AuthoritiesMonitoringOptions } from "domain/entities/user-monitoring/authorities-monitoring/AuthoritiesMonitoringOptions";
 
 import { GetUsersByAuthoritiesUseCase } from "./GetUsersByAuthoritiesUseCase";
-import { CheckUserByAuthoritiesChangesUseCase } from "./CheckUserByAuthoritiesChangesUseCase";
+import { CheckUserByAuthoritiesChanges } from "./CheckUserByAuthoritiesChanges";
 import { GetAuthoritiesMonitoringConfigUseCase } from "./GetAuthoritiesMonitoringConfigUseCase";
 import { SaveAuthoritiesMonitoringConfigUseCase } from "./SaveAuthoritiesMonitoringConfigUseCase";
 
@@ -29,7 +29,9 @@ export class MonitorUsersByAuthorityUseCase {
         return users
             .map(
                 u =>
-                    `- ${u.name} in role(s): ${u.userRoles.map(role => `${JSON.stringify(role)}`).join(", ")}`
+                    `- ${u.username} in role(s): ${u.userRoles
+                        .map(role => `${JSON.stringify(role)}`)
+                        .join(", ")}`
             )
             .join("\n");
     }
@@ -61,8 +63,8 @@ export class MonitorUsersByAuthorityUseCase {
         this.debugJSON("Users by authority:", usersByAuthority);
 
         if (!setDataStore) {
-            const checkUsersChangesUseCase = new CheckUserByAuthoritiesChangesUseCase();
-            const { newUsers, usersLosingAuth } = await checkUsersChangesUseCase.execute(
+            const checkUsersChanges = new CheckUserByAuthoritiesChanges();
+            const { newUsers, usersLosingAuth } = await checkUsersChanges.execute(
                 options.usersByAuthority,
                 usersByAuthority
             );
@@ -74,7 +76,10 @@ export class MonitorUsersByAuthorityUseCase {
                 log.info("Report: No changes.");
             } else {
                 const messages = this.makeMessages(newUsers, usersLosingAuth);
-                const teamsStatus = await this.MessageRepository.sendMessage(messages);
+                const teamsStatus = await this.MessageRepository.sendMessage(
+                    "AUTHORITIES-MONITORING",
+                    messages
+                );
                 if (teamsStatus) {
                     log.info(`Message sent to MSTeams`);
                 }

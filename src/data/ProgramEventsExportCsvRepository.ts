@@ -22,7 +22,7 @@ export class ProgramEventsExportCsvRepository implements ProgramEventsExportRepo
                 programStage: formatObj(event.programStage),
                 orgUnit: formatObj(event.orgUnit),
                 teiId: event.trackedEntityInstanceId || "-",
-                dataValues: event.dataValues.map(dv => `${dv.dataElementId}=${dv.value}`).join(", "),
+                dataValues: event.dataValues.map(dv => `${dv.dataElement.id}=${dv.value}`).join(", "),
                 created: event.created,
                 date: event.date,
                 status: event.status,

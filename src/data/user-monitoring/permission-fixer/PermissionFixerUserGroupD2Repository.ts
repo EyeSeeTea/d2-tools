@@ -5,6 +5,8 @@ import { PermissionFixerUserGroupExtended } from "domain/entities/user-monitorin
 import { PermissionFixerUserGroupRepository } from "domain/repositories/user-monitoring/permission-fixer/PermissionFixerUserGroupRepository";
 import { Async } from "domain/entities/Async";
 import { UserGroupNotFoundException } from "./exception/UserGroupNotFoundException";
+import { Ref } from "domain/entities/Base";
+import { Stats } from "domain/entities/Stats";
 
 export class PermissionFixerUserGroupD2Repository implements PermissionFixerUserGroupRepository {
     constructor(private api: D2Api) {}
@@ -24,7 +26,7 @@ export class PermissionFixerUserGroupD2Repository implements PermissionFixerUser
             throw new UserGroupNotFoundException("Error getting user group: " + groupsIds);
         }
     }
-    async save(userGroup: PermissionFixerUserGroupExtended): Async<string> {
+    async save(userGroup: PermissionFixerUserGroupExtended, _users: Ref[]): Async<string> {
         try {
             const response = await this.api.models.userGroups.put(userGroup).getData();
             if (_(response.errorReports).isEmpty()) {
@@ -41,4 +43,28 @@ export class PermissionFixerUserGroupD2Repository implements PermissionFixerUser
             return "ERROR";
         }
     }
+
+    private async appendUsersToUsergroup(
+        userGroup: PermissionFixerUserGroupExtended,
+        users: Ref[]
+    ): Async<string> {
+        const usersIds = users.map(({ id }) => ({ id: id }));
+        const response = await this.api
+            .post<UserGroupResponse>(
+                `/userGroups/${userGroup.id}/users/`,
+                {},
+                {
+                    additions: usersIds,
+                }
+            )
+            .getData();
+        log.info(response.status);
+        return response.status;
+    }
 }
+
+type UserGroupResponse = {
+    status: string;
+    typeReports: object[];
+    stats: Stats;
+};

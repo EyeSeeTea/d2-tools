@@ -3,9 +3,10 @@ import { Async } from "domain/entities/Async";
 import { ProgramEvent } from "domain/entities/ProgramEvent";
 import { GetOptions, ProgramEventsRepository } from "domain/repositories/ProgramEventsRepository";
 import { D2Api, Ref, TrackerEventsResponse, TrackerPostParams, TrackerPostRequest } from "types/d2-api";
+import { SelectedPick, D2ProgramSchema } from "types/d2-api";
 import { cartesianProduct } from "utils/array";
 import logger from "utils/log";
-import { getId, Id, NamedRef } from "domain/entities/Base";
+import { getId, Id } from "domain/entities/Base";
 import { Result } from "domain/entities/Result";
 import { getInChunks } from "./dhis2-utils";
 import { promiseMap } from "./dhis2-utils";
@@ -20,7 +21,7 @@ const eventFields = {
     programStage: true,
     occurredAt: true,
     scheduledAt: true,
-    lastUpdated: true,
+    updatedAt: true,
     trackedEntity: true,
     dataValues: {
         dataElement: true,
@@ -56,7 +57,7 @@ export class ProgramEventsD2Repository implements ProgramEventsRepository {
             .keyBy(event => event.id)
             .value();
 
-        const resultsList = await getInChunks<Result>(eventsIdsToSave, async eventIds => {
+        const resultsList = await getInChunks<Id, Result>(eventsIdsToSave, async eventIds => {
             return this.getEvents(eventIds)
                 .then(res => {
                     const postEvents = eventIds.map((eventId): EventToPost => {
@@ -74,13 +75,15 @@ export class ProgramEventsD2Repository implements ProgramEventsRepository {
                             status: event.status,
                             scheduledAt: event.dueDate,
                             occurredAt: event.date,
-                            dataValues: event.dataValues.map(dv => ({
-                                dataElement: dv.dataElementId,
-                                value: dv.value,
-                                storedBy: dv.storedBy,
-                                providedElsewhere: dv.providedElsewhere,
-                                updatedAt: dv.lastUpdated,
-                            })),
+                            dataValues: event.dataValues.map(dv => {
+                                return {
+                                    dataElement: dv.dataElement.id,
+                                    value: dv.value,
+                                    storedBy: dv.storedBy,
+                                    providedElsewhere: dv.providedElsewhere,
+                                    lastUpdated: dv.lastUpdated,
+                                };
+                            }),
                         };
                     });
                     return postEvents;
@@ -166,23 +169,17 @@ export class ProgramEventsD2Repository implements ProgramEventsRepository {
 }
 
 export class D2EventsMapper {
+    dataElementsById: Record<Id, D2DataElement>;
+
     constructor(
-        private programsById: Record<Id, NamedRef>,
-        private programStagesById: Record<Id, NamedRef>
-    ) {}
+        private programsById: Record<Id, D2Program>,
+        private programStagesById: Record<Id, D2ProgramStage>
+    ) {
+        this.dataElementsById = this.getDataElementsById(_.values(programsById));
+    }
 
     static async build(api: D2Api) {
-        const { programs } = await api.metadata
-            .get({
-                programs: {
-                    fields: {
-                        id: true,
-                        name: true,
-                        programStages: { id: true, name: true },
-                    },
-                },
-            })
-            .getData();
+        const { programs } = await api.metadata.get({ programs: { fields: programFields } }).getData();
 
         const programsById = _.keyBy(programs, getId);
 
@@ -196,24 +193,68 @@ export class D2EventsMapper {
     }
 
     getEventEntityFromD2Object(event: Event): ProgramEvent {
+        const program = this.programsById[event.program];
+        if (!program) throw new Error(`Cannot find program ${event.program}`);
+        const type = program.programType === "WITH_REGISTRATION" ? "tracker" : "event";
+
         return {
             id: event.event,
             created: event.createdAt,
-            program: this.programsById[event.program] || { id: event.program, name: "" },
+            lastUpdated: event.updatedAt,
+            program: { ...program, type: type },
             programStage: this.programStagesById[event.programStage] || { id: event.programStage, name: "" },
             orgUnit: { id: event.orgUnit, name: event.orgUnitName },
             trackedEntityInstanceId: event.trackedEntity,
             status: event.status,
             date: event.occurredAt,
             dueDate: event.scheduledAt,
-            dataValues: event.dataValues.map(dv => ({
-                dataElementId: dv.dataElement,
-                value: dv.value,
-                storedBy: dv.storedBy,
-                providedElsewhere: dv.providedElsewhere,
-                lastUpdated: dv.updatedAt,
-            })),
+            dataValues: this.getDataValuesOrderLikeDataEntryForm(event, this.programStagesById).map(
+                (dv): DataValue => {
+                    const dataElement = this.dataElementsById[dv.dataElement];
+                    if (!dataElement) throw new Error(`Cannot find data element ${dv.dataElement}`);
+
+                    return {
+                        dataElement: {
+                            id: dv.dataElement,
+                            name: dataElement.formName || dataElement.name,
+                        },
+                        value: dv.value,
+                        storedBy: dv.storedBy,
+                        providedElsewhere: dv.providedElsewhere,
+                        lastUpdated: dv.updatedAt,
+                    };
+                }
+            ),
         };
+    }
+
+    getDataElementsById(programs: D2Program[]): Record<Id, D2DataElement> {
+        const dataElements = _(programs)
+            .flatMap(program => program.programStages)
+            .flatMap(programStage => programStage.programStageSections)
+            .flatMap(programStageSection => programStageSection.dataElements)
+            .uniqBy(getId)
+            .value();
+
+        return _.keyBy(dataElements, getId);
+    }
+
+    private getDataValuesOrderLikeDataEntryForm(
+        event: Event,
+        programStagesById: Record<Id, D2ProgramStage>
+    ): D2DataValue[] {
+        const programStage = programStagesById[event.programStage];
+        if (!programStage) throw new Error(`Cannot find program stage ${event.programStage}`);
+
+        const indexMapping = _(programStage.programStageSections)
+            .flatMap(pse => pse.dataElements)
+            .map((dataElement, index) => [dataElement.id, index] as [Id, number])
+            .fromPairs()
+            .value();
+
+        return _(event.dataValues)
+            .sortBy(dv => indexMapping[dv.dataElement] ?? 1000)
+            .value();
     }
 }
 
@@ -255,3 +296,34 @@ async function importEvents(api: D2Api, events: EventToPost[], params?: TrackerP
         ? { type: "success", message: `${events.length} posted` }
         : { type: "error", message: "Error posting events" };
 }
+
+type DataValue = ProgramEvent["dataValues"][number];
+
+type D2DataValue = Event["dataValues"][number];
+
+const programFields = {
+    id: true,
+    name: true,
+    programType: true,
+    programStages: {
+        id: true,
+        name: true,
+        programStageSections: {
+            dataElements: {
+                id: true,
+                name: true,
+                formName: true,
+            },
+        },
+    },
+} as const;
+
+type D2Program = SelectedPick<D2ProgramSchema, typeof programFields>;
+
+type D2ProgramStage = D2Program["programStages"][number];
+
+type D2DataElement = {
+    id: Id;
+    name: string;
+    formName: string;
+};
