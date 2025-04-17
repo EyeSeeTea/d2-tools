@@ -161,7 +161,7 @@ export class ProgramEventsD2Repository implements ProgramEventsRepository {
         return this.api.tracker.events
             .get({
                 event: eventIds.join(";"),
-                fields: eventFields,
+                fields: { $all: true },
                 totalPages: true,
                 pageSize: eventIds.length,
             })
