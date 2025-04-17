@@ -1,6 +1,6 @@
 import _ from "lodash";
 import { promiseMap } from "data/dhis2-utils";
-import { NamedRef } from "domain/entities/Base";
+import { Id, NamedRef } from "domain/entities/Base";
 import logger from "utils/log";
 import { Maybe } from "utils/ts-utils";
 import { ProgramsRepository } from "domain/repositories/ProgramsRepository";
@@ -19,10 +19,11 @@ export class DetectExternalOrgUnitUseCase {
     ) {}
 
     async execute(options: {
+        programIds?: Id[];
         post: boolean;
         notification: Maybe<{ subject: string; recipients: string[] }>;
     }) {
-        const programs = await this.getPrograms();
+        const programs = await this.getPrograms(options);
 
         const reports = await promiseMap(programs, async program => {
             const { report, mismatchRecords } = await this.getEventsOutsideEnrollment({ program: program });
@@ -62,9 +63,12 @@ export class DetectExternalOrgUnitUseCase {
         });
     }
 
-    private async getPrograms() {
+    private async getPrograms(options: { programIds?: Id[] }) {
         logger.info(`Get tracker programs`);
-        const programs = await this.programRepository.get({ programTypes: ["WITH_REGISTRATION"] });
+        const programs = await this.programRepository.get({
+            programTypes: ["WITH_REGISTRATION"],
+            ids: options.programIds,
+        });
         logger.info(`Total tracker programs: ${programs.length}`);
         return programs;
     }
@@ -123,7 +127,7 @@ export class DetectExternalOrgUnitUseCase {
                 return _(trackedEntity.enrollments)
                     .flatMap(enrollment => {
                         return enrollment.events.map(event => {
-                            if (event.orgUnit !== enrollment.orgUnit) {
+                            if (event.orgUnit.id !== enrollment.orgUnit.id) {
                                 return {
                                     trackedEntity: trackedEntity,
                                     enrollment: enrollment,

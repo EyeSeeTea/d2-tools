@@ -44,6 +44,11 @@ const detectEventsOutsideOrgUnitEnrollmentCmd = command({
             long: "notify-email",
             description: "SUBJECT,EMAIL1,EMAIL2,...",
         }),
+        programIds: option({
+            type: optional(StringsSeparatedByCommas),
+            long: "program-ids",
+            description: "List of program IDS (comma-separated)",
+        }),
     },
     handler: async args => {
         const api = getD2ApiFromArgs(args);
@@ -61,10 +66,7 @@ const detectEventsOutsideOrgUnitEnrollmentCmd = command({
             trackedEntitiesRepository,
             eventsRepository,
             notificationRepository
-        ).execute({
-            ...args,
-            notification: notification,
-        });
+        ).execute({ ...args, notification: notification });
     },
 });
 
