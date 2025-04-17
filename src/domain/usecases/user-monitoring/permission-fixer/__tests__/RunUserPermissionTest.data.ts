@@ -1,4 +1,3 @@
-import { NamedRef } from "domain/entities/Base";
 import { UserMonitoringProgramMetadata } from "domain/entities/user-monitoring/common/UserMonitoringProgramMetadata";
 import {
     PermissionFixerConfig,

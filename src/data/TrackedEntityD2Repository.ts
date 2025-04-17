@@ -13,7 +13,6 @@ import { Enrollment, TrackedEntity } from "domain/entities/TrackedEntity";
 import { D2Tracker } from "./D2Tracker";
 import { D2EventsMapper } from "./ProgramEventsD2Repository";
 import { TrackedEntityTransfer } from "domain/entities/TrackedEntity";
-import { D2TrackedEntity } from "./ProgramsD2Repository";
 import { TrackedEntityInstance } from "@eyeseetea/d2-api/api/trackedEntityInstances";
 
 export class TrackedEntityD2Repository implements TrackedEntityRepository {

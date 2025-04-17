@@ -1,6 +1,5 @@
 import { Path } from "domain/entities/Base";
 import { UsernameRename } from "domain/entities/UsernameRename";
-import path from "path";
 import fs from "fs";
 import { UsernameRenameRepository } from "domain/repositories/UsernameRenameRepository";
 import logger from "utils/log";

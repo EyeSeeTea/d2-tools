@@ -211,12 +211,12 @@ export class D2EventsMapper {
             dataValues: this.getDataValuesOrderLikeDataEntryForm(event, this.programStagesById).map(
                 (dv): DataValue => {
                     const dataElement = this.dataElementsById[dv.dataElement];
-                    if (!dataElement) throw new Error(`Cannot find data element ${dv.dataElement}`);
+                    if (!dataElement) console.debug(`Cannot find data element ${dv.dataElement}`);
 
                     return {
                         dataElement: {
                             id: dv.dataElement,
-                            name: dataElement.formName || dataElement.name,
+                            name: dataElement?.formName || dataElement?.name || "",
                         },
                         value: dv.value,
                         storedBy: dv.storedBy,
