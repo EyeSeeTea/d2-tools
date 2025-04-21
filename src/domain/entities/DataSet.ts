@@ -47,6 +47,7 @@ export interface DataSet {
     id: Id;
     name: string;
     code: string;
+    skipOffline: boolean;
     categoryCombo: CategoryCombo;
     dataSetElements: Array<{
         dataElement: DataSetDataElement;

@@ -1,5 +1,15 @@
 import _ from "lodash";
-import { command, string, option, restPositionals, optional, subcommands, boolean, flag } from "cmd-ts";
+import {
+    command,
+    string,
+    option,
+    restPositionals,
+    optional,
+    subcommands,
+    boolean,
+    flag,
+    number,
+} from "cmd-ts";
 import { DataSetsD2Repository } from "data/DataSetsD2Repository";
 import { ShowDataSetsDiffUseCase } from "domain/usecases/ShowDataSetsDiffUseCase";
 import { D2Api } from "types/d2-api";
@@ -14,6 +24,7 @@ import {
     IdsSeparatedByCommas,
 } from "scripts/common";
 import log from "utils/log";
+import { SetSkipOfflineDataSetUseCase } from "../../domain/usecases/SetSkipOfflineDataSetUseCase";
 
 export function getCommand() {
     const compareCmd = command({
@@ -105,8 +116,49 @@ export function getCommand() {
         },
     });
 
+    const setSkipOfflineByYear = command({
+        name: "set-skip-offline",
+        description:
+            "Set 'skip offline' for all datasets where last Data Input Period was 'year' indicated or earlier. Enabling 'skip offline' by default. Use '--disable' to disable.",
+        args: {
+            url: getApiUrlOption({ long: "url" }),
+            year: option({
+                type: number,
+                long: "year",
+                short: "y",
+                description: "Last input period year (YYYY)",
+            }),
+            disable: flag({
+                type: boolean,
+                short: "d",
+                long: "disable",
+                description: "Disable skip offline",
+            }),
+        },
+        handler: async args => {
+            const api = getD2Api(args.url);
+            const dataSetsRepository = new DataSetsD2Repository(api);
+
+            try {
+                const setSkipOffline = new SetSkipOfflineDataSetUseCase(dataSetsRepository);
+                const result = await setSkipOffline.execute(args);
+
+                const statusCode = ["OK", "NO_CHANGE"].includes(result) ? 0 : 1;
+                process.exit(statusCode);
+            } catch (err: any) {
+                log.error(err.message);
+                process.exit(1);
+            }
+        },
+    });
+
     return subcommands({
         name: "datasets",
-        cmds: { compare: compareCmd, "show-schema": showSchemaCmd, "copy-org-units": copyOUCmd },
+        cmds: {
+            compare: compareCmd,
+            "show-schema": showSchemaCmd,
+            "copy-org-units": copyOUCmd,
+            "set-skip-offline": setSkipOfflineByYear,
+        },
     });
 }
