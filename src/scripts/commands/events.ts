@@ -108,7 +108,7 @@ const moveOrgUnitCmd = command({
 
 const updateEventsDataValues = command({
     name: "Update events",
-    description: "Update events which met the condition",
+    description: "Update events that meet a condition",
     args: {
         url: getApiUrlOption(),
         eventIds: option({
@@ -171,7 +171,7 @@ const updateEventsDataValues = command({
 
 const recodeBooleanDataValues = command({
     name: "recode-boolean-data-values",
-    description: "Recode boolean data values",
+    description: "Recode boolean data values to a ternary (Yes/No/NA) option set",
     args: {
         ...getApiUrlOptions(),
         programId: option({
@@ -192,10 +192,7 @@ const recodeBooleanDataValues = command({
     },
     handler: async args => {
         const api = getD2ApiFromArgs(args);
-        const eventsRepository = new ProgramEventsD2Repository(api);
         const programsRepository = new ProgramsD2Repository(api);
-        return new RecodeBooleanDataValuesInEventsUseCase(api, programsRepository, eventsRepository).execute(
-            args
-        );
+        return new RecodeBooleanDataValuesInEventsUseCase(api, programsRepository).execute(args);
     },
 });

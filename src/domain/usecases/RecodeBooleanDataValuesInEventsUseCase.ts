@@ -5,7 +5,6 @@ import { getId, Id, Ref } from "domain/entities/Base";
 import { D2Api } from "types/d2-api";
 import logger from "utils/log";
 import { D2TrackerEvent } from "@eyeseetea/d2-api/api/trackerEvents";
-import { ProgramEventsRepository } from "domain/repositories/ProgramEventsRepository";
 import { ProgramsRepository } from "domain/repositories/ProgramsRepository";
 import { Program } from "domain/entities/Program";
 import { Maybe } from "utils/ts-utils";
@@ -19,31 +18,25 @@ type Options = {
 export class RecodeBooleanDataValuesInEventsUseCase {
     pageSize = 1000;
 
-    constructor(
-        private api: D2Api,
-        private programsRepository: ProgramsRepository,
-        private eventsRepository: ProgramEventsRepository
-    ) {}
+    constructor(private api: D2Api, private programsRepository: ProgramsRepository) {}
 
     async execute(options: Options) {
         const program = await this.getProgram(options.programId);
-        await this.fixEventsInProgram({ ...options, program: program });
+        await this.recodeEventsForProgram({ ...options, program: program });
     }
 
     async getProgram(id: Id): Promise<Program> {
         const programs = await this.programsRepository.get({ ids: [id] });
         const program = programs[0];
-        if (!program) {
-            throw new Error(`Program not found: ${id}`);
-        }
+        if (!program) throw new Error(`Program not found: ${id}`);
         return program;
     }
 
-    async fixEventsInProgram(options: { program: Program; post: boolean; ternaryOptionSetId: Id }) {
+    async recodeEventsForProgram(options: { program: Program; post: boolean; ternaryOptionSetId: Id }) {
         const pageCount = await this.getPageCount(options);
 
         await promiseMap(_.range(1, pageCount + 1), async page => {
-            await this.fixEventsForPage({
+            await this.recodeEventsForPage({
                 ...options,
                 page: page,
                 pageCount: pageCount,
@@ -69,7 +62,7 @@ export class RecodeBooleanDataValuesInEventsUseCase {
         return pageCount;
     }
 
-    async fixEventsForPage(options: {
+    async recodeEventsForPage(options: {
         program: Program;
         page: number;
         pageCount: number;
@@ -101,20 +94,21 @@ export class RecodeBooleanDataValuesInEventsUseCase {
         const dataElementIdsWithTernary = this.getDataElementIdsWithTernaryOptionSet(options);
 
         return _(options.events)
-            .map((event): Maybe<typeof event> => {
-                return this.fixEvent(event, dataElementIdsWithTernary, options);
-            })
+            .map(event => this.recodeEvent(event, dataElementIdsWithTernary, options))
             .compact()
             .value();
     }
 
-    private fixEvent(
+    private recodeEvent(
         event: D2TrackerEvent,
         dataElementIdsWithTernary: Set<string>,
         options: { program: Program }
     ): Maybe<D2TrackerEvent> {
-        const updatedDataValues = this.recodeEvent(event, dataElementIdsWithTernary);
-        if (_.isEqual(event.dataValues, updatedDataValues)) return undefined;
+        const updatedDataValues = this.recodeEventDataValues(event, dataElementIdsWithTernary);
+        if (_.isEqual(event.dataValues, updatedDataValues)) return;
+
+        // We cannot update events that have data values for data elements not assigned to the
+        // program stage, so first check if that is the case.
 
         const dataElementIdsUsedInDataValue = _(event.dataValues)
             .map(dv => dv.dataElement)
@@ -144,11 +138,10 @@ export class RecodeBooleanDataValuesInEventsUseCase {
         }
     }
 
-    private recodeEvent(event: D2TrackerEvent, dataElementIdsWithTernary: Set<string>) {
+    private recodeEventDataValues(event: D2TrackerEvent, dataElementIdsWithTernary: Set<string>) {
         return _(event.dataValues)
             .map((dataValue): typeof dataValue => {
                 if (dataElementIdsWithTernary.has(dataValue.dataElement)) {
-                    // TODO: User options from optionSet
                     const newValue = ["true", "Yes"].includes(dataValue.value) ? "Yes" : "No";
                     return { ...dataValue, value: newValue };
                 } else {
@@ -222,7 +215,5 @@ export class RecodeBooleanDataValuesInEventsUseCase {
 }
 
 const params = {
-    fields: {
-        $all: true,
-    },
+    fields: { $all: true },
 } as const;
