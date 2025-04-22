@@ -95,15 +95,15 @@ const auth1UserRole: UserRole = {
     users: [
         {
             id: "cNtWc18LXBS",
-            name: "user auth1 1",
+            username: "user auth1 1",
         },
         {
             id: "H4atNsEuKxP",
-            name: "user auth1 2",
+            username: "user auth1 2",
         },
         {
             id: "H4atNsEuKxW",
-            name: "user auth1_2 1",
+            username: "user auth1_2 1",
         },
     ],
 };
@@ -115,19 +115,19 @@ const auth2UserRole: UserRole = {
     users: [
         {
             id: "cNtWc18LXB1",
-            name: "user auth2 1",
+            username: "user auth2 1",
         },
         {
             id: "H4atNsEuKx1",
-            name: "user auth2 2",
+            username: "user auth2 2",
         },
         {
             id: "H4atNsEuKxW",
-            name: "user auth1_2 1",
+            username: "user auth1_2 1",
         },
         {
             id: "H4atNsEuKxQ",
-            name: "user auth2_3 1",
+            username: "user auth2_3 1",
         },
     ],
 };
@@ -139,15 +139,15 @@ const auth3UserRole: UserRole = {
     users: [
         {
             id: "cNtWc18LXB2",
-            name: "user auth3 1",
+            username: "user auth3 1",
         },
         {
             id: "H4atNsEuKx2",
-            name: "user auth3 2",
+            username: "user auth3 2",
         },
         {
             id: "H4atNsEuKxQ",
-            name: "user auth2_3 1",
+            username: "user auth2_3 1",
         },
     ],
 };

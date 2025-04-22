@@ -183,6 +183,17 @@ Expected format of `xlsx` file:
 
 ## Events
 
+### Detect events assigned to organisation units outside their enrollment
+
+When enrollments are transferred to another org unit, the existing events keep their original org unit. While that's the expected default behaviour, sometimes we need to detect and fix these mismatches:
+
+```shell
+$ yarn start:dev events detect-orgunits-outside-enrollment \
+  --url "http://localhost:8080" --auth "USER:PASS" \
+  --notify-email="SUBJECT,EMAIL1,EMAIL2,..." \
+  --post
+```
+
 ### Move events from one orgunit to another
 
 Move events for program events (so no enrollments/TEIs move is supported):
@@ -399,6 +410,26 @@ yarn start users migrate \
 }
 ```
 
+### Rename username
+
+DHIS2 does not support renaming usernames directly. While it is possible to update usernames through the API, this only modifies the main table. References in other tables, which rely on the hardcoded username (not `userinfoid` or `userinfo.uid`), will remain unchanged.
+
+To fully rename a username across all references, you need to execute a SQL script. Start by generating the script using the following command:
+
+```bash
+ yarn start users rename-username \
+  --mapping=user1old:user1new,user2old:user2new \
+  [--dry-run] --output=rename.sql
+```
+
+And then run the generated SQL script in your database to perform the actual renaming:
+
+```bash
+psql -U dhis dhis2 -f rename.sql
+```
+
+Replace `dhis` with your database username and `dhis2` with your database name if they differ. Ensure you have a backup of the database before applying the changes.
+
 ## User monitoring
 
 ### Users Permissions Fixer and 2FA Reporter
@@ -406,10 +437,6 @@ yarn start users migrate \
 #### Execution:
 
 ```
-yarn install
-
-yarn build
-
 yarn start usermonitoring run-permissions-fixer --config-file config.json
 or
 yarn start usermonitoring run-2fa-reporter --config-file config.json
@@ -418,10 +445,6 @@ yarn start usermonitoring run-2fa-reporter --config-file config.json
 #### Debug:
 
 ```
-yarn install
-
-yarn build:dev
-
 LOG_LEVEL=debug node --inspect-brk dist/index.js usermonitoring run-users-monitoring   --config-file config.json
 LOG_LEVEL=debug node --inspect-brk dist/index.js usermonitoring run-2fa-reporter   --config-file config.json
 ```
@@ -594,10 +617,6 @@ Note: the names are used only to make easy understand and debug the keys.
 #### Execution:
 
 ```bash
-yarn install
-
-yarn build
-
 yarn start usermonitoring run-authorities-monitoring --config-file config.json
 
 # To get the debug logs and store them in a file use:
@@ -629,7 +648,7 @@ A config file with the access info of the server and the message webhook details
 ```
 
 This reports stores data into the `d2-tools.authorities-monitor` datastore. This key needs to be setup before the first run to get a correct report.
-Its possible to leave `usersByAuthority` empty and use the `-s` flag to populate it.
+It's possible to leave `usersByAuthority` empty and use the `-s` flag to populate it.
 
 A sample:
 
@@ -673,6 +692,105 @@ A sample:
   }
 }
 ```
+
+### User Groups Monitoring
+
+This script will compare the metadata of the monitored userGroups with the version stored in the datastore and generate a report of the changes. This report will be sent to the MS Teams channel set in the webhook config section. Then the new version of the metadata will be stored in the datastore.
+
+#### Execution:
+
+```bash
+yarn start usermonitoring run-user-groups-monitoring --config-file config.json
+
+# To get the debug logs and store them in a file use:
+LOG_LEVEL=debug yarn start usermonitoring run-user-groups-monitoring --config-file config.json &> user-groups-monitoring.log
+```
+
+#### Parameters:
+
+-   `--config-file`: Connection and webhook config file.
+-   `-s` | `--set-datastore`: Write usergroups data to datastore, use in script setup. It assumes there is a monitoring config in d2-tools/user-groups-monitoring.
+
+#### Requirements:
+
+A config file with the access info of the server and the message webhook details:
+
+```JSON
+{
+    "URL": {
+        "username": "user",
+        "password": "passwd",
+        "server": "https://dhis.url/"
+    },
+    "WEBHOOK": {
+        "ms_url": "http://webhook.url/",
+        "proxy": "http://proxy.url/",
+        "server_name": "INSTANCE_NAME"
+    }
+}
+```
+
+This reports stores data into the `d2-tools.user-groups-monitoring` datastore. This key needs to be setup before the first run to get a correct report.
+Its possible to leave `monitoredUserGroups` empty and use the `-s` flag to populate it.
+
+The report, potentially, has tree sections for each user group:
+
+-   New entries: JSON with the properties that were unset or empty and changed.
+-   Modified fields: This section has two JSONs, one showing the old values and one with the news.
+-   User assignment changes: This section will show the users lost and added to the group.
+
+If a section is empty it will be omitted.
+
+### User Templates Monitoring
+
+The User Templates Monitoring script is used to compare user templates with the version stored in the datastore and generate a report of the changes. The report includes information on modified fields, and a detailed report on user groups and roles added or lost. This report will be sent to the MS Teams channel set in the webhook config section. The new version of the metadata will be stored in the datastore.
+
+#### Execution:
+
+```bash
+yarn start usermonitoring run-user-templates-monitoring --config-file config.json
+
+# To get the debug logs and store them in a file use:
+LOG_LEVEL=debug yarn start usermonitoring run-user-templates-monitoring --config-file config.json &> user-templates-monitoring.log
+```
+
+#### Parameters:
+
+-   `--config-file`: Connection and webhook config file.
+-   `-s` | `--set-datastore`: Write user templates data to datastore, use in script setup. It assumes there is a monitoring config in d2-tools/user-templates-monitoring.
+
+#### Requirements:
+
+A config file with the access info of the server and the message webhook details:
+
+```JSON
+{
+    "URL": {
+        "username": "user",
+        "password": "passwd",
+        "server": "https://dhis.url/"
+    },
+    "WEBHOOK": {
+        "ms_url": "http://webhook.url/",
+        "proxy": "http://proxy.url/",
+        "server_name": "INSTANCE_NAME"
+    }
+}
+```
+
+#### Report
+
+This reports stores data into the `d2-tools.user-templates-monitoring` datastore. This key needs to be setup before the first run to get a correct report.
+
+Its possible to leave `monitoredUserTemplates` empty and use the `-s` flag to populate it.
+
+The report includes the following sections:
+
+-   New entries: This section lists new properties that didn't exist in the old version.
+-   Modified fields: This section shows the fields that have been modified in the user templates and shows the before/after values.
+-   User Membership changes: This section displays the changes in the template userGroups and userRoles membership.
+
+If a section is empty, it will be omitted from the report.
 
 ## Move Attributes from a Program
 
@@ -763,3 +881,38 @@ File option can be a file or directory path, if its a directory path the file wi
 CSV headers:
 
 dataElement ID | dataElement Name | categoryOptionCombo ID | categoryOptionCombo Name | Value
+
+## Tracked Entities
+
+### Transfer
+
+Transfer tracked entities to another org unit, using a CSV as source data (expected columns: trackedEntityId, newOrgUnitId):
+
+```console
+shell:~$ yarn start trackedEntities transfer \
+  --url=http://localhost:8080 \
+  --auth="USER:PASSWORD"  \
+  --input-file=transfers.csv \
+  --post
+```
+
+## Options
+
+### rename
+
+Rename an option code (options are the children of option sets). Actions:
+
+-   metadata: rename the option code
+-   metadata: recode the attribute values associated with the option (TODO)
+-   data values: recode the associated code used as dataValues[].value
+-   events: recode the associated code used as dataValues[].value
+-   tracker: recode the associated tracked entity attributes (TODO)
+
+```console
+shell:~$ yarn start options rename-code \
+  --url=https://play.im.dhis2.org/stable-2-41-3 \
+  --auth="admin:distrct"  \
+   --id=YQe3PFbATvz \
+  --to-code="NVP" \
+  --post
+```

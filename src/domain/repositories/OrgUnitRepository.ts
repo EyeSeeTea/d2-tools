@@ -3,4 +3,5 @@ import { OrgUnit } from "domain/entities/OrgUnit";
 
 export interface OrgUnitRepository {
     getByIdentifiables(ids: Identifiable[]): Promise<OrgUnit[]>;
+    getRoot(): Promise<OrgUnit>;
 }

@@ -11,7 +11,7 @@ export class UserRolesD2Repository implements UserRolesRepository {
         const { userRoles: UserRole } = await this.api.metadata
             .get({
                 userRoles: {
-                    fields: { id: true, authorities: true, name: true, users: { id: true, name: true } },
+                    fields: { id: true, authorities: true, name: true, users: { id: true, username: true } },
                     filter: { authorities: { in: authorities } },
                 },
             })

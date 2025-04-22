@@ -79,7 +79,7 @@ export class GetIndicatorsDataElementsValuesReportUseCase {
             ...deCheckObject.dataElements,
             ..._.uniq(deCheckObject.categoryOptionCombos.map(item => item.dataElement)),
         ];
-        const dataElementsNames = await this.dataElementsRepository.getDataElementsNames(allDataElementsIds);
+        const dataElementsNames = await this.dataElementsRepository.getByIds(allDataElementsIds);
 
         const allCOCombosIds = [..._.uniq(deCheckObject.categoryOptionCombos.map(item => item.coCombo))];
         const coCombosNames = await this.categoryOptionCombosRepository.getCOCombosNames(allCOCombosIds);

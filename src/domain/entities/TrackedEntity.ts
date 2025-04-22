@@ -1,4 +1,5 @@
-import { Id, Ref } from "./Base";
+import { Id, NamedRef, Ref } from "./Base";
+import { ProgramEvent } from "./ProgramEvent";
 
 export interface TrackedEntity extends Ref {
     id: Id;
@@ -6,10 +7,22 @@ export interface TrackedEntity extends Ref {
     orgUnit: Id;
     trackedEntityType: Id;
     programId: Id;
+    enrollments: Enrollment[];
 }
+
+export type Enrollment = {
+    id: Id;
+    orgUnit: NamedRef;
+    events: ProgramEvent[];
+};
 
 export type AttributeValue = {
     attributeId: Id;
     value: string;
     storedBy: string;
+};
+
+export type TrackedEntityTransfer = {
+    trackedEntityId: Id;
+    newOrgUnitId: Id;
 };

@@ -1,6 +1,5 @@
 import { EventsPostResponse } from "@eyeseetea/d2-api/api/events";
 import { CancelableResponse } from "@eyeseetea/d2-api/repositories/CancelableResponse";
-import { Id } from "domain/entities/Base";
 import _ from "lodash";
 import { MetadataResponse } from "../types/d2-api";
 import log from "utils/log";
@@ -47,7 +46,7 @@ export function checkPostEventsResponse(res: EventsPostResponse): void {
     }
 }
 
-export async function getInChunks<T>(ids: Id[], getter: (idsGroup: Id[]) => Promise<T[]>): Promise<T[]> {
+export async function getInChunks<T, U>(ids: T[], getter: (idsGroup: T[]) => Promise<U[]>): Promise<U[]> {
     const objsCollection = await promiseMap(_.chunk(ids, 300), idsGroup => getter(idsGroup));
     return _.flatten(objsCollection);
 }

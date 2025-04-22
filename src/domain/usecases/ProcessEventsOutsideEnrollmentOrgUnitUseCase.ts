@@ -1,116 +1,119 @@
 import _ from "lodash";
 import { promiseMap } from "data/dhis2-utils";
-import { NamedRef } from "domain/entities/Base";
-import { D2Api } from "types/d2-api";
+import { Id, NamedRef } from "domain/entities/Base";
 import logger from "utils/log";
-import { D2TrackerTrackedEntity } from "@eyeseetea/d2-api/api/trackerTrackedEntities";
-import { D2TrackerEnrollment } from "@eyeseetea/d2-api/api/trackerEnrollments";
-import { D2TrackerEvent } from "@eyeseetea/d2-api/api/trackerEvents";
+import { Maybe } from "utils/ts-utils";
 import { ProgramsRepository } from "domain/repositories/ProgramsRepository";
+import { NotificationsRepository } from "domain/repositories/NotificationsRepository";
+import { ProgramEventsRepository } from "domain/repositories/ProgramEventsRepository";
+import { TrackedEntityRepository } from "domain/repositories/TrackedEntityRepository";
+import { Enrollment, TrackedEntity } from "domain/entities/TrackedEntity";
+import { ProgramEvent, ProgramEventToSave } from "domain/entities/ProgramEvent";
 
 export class DetectExternalOrgUnitUseCase {
-    pageSize = 1000;
+    constructor(
+        private programRepository: ProgramsRepository,
+        private trackedEntityRepository: TrackedEntityRepository,
+        private eventsRepository: ProgramEventsRepository,
+        private notificationRepository: NotificationsRepository
+    ) {}
 
-    constructor(private api: D2Api, private programRepository: ProgramsRepository) {}
+    async execute(options: {
+        programIds?: Id[];
+        post: boolean;
+        notification: Maybe<{ subject: string; recipients: string[] }>;
+    }) {
+        const programs = await this.getPrograms(options);
 
-    async execute(options: { post: boolean }) {
-        const programs = await this.getPrograms();
+        const reports = await promiseMap(programs, async program => {
+            const { report, mismatchRecords } = await this.getEventsOutsideEnrollment({ program: program });
 
-        await promiseMap(programs, async program => {
-            await this.fixEventsInProgram({ program: program, post: options.post });
+            if (_(mismatchRecords).isEmpty()) {
+                logger.debug(`No events outside its enrollment orgUnit`);
+            } else if (!options.post) {
+                logger.info(`Add --post to update events (${mismatchRecords.length})`);
+            } else {
+                await this.fixMismatchEvents(mismatchRecords);
+            }
+
+            return report;
+        });
+
+        const report = joinReports(reports);
+
+        if (report.events > 0 && options.notification) {
+            await this.notify(report, { post: options.post, ...options.notification });
+        }
+    }
+
+    private async notify(report: Report, options: { post: boolean; subject: string; recipients: string[] }) {
+        const status = options.post ? "fixed" : "detected";
+
+        const body = [
+            `${report.events} events outside its enrollment organisation unit [${status}]`,
+            "",
+            report.contents,
+        ];
+
+        await this.notificationRepository.send({
+            recipients: options.recipients,
+            subject: options.subject,
+            body: { type: "text", contents: body.join("\n") },
+            attachments: [],
         });
     }
 
-    private async getPrograms() {
+    private async getPrograms(options: { programIds?: Id[] }) {
         logger.info(`Get tracker programs`);
-        const programs = await this.programRepository.get({ programTypes: ["WITH_REGISTRATION"] });
+        const programs = await this.programRepository.get({
+            programTypes: ["WITH_REGISTRATION"],
+            ids: options.programIds,
+        });
         logger.info(`Total tracker programs: ${programs.length}`);
         return programs;
     }
 
-    async fixEventsInProgram(options: { program: NamedRef; post: boolean }) {
-        const pageCount = await this.getPageCount(options);
-
-        await promiseMap(_.range(1, pageCount + 1), async page => {
-            await this.fixEventsForPage({ ...options, page: page, pageCount: pageCount });
-        });
-    }
-
-    private async getPageCount(options: { program: NamedRef; post: boolean }) {
-        const response = await this.api.tracker.trackedEntities
-            .get({
-                ...params,
-                page: 1,
-                pageSize: 0,
-                totalPages: true,
-                program: options.program.id,
-            })
-            .getData();
-
-        return Math.ceil((response.total || 0) / this.pageSize);
-    }
-
-    async fixEventsForPage(options: { program: NamedRef; page: number; pageCount: number; post: boolean }) {
-        const trackedEntities = await this.getTrackedEntities(options);
+    async getEventsOutsideEnrollment(options: {
+        program: NamedRef;
+    }): Promise<{ report: Report; mismatchRecords: MismatchRecord[] }> {
+        logger.debug(`Get tracked entities for program: ${options.program.id}`);
+        const trackedEntities = await this.trackedEntityRepository.getAll({ programId: options.program.id });
         const mismatchRecords = this.getMismatchRecords(trackedEntities);
-        const report = this.buildReport(mismatchRecords);
+        const reportContents = this.getMismatchRecordsInfo(mismatchRecords);
         logger.info(`Events outside its enrollment orgUnit: ${mismatchRecords.length}`);
-        console.log(report);
+        logger.info(reportContents);
+        const report: Report = { contents: reportContents, events: mismatchRecords.length };
 
-        if (_(mismatchRecords).isEmpty()) {
-            logger.debug(`No events outside its enrollment orgUnit`);
-        } else if (!options.post) {
-            logger.info(`Add --post to update events (${mismatchRecords.length})`);
-        } else {
-            await this.fixMismatchEvents(mismatchRecords);
-        }
+        return { report: report, mismatchRecords: mismatchRecords };
     }
 
     private async fixMismatchEvents(mismatchRecords: MismatchRecord[]) {
-        const eventIds = mismatchRecords.map(obj => obj.event.event);
-        const mismatchRecordsByEventId = _.keyBy(mismatchRecords, obj => obj.event.event);
+        const events = mismatchRecords.map(obj => obj.event);
+        const mismatchRecordsByEventId = _.keyBy(mismatchRecords, obj => obj.event.id);
 
-        logger.info(`Get events to update: ${eventIds.join(",")}`);
-        const { instances: events } = await this.api.tracker.events
-            .get({ fields: { $all: true }, event: eventIds.join(";") })
-            .getData();
-
-        const fixedEvents = events.map((event): typeof event => {
-            const obj = mismatchRecordsByEventId[event.event];
-            if (!obj) throw new Error(`Event not found: ${event.event}`);
+        const fixedEvents = events.map((event): ProgramEventToSave => {
+            const obj = mismatchRecordsByEventId[event.id];
+            if (!obj) throw new Error(`Event not found: ${event.id}`);
             return { ...event, orgUnit: obj.enrollment.orgUnit };
         });
 
         await this.saveEvents(fixedEvents);
     }
 
-    private async saveEvents(fixedEvents: D2TrackerEvent[]) {
-        logger.info(`Post events: ${fixedEvents.length}`);
-
-        const response = await this.api.tracker
-            .post(
-                {
-                    async: false,
-                    skipPatternValidation: true,
-                    skipSideEffects: true,
-                    skipRuleEngine: true,
-                    importMode: "COMMIT",
-                },
-                { events: fixedEvents }
-            )
-            .getData();
-
-        logger.info(`Post result: ${JSON.stringify(response.stats)}`);
+    private async saveEvents(events: ProgramEventToSave[]) {
+        logger.info(`Post events: ${events.length}`);
+        const response = await this.eventsRepository.save(events);
+        logger.info(`Post result: ${JSON.stringify(response)}`);
     }
 
-    private buildReport(mismatchRecords: MismatchRecord[]): string {
+    private getMismatchRecordsInfo(mismatchRecords: MismatchRecord[]): string {
         return mismatchRecords
             .map(obj => {
-                const { trackedEntity: tei, enrollment: enr, event } = obj;
+                const { trackedEntity: tei, enrollment: enrollment, event } = obj;
 
                 const msg = [
-                    `trackedEntity: id=${tei.trackedEntity} orgUnit="${enr.orgUnitName}" [${enr.orgUnit}]`,
-                    `event: id=${event.event} orgUnit="${event.orgUnitName}" [${event.orgUnit}]`,
+                    `trackedEntity: id=${tei.id} orgUnit="${enrollment.orgUnit.name}" [${enrollment.orgUnit.id}]`,
+                    `event: id=${event.id} orgUnit="${event.orgUnit.name}" [${event.orgUnit.id}]`,
                 ];
 
                 return msg.join(" - ");
@@ -118,13 +121,13 @@ export class DetectExternalOrgUnitUseCase {
             .join("\n");
     }
 
-    private getMismatchRecords(trackedEntities: D2TrackerTrackedEntity[]): MismatchRecord[] {
+    private getMismatchRecords(trackedEntities: TrackedEntity[]): MismatchRecord[] {
         return _(trackedEntities)
             .flatMap(trackedEntity => {
                 return _(trackedEntity.enrollments)
                     .flatMap(enrollment => {
                         return enrollment.events.map(event => {
-                            if (event.orgUnit !== enrollment.orgUnit) {
+                            if (event.orgUnit.id !== enrollment.orgUnit.id) {
                                 return {
                                     trackedEntity: trackedEntity,
                                     enrollment: enrollment,
@@ -138,51 +141,27 @@ export class DetectExternalOrgUnitUseCase {
             })
             .value();
     }
-
-    private async getTrackedEntities(options: {
-        program: NamedRef;
-        page: number;
-        post: boolean;
-        pageCount: number;
-    }): Promise<D2TrackerTrackedEntity[]> {
-        logger.info(`Get events: page ${options.page} of ${options.pageCount}`);
-
-        const response = await this.api.tracker.trackedEntities
-            .get({
-                ...params,
-                page: options.page,
-                pageSize: this.pageSize,
-                program: options.program.id,
-            })
-            .getData();
-
-        logger.info(`Tracked entities: ${response.instances.length}`);
-
-        return response.instances;
-    }
 }
 
 type MismatchRecord = {
-    trackedEntity: D2TrackerTrackedEntity;
-    enrollment: D2TrackerEnrollment;
-    event: D2TrackerEvent;
+    trackedEntity: TrackedEntity;
+    enrollment: Enrollment;
+    event: ProgramEvent;
 };
 
-const params = {
-    ouMode: "ALL",
-    fields: {
-        trackedEntity: true,
-        orgUnit: true,
-        orgUnitName: true,
-        enrollments: {
-            enrollment: true,
-            orgUnit: true,
-            orgUnitName: true,
-            events: {
-                event: true,
-                orgUnit: true,
-                orgUnitName: true,
-            },
-        },
-    },
-} as const;
+type Report = {
+    contents: string;
+    events: number;
+};
+
+function joinReports(reports: Report[]): Report {
+    return {
+        contents: _(reports)
+            .map(report => report.contents)
+            .compact()
+            .join("\n"),
+        events: _(reports)
+            .map(report => report.events)
+            .sum(),
+    };
+}
