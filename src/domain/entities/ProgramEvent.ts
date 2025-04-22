@@ -23,7 +23,7 @@ export interface ProgramEventToSave {
     program: Ref;
     orgUnit: Ref;
     programStage: Ref;
-    dataValues: Array<{ dataElement: Ref; value: string }>;
+    dataValues: EventDataValueToSave[];
     trackedEntityInstanceId?: Id;
     status: EventStatus;
     date: Timestamp;
@@ -43,6 +43,12 @@ export interface EventDataValue {
     oldValue?: string;
     providedElsewhere?: boolean;
     lastUpdated: Timestamp;
+}
+
+export interface EventDataValueToSave {
+    dataElement: Ref;
+    value: string;
+    providedElsewhere?: boolean;
 }
 
 export type DuplicatedEvents = { groups: EventsGroup[] };

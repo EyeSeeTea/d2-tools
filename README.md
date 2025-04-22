@@ -2,31 +2,31 @@
 
 The required node version is v16.14.0. Alternatively, you can run:
 
-```console
-shell:~$ nvm use
+```shell
+nvm use
 ```
 
 To build the script run:
 
-```console
-shell:~$ yarn install
-shell:~$ yarn build
+```shell
+yarn install
+yarn build
 ```
 
 ## How to run
 
 The entry point CLI is executed with `yarn start`. Pass `--help` to show commands and arguments to commands:
 
-```console
-shell:~$ yarn start --help
+```shell
+yarn start --help
 # ...
-shell:~$ yarn start datasets --help
+yarn start datasets --help
 ```
 
 The default log level is `info`. Set the desired level using env variable `LOG_LEVEL`:
 
-```console
-shell:~$ LOG_LEVEL=debug yarn start datasets
+```shell
+LOG_LEVEL=debug yarn start datasets
 ```
 
 Available levels: 'debug' | 'info' | 'warn' | 'error'
@@ -35,8 +35,8 @@ Available levels: 'debug' | 'info' | 'warn' | 'error'
 
 Create report and post events or tracked entity attributes:
 
-```console
-shell:~$ yarn start programs run-program-rules \
+```shell
+yarn start programs run-program-rules \
   --url='http://USER:PASSWORD@HOST:PORT' \
   --programs-ids=ORvg6A5ed7z \
   --program-rules-ids=qvk8trY5En6 \
@@ -61,21 +61,21 @@ Notes:
 
 Export a program with all its associated metadata and data (events, enrollments, tracked entities).
 
-```console
-shell:~$ yarn start programs export --url='http://USER:PASSWORD@HOST:PORT' \
+```shell
+yarn start programs export --url='http://USER:PASSWORD@HOST:PORT' \
   --programs-ids=kX2GpLIa75l,kpNc7KvydVz programs.json
 ```
 
-```console
-shell:~$ yarn start programs import --url='http://USER:PASSWORD@HOST:PORT' programs.json
+```shell
+yarn start programs import --url='http://USER:PASSWORD@HOST:PORT' programs.json
 ```
 
 ## Datasets
 
 ### Compare pairs of data sets
 
-```console
-shell:~$ yarn start datasets compare \
+```shell
+yarn start datasets compare \
   --url='http://USER:PASSWORD@HOST:PORT' \
   DiMntK7qKZQ-Z3tlf5sqWiK \
   TuL8IOPzpHh-jHF49Vvup66
@@ -90,8 +90,8 @@ TuL8IOPzpHh - jHF49Vvup66: equal
 
 ### Compare pairs of data sets between two instances
 
-```console
-shell:~$ yarn start datasets compare \
+```shell
+yarn start datasets compare \
   --url='http://USER:PASSWORD@HOST:PORT' \
   --url2='http://USER:PASSWORD@HOST2:PORT' \
   DiMntK7qKZQ-Z3tlf5sqWiK \
@@ -100,8 +100,8 @@ shell:~$ yarn start datasets compare \
 
 ### Show the schema fields used on the comparison:
 
-```console
-shell:~$ yarn start datasets show-schema
+```shell
+yarn start datasets show-schema
 {
     "validCompleteOnly": true,
     "dataElementDecoration": true,
@@ -111,8 +111,8 @@ shell:~$ yarn start datasets show-schema
 
 ### Compare two data sets ignoring some of the properties:
 
-```console
-shell:~$ yarn start datasets compare \
+```shell
+yarn start datasets compare \
     --url='http://USER:PASSWORD@HOST:PORT' \
     --ignore-properties="expiryDays,sections" \
     DiMntK7qKZQ-Z3tlf5sqWiK
@@ -128,16 +128,16 @@ a running [d2-docker](https://github.com/eyeSeeTea/d2-docker) instance with
 
 ### Create an SQL file to remove any orgunit below the country level
 
-```console
-shell:~$ node dist/index.js orgunits remove \
+```shell
+node dist/index.js orgunits remove \
     --level 3 \
     --output-file remove_country_subunits.sql
 ```
 
 ### Create an SQL file to remove all org subunits of Canada
 
-```console
-shell:~$ node dist/index.js orgunits remove \
+```shell
+node dist/index.js orgunits remove \
     --path /H8RixfF8ugH/wP2zKq0dDpw/AJBfDthkySs \
     --output-file remove_canada_subunits.sql
 ```
@@ -146,8 +146,8 @@ where `/H8RixfF8ugH/wP2zKq0dDpw/AJBfDthkySs` would be the dhis2 path of Canada.
 
 ### Copy the organisation units from a data set to one or more datasets
 
-```console
-shell:~$ yarn start datasets copy-org-units \
+```shell
+yarn start datasets copy-org-units \
     --url='http://USER:PASSWORD@HOST:PORT' \
     --origin-dataset=DiMntK7qKZQ \
     --destination-datasets=Z3tlf5sqWiK,jHF49Vvup66 \
@@ -180,8 +180,8 @@ Notes:
 
 Update objects from spreadsheet. Update any type of DHIS2 metadata object using a xlsx spreadsheet as a data source:
 
-```console
-shell:~$ yarn start translations from-spreadsheet \
+```shell
+yarn start translations from-spreadsheet \
   --url='http://USER:PASSWORD@HOST:PORT' \
   --save-payload=payload.json \
   --post \
@@ -212,7 +212,7 @@ $ yarn start:dev events detect-orgunits-outside-enrollment \
 
 Move events for program events (so no enrollments/TEIs move is supported):
 
-```
+```shell
 $ yarn start events move-to-org-unit \
   --url='http://USER:PASSWORD@HOST:POST' \
   --from-orgunit-id=qs81OdIPwO9 \
@@ -222,7 +222,7 @@ $ yarn start events move-to-org-unit \
 
 ### Update events which met the condition
 
-```
+```shell
 yarn start events update-events \
 --url='http://USER:PASSWORD@HOST:PORT' \
 --root-org-unit='org-unit-id'
@@ -234,13 +234,23 @@ yarn start events update-events \
 --post
 ```
 
+### Recode boolean to ternary optionSet values
+
+When a boolean data value (true/false) is changed to some ternary option set (codes: Yes, No, N/A), we need to recode the existing events:
+
+```shell
+yarn start events recode-boolean-data-values \
+    --url "http://localhost:8080" --auth "USER:PASSWORD" \
+    --program-id="sPRFZ9fP9w3" --ternary-optionset-id="u4jlYf94QEy"
+```
+
 ## Data values
 
 ### Dangling data values
 
 Get dangling data values and save them in a CSV file:
 
-```console
+```shell
 $ yarn start datavalues get-dangling-values \
   --url='http://USER:PASSWORD@HOST:PORT' \
   --dataelementgroup-ids=OUwLDu1i5xa,SMkbYuGmadE \
@@ -251,7 +261,7 @@ $ yarn start datavalues get-dangling-values \
 
 To delete the dangling data values, use the generated CSV as data source and this command:
 
-```console
+```shell
 $ yarn start datavalues post-dangling-values \
   --url='http://USER:PASSWORD@HOST:PORT' dataValues.csv
 ```
@@ -260,8 +270,8 @@ $ yarn start datavalues post-dangling-values \
 
 It reverts the last data values, using the data value audit. For each of these data values, it finds its N audit records, gets the last valid and first invalid audit record and use them to build an updated data value. Example:
 
-```console
-shell:~$ yarn start datavalues revert \
+```shell
+yarn start datavalues revert \
  --url='http://USER:PASSWORD@HOST:PORT' \
  --dataset-ids=Tu81BTLUuCT --orgunit-ids=XKKI1hhyFxk --periods=2020,2021 \
  --date=2022-06-01 --usernames="android" \
@@ -272,8 +282,8 @@ shell:~$ yarn start datavalues revert \
 
 It deletes the duplicated events for some events/tracker programs. An example:
 
-```console
-shell:~$ yarn start programs get-duplicated-events \
+```shell
+yarn start programs get-duplicated-events \
   --url='http://USER:PASSWORD@HOST:PORT' \
   --save-report=duplicated-events-ecare-pilot.csv \
   --programs-ids=vYRMQ43Zl3Y --org-units-ids=yT7tCISNWG6 \
@@ -288,7 +298,7 @@ Notify data values changes and sending an email depending on how long has passed
 
 Using json as a storage:
 
-```
+```shell
 yarn start datavalues monitoring-values \
 --url='http://USER:PASSWORD@localhost:8080' \
 --storage=json \
@@ -301,7 +311,7 @@ yarn start datavalues monitoring-values \
 
 Using dhis datastore as a storage:
 
-```
+```shell
 yarn start datavalues monitoring-values \
 --url='http://USER:PASSWORD@localhost:8080' \
 --storage=datastore \
@@ -318,7 +328,7 @@ yarn start datavalues monitoring-values \
 
 Send an email read from a JSON file to a list of users in a CSV file:
 
-```
+```shell
 $ yarn start notifications send-user-info-notification \
   --url='http://USER:PASSWORD@HOST:PORT' \
   usernames.csv emailContent.json
@@ -371,7 +381,7 @@ Plan-results: all - window=300 secs - users=10 | totalTime=106.0 secs | meanTime
 
 Copy email to username:
 
-```bash
+```shell
 $ yarn start users migrate \
   --url='http://USER:PASSWORD@HOST:PORT' \
   --from='email' \
@@ -381,7 +391,7 @@ $ yarn start users migrate \
 
 Send an email to the user:
 
-```bash
+```shell
 yarn start users migrate \
   --url='http://USER:PASSWORD@HOST:PORT' \
   --send-notification \
@@ -393,7 +403,7 @@ yarn start users migrate \
 
 Send an email both to the user and the administrator:
 
-```bash
+```shell
 yarn start users migrate \
   --url='http://USER:PASSWORD@HOST:PORT' \
   --admin-email="admin@example.com" \
@@ -406,7 +416,7 @@ yarn start users migrate \
 
 Only generate a csv report without persisting changes:
 
-```bash
+```shell
 yarn start users migrate \
   --url='http://USER:PASSWORD@HOST:PORT' \
   --from='email' \
@@ -430,7 +440,7 @@ DHIS2 does not support renaming usernames directly. While it is possible to upda
 
 To fully rename a username across all references, you need to execute a SQL script. Start by generating the script using the following command:
 
-```bash
+```shell
  yarn start users rename-username \
   --mapping=user1old:user1new,user2old:user2new \
   [--dry-run] --output=rename.sql
@@ -438,7 +448,7 @@ To fully rename a username across all references, you need to execute a SQL scri
 
 And then run the generated SQL script in your database to perform the actual renaming:
 
-```bash
+```shell
 psql -U dhis dhis2 -f rename.sql
 ```
 
@@ -458,22 +468,16 @@ yarn start usermonitoring run-2fa-reporter --config-file config.json
 
 #### Debug:
 
-```
+```shell
 LOG_LEVEL=debug node --inspect-brk dist/index.js usermonitoring run-users-monitoring   --config-file config.json
 LOG_LEVEL=debug node --inspect-brk dist/index.js usermonitoring run-2fa-reporter   --config-file config.json
 ```
 
 #### Requirements:
 
-Use node 16:
-
-```
-nvm use 16
-```
-
 A config json file to get the user/password and server:
 
-```
+```json
 {
     "URL": {
         "username": "",
@@ -493,16 +497,16 @@ A two factor group to filter the users that should have two factor activated
 
 The datastore must contain:
 
-```
+```json
 {
-  "pushProgram": {
-    "id": "uid",
-    "name": "push program"
-  },
-  "twoFactorGroup": {
-    "id": "uid",
-    "name": "Auth control group"
-  }
+    "pushProgram": {
+        "id": "uid",
+        "name": "push program"
+    },
+    "twoFactorGroup": {
+        "id": "uid",
+        "name": "Auth control group"
+    }
 }
 ```
 
@@ -543,86 +547,86 @@ An example of the datastore:
 
 Note: the names are used only to make easy understand and debug the keys.
 
-```
+```json
 {
-  "excludedRoles": [
-    {
-      "id": "uid",
-      "name": "App - name"
-    }
-  ],
-  "excludedRolesByGroup": [
-    {
-      "group": {
+    "excludedRoles": [
+        {
+            "id": "uid",
+            "name": "App - name"
+        }
+    ],
+    "excludedRolesByGroup": [
+        {
+            "group": {
+                "id": "uid",
+                "name": "User group name"
+            },
+            "role": {
+                "id": "hXY2OtVz70P",
+                "name": "App - name"
+            }
+        }
+    ],
+    "excludedRolesByRole": [
+        {
+            "active_role": {
+                "id": "uid",
+                "name": "App present in the user"
+            },
+            "ignore_role": {
+                "id": "uid",
+                "name": "App to be ignored"
+            }
+        }
+    ],
+    "excludedRolesByUser": [
+        {
+            "role": {
+                "id": "uid",
+                "name": "App - name"
+            },
+            "user": {
+                "id": "uid",
+                "name": "username"
+            }
+        }
+    ],
+    "excludedUsers": [
+        {
+            "id": "uid",
+            "name": "username"
+        }
+    ],
+    "minimalGroup": {
         "id": "uid",
-        "name": "User group name"
-      },
-      "role": {
-        "id": "hXY2OtVz70P",
-        "name": "App - name"
-      }
-    }
-  ],
-  "excludedRolesByRole": [
-    {
-      "active_role": {
+        "name": "Users"
+    },
+    "minimalRole": {
         "id": "uid",
-        "name": "App present in the user"
-      },
-      "ignore_role": {
+        "name": "Role name"
+    },
+    "permissionFixerConfig": {
+        "forceMinimalGroupForUsersWithoutGroup": true,
+        "pushFixedUserGroups": false,
+        "pushFixedUsersRoles": false,
+        "pushReport": true
+    },
+    "pushProgram": {
         "id": "uid",
-        "name": "App to be ignored"
-      }
-    }
-  ],
-  "excludedRolesByUser": [
-    {
-      "role": {
-        "id": "uid",
-        "name": "App - name"
-      },
-      "user": {
-        "id": "uid",
-        "name": "username"
-      }
-    }
-  ],
-  "excludedUsers": [
-    {
-      "id": "uid",
-      "name": "username"
-    }
-  ],
-  "minimalGroup": {
-    "id": "uid",
-    "name": "Users"
-  },
-  "minimalRole": {
-    "id": "uid",
-    "name": "Role name"
-  },
-  "permissionFixerConfig":{
-    "forceMinimalGroupForUsersWithoutGroup": true,
-    "pushFixedUserGroups": false,
-    "pushFixedUsersRoles": false,
-    "pushReport": true
-  },
-  "pushProgram": {
-    "id": "uid",
-    "name": "Program name"
-  },
-  "templates": [
-    {
-      "group": {
-        "id": "uid",
-        "name": "user group name"
-      },
-      "template": {
-        "id": "uid",
-        "name": "user template username"
-      }
-    }
-  ]
+        "name": "Program name"
+    },
+    "templates": [
+        {
+            "group": {
+                "id": "uid",
+                "name": "user group name"
+            },
+            "template": {
+                "id": "uid",
+                "name": "user template username"
+            }
+        }
+    ]
 }
 ```
 
@@ -630,7 +634,7 @@ Note: the names are used only to make easy understand and debug the keys.
 
 #### Execution:
 
-```bash
+```shell
 yarn start usermonitoring run-authorities-monitoring --config-file config.json
 
 # To get the debug logs and store them in a file use:
@@ -646,7 +650,7 @@ LOG_LEVEL=debug yarn start usermonitoring run-authorities-monitoring --config-fi
 
 A config file with the access info of the server and the message webhook details:
 
-```JSON
+```json
 {
     "URL": {
         "username": "user",
@@ -666,44 +670,44 @@ It's possible to leave `usersByAuthority` empty and use the `-s` flag to populat
 
 A sample:
 
-```JSON
+```json
 {
-  "usersByAuthority": {
-    "AUTH1": [
-      {
-        "id": "lJf6FW6vtDD",
-        "name": "fake user 1",
-        "userRoles": [
-          {
-            "id": "So7ZSqi9ovy",
-            "name": "Role 1"
-          }
+    "usersByAuthority": {
+        "AUTH1": [
+            {
+                "id": "lJf6FW6vtDD",
+                "name": "fake user 1",
+                "userRoles": [
+                    {
+                        "id": "So7ZSqi9ovy",
+                        "name": "Role 1"
+                    }
+                ]
+            },
+            {
+                "id": "wXGwwP53ngu",
+                "name": "fake user 2",
+                "userRoles": [
+                    {
+                        "id": "So7ZSqi9ovy",
+                        "name": "Role 1"
+                    }
+                ]
+            }
+        ],
+        "AUTH2": [
+            {
+                "id": "wXGwwP53ngu",
+                "name": "fake user 2",
+                "userRoles": [
+                    {
+                        "id": "So7ZSqi9ovy",
+                        "name": "Role 1"
+                    }
+                ]
+            }
         ]
-      },
-      {
-        "id": "wXGwwP53ngu",
-        "name": "fake user 2",
-        "userRoles": [
-          {
-            "id": "So7ZSqi9ovy",
-            "name": "Role 1"
-          }
-        ]
-      }
-    ],
-    "AUTH2": [
-      {
-        "id": "wXGwwP53ngu",
-        "name": "fake user 2",
-        "userRoles": [
-          {
-            "id": "So7ZSqi9ovy",
-            "name": "Role 1"
-          }
-        ]
-      }
-    ]
-  }
+    }
 }
 ```
 
@@ -713,7 +717,7 @@ This script will compare the metadata of the monitored userGroups with the versi
 
 #### Execution:
 
-```bash
+```shell
 yarn start usermonitoring run-user-groups-monitoring --config-file config.json
 
 # To get the debug logs and store them in a file use:
@@ -729,7 +733,7 @@ LOG_LEVEL=debug yarn start usermonitoring run-user-groups-monitoring --config-fi
 
 A config file with the access info of the server and the message webhook details:
 
-```JSON
+```json
 {
     "URL": {
         "username": "user",
@@ -761,7 +765,7 @@ The User Templates Monitoring script is used to compare user templates with the 
 
 #### Execution:
 
-```bash
+```shell
 yarn start usermonitoring run-user-templates-monitoring --config-file config.json
 
 # To get the debug logs and store them in a file use:
@@ -777,7 +781,7 @@ LOG_LEVEL=debug yarn start usermonitoring run-user-templates-monitoring --config
 
 A config file with the access info of the server and the message webhook details:
 
-```JSON
+```json
 {
     "URL": {
         "username": "user",
@@ -810,7 +814,7 @@ If a section is empty, it will be omitted from the report.
 
 Get all the TEIS in the program and move the value from the attribute in the argument `--from-attribute-id` to the attribute `--to-attribute-id`. Then delete the value in `--from-attribute-id`.
 
-```bash
+```shell
 yarn start programs move-attribute \
 --url='http://USER:PASSWORD@HOST:PORT' \
 --program-id=WCJhvPcJomX \
@@ -825,7 +829,7 @@ Perform a basic comparison of metadata in two instances. Checks:
 -   Which objects exist only in one of them (using ID).
 -   Which objects exist in both with same ID but different code.
 
-```bash
+```shell
 $ LOG_LEVEL=debug node dist/index.js sync validate \
   --url="http://admin:district@localhost:8080" \
   --url2="http://admin:district@localhost:8081" \
@@ -856,8 +860,8 @@ $ LOG_LEVEL=debug node dist/index.js sync validate \
 
 Get a CSV with the IDs of the items used by Indicators:
 
-```console
-shell:~$ yarn start indicators get-ref-ids \
+```shell
+yarn start indicators get-ref-ids \
 --url='https://admin:district@play.dhis2.org/2.38.6/' \
 --indicators=Uvn6LCg7dVU,ReUHfIn0pTQ \
 --ds-filter=QX4ZTUbOt3a,aLpVgfXiz0f \
@@ -878,8 +882,8 @@ UID | Indicator | Numerator | Numerator Description | List of referenced dataEle
 
 Get a CSV with a report of the values of dataElements and categoryOptionCombos:
 
-```console
-shell:~$ yarn start indicators get-de-values-report \
+```shell
+yarn start indicators get-de-values-report \
 --url='https://admin:district@play.dhis2.org/2.38.6/' \
 --indicators=Uvn6LCg7dVU,ReUHfIn0pTQ \
 --org-unit=DiszpKrYNg8 \
@@ -902,8 +906,8 @@ dataElement ID | dataElement Name | categoryOptionCombo ID | categoryOptionCombo
 
 Transfer tracked entities to another org unit, using a CSV as source data (expected columns: trackedEntityId, newOrgUnitId):
 
-```console
-shell:~$ yarn start trackedEntities transfer \
+```shell
+yarn start trackedEntities transfer \
   --url=http://localhost:8080 \
   --auth="USER:PASSWORD"  \
   --input-file=transfers.csv \
@@ -922,8 +926,8 @@ Rename an option code (options are the children of option sets). Actions:
 -   events: recode the associated code used as dataValues[].value
 -   tracker: recode the associated tracked entity attributes (TODO)
 
-```console
-shell:~$ yarn start options rename-code \
+```shell
+yarn start options rename-code \
   --url=https://play.im.dhis2.org/stable-2-41-3 \
   --auth="admin:distrct"  \
    --id=YQe3PFbATvz \
