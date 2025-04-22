@@ -18,6 +18,12 @@ type Options = {
 export class RecodeBooleanDataValuesInEventsUseCase {
     pageSize = 1000;
 
+    optionCodes = {
+        yes: "Yes",
+        no: "No",
+        na: "N/A",
+    };
+
     constructor(private api: D2Api, private programsRepository: ProgramsRepository) {}
 
     async execute(options: Options) {
@@ -75,6 +81,7 @@ export class RecodeBooleanDataValuesInEventsUseCase {
             events: events,
             ternaryOptionSetId: options.ternaryOptionSetId,
         });
+
         logger.info(`Events to recode: ${recodedEvents.length}`);
 
         if (_(recodedEvents).isEmpty()) {
@@ -139,10 +146,19 @@ export class RecodeBooleanDataValuesInEventsUseCase {
     }
 
     private recodeEventDataValues(event: D2TrackerEvent, dataElementIdsWithTernary: Set<string>) {
+        const opts = this.optionCodes;
+
         return _(event.dataValues)
             .map((dataValue): typeof dataValue => {
                 if (dataElementIdsWithTernary.has(dataValue.dataElement)) {
-                    const newValue = ["true", "Yes"].includes(dataValue.value) ? "Yes" : "No";
+                    const newValue = ["true", opts.yes].includes(dataValue.value)
+                        ? opts.yes
+                        : ["false", opts.no].includes(dataValue.value)
+                        ? opts.no
+                        : opts.na;
+                    if (dataValue.value !== newValue) {
+                        console.log(dataValue.dataElement, "-", dataValue.value, "->", newValue);
+                    }
                     return { ...dataValue, value: newValue };
                 } else {
                     return dataValue;
