@@ -11,6 +11,4 @@ export interface TrackedEntityRepository {
 
 export type TrackedEntityFilterParams = {
     programId: Id;
-    fromAttributeId: Id;
-    toAttributeId: Id;
 };

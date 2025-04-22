@@ -1,9 +1,11 @@
 import { Async } from "domain/entities/Async";
 import { Id } from "domain/entities/Base";
 import { Timestamp } from "domain/entities/Date";
+import { Program, ProgramType } from "domain/entities/Program";
 import { ProgramExport } from "domain/entities/ProgramExport";
 
 export interface ProgramsRepository {
+    get(options: { programTypes?: ProgramType[]; ids?: Id[] }): Async<Program[]>;
     export(options: { ids: Id[] }): Async<ProgramExport>;
     import(programExport: ProgramExport): Async<void>;
     runRules(options: RunRulesOptions): Async<void>;

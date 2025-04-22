@@ -197,6 +197,17 @@ Expected format of `xlsx` file:
 
 ## Events
 
+### Detect events assigned to organisation units outside their enrollment
+
+When enrollments are transferred to another org unit, the existing events keep their original org unit. While that's the expected default behaviour, sometimes we need to detect and fix these mismatches:
+
+```shell
+$ yarn start:dev events detect-orgunits-outside-enrollment \
+  --url "http://localhost:8080" --auth "USER:PASS" \
+  --notify-email="SUBJECT,EMAIL1,EMAIL2,..." \
+  --post
+```
+
 ### Move events from one orgunit to another
 
 Move events for program events (so no enrollments/TEIs move is supported):

@@ -41,7 +41,6 @@ describe("RunUserPermissionUseCase", () => {
 
         const result = await useCase.execute();
 
-        console.log(JSON.stringify(result));
         expect(result.userTemplates).toEqual([]);
         expect(result.excludedUsers[0]).toEqual(clonedValidUser);
         expect(result.groupsReport).toEqual(undefined);
@@ -61,7 +60,6 @@ describe("RunUserPermissionUseCase", () => {
         expect(result.userTemplates).toEqual([]);
         expect(result.groupsReport).toEqual(undefined);
         expect(result.rolesReport).toEqual(undefined);
-        console.log(JSON.stringify(result));
         expect(result.message).toEqual("Nothing to report. No invalid users found.");
     });
 
@@ -74,7 +72,6 @@ describe("RunUserPermissionUseCase", () => {
 
         const result = await useCase.execute();
 
-        console.log(JSON.stringify(result));
         expect(result.groupsReport?.invalidUsersCount).toEqual(0);
         expect(result.rolesReport?.invalidUsersCount).toEqual(1);
         expect(result.rolesReport?.usersBackup[0]?.userRoles).toEqual([

@@ -54,9 +54,15 @@ export class LoadingPlanHarRepository implements LoadingPlanRepository {
         if (location && location.match(/failed/)) {
             throw new Error(`Login failed: ${config.data} -> location=${location}`);
         }
-        const cookie = res.headers["set-cookie"]?.[0]?.split(";")[0] || "";
-        console.debug(`Cookie from server: ${cookie}`);
-        this.cookie = cookie;
+        const headerSetCookie = res.headers["set-cookie"]?.[0];
+        const cookie = headerSetCookie?.split(";")[0] || "";
+
+        if (cookie) {
+            console.debug(`Cookie from server: ${cookie}`);
+            this.cookie = cookie;
+        } else {
+            this.cookie = undefined;
+        }
     }
 
     async run(plan: LoadingPlan, options: Options): Promise<RunHarResult> {

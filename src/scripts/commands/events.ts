@@ -1,12 +1,22 @@
 import _ from "lodash";
 import { command, string, subcommands, option, optional, flag } from "cmd-ts";
 
-import { getApiUrlOption, getD2Api, StringsSeparatedByCommas } from "scripts/common";
+import {
+    getApiUrlOption,
+    getApiUrlOptions,
+    getD2Api,
+    getD2ApiFromArgs,
+    StringsSeparatedByCommas,
+} from "scripts/common";
 import { ProgramEventsD2Repository } from "data/ProgramEventsD2Repository";
 import { MoveEventsToOrgUnitUseCase } from "domain/usecases/MoveEventsToOrgUnitUseCase";
 import logger from "utils/log";
 import { UpdateEventDataValueUseCase } from "domain/usecases/UpdateEventDataValueUseCase";
 import { EventExportSpreadsheetRepository } from "data/EventExportSpreadsheetRepository";
+import { DetectExternalOrgUnitUseCase } from "domain/usecases/ProcessEventsOutsideEnrollmentOrgUnitUseCase";
+import { ProgramsD2Repository } from "data/ProgramsD2Repository";
+import { NotificationsEmailRepository } from "data/NotificationsEmailRepository";
+import { TrackedEntityD2Repository } from "data/TrackedEntityD2Repository";
 
 export function getCommand() {
     return subcommands({
@@ -14,9 +24,51 @@ export function getCommand() {
         cmds: {
             "move-to-org-unit": moveOrgUnitCmd,
             "update-events": updateEventsDataValues,
+            "detect-orgunits-outside-enrollment": detectEventsOutsideOrgUnitEnrollmentCmd,
         },
     });
 }
+
+const detectEventsOutsideOrgUnitEnrollmentCmd = command({
+    name: "detect-external-orgunits",
+    description: "Detect events assigned to organisation units outside their enrollment",
+    args: {
+        ...getApiUrlOptions(),
+        post: flag({
+            long: "post",
+            description: "Fix events",
+            defaultValue: () => false,
+        }),
+        notifyEmail: option({
+            type: optional(StringsSeparatedByCommas),
+            long: "notify-email",
+            description: "SUBJECT,EMAIL1,EMAIL2,...",
+        }),
+        programIds: option({
+            type: optional(StringsSeparatedByCommas),
+            long: "program-ids",
+            description: "List of program IDS (comma-separated)",
+        }),
+    },
+    handler: async args => {
+        const api = getD2ApiFromArgs(args);
+        const programsRepository = new ProgramsD2Repository(api);
+        const notificationRepository = new NotificationsEmailRepository();
+        const eventsRepository = new ProgramEventsD2Repository(api);
+        const trackedEntitiesRepository = new TrackedEntityD2Repository(api);
+        const { notifyEmail } = args;
+        const [subject, ...recipients] = notifyEmail || [];
+        const notification =
+            subject && recipients.length > 0 ? { subject: subject, recipients: recipients } : undefined;
+
+        return new DetectExternalOrgUnitUseCase(
+            programsRepository,
+            trackedEntitiesRepository,
+            eventsRepository,
+            notificationRepository
+        ).execute({ ...args, notification: notification });
+    },
+});
 
 const moveOrgUnitCmd = command({
     name: "move-to-org-unit",

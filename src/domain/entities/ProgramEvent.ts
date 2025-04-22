@@ -10,6 +10,7 @@ export interface ProgramEvent {
     programStage: NamedRef;
     dataValues: EventDataValue[];
     trackedEntityInstanceId?: Id;
+    enrollment?: Id;
     created: Timestamp;
     lastUpdated: Timestamp;
     status: EventStatus;
@@ -29,7 +30,7 @@ export interface ProgramEventToSave {
     dueDate: Timestamp;
 }
 
-type EventStatus = "ACTIVE" | "COMPLETED" | "VISITED" | "SCHEDULED" | "OVERDUE" | "SKIPPED";
+type EventStatus = "ACTIVE" | "COMPLETED" | "VISITED" | "SCHEDULE" | "OVERDUE" | "SKIPPED";
 
 export const orgUnitModes = ["SELECTED", "CHILDREN", "DESCENDANTS"] as const;
 
