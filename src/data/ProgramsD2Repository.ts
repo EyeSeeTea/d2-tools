@@ -3,11 +3,17 @@ import { Async } from "domain/entities/Async";
 import { Id } from "domain/entities/Base";
 import { ProgramExport } from "domain/entities/ProgramExport";
 import { ProgramsRepository, RunRulesOptions } from "domain/repositories/ProgramsRepository";
-import { D2Api } from "types/d2-api";
+import {
+    D2Api,
+    D2TrackedEntityInstanceToPost,
+    D2TrackerEnrollmentToPost,
+    D2TrackerEventToPost,
+} from "types/d2-api";
 import log from "utils/log";
 import { promiseMap, runMetadata } from "./dhis2-utils";
 import { D2ProgramRules } from "./d2-program-rules/D2ProgramRules";
 import { D2Tracker } from "./D2Tracker";
+import { Program, ProgramType } from "domain/entities/Program";
 
 type MetadataRes = { date: string } & { [k: string]: Array<{ id: string }> };
 
@@ -18,17 +24,49 @@ export class ProgramsD2Repository implements ProgramsRepository {
         this.d2Tracker = new D2Tracker(this.api);
     }
 
+    async get(options: { ids?: Id[]; programTypes?: ProgramType[] }): Async<Program[]> {
+        const { programs } = await this.api.metadata
+            .get({
+                programs: {
+                    fields: {
+                        id: true,
+                        name: true,
+                        programType: true,
+                        programStages: {
+                            id: true,
+                            name: true,
+                            programStageDataElements: {
+                                dataElement: {
+                                    id: true,
+                                    name: true,
+                                    code: true,
+                                    valueType: true,
+                                    optionSet: { id: true, name: true },
+                                },
+                                displayInReports: true,
+                            },
+                        },
+                    },
+                    filter: {
+                        ...(options.ids ? { id: { in: options.ids } } : {}),
+                        ...(options.programTypes ? { programType: { in: options.programTypes } } : {}),
+                        ...(options.ids ? { id: { in: options.ids } } : {}),
+                    },
+                },
+            })
+            .getData();
+
+        return programs;
+    }
+
     async export(options: { ids: Id[]; orgUnitIds: Id[] | undefined }): Async<ProgramExport> {
         const { ids: programIds, orgUnitIds } = options;
         const metadata = await this.getMetadata(programIds);
 
         const getOptions = { programIds, orgUnitIds };
-        const events = await this.d2Tracker.getFromTracker<object>("events", getOptions);
-        const enrollments = await this.d2Tracker.getFromTracker<D2Enrollment>("enrollments", getOptions);
-        const trackedEntities = await this.d2Tracker.getFromTracker<D2TrackedEntity>(
-            "trackedEntities",
-            getOptions
-        );
+        const events = await this.d2Tracker.getFromTracker("events", getOptions);
+        const enrollments = await this.d2Tracker.getFromTracker("enrollments", getOptions);
+        const trackedEntities = await this.d2Tracker.getFromTracker("trackedEntities", getOptions);
 
         /* Remove redundant enrollments info from TEIs */
         const trackedEntitiesWithoutEnrollments = trackedEntities.map(trackedEntity => ({
@@ -39,7 +77,7 @@ export class ProgramsD2Repository implements ProgramsRepository {
         return {
             metadata,
             data: {
-                events,
+                events: events,
                 enrollments: enrollments,
                 trackedEntities: trackedEntitiesWithoutEnrollments,
             },
@@ -78,7 +116,7 @@ export class ProgramsD2Repository implements ProgramsRepository {
         // DHIS2 exports enrollments without attributes, but requires it on import, add from TEI
         const enrollmentsWithAttributes = enrollments.map(enrollment => ({
             ...enrollment,
-            attributes: teisById[enrollment.trackedEntity]?.attributes || [],
+            attributes: (enrollment.trackedEntity && teisById[enrollment.trackedEntity]?.attributes) || [],
         }));
 
         log.info(`Import data`);
@@ -99,15 +137,10 @@ interface D2ProgramExport {
 }
 
 type D2ProgramData = {
-    events: object[];
-    enrollments: D2Enrollment[];
-    trackedEntities: D2TrackedEntity[];
+    events: D2TrackerEventToPost[];
+    enrollments: D2TrackerEnrollmentToPost[];
+    trackedEntities: D2TrackedEntityInstanceToPost[];
 };
-
-interface D2Enrollment {
-    enrollment: string;
-    trackedEntity: string;
-}
 
 export interface D2TrackedEntity {
     trackedEntity: Id;

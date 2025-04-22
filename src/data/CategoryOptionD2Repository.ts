@@ -16,7 +16,7 @@ export class CategoryOptionD2Repository implements CategoryOptionRepository {
 
     async saveAll(categoryOptions: CategoryOption[]): Async<Stats> {
         const catOptionsIdsToSave = categoryOptions.map(getId);
-        const stats = await getInChunks<Stats>(catOptionsIdsToSave, async catOptionsIds => {
+        const stats = await getInChunks<string, Stats>(catOptionsIdsToSave, async catOptionsIds => {
             const response = await this.api.metadata
                 .get({
                     categoryOptions: {
@@ -74,26 +74,28 @@ export class CategoryOptionD2Repository implements CategoryOptionRepository {
                 {
                     recordsSkipped: saveResponse.status === "ERROR" ? catOptionsToSave.map(co => co.id) : [],
                     errorMessage,
-                    created: saveResponse.response.stats.created,
-                    ignored: saveResponse.response.stats.ignored,
-                    updated: saveResponse.response.stats.updated,
+                    ...saveResponse.response.stats,
                 },
             ];
         });
 
         return stats.reduce(
-            (acum, stat) => {
+            (acum, stat): Stats => {
                 return {
                     recordsSkipped: [...acum.recordsSkipped, ...stat.recordsSkipped],
                     errorMessage: `${acum.errorMessage}${stat.errorMessage}`,
                     created: acum.created + stat.created,
                     ignored: acum.ignored + stat.ignored,
                     updated: acum.updated + stat.updated,
+                    deleted: acum.deleted + stat.deleted,
+                    total: acum.total + stat.total,
                 };
             },
             {
                 recordsSkipped: [],
                 errorMessage: "",
+                deleted: 0,
+                total: 0,
                 created: 0,
                 ignored: 0,
                 updated: 0,

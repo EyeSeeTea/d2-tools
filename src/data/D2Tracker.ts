@@ -3,13 +3,22 @@ import fs from "fs";
 
 import { Async } from "domain/entities/Async";
 import { Stats } from "domain/entities/Stats";
-import { D2Api } from "types/d2-api";
+import {
+    D2Api,
+    TrackedEntitiesGetResponse,
+    TrackerEnrollmentsResponse,
+    TrackerEventsResponse,
+    TrackerPostRequest,
+} from "types/d2-api";
 import log from "utils/log";
 
 export class D2Tracker {
     constructor(private api: D2Api) {}
 
-    async postTracker(key: TrackerDataKey, objects: object[]): Async<TrackerResponse[]> {
+    async postTracker<Key extends TrackerDataKey>(
+        key: Key,
+        objects: Array<NonNullable<TrackerPostRequest[Key]>[number]>
+    ): Async<TrackerResponse[]> {
         const total = objects.length;
         log.info(`Import data: ${key} - Total: ${total}`);
         let page = 1;
@@ -29,17 +38,21 @@ export class D2Tracker {
         return result;
     }
 
-    private async postTrackerData(data: object, options: { payloadId: string }): Async<TrackerResponse> {
-        const response: TrackerResponse = await this.api
-            .post<TrackerResponse>("/tracker", { async: false }, data)
+    private async postTrackerData(
+        data: TrackerPostRequest,
+        options: { payloadId: string }
+    ): Async<TrackerResponse> {
+        const response: TrackerResponse = await this.api.tracker
+            .post({ async: false }, data)
             .getData()
-            .catch(err => {
-                if (err?.response?.data) {
-                    return err.response.data as TrackerResponse;
+            .then(res => ({ ...res, stats: { ...Stats.empty(), ...res.stats } }))
+            .catch((err): TrackerResponse => {
+                const data = err?.response?.data;
+                if (data) {
+                    return data;
                 } else {
                     return {
                         status: "ERROR",
-                        typeReports: [],
                         stats: Stats.empty(),
                     };
                 }
@@ -56,17 +69,18 @@ export class D2Tracker {
         }
     }
 
-    async getFromTracker<T>(
-        apiPath: string,
+    async getFromTracker<Key extends TrackerDataKey>(
+        model: Key,
         options: {
             programIds: string[];
             orgUnitIds: string[] | undefined;
-            fields?: string;
             trackedEntity?: string | undefined;
         }
-    ): Promise<T[]> {
-        const output = [];
-        const { programIds, orgUnitIds, fields = "*", trackedEntity } = options;
+    ): Promise<Array<Mapping[Key][number]>> {
+        type Output = Array<Mapping[Key][number]>;
+
+        const output: Output = [];
+        const { programIds, orgUnitIds, trackedEntity } = options;
 
         for (const programId of programIds) {
             let page = 1;
@@ -74,19 +88,28 @@ export class D2Tracker {
 
             while (dataRemaining) {
                 const pageSize = 1000;
-                log.debug(`GET ${apiPath} (pageSize=${pageSize}, page=${page})`);
+                log.debug(`GET ${model} (pageSize=${pageSize}, page=${page})`);
 
-                const { instances } = await this.api
-                    .get<{ instances: T[] }>(`/tracker/${apiPath}`, {
-                        page,
-                        pageSize: pageSize,
-                        ouMode: orgUnitIds ? "SELECTED" : "ALL",
-                        orgUnit: orgUnitIds?.join(";"),
-                        fields: fields,
-                        program: programId,
-                        trackedEntity,
-                    })
-                    .getData();
+                const apiOptions = {
+                    page,
+                    pageSize: pageSize,
+                    ouMode: orgUnitIds ? ("SELECTED" as const) : ("ALL" as const),
+                    orgUnit: orgUnitIds?.join(";"),
+                    fields: { $all: true as const },
+                    program: programId,
+                    trackedEntity,
+                };
+
+                const { tracker } = this.api;
+
+                const endpoint = {
+                    trackedEntities: () => tracker.trackedEntities.get(apiOptions),
+                    enrollments: () => tracker.enrollments.get(apiOptions),
+                    events: () => tracker.events.get(apiOptions),
+                };
+
+                const res = await endpoint[model]().getData();
+                const instances: Output = res.instances as Output;
 
                 if (instances.length === 0) {
                     dataRemaining = false;
@@ -96,7 +119,7 @@ export class D2Tracker {
                 }
             }
         }
-        log.info(`GET ${apiPath} -> Total: ${output.length}`);
+        log.info(`GET ${model} -> Total: ${output.length}`);
 
         return output;
     }
@@ -104,8 +127,13 @@ export class D2Tracker {
 
 type TrackerResponse = {
     status: string;
-    typeReports: object[];
     stats: Stats;
 };
 
 type TrackerDataKey = "events" | "enrollments" | "trackedEntities";
+
+type Mapping = {
+    trackedEntities: TrackedEntitiesGetResponse<{ $all: true }>["instances"];
+    enrollments: TrackerEnrollmentsResponse<{ $all: true }>["instances"];
+    events: TrackerEventsResponse<{ $all: true }>["instances"];
+};

@@ -5,12 +5,14 @@ import { Maybe } from "utils/ts-utils";
 
 export interface ProgramEvent {
     id: Id;
-    program: NamedRef;
+    program: NamedRef & { type: "event" | "tracker" };
     orgUnit: NamedRef;
     programStage: NamedRef;
     dataValues: EventDataValue[];
     trackedEntityInstanceId?: Id;
+    enrollment?: Id;
     created: Timestamp;
+    lastUpdated: Timestamp;
     status: EventStatus;
     date: Timestamp;
     dueDate: Timestamp;
@@ -21,21 +23,21 @@ export interface ProgramEventToSave {
     program: Ref;
     orgUnit: Ref;
     programStage: Ref;
-    dataValues: EventDataValue[];
+    dataValues: EventDataValueToSave[];
     trackedEntityInstanceId?: Id;
     status: EventStatus;
     date: Timestamp;
     dueDate: Timestamp;
 }
 
-type EventStatus = "ACTIVE" | "COMPLETED" | "VISITED" | "SCHEDULED" | "OVERDUE" | "SKIPPED";
+type EventStatus = "ACTIVE" | "COMPLETED" | "VISITED" | "SCHEDULE" | "OVERDUE" | "SKIPPED";
 
 export const orgUnitModes = ["SELECTED", "CHILDREN", "DESCENDANTS"] as const;
 
 export type OrgUnitMode = typeof orgUnitModes[number];
 
 export interface EventDataValue {
-    dataElementId: Id;
+    dataElement: NamedRef;
     value: string;
     storedBy: Username;
     oldValue?: string;
@@ -43,13 +45,23 @@ export interface EventDataValue {
     lastUpdated: Timestamp;
 }
 
+export interface EventDataValueToSave {
+    dataElement: Ref;
+    value: string;
+    providedElsewhere?: boolean;
+}
+
+export type DuplicatedEvents = { groups: EventsGroup[] };
+
+export type EventsGroup = { events: ProgramEvent[] };
+
 export class DuplicatedProgramEvents {
     constructor(
         private options: { ignoreDataElementsIds: Maybe<Id[]>; checkDataElementsIds?: Maybe<Id[]> }
     ) {}
 
-    get(events: ProgramEvent[]): ProgramEvent[] {
-        return _(events)
+    get(events: ProgramEvent[]): DuplicatedEvents {
+        const groups = _(events)
             .groupBy(event =>
                 _.compact([
                     event.orgUnit.id,
@@ -61,32 +73,28 @@ export class DuplicatedProgramEvents {
             .values()
             .flatMap(events => this.getDuplicatedEventsForGroup(events))
             .value();
+
+        return { groups: groups };
     }
 
-    private getDuplicatedEventsForGroup(eventsGroup: ProgramEvent[]): ProgramEvent[] {
-        const excludeOldestEvent = (events: ProgramEvent[]) =>
-            _(events)
-                .sortBy(ev => ev.created)
-                .drop(1)
-                .value();
-
+    private getDuplicatedEventsForGroup(eventsGroup: ProgramEvent[]): EventsGroup[] {
         return _(eventsGroup)
-            .groupBy(event => this.getEventDataValuesUid(event))
+            .groupBy(event => this.getEventDataValuesHash(event))
             .values()
             .filter(events => events.length > 1)
-            .flatMap(excludeOldestEvent)
+            .map(events => ({ events: _.sortBy(events, ev => ev.created) }))
             .compact()
             .value();
     }
 
-    private getEventDataValuesUid(event: ProgramEvent) {
+    private getEventDataValuesHash(event: ProgramEvent) {
         const { ignoreDataElementsIds, checkDataElementsIds } = this.options;
 
         return _(event.dataValues)
-            .sortBy(dv => dv.dataElementId)
-            .filter(dv => (checkDataElementsIds ? checkDataElementsIds.includes(dv.dataElementId) : true))
-            .reject(dv => (ignoreDataElementsIds ? ignoreDataElementsIds.includes(dv.dataElementId) : false))
-            .map(dv => [dv.dataElementId, dv.value].join("."))
+            .sortBy(dv => dv.dataElement.id)
+            .filter(dv => (checkDataElementsIds ? checkDataElementsIds.includes(dv.dataElement.id) : true))
+            .reject(dv => (ignoreDataElementsIds ? ignoreDataElementsIds.includes(dv.dataElement.id) : false))
+            .map(dv => [dv.dataElement.id, dv.value].join("="))
             .join();
     }
 }

@@ -9,6 +9,6 @@ export default defineConfig({
         environment: "jsdom",
         // Added to ignore the *.data.ts files
         include: [...configDefaults.include],
-        exclude: [...configDefaults.exclude, "**/*.data.ts"],
+        exclude: [...configDefaults.exclude, "**/*.data.ts", "src/capture-core", "src/capture-core-utils"],
     },
 });

@@ -3,10 +3,11 @@ import { TwoFactorUserD2Repository } from "data/user-monitoring/two-factor-monit
 import { TwoFactorConfigD2Repository } from "data/user-monitoring/two-factor-monitoring/TwoFactorConfigD2Repository";
 import { UserMonitoringProgramD2Repository } from "data/user-monitoring/common/UserMonitoringProgramD2Repository";
 import { TwoFactorReportD2Repository } from "data/user-monitoring/two-factor-monitoring/TwoFactorReportD2Repository";
-import log from "utils/log";
 import { TwoFactorUserReport } from "domain/entities/user-monitoring/two-factor-monitoring/TwoFactorUserReport";
 import { Async } from "domain/entities/Async";
 import { NonUsersException } from "domain/entities/user-monitoring/two-factor-monitoring/exception/NonUsersException";
+
+type TwoFactorReportResponse = { message: string; report: TwoFactorUserReport };
 
 export class RunTwoFactorReportUseCase {
     constructor(
@@ -16,10 +17,10 @@ export class RunTwoFactorReportUseCase {
         private programRepository: UserMonitoringProgramD2Repository
     ) {}
 
-    async execute(): Async<string> {
+    async execute(): Async<TwoFactorReportResponse> {
         const options = await this.configRepository.get();
-
         const twoFactorGroupUsers = await this.userRepository.getUsersByGroupId([options.twoFactorGroup.id]);
+
         if (!twoFactorGroupUsers) {
             throw new NonUsersException(
                 "Users not found in the group. Check the group id. " + options.twoFactorGroup.id
@@ -32,13 +33,12 @@ export class RunTwoFactorReportUseCase {
         const userItems = usersWithoutTwoFactor.map(user => {
             return { id: user.id, name: user.username };
         });
-        const response: TwoFactorUserReport = {
+        const report: TwoFactorUserReport = {
             invalidUsersCount: userItems.length,
             listOfAffectedUsers: userItems,
         };
-        log.info("Users without two factor: " + userItems.length);
         const programMetadata = await this.programRepository.get(options.pushProgram.id);
-        const saveResponse = await this.reportRepository.save(programMetadata, response);
-        return saveResponse;
+        const saveResponse = await this.reportRepository.save(programMetadata, report);
+        return { message: saveResponse, report };
     }
 }

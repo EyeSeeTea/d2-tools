@@ -4,7 +4,7 @@ export const auth1Users: UsersByAuthority = {
     AUTH_1: [
         {
             id: "cNtWc18LXBS",
-            name: "user auth1 1",
+            username: "user auth1 1",
             userRoles: [
                 {
                     id: "FdKbkgGda2o",
@@ -14,7 +14,7 @@ export const auth1Users: UsersByAuthority = {
         },
         {
             id: "H4atNsEuKxP",
-            name: "user auth1 2",
+            username: "user auth1 2",
             userRoles: [
                 {
                     id: "FdKbkgGda2o",
@@ -24,7 +24,7 @@ export const auth1Users: UsersByAuthority = {
         },
         {
             id: "H4atNsEuKxW",
-            name: "user auth1_2 1",
+            username: "user auth1_2 1",
             userRoles: [
                 {
                     id: "FdKbkgGda2o",
@@ -39,7 +39,7 @@ export const auth2Users: UsersByAuthority = {
     AUTH_2: [
         {
             id: "cNtWc18LXBS",
-            name: "user auth1 1",
+            username: "user auth1 1",
             userRoles: [
                 {
                     id: "FdKbkgGda2o",
@@ -49,7 +49,7 @@ export const auth2Users: UsersByAuthority = {
         },
         {
             id: "H4atNsEuKxP",
-            name: "user auth1 2",
+            username: "user auth1 2",
             userRoles: [
                 {
                     id: "FdKbkgGda2o",
@@ -59,7 +59,7 @@ export const auth2Users: UsersByAuthority = {
         },
         {
             id: "H4atNsEuKxW",
-            name: "user auth1_2 1",
+            username: "user auth1_2 1",
             userRoles: [
                 {
                     id: "FdKbkgGda2o",
@@ -73,7 +73,7 @@ export const auth2Users: UsersByAuthority = {
         },
         {
             id: "cNtWc18LXB1",
-            name: "user auth2 1",
+            username: "user auth2 1",
             userRoles: [
                 {
                     id: "FdKbkgGda21",
@@ -83,7 +83,7 @@ export const auth2Users: UsersByAuthority = {
         },
         {
             id: "H4atNsEuKx1",
-            name: "user auth2 2",
+            username: "user auth2 2",
             userRoles: [
                 {
                     id: "FdKbkgGda21",
@@ -93,7 +93,7 @@ export const auth2Users: UsersByAuthority = {
         },
         {
             id: "H4atNsEuKxQ",
-            name: "user auth2_3 1",
+            username: "user auth2_3 1",
             userRoles: [
                 {
                     id: "FdKbkgGda21",
@@ -109,7 +109,7 @@ export const twoAuthUsers: UsersByAuthority = {
     AUTH_3: [
         {
             id: "cNtWc18LXB2",
-            name: "user auth3 1",
+            username: "user auth3 1",
             userRoles: [
                 {
                     id: "FdKbkgGda22",
@@ -119,7 +119,7 @@ export const twoAuthUsers: UsersByAuthority = {
         },
         {
             id: "H4atNsEuKx2",
-            name: "user auth3 2",
+            username: "user auth3 2",
             userRoles: [
                 {
                     id: "FdKbkgGda22",
@@ -129,7 +129,7 @@ export const twoAuthUsers: UsersByAuthority = {
         },
         {
             id: "H4atNsEuKxQ",
-            name: "user auth2_3 1",
+            username: "user auth2_3 1",
             userRoles: [
                 {
                     id: "FdKbkgGda22",
@@ -146,7 +146,7 @@ export const allAuthUsers: UsersByAuthority = {
     AUTH_3: [
         {
             id: "cNtWc18LXB2",
-            name: "user auth3 1",
+            username: "user auth3 1",
             userRoles: [
                 {
                     id: "FdKbkgGda22",
@@ -156,7 +156,7 @@ export const allAuthUsers: UsersByAuthority = {
         },
         {
             id: "H4atNsEuKx2",
-            name: "user auth3 2",
+            username: "user auth3 2",
             userRoles: [
                 {
                     id: "FdKbkgGda22",
@@ -166,7 +166,7 @@ export const allAuthUsers: UsersByAuthority = {
         },
         {
             id: "H4atNsEuKxQ",
-            name: "user auth2_3 1",
+            username: "user auth2_3 1",
             userRoles: [
                 {
                     id: "FdKbkgGda22",

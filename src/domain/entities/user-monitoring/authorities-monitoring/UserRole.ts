@@ -1,8 +1,11 @@
-import { Id, NamedRef } from "domain/entities/Base";
+import { Id } from "domain/entities/Base";
 
 export interface UserRole {
     id: Id;
     authorities: string[];
     name: string;
-    users: NamedRef[];
+    users: {
+        id: Id;
+        username: string;
+    }[];
 }

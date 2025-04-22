@@ -1,6 +1,6 @@
 {
     "name": "d2-tools",
-    "version": "0.2.0",
+    "version": "0.5.0",
     "main": "src/index.ts",
     "description": "DHIS2 tools",
     "scripts": {
@@ -19,7 +19,7 @@
     "author": "EyeSeeTea <arnau@eyeseetea.com>",
     "license": "MIT",
     "dependencies": {
-        "@eyeseetea/d2-api": "1.16.0-beta.2",
+        "@eyeseetea/d2-api": "1.17.0",
         "@types/json-diff": "^0.7.0",
         "async-parallel": "^1.2.3",
         "cmd-ts": "^0.10.0",
@@ -28,11 +28,13 @@
         "d2-utilizr": "^0.2.16",
         "file-system-cache": "^2.0.0",
         "json-diff": "^0.7.3",
+        "jsonfile": "^6.1.0",
         "lodash": "^4.17.21",
         "loglevel": "^1.8.0",
         "luxon": "3.4.2",
         "md5": "^2.3.0",
         "nodemailer": "^6.7.5",
+        "psqlformat": "^1.21.0",
         "purify-ts": "2.0.1",
         "random-seed": "^0.3.0",
         "simple-node-logger": "^21.8.12",
