@@ -266,7 +266,7 @@ class DataReport {
             })
             .getData();
 
-        const trackedEntities0 = _.flatten(
+        const trackedEntities = _.flatten(
             await promiseMap(trackedEntityTypes, async trackedEntityType => {
                 const { instances: trackedEntities } = await this.api.tracker.trackedEntities
                     .get({
@@ -290,12 +290,12 @@ class DataReport {
         );
 
         const programsById = _.keyBy(programs, getId);
-        logger.info(`Tracked entities: ${trackedEntities0.length}`);
+        logger.info(`Tracked entities: ${trackedEntities.length}`);
 
-        return trackedEntities0.map(trackedEntity => {
+        return trackedEntities.map(trackedEntity => {
             return {
                 ...trackedEntity,
-                enrollments: trackedEntity.enrollments.map(enrollment => {
+                enrollments: (trackedEntity.enrollments || []).map(enrollment => {
                     return {
                         ...enrollment,
                         programName: assert(programsById[enrollment.program]).name,
