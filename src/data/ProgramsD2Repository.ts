@@ -43,6 +43,7 @@ export class ProgramsD2Repository implements ProgramsRepository {
                                     valueType: true,
                                     optionSet: { id: true, name: true },
                                 },
+                                displayInReports: true,
                             },
                         },
                     },

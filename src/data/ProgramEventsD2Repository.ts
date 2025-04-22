@@ -1,6 +1,6 @@
 import _ from "lodash";
 import { Async } from "domain/entities/Async";
-import { ProgramEvent } from "domain/entities/ProgramEvent";
+import { ProgramEvent, ProgramEventToSave } from "domain/entities/ProgramEvent";
 import { GetOptions, ProgramEventsRepository } from "domain/repositories/ProgramEventsRepository";
 import { D2Api, Ref, TrackerEventsResponse, TrackerPostParams, TrackerPostRequest } from "types/d2-api";
 import { SelectedPick, D2ProgramSchema } from "types/d2-api";
@@ -52,7 +52,7 @@ export class ProgramEventsD2Repository implements ProgramEventsRepository {
         return importEvents(this.api, d2Events, { importStrategy: "DELETE" });
     }
 
-    async save(events: ProgramEvent[]): Async<Result> {
+    async save(events: ProgramEventToSave[]): Async<Result> {
         const eventsIdsToSave = events.map(event => event.id);
         const eventsById = _(events)
             .keyBy(event => event.id)
@@ -80,9 +80,7 @@ export class ProgramEventsD2Repository implements ProgramEventsRepository {
                                 return {
                                     dataElement: dv.dataElement.id,
                                     value: dv.value,
-                                    storedBy: dv.storedBy,
                                     providedElsewhere: dv.providedElsewhere,
-                                    lastUpdated: dv.lastUpdated,
                                 };
                             }),
                         };
