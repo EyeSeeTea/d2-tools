@@ -272,6 +272,7 @@ class DataReport {
                     .get({
                         orgUnit: this.orgUnitId,
                         ouMode: "DESCENDANTS",
+                        program: "", // Required by the API, but it can be empty as we pass the entity type
                         trackedEntityType: trackedEntityType.id,
                         fields: {
                             trackedEntity: true,
