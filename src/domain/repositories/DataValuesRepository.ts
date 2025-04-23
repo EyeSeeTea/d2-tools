@@ -17,12 +17,13 @@ export interface DataValuesSelector {
     dataElementGroupIds?: Id[];
     orgUnitGroupIds?: Id[];
     children?: boolean;
-    includeDeleted: boolean;
+    includeDeleted?: boolean;
     startDate?: string;
     endDate?: string;
     limit?: number;
     lastUpdated?: string;
     dataElements?: Id[];
+    allDataElements?: boolean;
 }
 
 export type DataValueAuditsSelector = Pick<
