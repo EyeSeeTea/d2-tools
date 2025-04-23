@@ -162,6 +162,20 @@ Notes:
 -   The `--replace` flag allows to overwrite the destination Organisation Units. If `--replace` is set, and the OUs are **identical** in the origin and destination data sets, no action is taken and a warning is shown.
 -   If no data set is modified a warning is shown.
 
+
+### Set all DataSets `skipOffline` where last data input period year was 'year' indicated or earlier
+
+```console
+shell:~$ yarn start datasets set-skip-offline \
+    --url='http://USER:PASSWORD@HOST:PORT' \
+    --year 2023 \
+    [--disable -d]
+```
+
+Notes:
+-   `skipOffline` will be enabled by default.
+-   Use `--disable` or `-d` flag to disable `skipOffline`.
+-   If no data set is modified a warning is shown.
 ## Translations
 
 Update objects from spreadsheet. Update any type of DHIS2 metadata object using a xlsx spreadsheet as a data source:
