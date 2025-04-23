@@ -7,7 +7,7 @@ import { DataValue, DataValuesMetadata, DataValueToPost } from "domain/entities/
 import { DataValuesRepository, DataValuesSelector } from "domain/repositories/DataValuesRepository";
 import { D2Api } from "types/d2-api";
 import { getInChunks, runMetadata } from "./dhis2-utils";
-import { getId, Id, indexById, NamedRef, Ref } from "domain/entities/Base";
+import { Id, indexById, NamedRef, Ref } from "domain/entities/Base";
 import logger from "utils/log";
 import { getUid } from "./dhis2";
 

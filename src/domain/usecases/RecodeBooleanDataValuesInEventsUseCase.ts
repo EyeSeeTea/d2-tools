@@ -157,7 +157,7 @@ export class RecodeBooleanDataValuesInEventsUseCase {
                         ? opts.no
                         : opts.na;
                     if (dataValue.value !== newValue) {
-                        console.log(dataValue.dataElement, "-", dataValue.value, "->", newValue);
+                        logger.debug(`${dataValue.dataElement}: ${dataValue.value} -> ${newValue}`);
                     }
                     return { ...dataValue, value: newValue };
                 } else {

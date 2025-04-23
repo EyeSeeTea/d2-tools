@@ -24,8 +24,9 @@ export class TrackedEntityD2Repository implements TrackedEntityRepository {
 
     async getAll(params: TrackedEntityFilterParams): Async<TrackedEntity[]> {
         const trackedEntities = await this.d2Tracker.getFromTracker("trackedEntities", {
-            orgUnitIds: undefined,
+            orgUnitIds: params.orgUnitIds,
             programIds: [params.programId],
+            children: params.children,
         });
 
         const d2EventsMapper = await D2EventsMapper.build(this.api);
@@ -38,6 +39,7 @@ export class TrackedEntityD2Repository implements TrackedEntityRepository {
                     (enrollment): Enrollment => ({
                         id: enrollment.enrollment,
                         orgUnit: { id: enrollment.orgUnit, name: enrollment.orgUnitName },
+                        programId: enrollment.program,
                         events: enrollment.events.map(event =>
                             d2EventsMapper.getEventEntityFromD2Object(event)
                         ),

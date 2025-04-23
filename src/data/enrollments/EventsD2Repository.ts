@@ -12,7 +12,7 @@ export class EventsD2Repository implements EventsRepository {
             .get({
                 orgUnit: params.orgUnitId,
                 program: params.programId,
-                ouMode: "SELECTED",
+                ouMode: params.children ? "DESCENDANTS" : "SELECTED",
                 order: "enrollment,occurredAt",
                 fields: {
                     event: true,

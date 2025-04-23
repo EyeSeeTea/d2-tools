@@ -12,6 +12,7 @@ export interface TrackedEntity extends Ref {
 
 export type Enrollment = {
     id: Id;
+    programId: Id;
     orgUnit: NamedRef;
     events: ProgramEvent[];
 };

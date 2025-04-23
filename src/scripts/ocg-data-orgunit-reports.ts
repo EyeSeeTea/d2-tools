@@ -1,6 +1,6 @@
 import _ from "lodash";
 import { command, option, run, string } from "cmd-ts";
-import { getId, Id, Ref } from "domain/entities/Base";
+import { getId, Id } from "domain/entities/Base";
 import { getApiUrlOptions, getD2ApiFromArgs } from "scripts/common";
 import { D2Api } from "types/d2-api";
 import { assert } from "utils/ts-utils";
@@ -8,6 +8,10 @@ import { DataReport_, ExportDataUseCase } from "domain/usecases/ExportDataUseCas
 import { DataValuesD2Repository } from "data/DataValuesD2Repository";
 import { OrgUnitD2Repository } from "data/OrgUnitD2Repository";
 import { OrgUnit } from "domain/entities/OrgUnit";
+import { EventsD2Repository } from "data/enrollments/EventsD2Repository";
+import { ProgramsD2Repository } from "data/ProgramsD2Repository";
+import { Program } from "domain/entities/Program";
+import { TrackedEntityD2Repository } from "data/TrackedEntityD2Repository";
 
 const cmd = command({
     name: "export",
@@ -22,11 +26,23 @@ const cmd = command({
     },
     handler: async args => {
         const api = getD2ApiFromArgs(args);
-        const dataValueRepository = new DataValuesD2Repository(api);
+
         const orgUnitRepository = new OrgUnitD2Repository(api);
-        const report = await new ExportDataUseCase(api, dataValueRepository, orgUnitRepository).execute({
+        const programRepository = new ProgramsD2Repository(api);
+        const dataValueRepository = new DataValuesD2Repository(api);
+        const eventRepository = new EventsD2Repository(api);
+        const trackedEntitiesRepository = new TrackedEntityD2Repository(api);
+
+        const report = await new ExportDataUseCase(
+            orgUnitRepository,
+            programRepository,
+            dataValueRepository,
+            eventRepository,
+            trackedEntitiesRepository
+        ).execute({
             parentOrgUnitId: args.orgUnitId,
         });
+
         await new DataReport(api, report, args).execute();
     },
 });
@@ -34,10 +50,12 @@ const cmd = command({
 class DataReport {
     orgUnitId: string;
     orgUnitsById: Record<Id, OrgUnit>;
+    programsById: Record<Id, Program>;
 
     constructor(private api: D2Api, private report: DataReport_, options: { orgUnitId: string }) {
         this.orgUnitId = options.orgUnitId;
         this.orgUnitsById = _.keyBy(this.report.orgUnits, getId);
+        this.programsById = _.keyBy(this.report.programs, getId);
     }
 
     async execute() {
@@ -49,12 +67,17 @@ class DataReport {
             await this.getTrackerDataReport()
         );
 
-        console.log(report.join("\n"));
+        console.info(report.join("\n"));
     }
 
     private getOrgUnitName(orgUnitId: string): string {
         const orgUnit = this.orgUnitsById[orgUnitId];
         return orgUnit?.name || "-";
+    }
+
+    private getProgramName(programId: string): string {
+        const program = this.programsById[programId];
+        return program?.name || "-";
     }
 
     private async getDataValuesReport(): Promise<string[]> {
@@ -88,7 +111,7 @@ class DataReport {
         const events = this.report.nonTrackerEvents;
 
         const report = _(events)
-            .groupBy(ev => this.toKey(ev.program, ev.programName))
+            .groupBy(ev => this.toKey(ev.program, this.getProgramName(ev.program)))
             .toPairs()
             .flatMap(([programKey, events]) => {
                 const [programId, programName] = this.fromKey(programKey);
@@ -98,7 +121,7 @@ class DataReport {
                     .map(([orgUnitId, events]) => ({
                         events: events,
                         orgUnitId: orgUnitId,
-                        orgUnitName: assert(events[0]).orgUnitName,
+                        orgUnitName: this.getOrgUnitName(assert(events[0]).orgUnit),
                     }))
                     .sortBy(obj => obj.orgUnitName)
                     .value();
@@ -132,13 +155,18 @@ class DataReport {
 
         const report = _(trackedEntities)
             .flatMap(ev => ev.enrollments)
-            .groupBy(enrollment => this.toKey(enrollment.program, enrollment.programName))
+            .groupBy(enrollment =>
+                this.toKey(enrollment.programId, this.getProgramName(enrollment.programId))
+            )
             .toPairs()
             .flatMap(([programKey, enrollments]) => {
                 const [programId, programName] = this.fromKey(programKey);
 
                 const enrollmentsByOrgUnit = _(enrollments)
-                    .groupBy(enrollment => this.toKey(enrollment.orgUnit, enrollment.orgUnitName))
+                    .groupBy(enrollment => {
+                        const orgUnitId = enrollment.orgUnit.id;
+                        return this.toKey(orgUnitId, this.getOrgUnitName(orgUnitId));
+                    })
                     .toPairs()
                     .map(([orgUnitKey, enrollments]) => {
                         const [orgUnitId, orgUnitName] = this.fromKey(orgUnitKey);
