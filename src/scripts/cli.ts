@@ -17,6 +17,7 @@ import * as indicators from "./commands/indicators";
 import * as trackedEntities from "./commands/trackedEntities";
 import * as enrollments from "./commands/enrollments";
 import * as options from "./commands/options";
+import * as data from "./commands/data/data";
 
 export function runCli() {
     const cliSubcommands = subcommands({
@@ -38,6 +39,7 @@ export function runCli() {
             indicators: indicators.getCommand(),
             enrollments: enrollments.getCommand(),
             options: options.getCommand(),
+            data: data.getCommand(),
         },
     });
 

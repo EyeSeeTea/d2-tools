@@ -51,6 +51,7 @@ export function getCommand() {
         name: "orgunits",
         cmds: {
             remove: removeCommand,
+            // add data subcommand
         },
     });
 }

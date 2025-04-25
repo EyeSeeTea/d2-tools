@@ -84,6 +84,13 @@ export class ProgramsD2Repository implements ProgramsRepository {
         };
     }
 
+    getAppUrl(options: { programId: string; orgUnitId: string }): string {
+        return (
+            `${this.api.baseUrl}/dhis-web-capture/index.html#/?` +
+            `programId=${options.programId}&orgUnitId=${options.orgUnitId}`
+        );
+    }
+
     private async getMetadata(programIds: string[]) {
         log.info(`Get metadata: program IDS: ${programIds.join(", ")}`);
 

@@ -8,6 +8,7 @@ export interface DataValuesRepository {
     post(options: { dataValues: DataValueToPost[] }): Async<void>;
     getMetadata(options: { dataValues: DataValue[] }): Async<DataValuesMetadata>;
     getAudits(options: DataValueAuditsSelector): Async<DataValueAudit[]>;
+    getAppUrl(): string;
 }
 
 export interface DataValuesSelector {

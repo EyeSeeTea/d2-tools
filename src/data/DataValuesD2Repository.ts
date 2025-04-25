@@ -6,7 +6,7 @@ import { Async } from "domain/entities/Async";
 import { DataValue, DataValuesMetadata, DataValueToPost } from "domain/entities/DataValue";
 import { DataValuesRepository, DataValuesSelector } from "domain/repositories/DataValuesRepository";
 import { D2Api } from "types/d2-api";
-import { getInChunks, runMetadata } from "./dhis2-utils";
+import { getInChunks, promiseMap, runMetadata } from "./dhis2-utils";
 import { Id, indexById, NamedRef, Ref } from "domain/entities/Base";
 import logger from "utils/log";
 import { getUid } from "./dhis2";
@@ -99,9 +99,11 @@ export class DataValuesD2Repository implements DataValuesRepository {
         return res.objects;
     }
 
-    private async createGroupWithAllDataElements(): Promise<Ref> {
-        logger.info(`Create temporal group containing all data elements`);
+    getAppUrl(): string {
+        return `${this.api.baseUrl}/dhis-web-dataentry/index.action`;
+    }
 
+    private async createGroupWithAllDataElements(): Promise<Ref> {
         const { dataElements } = await this.api.metadata
             .get({
                 dataElements: {
@@ -110,8 +112,11 @@ export class DataValuesD2Repository implements DataValuesRepository {
             })
             .getData();
 
+        const groupId = getUid("dataElementGroup", "ALL");
+        logger.debug(`Create temporal group containing all data elements: ${groupId}`);
+
         const dataElementGroup = {
-            id: getUid("dataElementGroup", "ALL"),
+            id: groupId,
             name: "All data elements",
             shortName: "All",
             dataElements: dataElements.map(de => ({ id: de.id })),
@@ -127,14 +132,12 @@ export class DataValuesD2Repository implements DataValuesRepository {
     }
 
     private async deleteDataElementGroups(dataElementGroupIds: Id[]): Promise<void> {
-        logger.info(`Delete temporal group containing all data elements: ${dataElementGroupIds}`);
-
-        const payload = {
-            dataElementGroups: dataElementGroupIds.map(id => ({ id })),
-        };
+        logger.debug(`Delete temporal group containing all data elements: ${dataElementGroupIds}`);
 
         try {
-            await runMetadata(this.api.metadata.post(payload, { importStrategy: "DELETE" }));
+            promiseMap(dataElementGroupIds, async groupId => {
+                return this.api.models.dataElementGroups.delete({ id: groupId });
+            });
         } catch (e) {
             logger.warn(`Error deleting dataElementGroup: ${JSON.stringify(e)}`);
         }

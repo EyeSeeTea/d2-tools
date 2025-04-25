@@ -162,7 +162,6 @@ Notes:
 -   The `--replace` flag allows to overwrite the destination Organisation Units. If `--replace` is set, and the OUs are **identical** in the origin and destination data sets, no action is taken and a warning is shown.
 -   If no data set is modified a warning is shown.
 
-
 ### Set all DataSets `skipOffline` where last data input period year was 'year' indicated or earlier
 
 ```console
@@ -173,9 +172,11 @@ shell:~$ yarn start datasets set-skip-offline \
 ```
 
 Notes:
+
 -   `skipOffline` will be enabled by default.
 -   Use `--disable` or `-d` flag to disable `skipOffline`.
 -   If no data set is modified a warning is shown.
+
 ## Translations
 
 Update objects from spreadsheet. Update any type of DHIS2 metadata object using a xlsx spreadsheet as a data source:
@@ -908,6 +909,7 @@ Generate a simple text report on console with info about dataValues/events/track
 org units branch (pass the parent orgunit ID):
 
 ````shell
+// Update to final command
 npx ts-node src/scripts/ocg-data-orgunit-reports.ts \
   --url=https://play.im.dhis2.org/stable-2-40-4-1 --auth="admin:district" \
   --orgunit-id=DiszpKrYNg8
@@ -946,4 +948,17 @@ yarn start options rename-code \
    --id=YQe3PFbATvz \
   --to-code="NVP" \
   --post
+```
+
+## Data
+
+## Get report
+
+Given a parent organisation unit ID, it build a text report with the aggregated data and programs data (tracker and non-tracker):
+
+```shell
+yarn start data get-report \
+    --url="https://play.im.dhis2.org/dev" \
+    --auth="admin:district" \
+    --orgunit-id="DiszpKrYNg8"
 ```

@@ -1,58 +1,16 @@
 import _ from "lodash";
-import { command, option, run, string } from "cmd-ts";
 import { getId, Id } from "domain/entities/Base";
-import { getApiUrlOptions, getD2ApiFromArgs } from "scripts/common";
-import { D2Api } from "types/d2-api";
 import { assert } from "utils/ts-utils";
-import { DataReport_, ExportDataUseCase } from "domain/usecases/ExportDataUseCase";
-import { DataValuesD2Repository } from "data/DataValuesD2Repository";
-import { OrgUnitD2Repository } from "data/OrgUnitD2Repository";
 import { OrgUnit } from "domain/entities/OrgUnit";
-import { EventsD2Repository } from "data/enrollments/EventsD2Repository";
-import { ProgramsD2Repository } from "data/ProgramsD2Repository";
 import { Program } from "domain/entities/Program";
-import { TrackedEntityD2Repository } from "data/TrackedEntityD2Repository";
+import { DataReport } from "domain/entities/DataReport";
 
-const cmd = command({
-    name: "export",
-    description: "Generate report for aggregated and programs data",
-    args: {
-        ...getApiUrlOptions(),
-        orgUnitId: option({
-            type: string,
-            long: "orgunit-id",
-            description: "Parent orgunit ID",
-        }),
-    },
-    handler: async args => {
-        const api = getD2ApiFromArgs(args);
-
-        const orgUnitRepository = new OrgUnitD2Repository(api);
-        const programRepository = new ProgramsD2Repository(api);
-        const dataValueRepository = new DataValuesD2Repository(api);
-        const eventRepository = new EventsD2Repository(api);
-        const trackedEntitiesRepository = new TrackedEntityD2Repository(api);
-
-        const report = await new ExportDataUseCase(
-            orgUnitRepository,
-            programRepository,
-            dataValueRepository,
-            eventRepository,
-            trackedEntitiesRepository
-        ).execute({
-            parentOrgUnitId: args.orgUnitId,
-        });
-
-        await new DataReport(api, report, args).execute();
-    },
-});
-
-class DataReport {
+export class DataReportGenerator {
     orgUnitId: string;
     orgUnitsById: Record<Id, OrgUnit>;
     programsById: Record<Id, Program>;
 
-    constructor(private api: D2Api, private report: DataReport_, options: { orgUnitId: string }) {
+    constructor(private report: DataReport, options: { orgUnitId: string }) {
         this.orgUnitId = options.orgUnitId;
         this.orgUnitsById = _.keyBy(this.report.orgUnits, getId);
         this.programsById = _.keyBy(this.report.programs, getId);
@@ -97,14 +55,7 @@ class DataReport {
                 return `${orgUnitName}: ${countsByPeriod.join(", ")}`;
             });
 
-        return [
-            `Data Values: ${this.getD2Url("/dhis-web-dataentry/index.action")}`,
-            ...report.map(s => "  " + s).value(),
-        ];
-    }
-
-    private getD2Url(path: string): string {
-        return `${this.api.baseUrl}/${path}`;
+        return [`Data Values: ${this.report.dataValuesAppUrl}`, ...report.map(s => "  " + s).value()];
     }
 
     private async getEventsReport(): Promise<string[]> {
@@ -121,7 +72,7 @@ class DataReport {
                     .map(([orgUnitId, events]) => ({
                         events: events,
                         orgUnitId: orgUnitId,
-                        orgUnitName: this.getOrgUnitName(assert(events[0]).orgUnit),
+                        orgUnitName: this.getOrgUnitName(orgUnitId),
                     }))
                     .sortBy(obj => obj.orgUnitName)
                     .value();
@@ -131,23 +82,13 @@ class DataReport {
                     ...eventsByOrgUnit.map(obj => {
                         return (
                             `  ${obj.orgUnitName} (${obj.events.length} events): ` +
-                            this.getD2CaptureUrl({ programId: assert(programId), orgUnitId: obj.orgUnitId })
+                            this.report.programDataAppUrl({ programId: programId, orgUnitId: obj.orgUnitId })
                         );
                     }),
                 ];
             });
 
-        return [
-            `Events data [event programs only]:`, //
-            ...report.value(),
-        ];
-    }
-
-    private getD2CaptureUrl(options: { programId: string; orgUnitId: string }) {
-        return (
-            `${this.api.baseUrl}/dhis-web-capture/index.html#/?` +
-            `programId=${options.programId}&orgUnitId=${options.orgUnitId}`
-        );
+        return [`Events data [event programs only]:`, ...report.value()];
     }
 
     private async getTrackerDataReport(): Promise<string[]> {
@@ -186,7 +127,7 @@ class DataReport {
                     ...enrollmentsByOrgUnit.map(obj => {
                         return (
                             `  ${obj.orgUnitName} (${obj.enrollments.length} enrollments): ` +
-                            this.getD2CaptureUrl({ programId: assert(programId), orgUnitId: obj.orgUnitId })
+                            this.report.programDataAppUrl({ programId: programId, orgUnitId: obj.orgUnitId })
                         );
                     }),
                 ];
@@ -206,6 +147,3 @@ class DataReport {
         return [assert(id), name];
     }
 }
-
-const args = process.argv.slice(2);
-run(cmd, args);

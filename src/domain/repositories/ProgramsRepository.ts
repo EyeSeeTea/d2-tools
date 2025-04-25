@@ -9,6 +9,7 @@ export interface ProgramsRepository {
     export(options: { ids: Id[] }): Async<ProgramExport>;
     import(programExport: ProgramExport): Async<void>;
     runRules(options: RunRulesOptions): Async<void>;
+    getAppUrl(options: { programId: Id; orgUnitId: Id }): string;
 }
 
 export interface RunRulesOptions {
