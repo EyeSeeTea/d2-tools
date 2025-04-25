@@ -50,6 +50,7 @@
         "@types/random-seed": "^0.3.3",
         "@typescript-eslint/eslint-plugin": "^5.15.0",
         "@typescript-eslint/parser": "^5.15.0",
+        "copy-webpack-plugin": "^13.0.0",
         "core-js": "2.6.9",
         "dotenv": "^16.0.1",
         "eslint": "^8.11.0",
