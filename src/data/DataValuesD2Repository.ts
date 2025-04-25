@@ -135,7 +135,7 @@ export class DataValuesD2Repository implements DataValuesRepository {
         logger.debug(`Delete temporal group containing all data elements: ${dataElementGroupIds}`);
 
         try {
-            promiseMap(dataElementGroupIds, async groupId => {
+            await promiseMap(dataElementGroupIds, async groupId => {
                 return this.api.models.dataElementGroups.delete({ id: groupId });
             });
         } catch (e) {

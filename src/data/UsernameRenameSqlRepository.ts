@@ -5,9 +5,7 @@ import { UsernameRenameRepository } from "domain/repositories/UsernameRenameRepo
 import logger from "utils/log";
 import _ from "lodash";
 import * as psqlformat from "psqlformat";
-//import sqlRename from "./sql/rename-usernames.sql?raw";
-
-const sqlRename = "TODO";
+import sqlRename from "./sql/rename-usernames.sql?raw";
 
 export class UsernameRenameSqlRepository implements UsernameRenameRepository {
     constructor(private sqlFile: Path) {}

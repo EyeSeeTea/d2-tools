@@ -901,20 +901,6 @@ CSV headers:
 
 dataElement ID | dataElement Name | categoryOptionCombo ID | categoryOptionCombo Name | Value
 
-## Reports
-
-### Generate a report of data
-
-Generate a simple text report on console with info about dataValues/events/trackedEntities for some
-org units branch (pass the parent orgunit ID):
-
-````shell
-// Update to final command
-npx ts-node src/scripts/ocg-data-orgunit-reports.ts \
-  --url=https://play.im.dhis2.org/stable-2-40-4-1 --auth="admin:district" \
-  --orgunit-id=DiszpKrYNg8
-```
-
 ## Tracked entities
 
 ### Transfer
@@ -927,7 +913,7 @@ yarn start trackedEntities transfer \
   --auth="USER:PASSWORD"  \
   --input-file=transfers.csv \
   --post
-````
+```
 
 ## Options
 
@@ -954,7 +940,8 @@ yarn start options rename-code \
 
 ## Get report
 
-Given a parent organisation unit ID, it build a text report with the aggregated data and programs data (tracker and non-tracker):
+Generate a simple text report on console with info about dataValues/events/trackedEntities for some
+org units branch (pass the parent orgunit ID):
 
 ```shell
 yarn start data get-report \
