@@ -8,6 +8,7 @@ export interface DataValuesRepository {
     post(options: { dataValues: DataValueToPost[] }): Async<void>;
     getMetadata(options: { dataValues: DataValue[] }): Async<DataValuesMetadata>;
     getAudits(options: DataValueAuditsSelector): Async<DataValueAudit[]>;
+    getAppUrl(): string;
 }
 
 export interface DataValuesSelector {
@@ -17,12 +18,13 @@ export interface DataValuesSelector {
     dataElementGroupIds?: Id[];
     orgUnitGroupIds?: Id[];
     children?: boolean;
-    includeDeleted: boolean;
+    includeDeleted?: boolean;
     startDate?: string;
     endDate?: string;
     limit?: number;
     lastUpdated?: string;
     dataElements?: Id[];
+    allDataElements?: boolean;
 }
 
 export type DataValueAuditsSelector = Pick<
