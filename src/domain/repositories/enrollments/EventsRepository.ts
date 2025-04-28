@@ -7,7 +7,8 @@ export interface EventsRepository {
 }
 
 export type EventsRepositoryParams = {
-    programId: Id;
-    orgUnitId: Id;
-    eventUpdateCutoff: string;
+    programId?: Id;
+    orgUnitId?: Id;
+    children?: boolean;
+    eventUpdateCutoff?: string;
 };
