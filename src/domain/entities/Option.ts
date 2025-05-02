@@ -4,4 +4,5 @@ export type Option = {
     id: Id;
     name: string;
     code: string;
+    sortOrder: number;
 };
