@@ -6,10 +6,10 @@ type RuleType = "duplicate" | "naming_conventions" | "invalid_length" | "misplac
 export type OptionValidationResult = {
     option: Option;
     optionSet: Omit<OptionSet, "options">;
-    rules: OptionValidationRule[];
+    errors: OptionValidationError[];
 };
 
-export type OptionValidationRule = {
+export type OptionValidationError = {
     type: RuleType;
     message: string;
 };

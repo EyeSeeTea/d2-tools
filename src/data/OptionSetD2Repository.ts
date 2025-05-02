@@ -4,12 +4,14 @@ import { Async } from "domain/entities/Async";
 import { OptionSet } from "domain/entities/OptionSet";
 import { OptionSetRepository } from "domain/repositories/OptionSetRepository";
 import { promiseMap } from "./dhis2-utils";
+import logger from "utils/log";
 
 export class OptionSetD2Repository implements OptionSetRepository {
     constructor(private api: D2Api) {}
 
     async getAll(): Async<OptionSet[]> {
-        const totalPages = await this.getTotalPages({ pageSize: PAGE_SIZE });
+        const totalPages = await this.getTotalPages({ pageSize: 100 });
+        logger.info("Loading optionSets...");
         const rangePages = _.range(1, totalPages + 1);
 
         const optionSets = await promiseMap(rangePages, async page => {
@@ -28,9 +30,10 @@ export class OptionSetD2Repository implements OptionSetRepository {
 
     private async getTotalPages(options: { pageSize: number }): Async<number> {
         const response = await this.api.models.optionSets
-            .get({ fields: { id: true }, pageSize: options.pageSize })
+            .get({ fields: { id: true }, pageSize: 0 })
             .getData();
-        return response.pager.pageCount;
+
+        return Math.ceil(response.pager.total / options.pageSize);
     }
 }
 

@@ -6,3 +6,5 @@ export type Option = {
     code: string;
     sortOrder: number;
 };
+
+export const DEFAULT_VALID_LENGTH = 230;
