@@ -901,7 +901,7 @@ CSV headers:
 
 dataElement ID | dataElement Name | categoryOptionCombo ID | categoryOptionCombo Name | Value
 
-## Tracked Entities
+## Tracked entities
 
 ### Transfer
 
@@ -951,4 +951,18 @@ yarn start options analyze-codes \
     --auth='username:password' \
     --report-path='report-name.csv' \  # default is option-report.csv
     --code-length=20 # default is 230
+```
+
+## Data
+
+## Get report
+
+Generate a simple text report on console with info about dataValues/events/trackedEntities for some
+org units branch (pass the parent orgunit ID):
+
+```shell
+yarn start data get-report \
+    --url="https://play.im.dhis2.org/dev" \
+    --auth="admin:district" \
+    --orgunit-id="DiszpKrYNg8"
 ```

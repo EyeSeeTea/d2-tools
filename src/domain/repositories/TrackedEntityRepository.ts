@@ -11,4 +11,6 @@ export interface TrackedEntityRepository {
 
 export type TrackedEntityFilterParams = {
     programId: Id;
+    orgUnitIds?: Id[];
+    children?: boolean;
 };

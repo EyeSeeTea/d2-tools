@@ -1,11 +1,12 @@
 import { Path } from "domain/entities/Base";
 import { UsernameRename } from "domain/entities/UsernameRename";
 import fs from "fs";
+import path from "path";
 import { UsernameRenameRepository } from "domain/repositories/UsernameRenameRepository";
 import logger from "utils/log";
 import _ from "lodash";
 import * as psqlformat from "psqlformat";
-import sqlRename from "./sql/rename-usernames.sql?raw";
+import { promisify } from "util";
 
 export class UsernameRenameSqlRepository implements UsernameRenameRepository {
     constructor(private sqlFile: Path) {}
@@ -18,6 +19,7 @@ export class UsernameRenameSqlRepository implements UsernameRenameRepository {
 
         logger.info(`Mapping: ${JSON.stringify(mapping)}`);
         const sqlMapping = getSqlForTemporalMappingTable(mapping);
+        const sqlRename = await getResource("sql/rename-usernames.sql");
 
         const fullSql = [
             sqlMapping, //
@@ -30,6 +32,13 @@ export class UsernameRenameSqlRepository implements UsernameRenameRepository {
         logger.info(`Writing SQL: ${this.sqlFile}`);
         fs.writeFileSync(this.sqlFile, formattedSql + "\n");
     }
+}
+
+const readFile = promisify(fs.readFile);
+
+function getResource(filename: string): Promise<string> {
+    const filePath = path.join(__dirname, filename);
+    return readFile(filePath, "utf8");
 }
 
 function getSqlForTemporalMappingTable(mapping: UsernameRename[]) {

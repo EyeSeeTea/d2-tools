@@ -75,6 +75,7 @@ export class D2Tracker {
             programIds: string[];
             orgUnitIds: string[] | undefined;
             trackedEntity?: string | undefined;
+            children?: boolean;
         }
     ): Promise<Array<Mapping[Key][number]>> {
         type Output = Array<Mapping[Key][number]>;
@@ -88,14 +89,16 @@ export class D2Tracker {
 
             while (dataRemaining) {
                 const pageSize = 1000;
-                log.debug(`GET ${model} (pageSize=${pageSize}, page=${page})`);
+                log.debug(`GET ${model} (program=${programId}, pageSize=${pageSize}, page=${page})`);
+
+                const ouMode = orgUnitIds ? (options.children ? "DESCENDANTS" : "SELECTED") : "ALL";
 
                 const apiOptions = {
-                    page,
+                    page: page,
                     pageSize: pageSize,
-                    ouMode: orgUnitIds ? ("SELECTED" as const) : ("ALL" as const),
+                    ouMode: ouMode as typeof ouMode,
                     orgUnit: orgUnitIds?.join(";"),
-                    fields: { $all: true as const },
+                    fields: { $all: true } as const,
                     program: programId,
                     trackedEntity,
                 };
