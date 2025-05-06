@@ -5,7 +5,7 @@ import { OptionD2Repository } from "data/OptionD2Repository";
 import { RenameOptionCodeUseCase } from "domain/usecases/RenameOptionCodeUseCase";
 import { ValidateOptionSetsUseCase } from "domain/usecases/ValidateOptionSetsUseCase";
 import { OptionSetD2Repository } from "data/OptionSetD2Repository";
-import { generateOptionReport } from "./csv";
+import { OptionReport } from "./OptionReport";
 import logger from "utils/log";
 import { DEFAULT_VALID_LENGTH } from "domain/entities/Option";
 
@@ -43,7 +43,7 @@ export const renameCodeCmd = command({
                 codeLength: args.codeLength,
             });
             if (validationResult.length > 0) {
-                await generateOptionReport(validationResult, args.reportPath);
+                await new OptionReport().generateReport(validationResult, args.reportPath);
             } else {
                 logger.info("No invalid options found");
             }
