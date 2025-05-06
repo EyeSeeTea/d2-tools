@@ -77,7 +77,7 @@ describe("ValidateOptionSetUseCase", () => {
         result.forEach(result => {
             result.errors.forEach(error => {
                 const errorExpected: OptionValidationError = {
-                    message: "Code has misplaced commas",
+                    message: "Code has commas",
                     type: "misplaced_commas",
                 };
 

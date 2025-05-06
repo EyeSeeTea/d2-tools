@@ -162,7 +162,6 @@ Notes:
 -   The `--replace` flag allows to overwrite the destination Organisation Units. If `--replace` is set, and the OUs are **identical** in the origin and destination data sets, no action is taken and a warning is shown.
 -   If no data set is modified a warning is shown.
 
-
 ### Set all DataSets `skipOffline` where last data input period year was 'year' indicated or earlier
 
 ```console
@@ -173,9 +172,11 @@ shell:~$ yarn start datasets set-skip-offline \
 ```
 
 Notes:
+
 -   `skipOffline` will be enabled by default.
 -   Use `--disable` or `-d` flag to disable `skipOffline`.
 -   If no data set is modified a warning is shown.
+
 ## Translations
 
 Update objects from spreadsheet. Update any type of DHIS2 metadata object using a xlsx spreadsheet as a data source:
@@ -933,4 +934,21 @@ yarn start options rename-code \
    --id=YQe3PFbATvz \
   --to-code="NVP" \
   --post
+```
+
+### analyze
+
+Analyze option codes and generates a csv report if codes:
+
+-   Are duplicated in other optionSets
+-   Include any special characters (only underscore is allowed)
+-   length is greater than 230 (you can change this value --code-length [VALUE])
+-   have spaces or commas
+
+```shell
+yarn start options analyze-codes \
+    --url='http://localhost:8080' \
+    --auth='username:password' \
+    --report-path='report-name.csv' \  # default is option-report.csv
+    --code-length=20 # default is 230
 ```

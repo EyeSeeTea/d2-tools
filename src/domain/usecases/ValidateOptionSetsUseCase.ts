@@ -34,13 +34,13 @@ export class ValidateOptionSetsUseCase {
         return allOptions.map(({ option, optionIndex, optionSet }): OptionValidationResult => {
             const invalidLengthRules = this.validateLength(option, options.codeLength);
             const namingConventionRules = this.validateNamingConventions(option);
-            const misplacedCommasRules = this.validateMisplacedCommas(option);
+            const includeCommasRules = this.validateCommas(option);
             const orderRules = this.validateOrder(option, optionIndex);
 
             const allOptionsErrors = _([
                 invalidLengthRules,
                 namingConventionRules,
-                misplacedCommasRules,
+                includeCommasRules,
                 orderRules,
             ])
                 .compact()
@@ -71,10 +71,9 @@ export class ValidateOptionSetsUseCase {
             : undefined;
     }
 
-    private validateMisplacedCommas(option: Option): Maybe<OptionValidationError> {
-        const hasMisplacedCommas = /^,|,,|,$|,/.test(option.code);
-        return hasMisplacedCommas
-            ? { type: "misplaced_commas", message: "Code has misplaced commas" }
+    private validateCommas(option: Option): Maybe<OptionValidationError> {
+        return option.code.includes(",")
+            ? { type: "misplaced_commas", message: "Code has commas" }
             : undefined;
     }
 
