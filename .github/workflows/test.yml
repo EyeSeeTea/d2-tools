@@ -16,7 +16,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: "16"
+          node-version: "18"
 
       - name: Install yarn
         run: npm install -g yarn
@@ -37,8 +37,8 @@ jobs:
       - name: Install dependencies
         run: yarn install --frozen-lockfile --silent
 
-      - name: Run vitest tests
-        run: yarn test
-
       - name: Build typescript
         run: npx tsc
+
+      - name: Run vitest tests
+        run: yarn test
