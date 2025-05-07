@@ -1,7 +1,7 @@
 import { Option } from "./Option";
 import { OptionSet } from "./OptionSet";
 
-type RuleType = "duplicate" | "naming_conventions" | "invalid_length" | "misplaced_commas" | "order";
+type RuleType = "duplicate" | "naming_conventions" | "invalid_length" | "has_commas" | "order";
 
 export type OptionValidationResult = {
     option: Option;

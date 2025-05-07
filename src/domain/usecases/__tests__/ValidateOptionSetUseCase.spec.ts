@@ -68,7 +68,7 @@ describe("ValidateOptionSetUseCase", () => {
         });
     });
 
-    test("should validate misplaced commas", async () => {
+    test("should validate if codes have commas", async () => {
         const { optionSetRepository, useCase } = buildRepositoryAndUseCase([buildOptionSetWithCommas()]);
         const result = await useCase.execute({ codeLength: DEFAULT_VALID_LENGTH });
 
@@ -78,7 +78,7 @@ describe("ValidateOptionSetUseCase", () => {
             result.errors.forEach(error => {
                 const errorExpected: OptionValidationError = {
                     message: "Code has commas",
-                    type: "misplaced_commas",
+                    type: "has_commas",
                 };
 
                 expect(error).toStrictEqual(errorExpected);

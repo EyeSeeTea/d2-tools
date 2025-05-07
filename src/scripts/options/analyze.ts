@@ -35,6 +35,7 @@ export const analyzeCodesCmd = command({
 
         if (validationResult.length > 0) {
             await new OptionReport().generateReport(validationResult, args.reportPath);
+            process.exit(1);
         } else {
             logger.info("No invalid options found");
         }

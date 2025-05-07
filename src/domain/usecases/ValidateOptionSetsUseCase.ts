@@ -72,9 +72,7 @@ export class ValidateOptionSetsUseCase {
     }
 
     private validateCommas(option: Option): Maybe<OptionValidationError> {
-        return option.code.includes(",")
-            ? { type: "misplaced_commas", message: "Code has commas" }
-            : undefined;
+        return option.code.includes(",") ? { type: "has_commas", message: "Code has commas" } : undefined;
     }
 
     private validateOrder(option: Option, expectedSortOrder: number): Maybe<OptionValidationError> {
