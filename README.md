@@ -1003,7 +1003,7 @@ yarn start data get-report \
 ### Close Enrollments with Events older than a date
 
 Set the status to completed for all enrollments that satisfy the following criteria:
-- All _events_ have an _event date_ older or equal to the cut off date.
+- All their _events_ have an _event date_ older than the cut off date.
 - The _enrollment_ belong to the selected _organization unit_ and _program_.
 
 The date can have either `YYYY-MM-DD` or `YYYY-MM-DDThh:mm:ss` format. If no time is specified 00:00:00 is used.
