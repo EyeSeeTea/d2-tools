@@ -18,8 +18,9 @@ export function getCommand() {
 const closeEnrollmentsCmd = command({
     name: "close",
     description: [
-        "Close enrollments for events that have been updated before a certain date. An orgunit, program and date must be provided.",
-        "If there are errors the relevant enrollments will be logged into a JSON file.",
+        "Set the status to completed for all enrollments whose events have an event date older than the cut off date.",
+        "An orgunit, program and date must be provided.",
+        "If there are errors the relevant enrollments will be logged into a close_errors_<timestamp>.json file.",
     ].join("\n"),
     args: {
         url: getApiUrlOption({ long: "url" }),

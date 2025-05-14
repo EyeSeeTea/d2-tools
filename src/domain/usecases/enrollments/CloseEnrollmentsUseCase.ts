@@ -45,7 +45,7 @@ export class CloseEnrollmentsUseCase {
         const cutoffDate = new Date(params.eventUpdateCutoff);
         const eventsInCutoffRange = newestEventByEnrollment.filter(event => {
             const eventDate = new Date(event.occurredAt);
-            return eventDate <= cutoffDate;
+            return eventDate < cutoffDate;
         });
 
         log.info(`Found ${eventsInCutoffRange.length} events before or at the provided date`);
