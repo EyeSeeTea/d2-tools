@@ -11,7 +11,7 @@ describe("ValidateOptionSetUseCase", () => {
             buildOptionSetWithDuplicatedCodes()
         );
 
-        const result = await useCase.execute({ codeLength: DEFAULT_VALID_LENGTH });
+        const result = await useCase.execute({ lengthToValidate: DEFAULT_VALID_LENGTH });
 
         const optionSetNames = data.map(os => os.name).join(", ");
 
@@ -29,66 +29,55 @@ describe("ValidateOptionSetUseCase", () => {
         });
     });
 
-    test("should detect invalid length in option codes", async () => {
+    test("should detect invalid length in option codes/name", async () => {
         const { optionSetRepository, useCase } = buildRepositoryAndUseCase([buildOptionSet()]);
 
         const length = 4;
-        const result = await useCase.execute({ codeLength: length });
+        const result = await useCase.execute({ lengthToValidate: length });
 
         expect(optionSetRepository.getAll).toHaveBeenCalled();
         expect(result.length).toBe(2);
         result.forEach(result => {
             result.errors.forEach(error => {
-                expect(error).toStrictEqual({
-                    message: `Code length is ${result.option.code.length}`,
-                    type: "invalid_length",
-                });
+                expect(error.message).toMatch(/length is/);
+                expect(error.type).toBe("invalid_length");
             });
         });
     });
 
-    test("should follow naming conventions in option codes", async () => {
+    test("should follow naming conventions in option codes/names", async () => {
         const { optionSetRepository, useCase } = buildRepositoryAndUseCase([
             buildOptionSetInvalidNamingConventions(),
         ]);
 
-        const result = await useCase.execute({ codeLength: DEFAULT_VALID_LENGTH });
+        const result = await useCase.execute({ lengthToValidate: DEFAULT_VALID_LENGTH });
 
         expect(optionSetRepository.getAll).toHaveBeenCalled();
         expect(result.length).toBe(1);
         result.forEach(result => {
             result.errors.forEach(error => {
-                const errorExpected: OptionValidationError = {
-                    message: `Code contains spaces and special characters: [,]`,
-                    type: "naming_conventions",
-                };
-
-                expect(error).toStrictEqual(errorExpected);
+                expect(error.type).toBe("naming_conventions");
             });
         });
     });
 
-    test("should validate if codes have commas", async () => {
+    test("should validate if codes/names have commas", async () => {
         const { optionSetRepository, useCase } = buildRepositoryAndUseCase([buildOptionSetWithCommas()]);
-        const result = await useCase.execute({ codeLength: DEFAULT_VALID_LENGTH });
+        const result = await useCase.execute({ lengthToValidate: DEFAULT_VALID_LENGTH });
 
         expect(optionSetRepository.getAll).toHaveBeenCalled();
         expect(result.length).toBe(1);
         result.forEach(result => {
             result.errors.forEach(error => {
-                const errorExpected: OptionValidationError = {
-                    message: "Code has commas",
-                    type: "has_commas",
-                };
-
-                expect(error).toStrictEqual(errorExpected);
+                expect(error.type).toBe("has_commas");
+                expect(error.message).toMatch("has commas");
             });
         });
     });
 
     test("should validate incorrect sortOrder", async () => {
         const { optionSetRepository, useCase } = buildRepositoryAndUseCase([buildOptionSetUnordered()]);
-        const result = await useCase.execute({ codeLength: DEFAULT_VALID_LENGTH });
+        const result = await useCase.execute({ lengthToValidate: DEFAULT_VALID_LENGTH });
 
         expect(optionSetRepository.getAll).toHaveBeenCalled();
         expect(result.length).toBe(2);
@@ -107,7 +96,7 @@ describe("ValidateOptionSetUseCase", () => {
 
     test("should generate empty result if all options are valid", async () => {
         const { optionSetRepository, useCase } = buildRepositoryAndUseCase(buildValidOptionSets());
-        const result = await useCase.execute({ codeLength: DEFAULT_VALID_LENGTH });
+        const result = await useCase.execute({ lengthToValidate: DEFAULT_VALID_LENGTH });
 
         expect(optionSetRepository.getAll).toHaveBeenCalled();
         expect(result.length).toBe(0);
@@ -137,13 +126,13 @@ function buildOptionSetWithDuplicatedCodes(): OptionSet[] {
 
 function buildOptionSetInvalidNamingConventions(): OptionSet {
     return buildOptionSet({
-        options: [{ id: "option1", code: " invalid[]code ", name: "name1", sortOrder: 1 }],
+        options: [{ id: "option1", code: " invalid[]code ", name: "name1@", sortOrder: 1 }],
     });
 }
 
 function buildOptionSetWithCommas(): OptionSet {
     return buildOptionSet({
-        options: [{ id: "option1", code: "invalid,code", name: "name1", sortOrder: 1 }],
+        options: [{ id: "option1", code: "invalid,code", name: "name1,value", sortOrder: 1 }],
     });
 }
 

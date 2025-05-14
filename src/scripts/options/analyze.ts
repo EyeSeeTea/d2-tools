@@ -7,9 +7,9 @@ import { OptionReport } from "./OptionReport";
 import logger from "utils/log";
 import { DEFAULT_VALID_LENGTH } from "domain/entities/Option";
 
-export const analyzeCodesCmd = command({
-    name: "analyze-codes",
-    description: "Analyze option codes",
+export const analyzeOptionsCmd = command({
+    name: "analyze",
+    description: "Analyze option codes and names",
     args: {
         ...getApiUrlOptions(),
         reportPath: option({
@@ -18,10 +18,10 @@ export const analyzeCodesCmd = command({
             description: "Path to save the report",
             defaultValue: () => "option-report.csv",
         }),
-        codeLength: option({
+        lengthToValidate: option({
             type: number,
-            long: "code-length",
-            description: "Max length of the code for it to be considered valid",
+            long: "length",
+            description: "Max length of the code/name for it to be considered valid",
             defaultValue: () => DEFAULT_VALID_LENGTH,
         }),
     },
@@ -30,7 +30,7 @@ export const analyzeCodesCmd = command({
         const optionSetRepository = new OptionSetD2Repository(api);
 
         const validationResult = await new ValidateOptionSetsUseCase(optionSetRepository).execute({
-            codeLength: args.codeLength,
+            lengthToValidate: args.lengthToValidate,
         });
 
         if (validationResult.length > 0) {

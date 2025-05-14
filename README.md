@@ -946,11 +946,11 @@ Analyze option codes and generates a csv report if codes:
 -   have spaces or commas
 
 ```shell
-yarn start options analyze-codes \
+yarn start options analyze \
     --url='http://localhost:8080' \
     --auth='username:password' \
     --report-path='report-name.csv' \  # default is option-report.csv
-    --code-length=20 # default is 230
+    --length=20 # default is 230
 ```
 
 ## Data

@@ -31,34 +31,68 @@ export class ValidateOptionSetsUseCase {
             optionSet.options.map((option, optionIndex) => ({ option, optionSet, optionIndex }))
         );
 
-        return allOptions.map(({ option, optionIndex, optionSet }): OptionValidationResult => {
-            const invalidLengthRules = this.validateLength(option, options.codeLength);
-            const namingConventionRules = this.validateNamingConventions(option);
-            const includeCommasRules = this.validateCommas(option);
-            const orderRules = this.validateOrder(option, optionIndex);
+        const propertiesToValidate: PropertyToValidate[] = ["code", "name"];
 
-            const allOptionsErrors = _([
-                invalidLengthRules,
-                namingConventionRules,
-                includeCommasRules,
-                orderRules,
-            ])
-                .compact()
+        return allOptions.flatMap(({ option, optionIndex, optionSet }): OptionValidationResult[] => {
+            const allPropertiesValidationResult = propertiesToValidate.flatMap(propertyName => {
+                const invalidLengthRules = this.validateLength(
+                    option,
+                    options.lengthToValidate,
+                    propertyName
+                );
+
+                const namingConventionRules = this.validateNamingConventions(option, propertyName);
+                const includeCommasRules = this.validateCommas(option, propertyName);
+                const orderRules = this.validateOrder(option, optionIndex);
+
+                const allOptionsErrors = _([
+                    invalidLengthRules,
+                    namingConventionRules,
+                    includeCommasRules,
+                    orderRules,
+                ])
+                    .compact()
+                    .value();
+
+                return { option, optionSet, errors: allOptionsErrors };
+            });
+
+            return _(allPropertiesValidationResult)
+                .groupBy(x => x.option.id)
+                .map((group): OptionValidationResult => {
+                    const option = group[0]?.option;
+                    const optionSet = group[0]?.optionSet;
+                    if (!optionSet) throw new Error("No optionSet found");
+                    if (!option) throw new Error("No option found");
+
+                    const errors = group.flatMap(x => x.errors);
+                    return {
+                        option,
+                        optionSet,
+                        errors: errors,
+                    };
+                })
                 .value();
-
-            return { option, optionSet, errors: allOptionsErrors };
         });
     }
 
-    private validateLength(option: Option, validationLength: number): Maybe<OptionValidationError> {
-        return option.code.length > validationLength
-            ? { type: "invalid_length", message: `Code length is ${option.code.length}` }
+    private validateLength(
+        option: Option,
+        validationLength: number,
+        propertyName: PropertyToValidate
+    ): Maybe<OptionValidationError> {
+        return option[propertyName].length > validationLength
+            ? { type: "invalid_length", message: `${propertyName} length is ${option.code.length}` }
             : undefined;
     }
 
-    private validateNamingConventions(option: Option): Maybe<OptionValidationError> {
-        const hasSpaces = /\s/.test(option.code);
-        const specialCharacters = option.code.match(/[^\w\s,]/g) ?? [];
+    private validateNamingConventions(
+        option: Option,
+        propertyName: PropertyToValidate
+    ): Maybe<OptionValidationError> {
+        const value = option[propertyName];
+        const hasSpaces = /\s/.test(value);
+        const specialCharacters = value.match(/[^\w\s,]/g) ?? [];
 
         const spacesRule = hasSpaces ? "spaces" : undefined;
         const specialRule =
@@ -67,12 +101,14 @@ export class ValidateOptionSetsUseCase {
         const message = _([spacesRule, specialRule]).compact().join(" and ");
 
         return spacesRule || specialRule
-            ? { type: "naming_conventions", message: `Code contains ${message}` }
+            ? { type: "naming_conventions", message: `${propertyName} contains ${message}` }
             : undefined;
     }
 
-    private validateCommas(option: Option): Maybe<OptionValidationError> {
-        return option.code.includes(",") ? { type: "has_commas", message: "Code has commas" } : undefined;
+    private validateCommas(option: Option, propertyName: PropertyToValidate): Maybe<OptionValidationError> {
+        return option[propertyName].includes(",")
+            ? { type: "has_commas", message: `${propertyName} has commas` }
+            : undefined;
     }
 
     private validateOrder(option: Option, expectedSortOrder: number): Maybe<OptionValidationError> {
@@ -102,4 +138,5 @@ export class ValidateOptionSetsUseCase {
     }
 }
 
-type UseCaseOptions = { codeLength: number };
+type UseCaseOptions = { lengthToValidate: number };
+type PropertyToValidate = keyof Pick<Option, "code" | "name">;
