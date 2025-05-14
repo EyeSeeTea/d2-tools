@@ -31,6 +31,54 @@ LOG_LEVEL=debug yarn start datasets
 
 Available levels: 'debug' | 'info' | 'warn' | 'error'
 
+## Tools index
+
+-   [Execute Program Rules](#execute-program-rules)
+-   [Programs export/import](#programs-exportimport)
+-   [Datasets](#datasets)
+    -   [Compare pairs of data sets](#compare-pairs-of-data-sets)
+    -   [Compare pairs of data sets between two instances](#compare-pairs-of-data-sets-between-two-instances)
+    -   [Show the schema fields used on the comparison](#show-the-schema-fields-used-on-the-comparison)
+    -   [Compare two data sets ignoring some of the properties](#compare-two-data-sets-ignoring-some-of-the-properties)
+-   [Organisation Units](#organisation-units)
+    -   [Create an SQL file to remove any orgunit below the country level](#create-an-sql-file-to-remove-any-orgunit-below-the-country-level)
+    -   [Create an SQL file to remove all org subunits of Canada](#create-an-sql-file-to-remove-all-org-subunits-of-canada)
+    -   [Copy the organisation units from a data set to one or more datasets](#copy-the-organisation-units-from-a-data-set-to-one-or-more-datasets)
+-   [Translations](#translations)
+-   [Events](#events)
+    -   [Move events from one orgunit to another](#move-events-from-one-orgunit-to-another)
+    -   [Update events which met the condition](#update-events-which-met-the-condition)
+-   [Data values](#data-values)
+    -   [Dangling data values](#dangling-data-values)
+    -   [Revert data values](#revert-data-values)
+    -   [Delete duplicated event data values](#delete-duplicated-event-data-values)
+    -   [Email notification for data values](#email-notification-for-data-values)
+-   [Notifications](#notifications)
+    -   [Send user info email](#send-user-info-email)
+-   [Load testing](#load-testing)
+-   [Users](#users)
+    -   [Migrate user information from one attribute to another if they're different](#migrate-user-information-from-one-attribute-to-another-if-theyre-different)
+    -   [Rename username](#rename-username)
+-   [User monitoring](#user-monitoring)
+    -   [Users Permissions Fixer and 2FA Reporter](#users-permissions-fixer-and-2fa-reporter)
+    -   [Users Authorities Monitoring](#users-authorities-monitoring)
+    -   [User Groups Monitoring](#user-groups-monitoring)
+    -   [User Templates Monitoring](#user-templates-monitoring)
+-   [Move Attributes from a Program](#move-attributes-from-a-program)
+-   [Compare metadata between instances](#compare-metadata-between-instances)
+-   [Indicators](#indicators)
+    -   [Get Indicators items report](#get-indicators-items-report)
+    -   [Get Indicators dataElements values report](#get-indicators-dataelements-values-report)
+-   [Tracked Entities](#tracked-entities)
+    -   [Transfer](#transfer)
+-   [Options](#options)
+    -   [Rename](#rename)
+-   [Data](#data)
+    -   [Get report](#get-report)
+-   [Enrollments](#enrollments)
+    -   [Close Enrollments with Events older than a date](#close-enrollments-with-events-older-than-a-date)
+
+
 ## Execute Program Rules
 
 Create report and post events or tracked entity attributes:
@@ -948,4 +996,34 @@ yarn start data get-report \
     --url="https://play.im.dhis2.org/dev" \
     --auth="admin:district" \
     --orgunit-id="DiszpKrYNg8"
+```
+
+## Enrollments
+
+### Close Enrollments with Events older than a date
+
+Set the status to completed for all enrollments that satisfy the following criteria:
+- All their _events_ have an _event date_ older than the cut off date.
+- The _enrollment_ belong to the selected _organization unit_ and _program_.
+
+The date can have either `YYYY-MM-DD` or `YYYY-MM-DDThh:mm:ss` format. If no time is specified 00:00:00 is used.
+
+If some of the enrollments could not be closed their info is stored in a `close_errors_<timestamp>.json` file.
+
+```console
+shell:~$ yarn start enrollments close \
+  --url 'http://USER:PASSWORD@localhost:8080' \
+  --org-unit-id 'DiszpKrYNg8' \
+  --program-id 'WCJhvPcJomX' \
+  --event-date-before "2025-01-01T00:00:00"
+```
+
+To get the debug log use:
+
+```console
+shell:~$ LOG_LEVEL=debug yarn start enrollments close \
+  --url 'http://USER:PASSWORD@localhost:8080' \
+  --org-unit-id 'DiszpKrYNg8' \
+  --program-id 'WCJhvPcJomX' \
+  --event-date-before "2025-01-01T00:00:00"
 ```
