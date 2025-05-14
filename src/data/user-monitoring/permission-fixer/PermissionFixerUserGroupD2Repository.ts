@@ -1,11 +1,12 @@
 import _ from "lodash";
-import { D2Api, Stats } from "@eyeseetea/d2-api/2.36";
+import { D2Api } from "@eyeseetea/d2-api/2.36";
 import log from "utils/log";
 import { PermissionFixerUserGroupExtended } from "domain/entities/user-monitoring/permission-fixer/PermissionFixerUserGroupExtended";
 import { PermissionFixerUserGroupRepository } from "domain/repositories/user-monitoring/permission-fixer/PermissionFixerUserGroupRepository";
 import { Async } from "domain/entities/Async";
 import { UserGroupNotFoundException } from "./exception/UserGroupNotFoundException";
 import { Ref } from "domain/entities/Base";
+import { Stats } from "domain/entities/Stats";
 
 export class PermissionFixerUserGroupD2Repository implements PermissionFixerUserGroupRepository {
     constructor(private api: D2Api) {}
@@ -28,7 +29,7 @@ export class PermissionFixerUserGroupD2Repository implements PermissionFixerUser
     async save(userGroup: PermissionFixerUserGroupExtended, _users: Ref[]): Async<string> {
         try {
             const response = await this.api.models.userGroups.put(userGroup).getData();
-            if (_.isEmpty(response.errorReports)) {
+            if (_(response.errorReports).isEmpty()) {
                 log.info("Users added to minimal group");
             } else {
                 log.error("Error adding users to minimal group");
@@ -36,7 +37,7 @@ export class PermissionFixerUserGroupD2Repository implements PermissionFixerUser
 
             log.info(JSON.stringify(response));
 
-            return "OK";
+            return "SUCCESS";
         } catch (error) {
             console.debug(error);
             return "ERROR";

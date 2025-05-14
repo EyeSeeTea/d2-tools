@@ -10,6 +10,7 @@ export interface ProgramEvent {
     programStage: NamedRef;
     dataValues: EventDataValue[];
     trackedEntityInstanceId?: Id;
+    enrollment?: Id;
     created: Timestamp;
     lastUpdated: Timestamp;
     status: EventStatus;
@@ -22,14 +23,14 @@ export interface ProgramEventToSave {
     program: Ref;
     orgUnit: Ref;
     programStage: Ref;
-    dataValues: Array<{ dataElement: Ref; value: string }>;
+    dataValues: EventDataValueToSave[];
     trackedEntityInstanceId?: Id;
     status: EventStatus;
     date: Timestamp;
     dueDate: Timestamp;
 }
 
-type EventStatus = "ACTIVE" | "COMPLETED" | "VISITED" | "SCHEDULED" | "OVERDUE" | "SKIPPED";
+type EventStatus = "ACTIVE" | "COMPLETED" | "VISITED" | "SCHEDULE" | "OVERDUE" | "SKIPPED";
 
 export const orgUnitModes = ["SELECTED", "CHILDREN", "DESCENDANTS"] as const;
 
@@ -42,6 +43,12 @@ export interface EventDataValue {
     oldValue?: string;
     providedElsewhere?: boolean;
     lastUpdated: Timestamp;
+}
+
+export interface EventDataValueToSave {
+    dataElement: Ref;
+    value: string;
+    providedElsewhere?: boolean;
 }
 
 export type DuplicatedEvents = { groups: EventsGroup[] };

@@ -1,6 +1,7 @@
 const path = require("path");
 const nodeExternals = require("webpack-node-externals");
 const TsconfigPathsPlugin = require("tsconfig-paths-webpack-plugin");
+const CopyWebpackPlugin = require("copy-webpack-plugin");
 
 module.exports = {
     context: __dirname,
@@ -14,6 +15,10 @@ module.exports = {
                 use: {
                     loader: "ts-loader",
                 },
+            },
+            {
+                test: /\.sql$/i,
+                type: "asset/source",
             },
         ],
     },
@@ -35,4 +40,9 @@ module.exports = {
         publicPath: "/dist/",
     },
     target: "node",
+    plugins: [
+        new CopyWebpackPlugin({
+            patterns: [{ from: "src/data/sql", to: "sql" }],
+        }),
+    ],
 };

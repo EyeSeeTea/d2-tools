@@ -7,11 +7,16 @@ import {
     TrackedEntityFilterParams,
     TrackedEntityRepository,
 } from "domain/repositories/TrackedEntityRepository";
+import { Id } from "domain/entities/Base";
 
+export type MoveProgramAttributeUseCaseOptions = TrackedEntityFilterParams & {
+    fromAttributeId: Id;
+    toAttributeId: Id;
+};
 export class MoveProgramAttributeUseCase {
     constructor(private trackedEntityRepository: TrackedEntityRepository) {}
 
-    async execute(options: TrackedEntityFilterParams): Async<void> {
+    async execute(options: MoveProgramAttributeUseCaseOptions): Async<void> {
         const teis = await this.trackedEntityRepository.getAll(options);
 
         const teisWithCopyValues = _(teis)

@@ -1,5 +1,5 @@
 import _ from "lodash";
-import { DataSetsRepository, OUCopyResult } from "domain/repositories/DataSetsRepository";
+import { DataSetsRepository, DataSetPostResult } from "domain/repositories/DataSetsRepository";
 import { Id, Ref } from "types/d2-api";
 import { DataSet } from "domain/entities/DataSet";
 import { DataSetMetadata } from "domain/entities/DataSet";
@@ -12,7 +12,7 @@ export class CopyDataSetsOUUserCase {
         originDataset: Id;
         destinationDatasets: string[];
         replace: boolean | undefined;
-    }): Promise<OUCopyResult> {
+    }): Promise<DataSetPostResult> {
         const { originDataset, destinationDatasets, replace = false } = options;
 
         log.info(`Replace the destination OU: ${replace}`);
@@ -44,7 +44,7 @@ export class CopyDataSetsOUUserCase {
             .compact()
             .value();
 
-        let result: OUCopyResult;
+        let result: DataSetPostResult;
         if (!_.isEmpty(data)) {
             const metadata: DataSetMetadata = { dataSets: data };
             result = await this.dataSetsRepository.post(metadata);

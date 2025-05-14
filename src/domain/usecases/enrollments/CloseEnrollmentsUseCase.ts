@@ -7,11 +7,18 @@ import { promiseMap } from "data/dhis2-utils";
 import { Async } from "domain/entities/Async";
 import { Enrollment } from "domain/entities/enrollments/Enrollment";
 
-import { EventsRepository, EventsRepositoryParams } from "domain/repositories/enrollments/EventsRepository";
+import { EventsRepository } from "domain/repositories/enrollments/EventsRepository";
 import {
     EnrollmentsRepository,
     EnrollmentsRepositoryParams,
 } from "domain/repositories/enrollments/EnrollmentsRepository";
+import { Id } from "domain/entities/Base";
+
+export type CloseEnrollmentsUseCaseOptions = {
+    programId: Id;
+    orgUnitId: Id;
+    eventUpdateCutoff: string;
+};
 
 export class CloseEnrollmentsUseCase {
     constructor(
@@ -19,7 +26,7 @@ export class CloseEnrollmentsUseCase {
         private enrollmentsRepository: EnrollmentsRepository
     ) {}
 
-    async execute(params: EventsRepositoryParams): Async<void> {
+    async execute(params: CloseEnrollmentsUseCaseOptions): Async<void> {
         const events = await this.eventsRepository.getAll(params);
         log.info(`Found ${events.length} events for the provided program and orgUnit`);
 
