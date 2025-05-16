@@ -1,7 +1,7 @@
 import { LocaleCode } from "./Locale";
 
-export interface Translation {
-    property: string; // ex: "NAME", "SHORT_NAME"
+export interface Translation<Property extends string = string> {
+    property: Property | string; // ex: "NAME", "SHORT_NAME"
     locale: LocaleCode;
     value: string;
 }
