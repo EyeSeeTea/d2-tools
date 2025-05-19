@@ -1,8 +1,9 @@
-import _, { property } from "lodash";
+import _ from "lodash";
 import { Id } from "domain/entities/Base";
 import { CategoryOptionCombo } from "domain/entities/CategoryOptionCombo";
 import { CategoryOptionCombosRepository } from "domain/repositories/CategoryOptionCombosRepository";
 import logger from "utils/log";
+import { Pager } from "domain/entities/Pager";
 
 export class TranslateCategoryOptionCombosUseCase {
     constructor(private categoryOptionCombosRepository: CategoryOptionCombosRepository) {}
@@ -11,80 +12,88 @@ export class TranslateCategoryOptionCombosUseCase {
         const { categoryComboIds } = options;
         logger.info(`Translate COCs for category combos: ${categoryComboIds?.join(", ") || "all"}`);
 
-        let page = 1;
-        let results: Result[] = [];
+        const results = await runForPage(async page => {
+            const { objects: cocs, pager } = await this.getCocs(page, categoryComboIds);
+            const cocsTranslated = this.getCocsTranslated(cocs);
 
-        while (true) {
-            logger.debug(`Fetching category option combos page ${page}`);
-            const cocs = await this.categoryOptionCombosRepository.get({
-                pagination: { page: page, pageSize: 1000 },
-                categoryComboIds: categoryComboIds,
-            });
+            this.logTranslationsInfo(cocs, cocsTranslated);
 
-            if (_.isEmpty(cocs)) break;
-
-            const cocsTranslatedToSave = _(cocs)
-                .map(coc => {
-                    const cocTranslated = this.translateCoc(coc);
-
-                    const alreadyTranslated = _.isEqual(
-                        _.sortBy(coc.translations, coc => [coc.locale, coc.property, coc.value].join(".")),
-                        _.sortBy(cocTranslated.translations, coc =>
-                            [coc.locale, coc.property, coc.value].join(".")
-                        )
-                    );
-
-                    return alreadyTranslated ? undefined : cocTranslated;
-                })
-                .compact()
-                .value();
-
-            logger.debug(
-                `Found ${cocs.length} category option combos, ${cocsTranslatedToSave.length} need to be translated`
-            );
-
-            function getTranslationsInfo(coc: CategoryOptionCombo): string {
-                return (
-                    coc.translations
-                        .map(translation => `${translation.locale}=${translation.value}`)
-                        .join(",") || "NO-TRANSLATIONS"
-                );
-            }
-
-            const cocsById = _.keyBy(cocs, coc => coc.id);
-
-            if (!_.isEmpty(cocsTranslatedToSave)) {
-                const lines = cocsTranslatedToSave.map(
-                    (coc, index) =>
-                        `${(index + 1).toString().padStart(3, "0")} - ${coc.id} - ${getTranslationsInfo(
-                            cocsById[coc.id]!
-                        )} -> ${getTranslationsInfo(coc)}`
-                );
-                lines.forEach(line => logger.debug(line));
-            }
+            const result: Result = {
+                total: cocs.length,
+                needTranslations: cocsTranslated.length,
+            };
 
             if (options.post) {
-                await this.categoryOptionCombosRepository.save(cocsTranslatedToSave);
+                await this.saveCocs(cocsTranslated);
             }
 
-            results.push({
-                total: cocs.length,
-                newlyTranslated: cocsTranslatedToSave.length,
-            });
+            return { result: result, pager: pager };
+        });
 
-            page++;
+        return mergeResults(results);
+    }
+
+    private logTranslationsInfo(cocs: CategoryOptionCombo[], cocsTranslated: CategoryOptionCombo[]) {
+        logger.info(`${cocs.length} category option combos, ${cocsTranslated.length} need translations`);
+
+        if (_.isEmpty(cocsTranslated)) return;
+
+        const cocsById = _.keyBy(cocs, coc => coc.id);
+
+        const lines = cocsTranslated.map((coc, index) => {
+            const existingCoc = cocsById[coc.id];
+            if (!existingCoc) throw new Error(`COC not found: ${coc.id}`);
+
+            return [
+                `TO UPDATE: ${(index + 1).toString().padStart(3, "0")}:`,
+                `coc.id="${coc.id}" |`,
+                `translations = ${getInfo(existingCoc)} -> ${getInfo(coc)}`,
+            ].join(" ");
+        });
+        lines.forEach(line => logger.debug(line));
+    }
+
+    private getCocsTranslated(cocs: CategoryOptionCombo[]) {
+        function sort(
+            translations: CategoryOptionCombo["translations"]
+        ): CategoryOptionCombo["translations"] {
+            return _.sortBy(translations, translation =>
+                [translation.locale, translation.property, translation.value].join(".")
+            );
         }
 
-        return results.reduce(
-            (acc, result) => ({
-                total: acc.total + result.total,
-                newlyTranslated: acc.newlyTranslated + result.newlyTranslated,
-            }),
-            { total: 0, newlyTranslated: 0 }
-        );
+        return _(cocs)
+            .map(coc => {
+                const cocTranslated = this.translateCoc(coc);
+                const alreadyTranslated = _.isEqual(sort(coc.translations), sort(cocTranslated.translations));
+
+                return alreadyTranslated ? undefined : cocTranslated;
+            })
+            .compact()
+            .value();
+    }
+
+    private async saveCocs(cocsTranslated: CategoryOptionCombo[]) {
+        if (_.isEmpty(cocsTranslated)) return;
+        logger.debug(`Saving ${cocsTranslated.length} category option combos`);
+        await this.categoryOptionCombosRepository.save(cocsTranslated);
+        logger.info(`Saved ${cocsTranslated.length} category option combos`);
+    }
+
+    private async getCocs(page: number, categoryComboIds: string[] | undefined) {
+        logger.info(`Fetching category option combos: page=${page}`);
+
+        return this.categoryOptionCombosRepository.get({
+            pagination: { page: page, pageSize: 10000 },
+            categoryComboIds: categoryComboIds,
+        });
     }
 
     private translateCoc(coc: CategoryOptionCombo): CategoryOptionCombo {
+        // Return category option combo untranslated when it has no options.
+        // This happens when the options order could not be determined from the category combo.
+        if (_.isEmpty(coc.categoryOptions)) return coc;
+
         const localesUsedInTranslations = _(coc.categoryOptions)
             .flatMap(categoryOption => categoryOption.translations)
             .filter(translation => translation.property === "NAME")
@@ -98,7 +107,15 @@ export class TranslateCategoryOptionCombosUseCase {
                     translation => translation.property === "NAME" && translation.locale === locale
                 );
 
-                return translationForLocale?.value || categoryOption.name;
+                if (!translationForLocale) {
+                    logger.debug(
+                        `Category option id="${categoryOption.id}", name="${categoryOption.name}" ` +
+                            `does not have a ${locale} translation, using its name`
+                    );
+                    return categoryOption.name;
+                } else {
+                    return translationForLocale.value;
+                }
             });
 
             return { locale: locale, property: "NAME", value: parts.join(", ") };
@@ -110,5 +127,39 @@ export class TranslateCategoryOptionCombosUseCase {
 
 export type Result = {
     total: number;
-    newlyTranslated: number;
+    needTranslations: number;
 };
+
+function mergeResults(results: Result[]): Result {
+    return results.reduce(
+        (acc, result) => ({
+            total: acc.total + result.total,
+            needTranslations: acc.needTranslations + result.needTranslations,
+        }),
+        { total: 0, needTranslations: 0 }
+    );
+}
+
+function getInfo(coc: CategoryOptionCombo): string {
+    return (
+        _(coc.translations)
+            .map(translation => `${translation.locale}="${translation.value}"`)
+            .value()
+            .join(", ") || "[EMPTY]"
+    );
+}
+
+async function runForPage<Res>(fn: (page: number) => Promise<{ result: Res; pager: Pager }>): Promise<Res[]> {
+    const results: Res[] = [];
+    let page = 1;
+
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+        const { result, pager } = await fn(page);
+        results.push(result);
+        page++;
+        if (page > pager.pageCount) break;
+    }
+
+    return results;
+}

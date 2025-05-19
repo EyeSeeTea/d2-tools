@@ -2,7 +2,7 @@ import _ from "lodash";
 import { D2Api } from "@eyeseetea/d2-api/2.36";
 import { Async } from "domain/entities/Async";
 import { Id } from "domain/entities/Base";
-import { MetadataRepository, Paginated, Payload, SaveOptions } from "domain/repositories/MetadataRepository";
+import { MetadataRepository, Payload, SaveOptions } from "domain/repositories/MetadataRepository";
 import { getPluralModel, runMetadata } from "./dhis2-utils";
 import log from "utils/log";
 import {
@@ -13,6 +13,7 @@ import {
 import { D2Translation } from "@eyeseetea/d2-api/schemas";
 import { Maybe } from "utils/ts-utils";
 import { Pager } from "domain/entities/Pager";
+import { Paginated } from "domain/entities/Pagination";
 
 export class MetadataD2Repository implements MetadataRepository {
     constructor(private api: D2Api) {}

@@ -1,7 +1,7 @@
 import { command, flag, option, optional, subcommands } from "cmd-ts";
 import { CategoryOptionCombosD2Repository } from "data/CategoryOptionCombosD2Repository";
 import { TranslateCategoryOptionCombosUseCase } from "domain/usecases/TranslateCategoryOptionCombosUseCase";
-import { getApiUrlOptions, getD2Api, getD2ApiFromArgs, IdsSeparatedByCommas } from "scripts/common";
+import { getApiUrlOptions, getD2ApiFromArgs, IdsSeparatedByCommas } from "scripts/common";
 
 export function getCommand() {
     return subcommands({
@@ -33,6 +33,6 @@ const translateCocsCmd = command({
 
         const useCase = new TranslateCategoryOptionCombosUseCase(categoryOptionCombosRepository);
         const res = await useCase.execute(args);
-        console.log(res);
+        console.info(`${res.total} category option combos, ${res.needTranslations} need translations`);
     },
 });
