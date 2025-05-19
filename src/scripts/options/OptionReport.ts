@@ -14,25 +14,34 @@ export class OptionReport {
     private groupOptionsWithErrors(results: OptionValidationResult[]): string {
         const optionStringifier = createArrayCsvStringifier({
             header: [
-                "Option Name",
-                "Option Code",
-                "Option ID",
-                "Option Set Name",
-                "Option Set Code",
                 "Option Set ID",
+                "Option Set Code",
+                "Option Set Name",
+                "Option Code",
+                "Option Name",
+                "Rule Type",
+                "Rule Message",
             ],
         });
 
-        const rulesStringifier = createArrayCsvStringifier({ header: ["", "rule type", "rule message"] });
         const header = optionStringifier.getHeaderString();
 
-        const rows = results.map(({ option, optionSet, errors }) => {
-            const optionRow = optionStringifier.stringifyRecords([
-                [option.name, option.code, option.id, optionSet.name, optionSet.code ?? "", optionSet.id],
-            ]);
-            const rulesHeader = rulesStringifier.getHeaderString();
-            const ruleRows = rulesStringifier.stringifyRecords(errors.map(r => ["", r.type, r.message]));
-            return `${optionRow}\n${rulesHeader}${ruleRows}\n`;
+        const rows = results.flatMap(({ option, optionSet, errors }) => {
+            const allErrors = errors.map(error => {
+                const row = optionStringifier.stringifyRecords([
+                    [
+                        optionSet.id,
+                        optionSet.code ?? "",
+                        optionSet.name,
+                        option.code,
+                        option.name,
+                        error.type,
+                        error.message,
+                    ],
+                ]);
+                return row;
+            });
+            return allErrors.join("");
         });
 
         return [header, ...rows].join("");
