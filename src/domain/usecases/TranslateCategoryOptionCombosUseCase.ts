@@ -8,7 +8,7 @@ import { Pager } from "domain/entities/Pager";
 export class TranslateCategoryOptionCombosUseCase {
     constructor(private categoryOptionCombosRepository: CategoryOptionCombosRepository) {}
 
-    async execute(options: { categoryComboIds?: Id[]; post: boolean }): Promise<Result> {
+    async execute(options: { categoryComboIds?: Id[]; post: boolean }): Promise<TranslateCocsResult> {
         const { categoryComboIds } = options;
         logger.info(`Translate COCs for category combos: ${categoryComboIds?.join(", ") || "all"}`);
 
@@ -18,7 +18,7 @@ export class TranslateCategoryOptionCombosUseCase {
 
             this.logTranslationsInfo(cocs, cocsTranslated);
 
-            const result: Result = {
+            const result: TranslateCocsResult = {
                 total: cocs.length,
                 needTranslations: cocsTranslated.length,
             };
@@ -125,12 +125,12 @@ export class TranslateCategoryOptionCombosUseCase {
     }
 }
 
-export type Result = {
+export type TranslateCocsResult = {
     total: number;
     needTranslations: number;
 };
 
-function mergeResults(results: Result[]): Result {
+function mergeResults(results: TranslateCocsResult[]): TranslateCocsResult {
     return results.reduce(
         (acc, result) => ({
             total: acc.total + result.total,
@@ -148,6 +148,14 @@ function getInfo(coc: CategoryOptionCombo): string {
             .join(", ") || "[EMPTY]"
     );
 }
+
+/**
+ * Helper function to run a function for each page of results.
+ *
+ * It will keep calling the function until all pages are processed.
+ * The function should return an object with the result to accumulate and a pager object.
+ * The function will return teh accumulated array of results.
+ */
 
 async function runForPage<Res>(fn: (page: number) => Promise<{ result: Res; pager: Pager }>): Promise<Res[]> {
     const results: Res[] = [];
