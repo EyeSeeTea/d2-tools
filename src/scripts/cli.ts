@@ -18,6 +18,7 @@ import * as trackedEntities from "./commands/trackedEntities";
 import * as enrollments from "./commands/enrollments";
 import * as options from "./commands/options";
 import * as data from "./commands/data/data";
+import * as categoryOptionCombos from "./commands/categoryOptionCombos";
 
 export function runCli() {
     const cliSubcommands = subcommands({
@@ -40,6 +41,7 @@ export function runCli() {
             enrollments: enrollments.getCommand(),
             options: options.getCommand(),
             data: data.getCommand(),
+            categoryOptionCombos: categoryOptionCombos.getCommand(),
         },
     });
 

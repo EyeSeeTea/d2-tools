@@ -78,7 +78,6 @@ Available levels: 'debug' | 'info' | 'warn' | 'error'
 -   [Enrollments](#enrollments)
     -   [Close Enrollments with Events older than a date](#close-enrollments-with-events-older-than-a-date)
 
-
 ## Execute Program Rules
 
 Create report and post events or tracked entity attributes:
@@ -1003,8 +1002,9 @@ yarn start data get-report \
 ### Close Enrollments with Events older than a date
 
 Set the status to completed for all enrollments that satisfy the following criteria:
-- All their _events_ have an _event date_ older than the cut off date.
-- The _enrollment_ belong to the selected _organization unit_ and _program_.
+
+-   All their _events_ have an _event date_ older than the cut off date.
+-   The _enrollment_ belong to the selected _organization unit_ and _program_.
 
 The date can have either `YYYY-MM-DD` or `YYYY-MM-DDThh:mm:ss` format. If no time is specified 00:00:00 is used.
 
@@ -1026,4 +1026,18 @@ shell:~$ LOG_LEVEL=debug yarn start enrollments close \
   --org-unit-id 'DiszpKrYNg8' \
   --program-id 'WCJhvPcJomX' \
   --event-date-before "2025-01-01T00:00:00"
+```
+
+## Category option combos
+
+### Translations
+
+Translate all the COCs for a specific category combo (if not specified, post for all)
+
+```console
+shell:~$ yarn start:dev categoryOptionCombos translate \
+    --url=https://play.im.dhis2.org/dev \
+    --auth="admin:district" \
+    --category-combo-ids=v1K6CE6bmtw
+    --post
 ```
