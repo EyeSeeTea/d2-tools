@@ -1,9 +1,9 @@
 import _ from "lodash";
-import { D2Api, DataValueSetsDataValue, MetadataPick } from "@eyeseetea/d2-api/2.36";
+import { D2Api, DataValueSetsDataValue, MetadataPick, D2TrackerEventToPost } from "../types/d2-api";
 import { Async } from "domain/entities/Async";
 import { Id } from "domain/entities/Base";
 import { promiseMap } from "./dhis2-utils";
-import { D2TrackerEventToPost } from "@eyeseetea/d2-api/api/trackerEvents";
+import { saveJsonToDisk } from "./files";
 
 /**
  * Rename the code in DHIS2 option model and related metadata/data.
@@ -15,6 +15,7 @@ import { D2TrackerEventToPost } from "@eyeseetea/d2-api/api/trackerEvents";
  * 1) Retrieve the data
  * 2) Update the option metadata
  * 3) Update the data
+ * 4) rollback if an error occurs (save json to disk and persist initial data)
  *
  * Tasks:
  *
@@ -29,12 +30,35 @@ export class D2RenameOptionCode {
     constructor(private api: D2Api, private options: { dryRun: boolean }) {}
 
     async execute(options: RecodeOptions): Async<void> {
-        const { option, toCode } = options;
+        const { option } = options;
         const metadata = await this.getMetadata(option);
-        await this.recodeOption({ option: option, toCode: toCode, metadata: metadata });
+
+        const optionsWithMetadataValues = await this.getValuesForOption({ ...options, metadata });
+
+        this.saveDataToDisk(optionsWithMetadataValues);
+
+        await this.recodeOption(optionsWithMetadataValues).catch(err => {
+            console.debug(`Error recoding option: ${JSON.stringify(err, null, 4)}`);
+            return this.rollback(optionsWithMetadataValues);
+        });
     }
 
-    private async recodeOption(options: RecodeOptionsWithMetadata): Async<void> {
+    private async getValuesForOption(options: RecodeOptionsWithMetadata): Async<OptionsWithMetadataValues> {
+        const { option, toCode, metadata } = options;
+
+        const dataValues = await this.getDataValues(options);
+        const events = await this.getEvents(options);
+
+        return {
+            option: option,
+            toCode: toCode,
+            metadata: metadata,
+            initialDataValues: dataValues,
+            initialEvents: events,
+        };
+    }
+
+    private async recodeOption(options: OptionsWithMetadataValues): Async<void> {
         const { option } = options;
 
         console.debug(`Rename option [id=${option.id}]: ${option.code} -> ${options.toCode}`);
@@ -49,8 +73,6 @@ export class D2RenameOptionCode {
         // Update data
         await this.recodeDataValuesPost(dataValues);
         await this.recodeEventsPost(events);
-
-        // TODO: implement transactional rollback when an error occurs on update
     }
 
     /* Private methods */
@@ -112,8 +134,8 @@ export class D2RenameOptionCode {
         if (res.status !== "OK") throw new Error(`Failed to save option: ${JSON.stringify(res)}`);
     }
 
-    private async recodeDataValuesGet(options: RecodeOptionsWithMetadata): Async<DataValueSetsDataValue[]> {
-        const { option, toCode, metadata } = options;
+    private async getDataValues(options: RecodeOptionsWithMetadata): Async<DataValueSetsDataValue[]> {
+        const { option, metadata } = options;
 
         const dataElementsForAggregated = metadata.dataElements.filter(dataElement => {
             return dataElement.domainType === "AGGREGATE";
@@ -146,16 +168,18 @@ export class D2RenameOptionCode {
         console.debug(`[recodeDataValues] Process data values for ${size} data elements: ${names}`);
 
         const dataElementIds = new Set(dataElementsForAggregated.map(dataElement => dataElement.id));
-        const dataValuesUpdated = _(dataValues)
-            .map((dataValue): typeof dataValue | null => {
-                return dataElementIds.has(dataValue.dataElement) && dataValue.value == option.code
-                    ? { ...dataValue, value: toCode }
-                    : null;
-            })
-            .compact()
-            .value();
+        return dataValues.filter(dataValue => {
+            return dataElementIds.has(dataValue.dataElement) && dataValue.value == option.code;
+        });
+    }
+
+    private async recodeDataValuesGet(options: OptionsWithMetadataValues): Async<DataValueSetsDataValue[]> {
+        const { toCode, initialDataValues } = options;
+
+        const dataValuesUpdated = initialDataValues.map(dataValue => ({ ...dataValue, value: toCode }));
 
         console.debug(`[recodeDataValues] Data values to update: ${dataValuesUpdated.length}`);
+
         return dataValuesUpdated;
     }
 
@@ -174,8 +198,8 @@ export class D2RenameOptionCode {
         }
     }
 
-    private async recodeEventsGet(options: RecodeOptionsWithMetadata): Async<D2Event[]> {
-        const { option, toCode } = options;
+    private async getEvents(options: RecodeOptionsWithMetadata): Async<D2Event[]> {
+        const { option } = options;
 
         const dataElementsForPrograms = options.metadata.dataElements.filter(dataElement => {
             return dataElement.domainType === "TRACKER";
@@ -198,22 +222,36 @@ export class D2RenameOptionCode {
 
             const eventsRecoded = _(events)
                 .map((event): typeof event | null => {
-                    const dataValuesRecoded = event.dataValues.map(dataValue => {
-                        return dataValue.dataElement === dataElement.id && dataValue.value == option.code
-                            ? { ...dataValue, value: toCode }
-                            : dataValue;
+                    const dataValues = event.dataValues.filter(dataValue => {
+                        return dataValue.dataElement === dataElement.id && dataValue.value == option.code;
                     });
 
-                    return { ...event, dataValues: dataValuesRecoded };
+                    return { ...event, dataValues: dataValues };
                 })
                 .compact()
                 .value();
 
-            console.debug(`[recodeEvents] Events to update: ${eventsRecoded.length}`);
             return eventsRecoded;
         });
 
         return _.flatten(eventGroups);
+    }
+
+    private async recodeEventsGet(options: OptionsWithMetadataValues): Async<D2Event[]> {
+        const { toCode, initialEvents } = options;
+
+        const eventsRecoded = _(initialEvents)
+            .map(event => {
+                const dataValuesRecoded = event.dataValues.map(dataValue => {
+                    return { ...dataValue, value: toCode };
+                });
+                return { ...event, dataValues: dataValuesRecoded };
+            })
+            .compact()
+            .value();
+
+        console.debug(`[recodeEvents] Events to update: ${eventsRecoded.length}`);
+        return eventsRecoded;
     }
 
     private async recodeEventsPost(events: D2Event[]): Async<void> {
@@ -231,6 +269,27 @@ export class D2RenameOptionCode {
             console.debug(`[recodeEvents] Post response: ${JSON.stringify(res.stats)}`);
         }
     }
+
+    private async rollback(options: OptionsWithMetadataValues) {
+        const { option, metadata, initialDataValues, initialEvents } = options;
+
+        console.debug("[rollback] Executing rollback...");
+
+        await this.saveOption({ ...options, toCode: option.code, metadata });
+        await this.recodeDataValuesPost(initialDataValues);
+        await this.recodeEventsPost(initialEvents);
+
+        console.debug("[rollback] Rollback completed");
+    }
+
+    private saveDataToDisk(options: OptionsWithMetadataValues): void {
+        const { option, initialDataValues, initialEvents } = options;
+
+        saveJsonToDisk(`dataValues_${option.id}`, { dataValues: initialDataValues });
+        saveJsonToDisk(`events_${option.id}.json`, { events: initialEvents });
+
+        console.debug(`Initial data saved to disk: option, dataValues and events`);
+    }
 }
 
 type RecodeOptions = {
@@ -240,6 +299,11 @@ type RecodeOptions = {
 
 type RecodeOptionsWithMetadata = RecodeOptions & {
     metadata: Metadata;
+};
+
+type OptionsWithMetadataValues = RecodeOptionsWithMetadata & {
+    initialDataValues: DataValueSetsDataValue[];
+    initialEvents: D2Event[];
 };
 
 type D2Option = {

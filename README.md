@@ -983,6 +983,23 @@ yarn start options rename-code \
   --post
 ```
 
+### analyze
+
+Analyze option codes and generates a csv report if codes:
+
+-   Are duplicated in other optionSets
+-   Include any special characters (only underscore is allowed)
+-   length is greater than 230 (you can change this value --code-length [VALUE])
+-   have spaces or commas
+
+```shell
+yarn start options analyze \
+    --url='http://localhost:8080' \
+    --auth='username:password' \
+    --report-path='report-name.csv' \  # default is option-report.csv
+    --length=20 # default is 230
+```
+
 ## Data
 
 ## Get report
