@@ -1,3 +1,4 @@
+import { Maybe } from "utils/ts-utils";
 import { Option } from "./Option";
 import { OptionSet } from "./OptionSet";
 
@@ -14,7 +15,7 @@ export type OptionValidationError = {
     message: string;
 };
 
-export type ValidationAction = Record<RuleType, { validation: (option: Option) => Option }>;
+export type ValidationAction = Record<RuleType, Maybe<{ validation: (option: Option) => Option }>>;
 
 export const validationActions: ValidationAction = {
     naming_conventions: {
@@ -32,17 +33,14 @@ export const validationActions: ValidationAction = {
             return { ...option, code: newCode, name: newName };
         },
     },
-    order: { validation: noopValidation },
-    duplicate: { validation: noopValidation },
-    invalid_length: { validation: noopValidation },
+    // TODO: Waiting for feedback on how to apply changes for these rules
+    duplicate: undefined,
+    invalid_length: undefined,
+    order: undefined,
 };
 
 function fixNamingConventions(value: string, valueToReplace = "_"): string {
     const valueWithoutSpaces = value.replaceAll(" ", valueToReplace);
     const nonAlphanumericReplaced = valueWithoutSpaces.replace(/[^\w\s,]/g, valueToReplace);
     return nonAlphanumericReplaced;
-}
-
-function noopValidation(option: Option): Option {
-    return option;
 }

@@ -33,7 +33,6 @@ export class ValidateOptionSetsUseCase {
         if (!options.update) return;
 
         const optionsToSave = this.fixAndGetOptions(validationResults);
-
         await promiseMap(optionsToSave, async option => {
             await this.optionRepository.save(option, { dryRun: !options.update });
         });
@@ -41,11 +40,10 @@ export class ValidateOptionSetsUseCase {
 
     private fixAndGetOptions(validationResults: OptionValidationResult[]): Option[] {
         return validationResults.map(validationResult => {
-            const fixedOption = validationResult.errors
-                .map(err => validationActions[err.type].validation)
+            return _(validationResult.errors)
+                .map(err => validationActions[err.type]?.validation)
+                .compact()
                 .reduce((option, applyFix) => applyFix(option), validationResult.option);
-
-            return fixedOption;
         });
     }
 
