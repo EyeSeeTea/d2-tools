@@ -3,14 +3,14 @@
 The required node version is v16.14.0. Alternatively, you can run:
 
 ```shell
-nvm use
+$ nvm use
 ```
 
 To build the script run:
 
 ```shell
-yarn install
-yarn build
+$ yarn install
+$ yarn build
 ```
 
 ## How to run
@@ -18,15 +18,15 @@ yarn build
 The entry point CLI is executed with `yarn start`. Pass `--help` to show commands and arguments to commands:
 
 ```shell
-yarn start --help
+$ yarn start --help
 # ...
-yarn start datasets --help
+$ yarn start datasets --help
 ```
 
 The default log level is `info`. Set the desired level using env variable `LOG_LEVEL`:
 
 ```shell
-LOG_LEVEL=debug yarn start datasets
+$ LOG_LEVEL=debug yarn start datasets
 ```
 
 Available levels: 'debug' | 'info' | 'warn' | 'error'
@@ -83,7 +83,7 @@ Available levels: 'debug' | 'info' | 'warn' | 'error'
 Create report and post events or tracked entity attributes:
 
 ```shell
-yarn start programs run-program-rules \
+$ yarn start programs run-program-rules \
   --url='http://USER:PASSWORD@HOST:PORT' \
   --programs-ids=ORvg6A5ed7z \
   --program-rules-ids=qvk8trY5En6 \
@@ -109,12 +109,12 @@ Notes:
 Export a program with all its associated metadata and data (events, enrollments, tracked entities).
 
 ```shell
-yarn start programs export --url='http://USER:PASSWORD@HOST:PORT' \
+$ yarn start programs export --url='http://USER:PASSWORD@HOST:PORT' \
   --programs-ids=kX2GpLIa75l,kpNc7KvydVz programs.json
 ```
 
 ```shell
-yarn start programs import --url='http://USER:PASSWORD@HOST:PORT' programs.json
+$ yarn start programs import --url='http://USER:PASSWORD@HOST:PORT' programs.json
 ```
 
 ## Datasets
@@ -122,7 +122,7 @@ yarn start programs import --url='http://USER:PASSWORD@HOST:PORT' programs.json
 ### Compare pairs of data sets
 
 ```shell
-yarn start datasets compare \
+$ yarn start datasets compare \
   --url='http://USER:PASSWORD@HOST:PORT' \
   DiMntK7qKZQ-Z3tlf5sqWiK \
   TuL8IOPzpHh-jHF49Vvup66
@@ -138,7 +138,7 @@ TuL8IOPzpHh - jHF49Vvup66: equal
 ### Compare pairs of data sets between two instances
 
 ```shell
-yarn start datasets compare \
+$ yarn start datasets compare \
   --url='http://USER:PASSWORD@HOST:PORT' \
   --url2='http://USER:PASSWORD@HOST2:PORT' \
   DiMntK7qKZQ-Z3tlf5sqWiK \
@@ -148,7 +148,7 @@ yarn start datasets compare \
 ### Show the schema fields used on the comparison:
 
 ```shell
-yarn start datasets show-schema
+$ yarn start datasets show-schema
 {
     "validCompleteOnly": true,
     "dataElementDecoration": true,
@@ -159,7 +159,7 @@ yarn start datasets show-schema
 ### Compare two data sets ignoring some of the properties:
 
 ```shell
-yarn start datasets compare \
+$ yarn start datasets compare \
     --url='http://USER:PASSWORD@HOST:PORT' \
     --ignore-properties="expiryDays,sections" \
     DiMntK7qKZQ-Z3tlf5sqWiK
@@ -176,7 +176,7 @@ a running [d2-docker](https://github.com/eyeSeeTea/d2-docker) instance with
 ### Create an SQL file to remove any orgunit below the country level
 
 ```shell
-node dist/index.js orgunits remove \
+$ node dist/index.js orgunits remove \
     --level 3 \
     --output-file remove_country_subunits.sql
 ```
@@ -184,7 +184,7 @@ node dist/index.js orgunits remove \
 ### Create an SQL file to remove all org subunits of Canada
 
 ```shell
-node dist/index.js orgunits remove \
+$ node dist/index.js orgunits remove \
     --path /H8RixfF8ugH/wP2zKq0dDpw/AJBfDthkySs \
     --output-file remove_canada_subunits.sql
 ```
@@ -194,7 +194,7 @@ where `/H8RixfF8ugH/wP2zKq0dDpw/AJBfDthkySs` would be the dhis2 path of Canada.
 ### Copy the organisation units from a data set to one or more datasets
 
 ```shell
-yarn start datasets copy-org-units \
+$ yarn start datasets copy-org-units \
     --url='http://USER:PASSWORD@HOST:PORT' \
     --origin-dataset=DiMntK7qKZQ \
     --destination-datasets=Z3tlf5sqWiK,jHF49Vvup66 \
@@ -211,8 +211,8 @@ Notes:
 
 ### Set all DataSets `skipOffline` where last data input period year was 'year' indicated or earlier
 
-```console
-shell:~$ yarn start datasets set-skip-offline \
+```shell
+$ yarn start datasets set-skip-offline \
     --url='http://USER:PASSWORD@HOST:PORT' \
     --year 2023 \
     [--disable -d]
@@ -229,7 +229,7 @@ Notes:
 Update objects from spreadsheet. Update any type of DHIS2 metadata object using a xlsx spreadsheet as a data source:
 
 ```shell
-yarn start translations from-spreadsheet \
+$ yarn start translations from-spreadsheet \
   --url='http://USER:PASSWORD@HOST:PORT' \
   --save-payload=payload.json \
   --post \
@@ -250,7 +250,7 @@ Expected format of `xlsx` file:
 When enrollments are transferred to another org unit, the existing events keep their original org unit. While that's the expected default behaviour, sometimes we need to detect and fix these mismatches:
 
 ```shell
-$ yarn start:dev events detect-orgunits-outside-enrollment \
+$ yarn start events detect-orgunits-outside-enrollment \
   --url "http://localhost:8080" --auth "USER:PASS" \
   --notify-email="SUBJECT,EMAIL1,EMAIL2,..." \
   --post
@@ -271,7 +271,7 @@ $ yarn start events move-to-org-unit \
 ### Update events which met the condition
 
 ```shell
-yarn start events update-events \
+$ yarn start events update-events \
 --url='http://USER:PASSWORD@HOST:PORT' \
 --root-org-unit='org-unit-id'
 --event-ids='event_id_1,event_id_2,event_id_3' \
@@ -287,7 +287,7 @@ yarn start events update-events \
 When a boolean data value (true/false) is changed to some ternary option set (codes: Yes, No, N/A), we need to recode the existing events:
 
 ```shell
-yarn start events recode-boolean-data-values \
+$ yarn start events recode-boolean-data-values \
     --url "http://localhost:8080" --auth "USER:PASSWORD" \
     --program-id="sPRFZ9fP9w3" --ternary-optionset-id="u4jlYf94QEy"
 ```
@@ -319,7 +319,7 @@ $ yarn start datavalues post-dangling-values \
 It reverts the last data values, using the data value audit. For each of these data values, it finds its N audit records, gets the last valid and first invalid audit record and use them to build an updated data value. Example:
 
 ```shell
-yarn start datavalues revert \
+$ yarn start datavalues revert \
  --url='http://USER:PASSWORD@HOST:PORT' \
  --dataset-ids=Tu81BTLUuCT --orgunit-ids=XKKI1hhyFxk --periods=2020,2021 \
  --date=2022-06-01 --usernames="android" \
@@ -331,7 +331,7 @@ yarn start datavalues revert \
 It deletes the duplicated events for some events/tracker programs. An example:
 
 ```shell
-yarn start programs get-duplicated-events \
+$ yarn start programs get-duplicated-events \
   --url='http://USER:PASSWORD@HOST:PORT' \
   --save-report=duplicated-events-ecare-pilot.csv \
   --programs-ids=vYRMQ43Zl3Y --org-units-ids=yT7tCISNWG6 \
@@ -347,7 +347,7 @@ Notify data values changes and sending an email depending on how long has passed
 Using json as a storage:
 
 ```shell
-yarn start datavalues monitoring-values \
+$ yarn start datavalues monitoring-values \
 --url='http://USER:PASSWORD@localhost:8080' \
 --storage=json \
 --settings-path=./settings.json \
@@ -360,7 +360,7 @@ yarn start datavalues monitoring-values \
 Using dhis datastore as a storage:
 
 ```shell
-yarn start datavalues monitoring-values \
+$ yarn start datavalues monitoring-values \
 --url='http://USER:PASSWORD@localhost:8080' \
 --storage=datastore \
 --settings-path=d2-notifications.settings \
@@ -440,7 +440,7 @@ $ yarn start users migrate \
 Send an email to the user:
 
 ```shell
-yarn start users migrate \
+$ yarn start users migrate \
   --url='http://USER:PASSWORD@HOST:PORT' \
   --send-notification \
   --from='email' \
@@ -452,7 +452,7 @@ yarn start users migrate \
 Send an email both to the user and the administrator:
 
 ```shell
-yarn start users migrate \
+$ yarn start users migrate \
   --url='http://USER:PASSWORD@HOST:PORT' \
   --admin-email="admin@example.com" \
   --send-notification \
@@ -465,7 +465,7 @@ yarn start users migrate \
 Only generate a csv report without persisting changes:
 
 ```shell
-yarn start users migrate \
+$ yarn start users migrate \
   --url='http://USER:PASSWORD@HOST:PORT' \
   --from='email' \
   --to='username' \
@@ -489,7 +489,7 @@ DHIS2 does not support renaming usernames directly. While it is possible to upda
 To fully rename a username across all references, you need to execute a SQL script. Start by generating the script using the following command:
 
 ```shell
- yarn start users rename-username \
+$ yarn start users rename-username \
   --mapping=user1old:user1new,user2old:user2new \
   [--dry-run] --output=rename.sql
 ```
@@ -497,7 +497,7 @@ To fully rename a username across all references, you need to execute a SQL scri
 And then run the generated SQL script in your database to perform the actual renaming:
 
 ```shell
-psql -U dhis dhis2 -f rename.sql
+$ psql -U dhis dhis2 -f rename.sql
 ```
 
 Replace `dhis` with your database username and `dhis2` with your database name if they differ. Ensure you have a backup of the database before applying the changes.
@@ -517,8 +517,8 @@ yarn start usermonitoring run-2fa-reporter --config-file config.json
 #### Debug:
 
 ```shell
-LOG_LEVEL=debug node --inspect-brk dist/index.js usermonitoring run-users-monitoring   --config-file config.json
-LOG_LEVEL=debug node --inspect-brk dist/index.js usermonitoring run-2fa-reporter   --config-file config.json
+$ LOG_LEVEL=debug node --inspect-brk dist/index.js usermonitoring run-users-monitoring   --config-file config.json
+$ LOG_LEVEL=debug node --inspect-brk dist/index.js usermonitoring run-2fa-reporter   --config-file config.json
 ```
 
 #### Requirements:
@@ -683,10 +683,10 @@ Note: the names are used only to make easy understand and debug the keys.
 #### Execution:
 
 ```shell
-yarn start usermonitoring run-authorities-monitoring --config-file config.json
+$ yarn start usermonitoring run-authorities-monitoring --config-file config.json
 
 # To get the debug logs and store them in a file use:
-LOG_LEVEL=debug yarn start usermonitoring run-authorities-monitoring --config-file config.json &> authorities-monitoring.log
+$ LOG_LEVEL=debug yarn start usermonitoring run-authorities-monitoring --config-file config.json &> authorities-monitoring.log
 ```
 
 #### Parameters:
@@ -766,10 +766,10 @@ This script will compare the metadata of the monitored userGroups with the versi
 #### Execution:
 
 ```shell
-yarn start usermonitoring run-user-groups-monitoring --config-file config.json
+$ yarn start usermonitoring run-user-groups-monitoring --config-file config.json
 
 # To get the debug logs and store them in a file use:
-LOG_LEVEL=debug yarn start usermonitoring run-user-groups-monitoring --config-file config.json &> user-groups-monitoring.log
+$ LOG_LEVEL=debug yarn start usermonitoring run-user-groups-monitoring --config-file config.json &> user-groups-monitoring.log
 ```
 
 #### Parameters:
@@ -814,10 +814,10 @@ The User Templates Monitoring script is used to compare user templates with the 
 #### Execution:
 
 ```shell
-yarn start usermonitoring run-user-templates-monitoring --config-file config.json
+$ yarn start usermonitoring run-user-templates-monitoring --config-file config.json
 
 # To get the debug logs and store them in a file use:
-LOG_LEVEL=debug yarn start usermonitoring run-user-templates-monitoring --config-file config.json &> user-templates-monitoring.log
+$ LOG_LEVEL=debug yarn start usermonitoring run-user-templates-monitoring --config-file config.json &> user-templates-monitoring.log
 ```
 
 #### Parameters:
@@ -863,7 +863,7 @@ If a section is empty, it will be omitted from the report.
 Get all the TEIS in the program and move the value from the attribute in the argument `--from-attribute-id` to the attribute `--to-attribute-id`. Then delete the value in `--from-attribute-id`.
 
 ```shell
-yarn start programs move-attribute \
+$ yarn start programs move-attribute \
 --url='http://USER:PASSWORD@HOST:PORT' \
 --program-id=WCJhvPcJomX \
 --from-attribute-id=MyOceAlOxLK \
@@ -909,7 +909,7 @@ $ LOG_LEVEL=debug node dist/index.js sync validate \
 Get a CSV with the IDs of the items used by Indicators:
 
 ```shell
-yarn start indicators get-ref-ids \
+$ yarn start indicators get-ref-ids \
 --url='https://admin:district@play.dhis2.org/2.38.6/' \
 --indicators=Uvn6LCg7dVU,ReUHfIn0pTQ \
 --ds-filter=QX4ZTUbOt3a,aLpVgfXiz0f \
@@ -931,7 +931,7 @@ UID | Indicator | Numerator | Numerator Description | List of referenced dataEle
 Get a CSV with a report of the values of dataElements and categoryOptionCombos:
 
 ```shell
-yarn start indicators get-de-values-report \
+$ yarn start indicators get-de-values-report \
 --url='https://admin:district@play.dhis2.org/2.38.6/' \
 --indicators=Uvn6LCg7dVU,ReUHfIn0pTQ \
 --org-unit=DiszpKrYNg8 \
@@ -955,7 +955,7 @@ dataElement ID | dataElement Name | categoryOptionCombo ID | categoryOptionCombo
 Transfer tracked entities to another org unit, using a CSV as source data (expected columns: trackedEntityId, newOrgUnitId):
 
 ```shell
-yarn start trackedEntities transfer \
+$ yarn start trackedEntities transfer \
   --url=http://localhost:8080 \
   --auth="USER:PASSWORD"  \
   --input-file=transfers.csv \
@@ -975,7 +975,7 @@ Rename an option code (options are the children of option sets). Actions:
 -   tracker: recode the associated tracked entity attributes (TODO)
 
 ```shell
-yarn start options rename-code \
+$ yarn start options rename-code \
   --url=https://play.im.dhis2.org/stable-2-41-3 \
   --auth="admin:distrct"  \
    --id=YQe3PFbATvz \
@@ -991,7 +991,7 @@ Generate a simple text report on console with info about dataValues/events/track
 org units branch (pass the parent orgunit ID):
 
 ```shell
-yarn start data get-report \
+$ yarn start data get-report \
     --url="https://play.im.dhis2.org/dev" \
     --auth="admin:district" \
     --orgunit-id="DiszpKrYNg8"
@@ -1010,8 +1010,8 @@ The date can have either `YYYY-MM-DD` or `YYYY-MM-DDThh:mm:ss` format. If no tim
 
 If some of the enrollments could not be closed their info is stored in a `close_errors_<timestamp>.json` file.
 
-```console
-shell:~$ yarn start enrollments close \
+```shell
+$ yarn start enrollments close \
   --url 'http://USER:PASSWORD@localhost:8080' \
   --org-unit-id 'DiszpKrYNg8' \
   --program-id 'WCJhvPcJomX' \
@@ -1020,8 +1020,8 @@ shell:~$ yarn start enrollments close \
 
 To get the debug log use:
 
-```console
-shell:~$ LOG_LEVEL=debug yarn start enrollments close \
+```shell
+$ LOG_LEVEL=debug yarn start enrollments close \
   --url 'http://USER:PASSWORD@localhost:8080' \
   --org-unit-id 'DiszpKrYNg8' \
   --program-id 'WCJhvPcJomX' \
@@ -1032,10 +1032,34 @@ shell:~$ LOG_LEVEL=debug yarn start enrollments close \
 
 ### Translations
 
-Translate all the COCs for a specific category combo (if not specified, post for all)
+DHIS2 (at least up to v2.43) does **not**:
 
-```console
-shell:~$ yarn start:dev categoryOptionCombos translate \
+-   Use `categoryOptionCombo[].categoryOptions` to dynamically generate translated names.
+-   Set `categoryOptionCombo.translations` at creation.
+
+As a result, `displayName` always defaults to `name`, which is not localized.
+
+This script generates localized display names for CategoryOptionCombos by combining translations of related `CategoryOptions` in their correct order.
+
+Legacy support: Older COCs with mismatched category definitions are skipped.
+
+Locale fallback: If a translation is missing for one option in a locale, its name (typically, English) is used for that option.
+
+**Example (fr locale)**
+
+Given:
+
+-   `categoryOptions`: [`15+`, `Female`]
+-   Translations:
+    -   `15+` → `15 ans et plus`
+    -   `Female` → `Femme`
+
+Result: name="15 ans et plus, Femme"
+
+Additionally, the script sets `categoryOptionCombo.name` using the English translations of the associated CategoryOptions (if that translation is not available, use its name instead).
+
+```shell
+$ yarn start categoryOptionCombos translate \
     --url=https://play.im.dhis2.org/dev \
     --auth="admin:district" \
     --category-combo-ids=v1K6CE6bmtw

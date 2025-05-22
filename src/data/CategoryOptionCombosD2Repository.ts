@@ -21,6 +21,7 @@ export class CategoryOptionCombosD2Repository implements CategoryOptionCombosRep
             filter: !_.isEmpty(categoryComboIds) ? { "categoryCombo.id": { in: categoryComboIds } } : {},
             pageSize: options.pagination.pageSize,
             page: options.pagination.page,
+            order: "id:asc",
         });
 
         const res = await metadata$.getData();

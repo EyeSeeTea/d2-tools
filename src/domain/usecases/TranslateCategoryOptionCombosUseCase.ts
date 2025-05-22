@@ -20,7 +20,7 @@ export class TranslateCategoryOptionCombosUseCase {
 
             const result: TranslateCocsResult = {
                 total: cocs.length,
-                needTranslations: cocsTranslated.length,
+                untranslated: cocsTranslated.length,
             };
 
             if (options.post) {
@@ -34,7 +34,7 @@ export class TranslateCategoryOptionCombosUseCase {
     }
 
     private logTranslationsInfo(cocs: CategoryOptionCombo[], cocsTranslated: CategoryOptionCombo[]) {
-        logger.info(`${cocs.length} category option combos, ${cocsTranslated.length} need translations`);
+        logger.info(`${cocs.length} category option combos (${cocsTranslated.length} untranslated)`);
 
         if (_.isEmpty(cocsTranslated)) return;
 
@@ -63,10 +63,12 @@ export class TranslateCategoryOptionCombosUseCase {
         }
 
         return _(cocs)
+            .reject(coc => coc.name === "default") // default COC is not translatable
             .map(coc => {
                 const cocTranslated = this.translateCoc(coc);
-                const alreadyTranslated = _.isEqual(sort(coc.translations), sort(cocTranslated.translations));
-
+                const equalName = coc.name === cocTranslated.name;
+                const equalTranslations = _.isEqual(sort(coc.translations), sort(cocTranslated.translations));
+                const alreadyTranslated = equalName && equalTranslations;
                 return alreadyTranslated ? undefined : cocTranslated;
             })
             .compact()
@@ -89,20 +91,21 @@ export class TranslateCategoryOptionCombosUseCase {
         });
     }
 
-    private translateCoc(coc: CategoryOptionCombo): CategoryOptionCombo {
+    /* Assign translations to Coc from its categoryOptions + set English name */
+    private translateCoc(categoryOptionCombo: CategoryOptionCombo): CategoryOptionCombo {
         // Return category option combo untranslated when it has no options.
         // This happens when the options order could not be determined from the category combo.
-        if (_.isEmpty(coc.categoryOptions)) return coc;
+        if (_.isEmpty(categoryOptionCombo.categoryOptions)) return categoryOptionCombo;
 
-        const localesUsedInTranslations = _(coc.categoryOptions)
+        const localesUsedInTranslations = _(categoryOptionCombo.categoryOptions)
             .flatMap(categoryOption => categoryOption.translations)
             .filter(translation => translation.property === "NAME")
             .map(translation => translation.locale)
             .uniq()
             .value();
 
-        const cocTranslationsFromOptions = localesUsedInTranslations.map(locale => {
-            const parts = coc.categoryOptions.map(categoryOption => {
+        const translationsFromOptions = localesUsedInTranslations.map(locale => {
+            const parts = categoryOptionCombo.categoryOptions.map(categoryOption => {
                 const translationForLocale = categoryOption.translations.find(
                     translation => translation.property === "NAME" && translation.locale === locale
                 );
@@ -110,7 +113,7 @@ export class TranslateCategoryOptionCombosUseCase {
                 if (!translationForLocale) {
                     logger.debug(
                         `Category option id="${categoryOption.id}", name="${categoryOption.name}" ` +
-                            `does not have a ${locale} translation, using its name`
+                            `does not have a translation for locale "${locale}", using its name`
                     );
                     return categoryOption.name;
                 } else {
@@ -121,22 +124,36 @@ export class TranslateCategoryOptionCombosUseCase {
             return { locale: locale, property: "NAME", value: parts.join(", ") };
         });
 
-        return { ...coc, translations: cocTranslationsFromOptions };
+        const englishNameFromOptions = categoryOptionCombo.categoryOptions
+            .map(categoryOption => {
+                const translationForEnglish = categoryOption.translations.find(
+                    translation => translation.property === "NAME" && translation.locale.startsWith("en")
+                );
+
+                return translationForEnglish?.value || categoryOption.name;
+            })
+            .join(", ");
+
+        return {
+            ...categoryOptionCombo,
+            name: englishNameFromOptions,
+            translations: translationsFromOptions,
+        };
     }
 }
 
 export type TranslateCocsResult = {
     total: number;
-    needTranslations: number;
+    untranslated: number;
 };
 
 function mergeResults(results: TranslateCocsResult[]): TranslateCocsResult {
     return results.reduce(
         (acc, result) => ({
             total: acc.total + result.total,
-            needTranslations: acc.needTranslations + result.needTranslations,
+            untranslated: acc.untranslated + result.untranslated,
         }),
-        { total: 0, needTranslations: 0 }
+        { total: 0, untranslated: 0 }
     );
 }
 
