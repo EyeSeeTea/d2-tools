@@ -1,17 +1,52 @@
 import _ from "lodash";
 import { OptionSet } from "domain/entities/OptionSet";
-import { OptionValidationResult, OptionValidationError } from "domain/entities/OptionValidationResult";
+import {
+    OptionValidationResult,
+    OptionValidationError,
+    validationActions,
+} from "domain/entities/OptionValidationResult";
 import { OptionSetRepository } from "domain/repositories/OptionSetRepository";
 import { Async } from "domain/entities/Async";
 import { Option } from "domain/entities/Option";
 import { Maybe } from "utils/ts-utils";
+import { OptionRepository } from "domain/repositories/OptionRepository";
+import { promiseMap } from "data/dhis2-utils";
 
 export class ValidateOptionSetsUseCase {
-    constructor(private readonly optionSetRepository: OptionSetRepository) {}
+    constructor(
+        private readonly optionSetRepository: OptionSetRepository,
+        private readonly optionRepository: OptionRepository
+    ) {}
 
     async execute(options: UseCaseOptions): Async<OptionValidationResult[]> {
         const optionsSets = await this.optionSetRepository.getAll();
-        return this.buildOptionValidationResults(optionsSets, options);
+        const validationResults = this.buildOptionValidationResults(optionsSets, options);
+        await this.saveOptions(options, validationResults);
+
+        return validationResults;
+    }
+
+    private async saveOptions(
+        options: UseCaseOptions,
+        validationResults: OptionValidationResult[]
+    ): Async<void> {
+        if (!options.update) return;
+
+        const optionsToSave = this.fixAndGetOptions(validationResults);
+
+        await promiseMap(optionsToSave, async option => {
+            await this.optionRepository.save(option, { dryRun: !options.update });
+        });
+    }
+
+    private fixAndGetOptions(validationResults: OptionValidationResult[]): Option[] {
+        return validationResults.map(validationResult => {
+            const fixedOption = validationResult.errors
+                .map(err => validationActions[err.type].validation)
+                .reduce((option, applyFix) => applyFix(option), validationResult.option);
+
+            return fixedOption;
+        });
     }
 
     private buildOptionValidationResults(
@@ -43,7 +78,8 @@ export class ValidateOptionSetsUseCase {
 
                 const namingConventionRules = this.validateNamingConventions(option, propertyName);
                 const includeCommasRules = this.validateCommas(option, propertyName);
-                const orderRules = this.validateOrder(option, optionIndex);
+                const orderRules =
+                    propertyName === "code" ? this.validateOrder(option, optionIndex) : undefined;
 
                 const allOptionsErrors = _([
                     invalidLengthRules,
@@ -138,5 +174,5 @@ export class ValidateOptionSetsUseCase {
     }
 }
 
-type UseCaseOptions = { lengthToValidate: number };
+type UseCaseOptions = { lengthToValidate: number; update: boolean };
 type PropertyToValidate = keyof Pick<Option, "code" | "name">;
