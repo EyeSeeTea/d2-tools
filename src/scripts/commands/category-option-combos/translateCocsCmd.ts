@@ -82,6 +82,10 @@ export const translateCocsCmd = command({
 
         const useCase = new TranslateCategoryOptionCombosUseCase(categoryOptionCombosRepository);
         const res = await useCase.execute(args);
-        console.info(`${res.total} category option combos, ${res.needTranslations} need translations`);
+        if (args.post) {
+            console.info(`${res.total} category option combos (${res.untranslated} have been translated)`);
+        } else {
+            console.info(`${res.total} category option combos (${res.untranslated} need to be translated)`);
+        }
     },
 });
