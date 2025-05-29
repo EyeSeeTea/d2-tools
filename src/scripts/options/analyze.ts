@@ -21,7 +21,7 @@ export const analyzeOptionsCmd = command({
         }),
         lengthToValidate: option({
             type: number,
-            long: "length",
+            long: "code-name-length",
             description: "Max length of the code/name for it to be considered valid",
             defaultValue: () => DEFAULT_VALID_LENGTH,
         }),

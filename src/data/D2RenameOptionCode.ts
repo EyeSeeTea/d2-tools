@@ -16,6 +16,7 @@ import { saveJsonToDisk } from "./files";
  * 2) Update the option metadata
  * 3) Update the data
  * 4) rollback if an error occurs (save json to disk and persist initial data)
+ *    Initial data is always saved to disk as a backup in case rollback cannot be performed.
  *
  * Tasks:
  *
@@ -33,7 +34,7 @@ export class D2RenameOptionCode {
         const { option } = options;
         const metadata = await this.getMetadata(option);
 
-        const optionsWithMetadataValues = await this.getValuesForOption({ ...options, metadata });
+        const optionsWithMetadataValues = await this.getOptionsWithMetadata({ ...options, metadata });
 
         this.saveDataToDisk(optionsWithMetadataValues);
 
@@ -43,7 +44,9 @@ export class D2RenameOptionCode {
         });
     }
 
-    private async getValuesForOption(options: RecodeOptionsWithMetadata): Async<OptionsWithMetadataValues> {
+    private async getOptionsWithMetadata(
+        options: RecodeOptionsWithMetadata
+    ): Async<OptionsWithMetadataValues> {
         const { option, toCode, metadata } = options;
 
         const dataValues = await this.getDataValues(options);
@@ -71,8 +74,8 @@ export class D2RenameOptionCode {
         await this.saveOption(options);
 
         // Update data
-        await this.recodeDataValuesPost(dataValues);
-        await this.recodeEventsPost(events);
+        await this.postDataValues(dataValues);
+        await this.postEvents(events);
     }
 
     /* Private methods */
@@ -183,7 +186,7 @@ export class D2RenameOptionCode {
         return dataValuesUpdated;
     }
 
-    private async recodeDataValuesPost(dataValues: DataValueSetsDataValue[]): Async<void> {
+    private async postDataValues(dataValues: DataValueSetsDataValue[]): Async<void> {
         console.debug(`[recodeDataValues] Data values to post: ${dataValues.length}`);
 
         if (this.dryRun) {
@@ -254,7 +257,7 @@ export class D2RenameOptionCode {
         return eventsRecoded;
     }
 
-    private async recodeEventsPost(events: D2Event[]): Async<void> {
+    private async postEvents(events: D2Event[]): Async<void> {
         console.debug(`[recodeEvents] Events to post: ${events.length}`);
 
         if (this.dryRun) {
@@ -276,8 +279,8 @@ export class D2RenameOptionCode {
         console.debug("[rollback] Executing rollback...");
 
         await this.saveOption({ ...options, toCode: option.code, metadata });
-        await this.recodeDataValuesPost(initialDataValues);
-        await this.recodeEventsPost(initialEvents);
+        await this.postDataValues(initialDataValues);
+        await this.postEvents(initialEvents);
 
         console.debug("[rollback] Rollback completed");
     }
@@ -286,7 +289,7 @@ export class D2RenameOptionCode {
         const { option, initialDataValues, initialEvents } = options;
 
         saveJsonToDisk(`dataValues_${option.id}`, { dataValues: initialDataValues });
-        saveJsonToDisk(`events_${option.id}.json`, { events: initialEvents });
+        saveJsonToDisk(`events_${option.id}`, { events: initialEvents });
 
         console.debug(`Initial data saved to disk: option, dataValues and events`);
     }

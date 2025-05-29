@@ -21,7 +21,10 @@ export class ValidateOptionSetsUseCase {
     async execute(options: UseCaseOptions): Async<OptionValidationResult[]> {
         const optionsSets = await this.optionSetRepository.getAll();
         const validationResults = this.buildOptionValidationResults(optionsSets, options);
-        await this.saveOptions(options, validationResults);
+
+        if (options.update) {
+            await this.saveOptions(options, validationResults);
+        }
 
         return validationResults;
     }
@@ -94,15 +97,13 @@ export class ValidateOptionSetsUseCase {
             return _(allPropertiesValidationResult)
                 .groupBy(x => x.option.id)
                 .map((group): OptionValidationResult => {
-                    const option = group[0]?.option;
-                    const optionSet = group[0]?.optionSet;
-                    if (!optionSet) throw new Error("No optionSet found");
-                    if (!option) throw new Error("No option found");
+                    const firstGroup = group[0];
+                    if (!firstGroup) throw new Error("No option/optionSet found");
 
                     const errors = group.flatMap(x => x.errors);
                     return {
-                        option,
-                        optionSet,
+                        option: firstGroup.option,
+                        optionSet: firstGroup.optionSet,
                         errors: errors,
                     };
                 })
@@ -115,8 +116,9 @@ export class ValidateOptionSetsUseCase {
         validationLength: number,
         propertyName: PropertyToValidate
     ): Maybe<OptionValidationError> {
-        return option[propertyName].length > validationLength
-            ? { type: "invalid_length", message: `${propertyName} length is ${option.code.length}` }
+        const value = option[propertyName];
+        return value.length > validationLength
+            ? { type: "invalid_length", message: `${propertyName} length is ${value.length}` }
             : undefined;
     }
 
