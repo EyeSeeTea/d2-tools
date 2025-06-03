@@ -4,7 +4,7 @@ import {
     MetadataObject,
     MetadataObjectWithTranslations,
 } from "domain/entities/MetadataObject";
-import { Pager } from "domain/entities/Pager";
+import { Paginated } from "domain/entities/Pagination";
 
 export interface MetadataRepository {
     getPaginated(options: { model: MetadataModel; page: number }): Async<Paginated<MetadataObject>>;
@@ -20,5 +20,3 @@ export type Payload = Record<MetadataModel, object[]>;
 export interface SaveOptions {
     dryRun: boolean;
 }
-
-export type Paginated<T> = { objects: T[]; pager: Pager };

@@ -18,6 +18,7 @@ import * as trackedEntities from "./commands/trackedEntities";
 import * as enrollments from "./commands/enrollments";
 import * as options from "./commands/options";
 import * as data from "./commands/data/data";
+import * as categoryOptionCombos from "./commands/categoryOptionCombos";
 import * as metadata from "./commands/metadata";
 
 export function runCli() {
@@ -41,6 +42,7 @@ export function runCli() {
             enrollments: enrollments.getCommand(),
             options: options.getCommand(),
             data: data.getCommand(),
+            categoryOptionCombos: categoryOptionCombos.getCommand(),
             metadata: metadata.getCommand(),
         },
     });
