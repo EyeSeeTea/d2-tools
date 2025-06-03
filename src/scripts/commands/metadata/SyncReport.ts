@@ -11,6 +11,11 @@ export class SyncReport {
             "exclusive_metadata.csv",
             "Exclusive metadata CSV report"
         );
+        writeFileSync(
+            "exclusive_metadata.json",
+            JSON.stringify(syncReport.exclusiveMetadata, null, 2),
+            "utf-8"
+        );
 
         const metadataDiscrepanciesCsvContent = this.generateDiscrepanciesMetadataCsv(syncReport);
 
@@ -18,6 +23,11 @@ export class SyncReport {
             metadataDiscrepanciesCsvContent,
             "discrepancies_metadata.csv",
             "Discrepancies metadata CSV report"
+        );
+        writeFileSync(
+            "discrepancies_metadata.json",
+            JSON.stringify(syncReport.metadataWithCodeDiscrepancies, null, 2),
+            "utf-8"
         );
 
         const metadataPropertiesDiscrepanciesCsvContent =
@@ -27,6 +37,11 @@ export class SyncReport {
             metadataPropertiesDiscrepanciesCsvContent,
             "properties_discrepancies_metadata.csv",
             "Properties discrepancies metadata CSV report"
+        );
+        writeFileSync(
+            "properties_discrepancies_metadata.json",
+            JSON.stringify(syncReport.metadataWithPropertiesDiscrepancies, null, 2),
+            "utf-8"
         );
     }
 
@@ -52,7 +67,7 @@ export class SyncReport {
                             item.mainObject.code,
                             item.replicaObject.code ?? "",
                             item.replicaIndex + 1,
-                            item.differingFields.join(", "),
+                            item.differingFields.join("-"),
                         ],
                     ])
                 )
