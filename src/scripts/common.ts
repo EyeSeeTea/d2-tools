@@ -130,9 +130,7 @@ export const IdsSeparatedByCommas: Type<string, string[]> = {
 
 export const AuthString: Type<string, Auth> = {
     async from(str) {
-        const [username, password] = str.split(":");
-        if (!username || !password) throw new Error(`Invalid pair: ${str} (expected USERNAME:PASSWORD)`);
-        return { username, password };
+        return buildAuthFromString(str);
     },
 };
 
@@ -196,4 +194,10 @@ export const MetadataDate: Type<string, string> = {
             return str;
         }
     },
+};
+
+export const buildAuthFromString = (str: string): Auth => {
+    const [username, password] = str.split(":");
+    if (!username || !password) throw new Error(`Invalid pair: ${str} (expected USERNAME:PASSWORD)`);
+    return { username, password };
 };

@@ -9,6 +9,7 @@ export interface MetadataObject {
     id: Id;
     name: string;
     code: Maybe<string>;
+    additionalFields?: Record<string, unknown>;
 }
 
 export interface MetadataObjectWithTranslations extends MetadataObject {
