@@ -4,6 +4,7 @@ import { Option } from "domain/entities/Option";
 import { OptionRepository } from "domain/repositories/OptionRepository";
 import { Maybe } from "utils/ts-utils";
 import { D2RenameOptionCode } from "./D2RenameOptionCode";
+import { saveJsonToDisk } from "./files";
 
 export class OptionD2Repository implements OptionRepository {
     constructor(private api: D2Api) {}
@@ -25,16 +26,22 @@ export class OptionD2Repository implements OptionRepository {
 
         if (!optionCodeChanged) {
             if (!options.dryRun) {
+                this.saveOptionToDisk(option.id, existingOption);
                 const res = await this.api.metadata.post({ options: [d2Option] }).getData();
                 console.debug(`Saved option with id ${option.id}: ${JSON.stringify(res.status)}`);
                 if (res.status !== "OK") throw new Error(`Failed to save option: ${JSON.stringify(res)}`);
             }
         } else {
+            this.saveOptionToDisk(option.id, existingOption);
             await new D2RenameOptionCode(this.api, { dryRun: options.dryRun }).execute({
                 option: existingOption,
                 toCode: option.code,
             });
         }
+    }
+
+    private saveOptionToDisk(optionId: string, content: unknown) {
+        saveJsonToDisk(`options_${optionId}`, { options: [content] });
     }
 
     private async getMaybeOptionById(id: string): Async<Maybe<Option>> {
