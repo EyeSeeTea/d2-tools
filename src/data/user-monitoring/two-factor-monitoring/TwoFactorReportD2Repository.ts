@@ -10,7 +10,6 @@ import { UserMonitoringFileResourceUtils } from "../common/UserMonitoringFileRes
 
 const dataelement_invalid_two_factor_count_code = "ADMIN_users_without_two_factor_count_7_Events";
 const dataelement_invalid_two_factor_usernames_list_code = "ADMIN_users_without_two_factor_8_Events";
-
 const filenameUserReported = `_users_reported.csv`;
 type ServerResponse = { status: string; typeReports: object[] };
 
@@ -54,10 +53,8 @@ export class TwoFactorReportD2Repository implements TwoFactorReportRepository {
                     case dataelement_invalid_two_factor_count_code:
                         return { dataElement: item.id, value: invalidConfigNumber };
                     case dataelement_invalid_two_factor_usernames_list_code:
-                        return {
-                            dataElement: item.id,
-                            value: invalidConfigUsers,
-                        };
+                        if (invalidConfigNumber == "0") return { dataElement: "", value: "" };
+                        return { dataElement: item.id, value: invalidConfigUsers };
                     default:
                         return { dataElement: "", value: "" };
                 }

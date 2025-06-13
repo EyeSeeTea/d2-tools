@@ -11,7 +11,9 @@ export class UserMonitoringFileResourceUtils {
     //This method only works right when you build the application using nvm use 16
     static async saveFileResource(jsonString: string, name: string, api: D2Api): Async<string> {
         const jsonBlob = Buffer.from(jsonString, "utf-8");
-
+        if (jsonBlob.length === 0){
+            return "Error: The file is empty. Please provide a valid file content.";
+        }
         const files = new Files(api);
         const uniqueFilename = this.createUniqueFilename(name);
         const form: FileUploadParameters = {
