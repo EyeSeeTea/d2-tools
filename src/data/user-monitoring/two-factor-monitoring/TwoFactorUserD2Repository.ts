@@ -11,6 +11,7 @@ export class TwoFactorUserD2Repository implements TwoFactorUserRepository {
     async getUsersByGroupId(groupIds: string[]): Async<TwoFactorUser[]> {
         log.info(`Get users by group: Users by ids: ${groupIds.join(",")}`);
         //todo use d2api filters
+
         const responses = await this.api
             .get<Users>(
                 `/users.json?paging=false&fields=*,userCredentials[*]&filter=userGroups.id:in:[${groupIds.join(
@@ -24,8 +25,37 @@ export class TwoFactorUserD2Repository implements TwoFactorUserRepository {
                 id: user.id,
                 username: user.username,
                 twoFA: twoFA ?? false,
+                disabled: user.disabled ?? false,
+                externalAuth: user.externalAuth ?? false,
+                userGroups: user.userGroups ?? [],
             };
         });
     }
+
+    async disableUsers(userIds: string[]):Async<string>{
+        log.info(`Disabling users by ids: ${userIds.join(",")}`);
+
+        const results = await Promise.all(
+            userIds.map(async userId => {
+                try {
+                    const response = await this.api
+                        .request<string>({
+                            method: "patch",
+                            url: `/41/users/${userId}`,
+                            headers: { "Content-Type": "application/json-patch+json" },
+                            data: [{ op: "replace", path: "/disabled", value: true }],
+                        })
+                        .getData();
+
+                    return { userId, status: "success", response };
+                } catch (error) {
+                    log.error(`Error disabling user ${userId}:` + error);
+                    return { userId, status: "error", error };
+                }
+            })
+        );
+        return JSON.stringify(results);
+    }
 }
+
 type Users = { users: PermissionFixerUser[] };
