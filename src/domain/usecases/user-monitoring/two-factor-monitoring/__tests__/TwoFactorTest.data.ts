@@ -1,7 +1,7 @@
 import { TwoFactorUser } from "domain/entities/user-monitoring/two-factor-monitoring/TwoFactorUser";
 import { TwoFactorUserOptions } from "domain/entities/user-monitoring/two-factor-monitoring/TwoFactorUserOptions";
 
-export const config: TwoFactorUserOptions = {
+const common_config = {
     pushProgram: {
         id: "IKpEgoQ4S0r",
         name: "Event program uid",
@@ -12,6 +12,37 @@ export const config: TwoFactorUserOptions = {
     },
 };
 
+export const default_config: TwoFactorUserOptions = {
+    ...common_config,
+    config: {
+    disableInvalid: false,
+    exceptionGroup: [
+    ]
+  },
+};
+
+export const disable_users_config: TwoFactorUserOptions = {
+    ...common_config,
+    config: {
+    disableInvalid: true,
+    exceptionGroup: [
+    ]
+  },
+};
+
+export const config_exception_and_disabled: TwoFactorUserOptions = {
+    ...common_config,
+    config: {
+    disableInvalid: true,
+    exceptionGroup: [
+      {
+        id: "dummy_uid",
+        name: "dummy_group_name"
+      }
+    ]
+  },
+};
+
 export const NoUsersReport = {
     invalidUsersCount: 0,
     listOfAffectedUsers: [],
@@ -20,14 +51,50 @@ export const NoUsersReport = {
 export const userWithTwoFA: TwoFactorUser = {
     id: "userUid",
     twoFA: true,
+    disabled: false,
     username: "username",
+    externalAuth: false,
+    userGroups: [ {
+        id: "dummy_uid",
+        name: "dummy_group_name"
+      }],
 };
 
 export const userWithoutTwoFA: TwoFactorUser = {
     id: "userUid2",
     twoFA: false,
+    disabled: false,
     username: "username2",
+    externalAuth: false,
+    userGroups: [ {
+        id: "dummy_uid",
+        name: "dummy_group_name"
+      }],
 };
+
+export const userWithTwoFAdisabled: TwoFactorUser = {
+    id: "userUid",
+    twoFA: true,
+    disabled: true,
+    username: "username",
+    externalAuth: false,
+    userGroups: [ {
+        id: "dummy_uid",
+        name: "dummy_group_name"
+      }],
+};
+export const userWithoutTwoFAdisabled: TwoFactorUser = {
+    id: "userUid2",
+    twoFA: false,
+    disabled: true,
+    username: "username2",
+    externalAuth: false,
+    userGroups: [ {
+        id: "dummy_uid",
+        name: "dummy_group_name"
+      }],
+};
+
 
 export const listOfUsers: TwoFactorUser[] = [userWithTwoFA, userWithoutTwoFA];
 export const listOfUsersWithTwoInvalid: TwoFactorUser[] = [userWithTwoFA, userWithoutTwoFA, userWithoutTwoFA];

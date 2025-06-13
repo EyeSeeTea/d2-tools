@@ -6,8 +6,10 @@ import { TwoFactorReportD2Repository } from "data/user-monitoring/two-factor-mon
 import { TwoFactorUserReport } from "domain/entities/user-monitoring/two-factor-monitoring/TwoFactorUserReport";
 import { Async } from "domain/entities/Async";
 import { NonUsersException } from "domain/entities/user-monitoring/two-factor-monitoring/exception/NonUsersException";
+import { TwoFactorUser } from "domain/entities/user-monitoring/two-factor-monitoring/TwoFactorUser";
+import { log } from "console";
 
-type TwoFactorReportResponse = { message: string; report: TwoFactorUserReport };
+type TwoFactorReportResponse = { message: string; report: TwoFactorUserReport, disableUsersMessage: string };
 
 export class RunTwoFactorReportUseCase {
     constructor(
@@ -19,6 +21,7 @@ export class RunTwoFactorReportUseCase {
 
     async execute(): Async<TwoFactorReportResponse> {
         const options = await this.configRepository.get();
+
         const twoFactorGroupUsers = await this.userRepository.getUsersByGroupId([options.twoFactorGroup.id]);
 
         if (!twoFactorGroupUsers) {
@@ -27,18 +30,49 @@ export class RunTwoFactorReportUseCase {
             );
         }
 
-        const usersWithoutTwoFactor = twoFactorGroupUsers.filter(user => {
-            return user.twoFA == false;
+        const excludedUserGroups = options.config.exceptionGroup?.map(group => group.id) ?? [];
+        const excludedUsers = twoFactorGroupUsers.filter(user => {
+            return (
+                user.userGroups.some(group => excludedUserGroups.includes(group.id))
+            );
         });
-        const userItems = usersWithoutTwoFactor.map(user => {
+
+        const activeUsersWithoutTwoFactor = twoFactorGroupUsers.filter(user => {
+            return user.twoFA == false && user.disabled == false && user.externalAuth == false;
+        });
+
+        const activeUsersWithoutTwoFactorFiltered = _.differenceBy(
+            activeUsersWithoutTwoFactor,
+            excludedUsers,
+            "id"
+        );
+
+        (options.config.exceptionGroup ?? []).map(group => group.id)
+        const userItems = activeUsersWithoutTwoFactorFiltered.map(user => {
             return { id: user.id, name: user.username };
         });
+
         const report: TwoFactorUserReport = {
             invalidUsersCount: userItems.length,
-            listOfAffectedUsers: userItems,
+            listOfAffectedUsers: userItems ?? ["No users found"]
         };
+
         const programMetadata = await this.programRepository.get(options.pushProgram.id);
+        
         const saveResponse = await this.reportRepository.save(programMetadata, report);
-        return { message: saveResponse, report };
+
+        const disabledUserResponse = await disableUsers(options.config.disableInvalid, activeUsersWithoutTwoFactorFiltered, this.userRepository);
+        return { message: saveResponse, disableUsersMessage: disabledUserResponse, report };
     }
 }
+
+async function disableUsers(disableInvalid: boolean, activeUsersWithoutTwoFactorFiltered: TwoFactorUser[], userRepository: TwoFactorUserD2Repository): Async<string> {
+    if (disableInvalid) {
+            const disableResponse = await userRepository.disableUsers(
+                activeUsersWithoutTwoFactorFiltered.map(user => user.id)
+            );
+            return JSON.stringify(disableResponse);;
+    }
+    return "Disabled users action is not enabled."
+}
+
