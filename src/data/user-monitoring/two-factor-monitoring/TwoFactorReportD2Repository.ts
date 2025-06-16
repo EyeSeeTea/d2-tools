@@ -10,6 +10,11 @@ import { UserMonitoringFileResourceUtils } from "../common/UserMonitoringFileRes
 
 const dataelement_invalid_two_factor_count_code = "ADMIN_users_without_two_factor_count_7_Events";
 const dataelement_invalid_two_factor_usernames_list_code = "ADMIN_users_without_two_factor_8_Events";
+const dataelement_invalid_who_accounts_list = "ADMIN_users_with_invalid_who_account_9_Events";
+const dataelement_invalid_who_accounts = "ADMIN_users_with_invalid_who_account_count_10";
+const dataelement_invalid_auth_list = "ADMIN_users_without_auth_groups_11_Events";
+const dataelement_invalid_auth = "ADMIN_users_without_auth_groups_count_12_Events";
+
 const filenameUserReported = `_users_reported.csv`;
 type ServerResponse = { status: string; typeReports: object[] };
 
@@ -17,17 +22,40 @@ export class TwoFactorReportD2Repository implements TwoFactorReportRepository {
     constructor(private api: D2Api) {}
     async save(program: UserMonitoringProgramMetadata, report: TwoFactorUserReport): Async<string> {
         const twoFactorUsersFileResourceId = await UserMonitoringFileResourceUtils.saveFileResource(
-            report.listOfAffectedUsers
+            report.invalidTwoFAList
                 .map(user => {
                     return user.name + "," + user.id;
                 })
                 .join("\n"),
-            filenameUserReported,
+            "_twoFa"+filenameUserReported,
+            this.api
+        );
+
+        const whoAccountUsersFileResourceId = await UserMonitoringFileResourceUtils.saveFileResource(
+            report.invalidWhoList
+                .map(user => {
+                    return user.name + "," + user.id;
+                })
+                .join("\n"),
+            "_who"+filenameUserReported,
+            this.api
+        );
+        const invalidUsersFileResourceId = await UserMonitoringFileResourceUtils.saveFileResource(
+            report.invalidAuthList
+                .map(user => {
+                    return user.name + "," + user.id;
+                })
+                .join("\n"),
+            "_invalid"+filenameUserReported,
             this.api
         );
         const response = await this.push(
-            report.invalidUsersCount.toString(),
+            report.invalidTwoFACount.toString(),
             twoFactorUsersFileResourceId,
+            report.invalidWhoCount.toString(),
+            whoAccountUsersFileResourceId,
+            report.invalidAuthCount.toString(),
+            invalidUsersFileResourceId,
             this.api,
             program
         );
@@ -41,7 +69,11 @@ export class TwoFactorReportD2Repository implements TwoFactorReportRepository {
 
     private async push(
         invalidConfigNumber: string,
-        invalidConfigUsers: string,
+        invalidFileReferenceListUsers: string,
+        invalidWhoAccounts: string,
+        invalidFileReferenceWhoAccounts: string,
+        invalidAuth: string,
+        invalidFileReferenceAuth: string,
         api: D2Api,
         program: UserMonitoringProgramMetadata
     ) {
@@ -54,7 +86,19 @@ export class TwoFactorReportD2Repository implements TwoFactorReportRepository {
                         return { dataElement: item.id, value: invalidConfigNumber };
                     case dataelement_invalid_two_factor_usernames_list_code:
                         if (invalidConfigNumber == "0") return { dataElement: "", value: "" };
-                        return { dataElement: item.id, value: invalidConfigUsers };
+                        return { dataElement: item.id, value: invalidFileReferenceListUsers };
+                    case dataelement_invalid_who_accounts:
+                        if (invalidWhoAccounts == "0") return { dataElement: "", value: "" };
+                        return { dataElement: item.id, value: invalidWhoAccounts };
+                    case dataelement_invalid_who_accounts_list:
+                        if (invalidFileReferenceWhoAccounts == "0") return { dataElement: "", value: "" };
+                        return { dataElement: item.id, value: invalidFileReferenceWhoAccounts };
+                    case dataelement_invalid_auth:
+                        if (invalidAuth == "0") return { dataElement: "", value: "" };
+                        return { dataElement: item.id, value: invalidAuth };
+                    case dataelement_invalid_auth_list:
+                        if (invalidFileReferenceAuth == "0") return { dataElement: "", value: "" };
+                        return { dataElement: item.id, value: invalidFileReferenceAuth };
                     default:
                         return { dataElement: "", value: "" };
                 }

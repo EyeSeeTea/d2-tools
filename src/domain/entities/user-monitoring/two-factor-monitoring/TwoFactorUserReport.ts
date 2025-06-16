@@ -1,6 +1,10 @@
 import { NamedRef } from "domain/entities/Base";
 
 export type TwoFactorUserReport = {
-    invalidUsersCount: number;
-    listOfAffectedUsers: NamedRef[];
+    invalidTwoFACount: number;
+    invalidTwoFAList: NamedRef[];
+    invalidWhoCount: number;
+    invalidWhoList: NamedRef[];
+    invalidAuthCount: number;
+    invalidAuthList: NamedRef[];
 };

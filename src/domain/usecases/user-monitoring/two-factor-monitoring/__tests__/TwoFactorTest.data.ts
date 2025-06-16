@@ -10,26 +10,26 @@ const common_config = {
         id: "MkELexlZOj9",
         name: "TwoFactor usergroup",
     },
+    whoAccountGroup: {
+        id: "MkELexlZOj8",
+        name: "Who account usergroup",
+    }
 };
 
 export const default_config: TwoFactorUserOptions = {
     ...common_config,
-    config: {
     exceptionGroup: [
     ]
-  },
 };
 
 export const config_exception_and_disabled: TwoFactorUserOptions = {
     ...common_config,
-    config: {
     exceptionGroup: [
       {
         id: "dummy_uid",
         name: "dummy_group_name"
       }
     ]
-  },
 };
 
 export const NoUsersReport = {
@@ -44,7 +44,7 @@ export const userWithTwoFA: TwoFactorUser = {
     username: "username",
     externalAuth: false,
     userGroups: [ {
-        id: "dummy_uid",
+        id: "MkELexlZOj9",
         name: "dummy_group_name"
       }],
 };
@@ -56,7 +56,7 @@ export const userWithoutTwoFA: TwoFactorUser = {
     username: "username2",
     externalAuth: false,
     userGroups: [ {
-        id: "dummy_uid",
+        id: "MkELexlZOj9",
         name: "dummy_group_name"
       }],
 };
@@ -68,7 +68,7 @@ export const userWithTwoFAdisabled: TwoFactorUser = {
     username: "username",
     externalAuth: false,
     userGroups: [ {
-        id: "dummy_uid",
+        id: "MkELexlZOj9",
         name: "dummy_group_name"
       }],
 };
@@ -79,10 +79,39 @@ export const userWithoutTwoFAdisabled: TwoFactorUser = {
     username: "username2",
     externalAuth: false,
     userGroups: [ {
-        id: "dummy_uid",
+        id: "MkELexlZOj9",
         name: "dummy_group_name"
       }],
 };
+
+export const userWithoutExternalAuth: TwoFactorUser = {
+    id: "userUid3",
+    twoFA: true,
+    disabled: false,
+    username: "username3",
+    externalAuth: false,
+    userGroups: [
+        {
+            id: "MkELexlZOj8",
+            name: "Who account usergroup"
+        }
+    ],
+};
+
+export const userInvalidAuth: TwoFactorUser = {
+    id: "userUid4",
+    twoFA: false,
+    disabled: false,
+    username: "username4",
+    externalAuth: false,
+    userGroups: []
+};
+
+export const mixedInvalidUsers: TwoFactorUser[] = [
+    userWithoutTwoFA,        // 2FA invalid
+    userWithoutExternalAuth, // WHO invalid
+    userInvalidAuth          // Auth invalid
+];
 
 
 export const listOfUsers: TwoFactorUser[] = [userWithTwoFA, userWithoutTwoFA];

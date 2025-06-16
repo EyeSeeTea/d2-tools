@@ -8,13 +8,14 @@ import { Async } from "domain/entities/Async";
 
 export class TwoFactorUserD2Repository implements TwoFactorUserRepository {
     constructor(private api: D2Api) {}
-    async getUsersByGroupId(groupIds: string[]): Async<TwoFactorUser[]> {
-        log.info(`Get users by group: Users by ids: ${groupIds.join(",")}`);
+
+    async getUsersNotInGroupIds(excludeUserGroupIds:string[]): Async<TwoFactorUser[]> {
+        log.info(`Get users not in group: ${excludeUserGroupIds.join(",")}`);
         //todo use d2api filters
 
         const responses = await this.api
             .get<Users>(
-                `/users.json?paging=false&fields=*,userCredentials[*]&filter=userGroups.id:in:[${groupIds.join(
+                `/users.json?paging=false&fields=id,username,disabled,externalAuth,userGroups,created,userCredentials[twoFa,twoFactorEnabled]&filter=userGroups.id:!in:[${excludeUserGroupIds.join(
                     ","
                 )}]`
             )
