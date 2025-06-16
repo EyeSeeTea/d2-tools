@@ -54,6 +54,13 @@ const run2FAReporterCmd = command({
             long: "config-file",
             description: "Config file",
         }),
+        disableusers: flag({
+            type: boolean,
+            short: "d",
+            long: "disable-users",
+            description:
+                "Disable invalid twoFA users.",
+        }),
     },
 
     handler: async args => {
@@ -69,7 +76,7 @@ const run2FAReporterCmd = command({
             userMonitoringReportRepository,
             externalConfigRepository,
             programRepository
-        ).execute();
+        ).execute(args.disableusers);
 
         log.info(JSON.stringify(response));
     },

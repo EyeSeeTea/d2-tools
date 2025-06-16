@@ -15,16 +15,6 @@ const common_config = {
 export const default_config: TwoFactorUserOptions = {
     ...common_config,
     config: {
-    disableInvalid: false,
-    exceptionGroup: [
-    ]
-  },
-};
-
-export const disable_users_config: TwoFactorUserOptions = {
-    ...common_config,
-    config: {
-    disableInvalid: true,
     exceptionGroup: [
     ]
   },
@@ -33,7 +23,6 @@ export const disable_users_config: TwoFactorUserOptions = {
 export const config_exception_and_disabled: TwoFactorUserOptions = {
     ...common_config,
     config: {
-    disableInvalid: true,
     exceptionGroup: [
       {
         id: "dummy_uid",

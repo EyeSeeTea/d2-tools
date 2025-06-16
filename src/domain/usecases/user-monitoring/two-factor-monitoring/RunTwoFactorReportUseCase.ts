@@ -6,10 +6,11 @@ import { TwoFactorReportD2Repository } from "data/user-monitoring/two-factor-mon
 import { TwoFactorUserReport } from "domain/entities/user-monitoring/two-factor-monitoring/TwoFactorUserReport";
 import { Async } from "domain/entities/Async";
 import { NonUsersException } from "domain/entities/user-monitoring/two-factor-monitoring/exception/NonUsersException";
-import { TwoFactorUser } from "domain/entities/user-monitoring/two-factor-monitoring/TwoFactorUser";
-import { log } from "console";
+import log from "utils/log";
 
-type TwoFactorReportResponse = { message: string; report: TwoFactorUserReport, disableUsersMessage: string };
+
+
+type TwoFactorReportResponse = { message: string; report: TwoFactorUserReport; disableUsersMessage: string };
 
 export class RunTwoFactorReportUseCase {
     constructor(
@@ -19,7 +20,7 @@ export class RunTwoFactorReportUseCase {
         private programRepository: UserMonitoringProgramD2Repository
     ) {}
 
-    async execute(): Async<TwoFactorReportResponse> {
+    async execute(shouldDisableInvalidUsers: boolean): Async<TwoFactorReportResponse> {
         const options = await this.configRepository.get();
 
         const twoFactorGroupUsers = await this.userRepository.getUsersByGroupId([options.twoFactorGroup.id]);
@@ -32,9 +33,7 @@ export class RunTwoFactorReportUseCase {
 
         const excludedUserGroups = options.config.exceptionGroup?.map(group => group.id) ?? [];
         const excludedUsers = twoFactorGroupUsers.filter(user => {
-            return (
-                user.userGroups.some(group => excludedUserGroups.includes(group.id))
-            );
+            return user.userGroups.some(group => excludedUserGroups.includes(group.id));
         });
 
         const activeUsersWithoutTwoFactor = twoFactorGroupUsers.filter(user => {
@@ -47,32 +46,39 @@ export class RunTwoFactorReportUseCase {
             "id"
         );
 
-        (options.config.exceptionGroup ?? []).map(group => group.id)
+        (options.config.exceptionGroup ?? []).map(group => group.id);
         const userItems = activeUsersWithoutTwoFactorFiltered.map(user => {
             return { id: user.id, name: user.username };
         });
 
         const report: TwoFactorUserReport = {
             invalidUsersCount: userItems.length,
-            listOfAffectedUsers: userItems ?? ["No users found"]
+            listOfAffectedUsers: userItems ?? ["No users found"],
         };
 
         const programMetadata = await this.programRepository.get(options.pushProgram.id);
-        
+
         const saveResponse = await this.reportRepository.save(programMetadata, report);
-
-        const disabledUserResponse = await disableUsers(options.config.disableInvalid, activeUsersWithoutTwoFactorFiltered, this.userRepository);
-        return { message: saveResponse, disableUsersMessage: disabledUserResponse, report };
-    }
-}
-
-async function disableUsers(disableInvalid: boolean, activeUsersWithoutTwoFactorFiltered: TwoFactorUser[], userRepository: TwoFactorUserD2Repository): Async<string> {
-    if (disableInvalid) {
-            const disableResponse = await userRepository.disableUsers(
+        log.info(`Report saved with status: ${activeUsersWithoutTwoFactorFiltered.length}`);
+        if (shouldDisableInvalidUsers && activeUsersWithoutTwoFactorFiltered.length > 0) {
+            const disableResponse = await this.userRepository.disableUsers(
                 activeUsersWithoutTwoFactorFiltered.map(user => user.id)
             );
-            return JSON.stringify(disableResponse);;
+            return { message: saveResponse, disableUsersMessage: JSON.stringify(disableResponse), report };
+        } else {
+            if (shouldDisableInvalidUsers) {
+                return {
+                    message: saveResponse,
+                    disableUsersMessage: "Disabled users action is not executed due not invalid users found.",
+                    report,
+                };
+            } else {
+                return {
+                    message: saveResponse,
+                    disableUsersMessage: "Disabled users action is not enabled.",
+                    report,
+                };
+            }
+        }
     }
-    return "Disabled users action is not enabled."
 }
-
