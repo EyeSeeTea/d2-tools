@@ -59,7 +59,6 @@ export class RunTwoFactorReportUseCase {
         const programMetadata = await this.programRepository.get(options.pushProgram.id);
 
         const saveResponse = await this.reportRepository.save(programMetadata, report);
-        log.info(`Report saved with status: ${activeUsersWithoutTwoFactorFiltered.length}`);
         if (shouldDisableInvalidUsers && activeUsersWithoutTwoFactorFiltered.length > 0) {
             const disableResponse = await this.userRepository.disableUsers(
                 activeUsersWithoutTwoFactorFiltered.map(user => user.id)
