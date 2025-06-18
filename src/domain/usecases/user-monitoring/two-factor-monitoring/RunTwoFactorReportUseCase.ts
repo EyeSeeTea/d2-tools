@@ -23,9 +23,9 @@ export class RunTwoFactorReportUseCase {
         const programMetadata = await this.programRepository.get(options.pushProgram.id);
 
         const excludedUserGroups = options.exceptionGroup?.map(group => group.id) ?? [];
-        const allUsersExceptExcluded = await this.userRepository.getUsersNotInGroupIds(excludedUserGroups);
+        const allUsers = await this.userRepository.getUsersNotInGroupIds(excludedUserGroups);
 
-        if (!allUsersExceptExcluded) {
+        if (!allUsers) {
             const report: TwoFactorUserReport = {
                 invalidTwoFACount: 0,
                 invalidTwoFAList: [],
@@ -41,13 +41,16 @@ export class RunTwoFactorReportUseCase {
                 report,
             };
         }
+        const allUsersExceptExcluded = allUsers.filter(user => {
+            return !user.userGroups.some(group => excludedUserGroups.includes(group.id));
+        });
 
         const twoFactorUsers = allUsersExceptExcluded.filter(user => {
             return user.userGroups.some(group => options.twoFactorGroup.id === group.id);
         });
 
         const invalidTwoFactorUsers = twoFactorUsers.filter(user => {
-            return user.twoFA == false && user.disabled == false;
+            return user.externalAuth == false && user.twoFA == false && user.disabled == false;
         });
 
         const whoAccountUsers = allUsersExceptExcluded.filter(user => {
@@ -58,13 +61,21 @@ export class RunTwoFactorReportUseCase {
             return user.disabled == false && user.externalAuth == false;
         });
 
+        const usersNotInWhoOr2FA = allUsersExceptExcluded.filter(user => {
+            const isInWho = whoAccountUsers.includes(user);
+            const isIn2FA = twoFactorUsers.includes(user);
+            return !isInWho && !isIn2FA;
+        });
+
+        // Filter all active users with wrong configurations
         const allInvalidUsers = allUsersExceptExcluded.filter(user => {
-            const isInvalid = user.twoFA == false && user.disabled == false && user.externalAuth == false;
+            const isEnabled = user.disabled == false;
 
-            const isInInvalidTwoFA = invalidTwoFactorUsers.some(u => u.id === user.id);
-            const isInWhoInvalid = whoInvalidUsers.some(u => u.id === user.id);
+            const isInWhoGroup = whoAccountUsers.some(u => u.id === user.id);
+            const isInAuthGroup = twoFactorUsers.some(u => u.id === user.id);
+            const isNotInWhoOr2FA = usersNotInWhoOr2FA.some(u => u.id === user.id);
 
-            return isInvalid && !isInInvalidTwoFA && !isInWhoInvalid;
+            return isEnabled && ((isInWhoGroup && isInAuthGroup) || isNotInWhoOr2FA);
         });
 
         const report: TwoFactorUserReport = {
