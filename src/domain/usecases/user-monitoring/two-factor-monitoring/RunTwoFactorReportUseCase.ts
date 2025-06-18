@@ -21,7 +21,7 @@ export class RunTwoFactorReportUseCase {
     async execute(shouldDisableInvalidUsers: boolean): Async<TwoFactorReportResponse> {
         const options = await this.configRepository.get();
         const programMetadata = await this.programRepository.get(options.pushProgram.id);
-
+        
         const excludedUserGroups = options.exceptionGroup?.map(group => group.id) ?? [];
         const allUsers = await this.userRepository.getUsersNotInGroupIds(excludedUserGroups);
 
@@ -41,6 +41,8 @@ export class RunTwoFactorReportUseCase {
                 report,
             };
         }
+
+        //We need to check if the program metadata is valid due !in filter is not working propertly in dhis2 2.41
         const allUsersExceptExcluded = allUsers.filter(user => {
             return !user.userGroups.some(group => excludedUserGroups.includes(group.id));
         });

@@ -12,7 +12,7 @@ export class TwoFactorUserD2Repository implements TwoFactorUserRepository {
     async getUsersNotInGroupIds(excludeUserGroupIds:string[]): Async<TwoFactorUser[]> {
         log.info(`Get users not in group: ${excludeUserGroupIds.join(",")}`);
         //todo use d2api filters
-
+        //We need to check if the program metadata is valid due !in filter is not working propertly in dhis2 2.41
         const responses = await this.api
             .get<Users>(
                 `/users.json?paging=false&fields=id,username,disabled,externalAuth,userGroups,created,userCredentials[twoFa,twoFactorEnabled]&filter=userGroups.id:!in:[${excludeUserGroupIds.join(
