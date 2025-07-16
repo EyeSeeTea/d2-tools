@@ -25,8 +25,8 @@ const dataelement_file_valid_users_file_code = "ADMIN_valid_users_backup_4_Event
 
 const csvErrorFilename = `_users_backup`;
 const filenameErrorOnPush = `_users_push_error`;
-const filenameUsersPushed = `_users_pushed.json`;
-const filenameUserBackup = `_users_update_backup.json`;
+const filenameUsersPushed = `_users_pushed.txt`;
+const filenameUserBackup = `_users_update_backup.txt`;
 type ServerResponse = { status: string; typeReports: object[] };
 
 export class PermissionFixerReportD2Repository implements PermissionFixerReportRepository {
