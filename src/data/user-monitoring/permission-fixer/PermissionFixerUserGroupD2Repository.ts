@@ -28,17 +28,27 @@ export class PermissionFixerUserGroupD2Repository implements PermissionFixerUser
     }
     async save(userGroup: PermissionFixerUserGroupExtended, _users: Ref[]): Async<string> {
         try {
-            const response = await this.api.models.userGroups.put(userGroup).getData();
-            if (_(response.errorReports).isEmpty()) {
-                log.info("Users added to minimal group");
-            } else {
-                log.error("Error adding users to minimal group");
-            }
+            const patchOps = _users.map((userId) => ({
+                op: "add",
+                path: "/users/-",
+                value: { id: userId.id },
+            })); 
+
+            const response = await this.api.request<string>({
+                method: "patch",
+                url: `/41/userGroups/${userGroup.id}`,
+                headers: {
+                    "Content-Type": "application/json-patch+json"
+                },
+                data: patchOps,
+            }).getData();
+
+            log.info(`Users [${_users.join(", ")}] added to group ${userGroup.name} (${userGroup.id})`);
 
             log.info(JSON.stringify(response));
-
             return "SUCCESS";
         } catch (error) {
+            log.error("Error adding users to group");
             console.debug(error);
             return "ERROR";
         }
