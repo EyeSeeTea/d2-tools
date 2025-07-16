@@ -32,6 +32,23 @@ type ServerResponse = { status: string; typeReports: object[] };
 export class PermissionFixerReportD2Repository implements PermissionFixerReportRepository {
     constructor(private api: D2Api) {}
 
+    async saveEmptyReport(
+        program: UserMonitoringProgramMetadata
+    ): Async<string> {
+        log.info(`Saving report `);
+
+        const response = await this.pushEmptyReportToDhis(
+            this.api,
+            program
+        );
+
+        if (response?.status != "OK") {
+            throw new Error("Error on push report: " + JSON.stringify(response));
+        } else {
+            return response.status;
+        }
+    }
+
     async save(
         program: UserMonitoringProgramMetadata,
         responseGroups: PermissionFixerReport,
@@ -91,6 +108,65 @@ export class PermissionFixerReportD2Repository implements PermissionFixerReportR
             userActionRequired,
             `${csvErrorFilename}`
         );
+    }
+
+    private async pushEmptyReportToDhis(
+        api: D2Api,
+        program: UserMonitoringProgramMetadata) {
+        log.info(`Create and Pushing report to DHIS2`);
+        const dataValues: UserMonitoringReportValues[] = program.dataElements
+            .map(item => {
+                switch (item.code) {
+                    case dataelement_invalid_users_groups_count_code:
+                        return { dataElement: item.id, value: 0 };
+                    case dataelement_invalid_roles_count_code:
+                        return { dataElement: item.id, value: 0 };
+                    case dataelement_users_pushed_code:
+                        return { dataElement: item.id, value: "No invalid users found." };
+                    default:
+                        return { dataElement: "", value: "" };
+                }
+            })
+            .filter(dataValue => dataValue.dataElement !== "");
+
+        if (dataValues.length == 0) {
+            log.info(`No data elements found`);
+            return;
+        }
+        log.info("Pushing report");
+
+        const response: ServerResponse = await api
+            .post<ServerResponse>(
+                "/tracker",
+                {
+                    async: false,
+                },
+                {
+                    events: [
+                        {
+                            program: program.id,
+                            programStage: program.programStageId,
+                            orgUnit: program.orgUnitId,
+                            occurredAt: new Date().toISOString(),
+                            dataValues: dataValues,
+                        },
+                    ],
+                }
+            )
+            .getData()
+            .catch(err => {
+                if (err?.response?.data) {
+                    log.error("Push ERROR ->");
+                    log.error(JSON.stringify(err.response.data));
+                    return err.response.data as ServerResponse;
+                } else {
+                    log.error("Push ERROR without any data");
+                    return { status: "ERROR", typeReports: [] };
+                }
+            });
+        log.info("Report sent status: " + response.status);
+
+        return response;
     }
 
     private async pushReportToDhis(

@@ -45,7 +45,7 @@ describe("RunUserPermissionUseCase", () => {
         expect(result.excludedUsers[0]).toEqual(clonedValidUser);
         expect(result.groupsReport).toEqual(undefined);
         expect(result.rolesReport).toEqual(undefined);
-        expect(result.message).toEqual("Nothing to report. No invalid users found.");
+        expect(result.message).toEqual("No invalid users found.");
     });
 
     it("Should ignore user if the user has valid roles", async () => {
@@ -60,7 +60,7 @@ describe("RunUserPermissionUseCase", () => {
         expect(result.userTemplates).toEqual([]);
         expect(result.groupsReport).toEqual(undefined);
         expect(result.rolesReport).toEqual(undefined);
-        expect(result.message).toEqual("Nothing to report. No invalid users found.");
+        expect(result.message).toEqual("No invalid users found.");
     });
 
     it("Should fix user if the user has invalid authorities", async () => {
@@ -208,7 +208,8 @@ function givenConfigRepository(config: PermissionFixerMetadataConfig) {
 
 function givenReportRepository(result: string) {
     const mockedRepository = mock(PermissionFixerReportD2Repository);
-    when(mockedRepository.save(anything(), anything(), anything())).thenReturn(Promise.resolve(result));
+    when(mockedRepository.save(anything(),anything(),anything())).thenReturn(Promise.resolve(result));
+    when(mockedRepository.saveEmptyReport(anything())).thenReturn(Promise.resolve("No invalid users found."));
     const reportRepository = instance(mockedRepository);
     return reportRepository;
 }

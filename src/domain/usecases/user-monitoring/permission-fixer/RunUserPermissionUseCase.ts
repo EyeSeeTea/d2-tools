@@ -136,9 +136,10 @@ export class RunUserPermissionUseCase {
                 rolesReport: finalUserRoles,
             };
         } else {
-            log.info(`Nothing to report. No invalid users found.`);
+            log.info(`No invalid users found.`);
+            const response = await this.reportRepository.saveEmptyReport(programMetadata);
             return {
-                message: "Nothing to report. No invalid users found.",
+                message: response,
                 allUsersToProcessGroups: usersToProcessGroups,
                 allUsersToProcessRoles: usersToProcessRoles,
                 excludedUsers: excludedUsers,
