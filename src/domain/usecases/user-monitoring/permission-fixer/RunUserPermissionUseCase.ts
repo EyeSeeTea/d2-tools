@@ -67,7 +67,6 @@ export class RunUserPermissionUseCase {
         const allUserTemplatesId = allUserTemplates.map(templateUser => templateUser.id);
 
         const usersToProcessGroups = allUser.filter(user => {
-            log.info(user.username);
             return (
                 excludedUsersId.includes(user.id) === false && allUserTemplatesId.includes(user.id) === false
             );
@@ -84,12 +83,12 @@ export class RunUserPermissionUseCase {
             templatesWithAuthorities,
             usersToProcessGroups
         );
-
+        log.info(`UserGroups processed. Affected user count: ${responseUserGroups.invalidUsersCount}`);
+        log.info(`UserGroups processed. Affected users: ${JSON.stringify(responseUserGroups.listOfAffectedUsers)}`);
         log.info(`Run user Role monitoring`);
         const allUserAfterProccessGroups = await this.userRepository.getAllUsers();
 
         const usersToProcessRoles = allUserAfterProccessGroups.filter(user => {
-            log.info(JSON.stringify(allUserTemplatesId));
             return (
                 excludedUsersId.includes(user.id) === false && allUserTemplatesId.includes(user.id) === false
             );
