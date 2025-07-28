@@ -253,6 +253,28 @@ export class RunUserPermissionUseCase {
             };
         }
     }
+    
+    
+    private getUserRoles(user: PermissionFixerUser): NamedRef[] {
+        if ("userCredentials" in user && user.userCredentials?.userRoles) {
+            return user.userCredentials.userRoles;
+        } else if ("userRoles" in user && user.userRoles) {
+            return user.userRoles;
+        }
+        return [];
+    }
+
+    private setUserRoles(user: PermissionFixerUser, roles: NamedRef[]) {
+        user.userRoles = roles;
+        if ("userCredentials" in user) {
+            if (!user.userCredentials) {
+                user.userRoles = roles; 
+            } else {
+                user.userCredentials.userRoles = roles;
+                user.userRoles = roles; 
+            }
+        }
+    }
 
     private processUsers(
         allUsers: PermissionFixerUser[],
@@ -276,10 +298,12 @@ export class RunUserPermissionUseCase {
                     );
                 });
 
-                if (user.userCredentials.userRoles === undefined) {
+                if (this.getUserRoles(user) === undefined) {
                     const fixedUser = JSON.parse(JSON.stringify(user));
-                    fixedUser.userCredentials.userRoles = [{ id: minimalRole.id }];
-                    fixedUser.userRoles = [{ id: minimalRole.id }];
+                    this.setUserRoles(fixedUser, [{ id: minimalRole.id, name: "Minimal Role"}]);
+
+                    //fixedUser.userCredentials.userRoles = [{ id: minimalRole.id }];
+                    //fixedUser.userRoles = [{ id: minimalRole.id }];
                     const userInfoRes: UserMonitoringUserResponse = {
                         user: user,
                         fixedUser: fixedUser,
@@ -341,14 +365,14 @@ export class RunUserPermissionUseCase {
                         return allValidRolesSingleListWithExceptions.indexOf(item) == -1;
                     });
                     //fill the valid roles in the user  against all the possible valid roles
-                    const userValidRoles = user.userCredentials.userRoles.filter(userRole => {
+                    const userValidRoles = this.getUserRoles(user).filter(userRole => {
                         return (
                             JSON.stringify(allValidRolesSingleListWithExceptions).indexOf(userRole.id) >= 0
                         );
                     });
 
                     //fill the invalid roles in the user against all the possible invalid roles
-                    const userInvalidRoles = user.userCredentials.userRoles.filter(userRole => {
+                    const userInvalidRoles = this.getUserRoles(user).filter(userRole => {
                         return (
                             JSON.stringify(allValidRolesSingleListWithExceptions).indexOf(userRole.id) ==
                                 -1 && JSON.stringify(allInvalidRolesSingleListFixed).indexOf(userRole.id) >= 0
@@ -357,8 +381,8 @@ export class RunUserPermissionUseCase {
 
                     //clone user
                     const fixedUser = JSON.parse(JSON.stringify(user));
-                    fixedUser.userCredentials.userRoles = userValidRoles;
-                    fixedUser.userRoles = userValidRoles;
+                    this.setUserRoles(fixedUser, userValidRoles.map(role => {
+                        return { id: role.id, name: "" };}));
                     const userTemplateGroupMatch = templateGroupMatch ?? undefined;
                     if (userTemplateGroupMatch == undefined) {
                         throw new UserTemplateNotFoundException(
