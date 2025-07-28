@@ -5,11 +5,12 @@ import { TwoFactorUser } from "domain/entities/user-monitoring/two-factor-monito
 import { TwoFactorUserRepository } from "domain/repositories/user-monitoring/two-factor-monitoring/TwoFactorUserRepository";
 import { PermissionFixerUser } from "domain/entities/user-monitoring/permission-fixer/PermissionFixerUser";
 import { Async } from "domain/entities/Async";
+import { Method } from "@eyeseetea/d2-api/repositories/HttpClientRepository";
 
 export class TwoFactorUserD2Repository implements TwoFactorUserRepository {
     constructor(private api: D2Api) {}
 
-    async getUsersNotInGroupIds(excludeUserGroupIds:string[]): Async<TwoFactorUser[]> {
+    async getUsersNotInGroupIds(excludeUserGroupIds: string[]): Async<TwoFactorUser[]> {
         log.info(`Get users not in group: ${excludeUserGroupIds.join(",")}`);
         //todo use d2api filters
         //We need to check if the program metadata is valid due !in filter is not working propertly in dhis2 2.41
@@ -33,7 +34,7 @@ export class TwoFactorUserD2Repository implements TwoFactorUserRepository {
         });
     }
 
-    async disableUsers(userIds: string[]):Async<string>{
+    async disableUsers(userIds: string[]): Async<string> {
         log.info(`Disabling users by ids: ${userIds.join(",")}`);
 
         const results = await Promise.all(
@@ -41,7 +42,8 @@ export class TwoFactorUserD2Repository implements TwoFactorUserRepository {
                 try {
                     const response = await this.api
                         .request<string>({
-                            method: "patch",
+                            // TEMPORAL. See https://github.com/EyeSeeTea/d2-api/pull/171
+                            method: "patch" as Method,
                             url: `/41/users/${userId}`,
                             headers: { "Content-Type": "application/json-patch+json" },
                             data: [{ op: "replace", path: "/disabled", value: true }],
