@@ -20,7 +20,7 @@
     "author": "EyeSeeTea <arnau@eyeseetea.com>",
     "license": "MIT",
     "dependencies": {
-        "@eyeseetea/d2-api": "1.18.0-beta.3",
+        "@eyeseetea/d2-api": "1.18.0-beta.7",
         "@types/json-diff": "^0.7.0",
         "async-parallel": "^1.2.3",
         "cmd-ts": "^0.10.0",
