@@ -15,7 +15,7 @@ export class PermissionFixerUserD2Repository implements PermissionFixerUserRepos
         //todo use d2api filters
         const responses = await this.api
             .get<Users>(
-                `/users.json?paging=false&fields=*,userCredentials[*]&filter=id:in:[${ids.join(",")}]`
+                `/users.json?paging=false&fields=*,userRoles[id,name],userCredentials[*,userRoles[id,name]]&filter=id:in:[${ids.join(",")}]`
             )
             .getData();
 
@@ -26,7 +26,7 @@ export class PermissionFixerUserD2Repository implements PermissionFixerUserRepos
         log.info(`Get metadata: All users`);
         //todo use d2api filters
         const responses = await this.api
-            .get<Users>(`/users.json?paging=false&fields=*,userCredentials[*]`)
+            .get<Users>(`/users.json?paging=false&fields=*,userCredentials[*,userRoles[id,name]],userRoles[id,name]`)
             .getData();
 
         return responses["users"];
