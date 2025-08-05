@@ -22,11 +22,13 @@ const dataelement_invalid_roles_list_code = "ADMIN_invalid_users_roles_usernames
 const dataelement_users_pushed_code = "ADMIN_user_pushed_control_Events";
 const dataelement_file_invalid_users_file_code = "ADMIN_invalid_users_backup_3_Events";
 const dataelement_file_valid_users_file_code = "ADMIN_valid_users_backup_4_Events";
+const dataelement_file_invalid_user_roles_file_code = "ADMIN_invalid_userroles_summary_13_Events";
 
 const csvErrorFilename = `_users_backup`;
 const filenameErrorOnPush = `_users_push_error`;
 const filenameUsersPushed = `_users_pushed.txt`;
 const filenameUserBackup = `_users_update_backup.txt`;
+const filenameUUserRolesSummary = `_users_removed_userroles_summary.txt`;
 type ServerResponse = { status: string; typeReports: object[] };
 
 export class PermissionFixerReportD2Repository implements PermissionFixerReportRepository {
@@ -71,8 +73,20 @@ export class PermissionFixerReportD2Repository implements PermissionFixerReportR
             filenameUserBackup,
             this.api
         );
-
+        
         log.debug(`Users backup file id: ${userBackupId}`);
+
+        
+        log.info(`Saving removed roles summary`);
+        const removedRolesSummary = await this.getRemovedRolesSummary(responseRoles.userProcessed);
+        log.info(`Removed roles summary: ${removedRolesSummary}`);
+        const userInvalidRolesSummaryId = await UserMonitoringFileResourceUtils.saveFileResource(
+            removedRolesSummary,
+            filenameUUserRolesSummary,
+            this.api
+        );
+        
+        log.debug(`Users removed User Roles file id: ${userInvalidRolesSummaryId}`);
 
         const response = await this.pushReportToDhis(
             responseGroups.invalidUsersCount.toString(),
@@ -82,6 +96,7 @@ export class PermissionFixerReportD2Repository implements PermissionFixerReportR
             responseRoles.response,
             userFixedId,
             userBackupId,
+            userInvalidRolesSummaryId,
             this.api,
             program
         );
@@ -108,6 +123,18 @@ export class PermissionFixerReportD2Repository implements PermissionFixerReportR
             userActionRequired,
             `${csvErrorFilename}`
         );
+    }
+    
+    private async getRemovedRolesSummary(users: UserMonitoringUserResponse[]): Async<string> {
+        const formattedForbiddenUserRoles = users.reduce<Record<string, string[]>>((acc, item) => {
+            const invalidRoles = item.invalidUserRoles.map((r) => r.name).sort((a, b) => a.localeCompare(b));
+            if (invalidRoles.length > 0) {
+                acc[item.user.username] = invalidRoles;
+            }
+            return acc;
+        }, {});
+
+        return JSON.stringify(formattedForbiddenUserRoles, null, 2);
     }
 
     private async pushEmptyReportToDhis(
@@ -177,6 +204,7 @@ export class PermissionFixerReportD2Repository implements PermissionFixerReportR
         status: string,
         userFixedFileResourceId: string,
         userBackupFileResourceid: string,
+        userInvalidRolesFileResourceid: string,
         api: D2Api,
         program: UserMonitoringProgramMetadata
     ) {
@@ -210,6 +238,8 @@ export class PermissionFixerReportD2Repository implements PermissionFixerReportR
                         return { dataElement: item.id, value: userFixedFileResourceId };
                     case dataelement_file_valid_users_file_code:
                         return { dataElement: item.id, value: userBackupFileResourceid };
+                    case dataelement_file_invalid_user_roles_file_code:
+                        return { dataElement: item.id, value: userInvalidRolesFileResourceid };
                     case dataelement_users_pushed_code:
                         return { dataElement: item.id, value: status };
                     default:
