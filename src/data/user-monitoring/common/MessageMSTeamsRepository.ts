@@ -2,6 +2,7 @@ import _, { isEmpty } from "lodash";
 import log from "utils/log";
 import { HttpProxyAgent } from "http-proxy-agent";
 import { HttpsProxyAgent } from "https-proxy-agent";
+import axios from "axios";
 
 import { Async } from "domain/entities/Async";
 import { MSTeamsWebhookOptions } from "data/user-monitoring/entities/MSTeamsWebhookOptions";
@@ -20,24 +21,25 @@ export class MessageMSTeamsRepository implements MessageRepository {
             process.env["https_proxy"] = httpProxy;
         }
 
-        const postData = JSON.stringify({
-            text: `[*${messageType}* - ${serverName}] - ${message}`,
-        });
+        const text = `[*${messageType}* - ${serverName}] - ${message}`;
+        const data = { text };
 
-        const requestOptions = {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: postData,
-            agent: url.startsWith("https")
-                ? new HttpsProxyAgent(process.env["https_proxy"] || "")
-                : new HttpProxyAgent(process.env["http_proxy"] || ""),
-        };
+        const agent = url.startsWith("https")
+            ? new HttpsProxyAgent(process.env["https_proxy"] || "")
+            : new HttpProxyAgent(process.env["http_proxy"] || "");
 
         try {
-            const response = await fetch(url, requestOptions);
-            return response.ok;
+            const response = await axios.post(url, data, {
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                httpAgent: agent,
+                httpsAgent: agent,
+                timeout: 10000,
+                proxy: false,
+            });
+
+            return response.status >= 200 && response.status < 300;
         } catch (error) {
             log.error(`Error sending message: ${error}`);
             return false;
