@@ -97,12 +97,14 @@ const runUsersMonitoringCmd = command({
 
     handler: async args => {
         const api = getApiFromConfigFile(args.configFile);
+        const webhook = getWebhookConfFromFile(args.configFile);
         const usersRepository = new PermissionFixerUserD2Repository(api);
         const userGroupsRepository = new PermissionFixerUserGroupD2Repository(api);
         const usersTemplateRepository = new PermissionFixerTemplateD2Repository(api);
         const externalConfigRepository = new PermissionFixerConfigD2Repository(api);
         const userMonitoringReportRepository = new PermissionFixerReportD2Repository(api);
         const programRepository = new UserMonitoringProgramD2Repository(api);
+        const messageRepository = new MessageMSTeamsRepository(webhook);
         log.info(`Run User permissions fixer`);
         await new RunUserPermissionUseCase(
             externalConfigRepository,
@@ -110,7 +112,8 @@ const runUsersMonitoringCmd = command({
             usersTemplateRepository,
             userGroupsRepository,
             usersRepository,
-            programRepository
+            programRepository,
+            messageRepository
         ).execute();
     },
 });
