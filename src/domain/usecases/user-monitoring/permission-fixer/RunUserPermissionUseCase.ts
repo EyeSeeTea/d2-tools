@@ -137,7 +137,7 @@ export class RunUserPermissionUseCase {
                 log.info("Report: No changes.");
             } else {
                 const teamsStatus = await this.MessageRepository.sendMessage(
-                    `CCESS-RIGHTS-ADJUSTED-FOR-${finalUserRoles.listOfAffectedUsers.length}-USERS`,
+                    `ACCESS-RIGHTS-ADJUSTED-FOR-${finalUserRoles.listOfAffectedUsers.length}-USERS`,
                     removedRolesSummary
                 );
                 if (teamsStatus) {
