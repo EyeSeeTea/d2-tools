@@ -208,7 +208,7 @@ function givenConfigRepository(config: PermissionFixerMetadataConfig) {
 
 function givenReportRepository(result: string) {
     const mockedRepository = mock(PermissionFixerReportD2Repository);
-    when(mockedRepository.save(anything(),anything(),anything())).thenReturn(Promise.resolve(result));
+    when(mockedRepository.save(anything(),anything(),anything(),anything())).thenReturn(Promise.resolve(result));
     when(mockedRepository.saveEmptyReport(anything())).thenReturn(Promise.resolve("No invalid users found."));
     const reportRepository = instance(mockedRepository);
     return reportRepository;
