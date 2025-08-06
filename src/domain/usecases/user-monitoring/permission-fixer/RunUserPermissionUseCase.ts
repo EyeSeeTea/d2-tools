@@ -120,10 +120,14 @@ export class RunUserPermissionUseCase {
         ) {
             log.info(`Sending user-monitoring user-permissions report results`);
             
+            const removedRolesSummary = await this.getRemovedRolesSummary(finalUserRoles.userProcessed);
+            log.info(`Removed roles summary: ${removedRolesSummary}`);
+
             const response = await this.reportRepository.save(
                 programMetadata,
                 finalUserGroup,
-                finalUserRoles
+                finalUserRoles,
+                removedRolesSummary
             );
 
             return {
@@ -148,6 +152,18 @@ export class RunUserPermissionUseCase {
                 rolesReport: undefined,
             };
         }
+    }
+
+    private async getRemovedRolesSummary(users: UserMonitoringUserResponse[]): Async<string> {
+        const formattedForbiddenUserRoles = users.reduce<Record<string, string[]>>((acc, item) => {
+            const invalidRoles = item.invalidUserRoles.map((r) => r.name).sort((a, b) => a.localeCompare(b));
+            if (invalidRoles.length > 0) {
+                acc[item.user.username] = invalidRoles;
+            }
+            return acc;
+        }, {});
+
+        return JSON.stringify(formattedForbiddenUserRoles, null, 2);
     }
 
     private preProcessUsers(
