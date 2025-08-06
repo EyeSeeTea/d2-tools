@@ -54,7 +54,8 @@ export class PermissionFixerReportD2Repository implements PermissionFixerReportR
     async save(
         program: UserMonitoringProgramMetadata,
         responseGroups: PermissionFixerReport,
-        responseRoles: PermissionFixerExtendedReport
+        responseRoles: PermissionFixerExtendedReport,
+        rolesSummary: string
     ): Async<string> {
         log.info(`Saving report `);
 
@@ -78,10 +79,8 @@ export class PermissionFixerReportD2Repository implements PermissionFixerReportR
 
         
         log.info(`Saving removed roles summary`);
-        const removedRolesSummary = await this.getRemovedRolesSummary(responseRoles.userProcessed);
-        log.info(`Removed roles summary: ${removedRolesSummary}`);
         const userInvalidRolesSummaryId = await UserMonitoringFileResourceUtils.saveFileResource(
-            removedRolesSummary,
+            rolesSummary,
             filenameUUserRolesSummary,
             this.api
         );
@@ -123,18 +122,6 @@ export class PermissionFixerReportD2Repository implements PermissionFixerReportR
             userActionRequired,
             `${csvErrorFilename}`
         );
-    }
-    
-    private async getRemovedRolesSummary(users: UserMonitoringUserResponse[]): Async<string> {
-        const formattedForbiddenUserRoles = users.reduce<Record<string, string[]>>((acc, item) => {
-            const invalidRoles = item.invalidUserRoles.map((r) => r.name).sort((a, b) => a.localeCompare(b));
-            if (invalidRoles.length > 0) {
-                acc[item.user.username] = invalidRoles;
-            }
-            return acc;
-        }, {});
-
-        return JSON.stringify(formattedForbiddenUserRoles, null, 2);
     }
 
     private async pushEmptyReportToDhis(
