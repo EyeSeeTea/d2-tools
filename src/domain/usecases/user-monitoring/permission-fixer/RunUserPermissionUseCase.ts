@@ -302,9 +302,6 @@ export class RunUserPermissionUseCase {
                 if (user.userRoles === undefined) {
                     const fixedUser = JSON.parse(JSON.stringify(user));
                     this.setUserRoles(fixedUser, [{ id: minimalRole.id, name: "Minimal Role"}]);
-
-                    //fixedUser.userCredentials.userRoles = [{ id: minimalRole.id }];
-                    //fixedUser.userRoles = [{ id: minimalRole.id }];
                     const userInfoRes: UserMonitoringUserResponse = {
                         user: user,
                         fixedUser: fixedUser,
