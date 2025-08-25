@@ -119,11 +119,15 @@ export class RunUserPermissionUseCase {
             (finalUserGroup.invalidUsersCount > 0 || finalUserRoles.invalidUsersCount > 0)
         ) {
             log.info(`Sending user-monitoring user-permissions report results`);
+            
+            const removedRolesSummary = await this.getRemovedRolesSummary(finalUserRoles.userProcessed);
+            log.info(`Removed roles summary: ${removedRolesSummary}`);
 
             const response = await this.reportRepository.save(
                 programMetadata,
                 finalUserGroup,
-                finalUserRoles
+                finalUserRoles,
+                removedRolesSummary
             );
 
             return {
@@ -148,6 +152,18 @@ export class RunUserPermissionUseCase {
                 rolesReport: undefined,
             };
         }
+    }
+
+    private async getRemovedRolesSummary(users: UserMonitoringUserResponse[]): Async<string> {
+        const formattedForbiddenUserRoles = users.reduce<Record<string, string[]>>((acc, item) => {
+            const invalidRoles = item.invalidUserRoles.map((r) => r.name).sort((a, b) => a.localeCompare(b));
+            if (invalidRoles.length > 0) {
+                acc[item.user.username] = invalidRoles;
+            }
+            return acc;
+        }, {});
+
+        return JSON.stringify(formattedForbiddenUserRoles, null, 2);
     }
 
     private preProcessUsers(
@@ -360,25 +376,22 @@ export class RunUserPermissionUseCase {
                         allExceptionsToBeIgnoredByUser,
                         allExceptionsToBeIgnoredByGroup
                     );
-                    //the invalid roles are the ones that are not in the valid roles
+                    // the invalid roles are the ones that are not in the valid roles
                     const allInvalidRolesSingleListFixed = allInValidRolesSingleList?.filter(item => {
-                        return allValidRolesSingleListWithExceptions.indexOf(item) == -1;
-                    });
-                    //fill the valid roles in the user  against all the possible valid roles
-                    const userValidRoles = this.getUserRoles(user).filter(userRole => {
-                        return (
-                            JSON.stringify(allValidRolesSingleListWithExceptions).indexOf(userRole.id) >= 0
-                        );
+                        return !allValidRolesSingleListWithExceptions.includes(item);
                     });
 
-                    //fill the invalid roles in the user against all the possible invalid roles
-                    const userInvalidRoles = this.getUserRoles(user).filter(userRole => {
-                        return (
-                            JSON.stringify(allValidRolesSingleListWithExceptions).indexOf(userRole.id) ==
-                                -1 && JSON.stringify(allInvalidRolesSingleListFixed).indexOf(userRole.id) >= 0
-                        );
+                    // fill the valid roles in the user against all the possible valid roles
+                    const userValidRoles = user.userCredentials.userRoles.filter(userRole => {
+                        return allValidRolesSingleListWithExceptions.includes(userRole.id);
                     });
-
+                    const userInvalidRoles = user.userCredentials.userRoles.filter(userRole => {
+                        const id = userRole.id;
+                        const isValid = allValidRolesSingleListWithExceptions.some(role => role === id);
+                        const isInvalid = allInvalidRolesSingleListFixed.some(role => role === id);
+                        return !isValid && isInvalid;
+                    });
+                    
                     //clone user
                     const fixedUser = JSON.parse(JSON.stringify(user));
                     this.setUserRoles(fixedUser, userValidRoles.map(role => {

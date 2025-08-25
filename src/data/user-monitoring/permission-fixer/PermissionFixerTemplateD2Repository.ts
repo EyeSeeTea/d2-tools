@@ -23,7 +23,6 @@ export class PermissionFixerTemplateD2Repository implements PermissionFixerTempl
         const { templates: templateGroups, excludedRoles: excludedRoles } = options;
 
         const userRoles: PermissionFixerUserRoleAuthority[] = await this.getAllUserRoles(options);
-        log.info(`Get metadata: ${JSON.stringify(userRoles)}`);
         log.info("Validating roles...");
         const isAuthValid = this.validateAuths(userRoles, excludedRoles);
         if (!isAuthValid) {
