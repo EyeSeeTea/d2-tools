@@ -380,7 +380,7 @@ export class RunUserPermissionUseCase {
                     //clone user
                     const fixedUser = JSON.parse(JSON.stringify(user));
                     this.setUserRoles(fixedUser, userValidRoles.map(role => {
-                        return { id: role.id, name: "" };}));
+                        return { id: role.id, name: role.name };}));
                     const userTemplateGroupMatch = templateGroupMatch ?? undefined;
                     if (userTemplateGroupMatch == undefined) {
                         throw new UserTemplateNotFoundException(
