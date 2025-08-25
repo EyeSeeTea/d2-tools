@@ -269,26 +269,11 @@ export class RunUserPermissionUseCase {
             };
         }
     }
-    
-    
-    private getUserRoles(user: PermissionFixerUser): NamedRef[] {
-        if ("userCredentials" in user && user.userCredentials?.userRoles) {
-            return user.userCredentials.userRoles;
-        } else if ("userRoles" in user && user.userRoles) {
-            return user.userRoles;
-        }
-        return [];
-    }
 
     private setUserRoles(user: PermissionFixerUser, roles: NamedRef[]) {
         user.userRoles = roles;
         if ("userCredentials" in user) {
-            if (!user.userCredentials) {
-                user.userRoles = roles; 
-            } else {
-                user.userCredentials.userRoles = roles;
-                user.userRoles = roles; 
-            }
+            user.userCredentials.userRoles = roles;
         }
     }
 
@@ -314,7 +299,7 @@ export class RunUserPermissionUseCase {
                     );
                 });
 
-                if (this.getUserRoles(user) === undefined) {
+                if (user.userRoles === undefined) {
                     const fixedUser = JSON.parse(JSON.stringify(user));
                     this.setUserRoles(fixedUser, [{ id: minimalRole.id, name: "Minimal Role"}]);
 
@@ -382,10 +367,10 @@ export class RunUserPermissionUseCase {
                     });
 
                     // fill the valid roles in the user against all the possible valid roles
-                    const userValidRoles = user.userCredentials.userRoles.filter(userRole => {
+                    const userValidRoles = user.userRoles.filter(userRole => {
                         return allValidRolesSingleListWithExceptions.includes(userRole.id);
                     });
-                    const userInvalidRoles = user.userCredentials.userRoles.filter(userRole => {
+                    const userInvalidRoles = user.userRoles.filter(userRole => {
                         const id = userRole.id;
                         const isValid = allValidRolesSingleListWithExceptions.some(role => role === id);
                         const isInvalid = allInvalidRolesSingleListFixed.some(role => role === id);
