@@ -21,31 +21,23 @@ type ServerResponse = { status: string; typeReports: object[] };
 export class TwoFactorReportD2Repository implements TwoFactorReportRepository {
     constructor(private api: D2Api) {}
     async save(program: UserMonitoringProgramMetadata, report: TwoFactorUserReport): Async<string> {
+        const invalidTwoFAList = this.formatUsers(report.invalidTwoFAList);
+        const invalidWhoList = this.formatUsers(report.invalidWhoList);
+        const invalidAuthList = this.formatUsers(report.invalidAuthList);
+        
         const twoFactorUsersFileResourceId = await UserMonitoringFileResourceUtils.saveFileResource(
-            report.invalidTwoFAList
-                .map(user => {
-                    return user.name + "," + user.id;
-                })
-                .join("\n"),
+            invalidTwoFAList,
             "_twoFa"+filenameUserReported,
             this.api
         );
 
         const whoAccountUsersFileResourceId = await UserMonitoringFileResourceUtils.saveFileResource(
-            report.invalidWhoList
-                .map(user => {
-                    return user.name + "," + user.id;
-                })
-                .join("\n"),
+            invalidWhoList,
             "_who"+filenameUserReported,
             this.api
         );
         const invalidUsersFileResourceId = await UserMonitoringFileResourceUtils.saveFileResource(
-            report.invalidAuthList
-                .map(user => {
-                    return user.name + "," + user.id;
-                })
-                .join("\n"),
+            invalidAuthList,
             "_invalid"+filenameUserReported,
             this.api
         );
@@ -66,7 +58,13 @@ export class TwoFactorReportD2Repository implements TwoFactorReportRepository {
             return response.status;
         }
     }
-
+    
+    private formatUsers(users: { name: string; id: string }[]): string {
+        return users
+            .map(user => `${user.name},${user.id}`)
+            .join("\n");
+    }
+    
     private async push(
         invalidConfigNumber: string,
         invalidFileReferenceListUsers: string,
