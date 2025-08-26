@@ -11,10 +11,12 @@ export const userWithTwoFA: TwoFactorUser = {
     disabled: false,
     username: "username",
     externalAuth: false,
-    userGroups: [ {
-        id: "MkELexlZOj9",
-        name: "dummy_group_name"
-      }],
+    userGroups: [
+        {
+            id: "MkELexlZOj9",
+            name: "dummy_group_name",
+        },
+    ],
 };
 
 export const userInTwoFAGroupButWithExternalAuth: TwoFactorUser = {
@@ -23,10 +25,12 @@ export const userInTwoFAGroupButWithExternalAuth: TwoFactorUser = {
     disabled: false,
     username: "username",
     externalAuth: true,
-    userGroups: [ {
-        id: "MkELexlZOj9",
-        name: "dummy_group_name"
-      }],
+    userGroups: [
+        {
+            id: "MkELexlZOj9",
+            name: "dummy_group_name",
+        },
+    ],
 };
 
 export const userWithoutTwoFA: TwoFactorUser = {
@@ -35,10 +39,12 @@ export const userWithoutTwoFA: TwoFactorUser = {
     disabled: false,
     username: "username2",
     externalAuth: false,
-    userGroups: [ {
-        id: "MkELexlZOj9",
-        name: "dummy_group_name"
-      }],
+    userGroups: [
+        {
+            id: "MkELexlZOj9",
+            name: "dummy_group_name",
+        },
+    ],
 };
 
 export const userWithTwoFAdisabled: TwoFactorUser = {
@@ -47,10 +53,12 @@ export const userWithTwoFAdisabled: TwoFactorUser = {
     disabled: true,
     username: "username",
     externalAuth: false,
-    userGroups: [ {
-        id: "MkELexlZOj9",
-        name: "dummy_group_name"
-      }],
+    userGroups: [
+        {
+            id: "MkELexlZOj9",
+            name: "dummy_group_name",
+        },
+    ],
 };
 export const userWithoutTwoFAdisabled: TwoFactorUser = {
     id: "userUid2",
@@ -58,10 +66,12 @@ export const userWithoutTwoFAdisabled: TwoFactorUser = {
     disabled: true,
     username: "username2",
     externalAuth: false,
-    userGroups: [ {
-        id: "MkELexlZOj9",
-        name: "dummy_group_name"
-      }],
+    userGroups: [
+        {
+            id: "MkELexlZOj9",
+            name: "dummy_group_name",
+        },
+    ],
 };
 
 export const userWithoutExternalAuth: TwoFactorUser = {
@@ -73,8 +83,8 @@ export const userWithoutExternalAuth: TwoFactorUser = {
     userGroups: [
         {
             id: "MkELexlZOj8",
-            name: "Who account usergroup"
-        }
+            name: "Who account usergroup",
+        },
     ],
 };
 
@@ -84,15 +94,14 @@ export const userInvalidAuth: TwoFactorUser = {
     disabled: false,
     username: "username4",
     externalAuth: false,
-    userGroups: []
+    userGroups: [],
 };
 
 export const mixedInvalidUsers: TwoFactorUser[] = [
-    userWithoutTwoFA,        // 2FA invalid
+    userWithoutTwoFA, // 2FA invalid
     userWithoutExternalAuth, // WHO invalid
-    userInvalidAuth          // Auth invalid
+    userInvalidAuth, // Auth invalid
 ];
-
 
 export const listOfUsersOneValidOneInvalid: TwoFactorUser[] = [userWithTwoFA, userWithoutTwoFA];
 export const listOfUsersWithTwoInvalid: TwoFactorUser[] = [userWithTwoFA, userWithoutTwoFA, userWithoutTwoFA];

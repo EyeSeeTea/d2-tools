@@ -86,7 +86,9 @@ export class RunUserPermissionUseCase {
             usersToProcessGroups
         );
         log.info(`UserGroups processed. Affected user count: ${responseUserGroups.invalidUsersCount}`);
-        log.info(`UserGroups processed. Affected users: ${JSON.stringify(responseUserGroups.listOfAffectedUsers)}`);
+        log.info(
+            `UserGroups processed. Affected users: ${JSON.stringify(responseUserGroups.listOfAffectedUsers)}`
+        );
         log.info(`Run user Role monitoring`);
         const allUserAfterProccessGroups = await this.userRepository.getAllUsers();
 
@@ -121,7 +123,7 @@ export class RunUserPermissionUseCase {
             (finalUserGroup.invalidUsersCount > 0 || finalUserRoles.invalidUsersCount > 0)
         ) {
             log.info(`Sending user-monitoring user-permissions report results`);
-            
+
             const removedRolesSummary = await this.getRemovedRolesSummary(finalUserRoles.userProcessed);
             log.info(`Removed roles summary: ${removedRolesSummary}`);
 
@@ -172,7 +174,7 @@ export class RunUserPermissionUseCase {
 
     private async getRemovedRolesSummary(users: UserMonitoringUserResponse[]): Async<string> {
         const formattedForbiddenUserRoles = users.reduce<Record<string, string[]>>((acc, item) => {
-            const invalidRoles = item.invalidUserRoles.map((r) => r.name).sort((a, b) => a.localeCompare(b));
+            const invalidRoles = item.invalidUserRoles.map(r => r.name).sort((a, b) => a.localeCompare(b));
             if (invalidRoles.length > 0) {
                 acc[item.user.username] = invalidRoles;
             }
@@ -383,7 +385,7 @@ export class RunUserPermissionUseCase {
                         const isInvalid = allInvalidRolesSingleListFixed.some(role => role === id);
                         return !isValid && isInvalid;
                     });
-                    
+
                     //clone user
                     const fixedUser = JSON.parse(JSON.stringify(user));
                     fixedUser.userCredentials.userRoles = userValidRoles;

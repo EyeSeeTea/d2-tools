@@ -21,40 +21,32 @@ type ServerResponse = { status: string; typeReports: object[] };
 export class TwoFactorReportD2Repository implements TwoFactorReportRepository {
     constructor(private api: D2Api) {}
     async save(program: UserMonitoringProgramMetadata, report: TwoFactorUserReport): Async<string> {
+        const invalidTwoFAList = this.formatUsers(report.invalidTwoFAList);
+        const invalidWhoList = this.formatUsers(report.invalidWhoList);
+        const invalidAuthList = this.formatUsers(report.invalidAuthList);
+
         const twoFactorUsersFileResourceId = await UserMonitoringFileResourceUtils.saveFileResource(
-            report.invalidTwoFAList
-                .map(user => {
-                    return user.name + "," + user.id;
-                })
-                .join("\n"),
-            "_twoFa"+filenameUserReported,
+            invalidTwoFAList,
+            "_twoFa" + filenameUserReported,
             this.api
         );
 
         const whoAccountUsersFileResourceId = await UserMonitoringFileResourceUtils.saveFileResource(
-            report.invalidWhoList
-                .map(user => {
-                    return user.name + "," + user.id;
-                })
-                .join("\n"),
-            "_who"+filenameUserReported,
+            invalidWhoList,
+            "_who" + filenameUserReported,
             this.api
         );
         const invalidUsersFileResourceId = await UserMonitoringFileResourceUtils.saveFileResource(
-            report.invalidAuthList
-                .map(user => {
-                    return user.name + "," + user.id;
-                })
-                .join("\n"),
-            "_invalid"+filenameUserReported,
+            invalidAuthList,
+            "_invalid" + filenameUserReported,
             this.api
         );
         const response = await this.push(
-            report.invalidTwoFACount.toString(),
+            report.invalidTwoFAList.length.toString(),
             twoFactorUsersFileResourceId,
-            report.invalidWhoCount.toString(),
+            report.invalidWhoList.length.toString(),
             whoAccountUsersFileResourceId,
-            report.invalidAuthCount.toString(),
+            report.invalidAuthList.length.toString(),
             invalidUsersFileResourceId,
             this.api,
             program
@@ -65,6 +57,10 @@ export class TwoFactorReportD2Repository implements TwoFactorReportRepository {
             log.info("Report sent status: " + response.status);
             return response.status;
         }
+    }
+
+    private formatUsers(users: { name: string; id: string }[]): string {
+        return users.map(user => `${user.name},${user.id}`).join("\n");
     }
 
     private async push(
@@ -79,30 +75,31 @@ export class TwoFactorReportD2Repository implements TwoFactorReportRepository {
     ) {
         log.info(`Create and Pushing users without two factor report to DHIS2`);
 
-        const dataValues: UserMonitoringReportValues[] = program.dataElements
-            .map(item => {
+        const dataValues: UserMonitoringReportValues[] = _.compact(
+            program.dataElements.map((item): UserMonitoringReportValues | undefined => {
                 switch (item.code) {
                     case dataelement_invalid_two_factor_count_code:
                         return { dataElement: item.id, value: invalidConfigNumber };
                     case dataelement_invalid_two_factor_usernames_list_code:
-                        if (invalidConfigNumber == "0") return { dataElement: "", value: "" };
+                        if (invalidConfigNumber == "0") return undefined;
                         return { dataElement: item.id, value: invalidFileReferenceListUsers };
                     case dataelement_invalid_who_accounts:
-                        if (invalidWhoAccounts == "0") return { dataElement: "", value: "" };
+                        if (invalidWhoAccounts == "0") return undefined;
                         return { dataElement: item.id, value: invalidWhoAccounts };
                     case dataelement_invalid_who_accounts_list:
-                        if (invalidFileReferenceWhoAccounts == "0") return { dataElement: "", value: "" };
+                        if (invalidFileReferenceWhoAccounts == "0") return undefined;
                         return { dataElement: item.id, value: invalidFileReferenceWhoAccounts };
                     case dataelement_invalid_auth:
-                        if (invalidAuth == "0") return { dataElement: "", value: "" };
+                        if (invalidAuth == "0") return undefined;
                         return { dataElement: item.id, value: invalidAuth };
                     case dataelement_invalid_auth_list:
-                        if (invalidFileReferenceAuth == "0") return { dataElement: "", value: "" };
+                        if (invalidFileReferenceAuth == "0") return undefined;
                         return { dataElement: item.id, value: invalidFileReferenceAuth };
                     default:
-                        return { dataElement: "", value: "" };
+                        return undefined;
                 }
             })
+        )
             .filter(dataValue => dataValue.dataElement !== "")
             .filter(dataValue => dataValue.value !== "");
 

@@ -29,20 +29,22 @@ export class PermissionFixerUserGroupD2Repository implements PermissionFixerUser
     }
     async save(userGroup: PermissionFixerUserGroupExtended, _users: Ref[]): Async<string> {
         try {
-            const patchOps = _users.map((userId) => ({
+            const patchOps = _users.map(userId => ({
                 op: "add",
                 path: "/users/-",
                 value: { id: userId.id },
-            })); 
+            }));
 
-            const response = await this.api.request<string>({
-                method: "patch" as Method,
-                url: `/41/userGroups/${userGroup.id}`,
-                headers: {
-                    "Content-Type": "application/json-patch+json"
-                },
-                data: patchOps,
-            }).getData();
+            const response = await this.api
+                .request<string>({
+                    method: "patch" as Method,
+                    url: `/41/userGroups/${userGroup.id}`,
+                    headers: {
+                        "Content-Type": "application/json-patch+json",
+                    },
+                    data: patchOps,
+                })
+                .getData();
 
             log.info(`Users [${_users.join(", ")}] added to group ${userGroup.name} (${userGroup.id})`);
 
