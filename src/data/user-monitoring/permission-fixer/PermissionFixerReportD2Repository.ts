@@ -34,15 +34,10 @@ type ServerResponse = { status: string; typeReports: object[] };
 export class PermissionFixerReportD2Repository implements PermissionFixerReportRepository {
     constructor(private api: D2Api) {}
 
-    async saveEmptyReport(
-        program: UserMonitoringProgramMetadata
-    ): Async<string> {
+    async saveEmptyReport(program: UserMonitoringProgramMetadata): Async<string> {
         log.info(`Saving report `);
 
-        const response = await this.pushEmptyReportToDhis(
-            this.api,
-            program
-        );
+        const response = await this.pushEmptyReportToDhis(this.api, program);
 
         if (response?.status != "OK") {
             throw new Error("Error on push report: " + JSON.stringify(response));
@@ -74,17 +69,16 @@ export class PermissionFixerReportD2Repository implements PermissionFixerReportR
             filenameUserBackup,
             this.api
         );
-        
+
         log.debug(`Users backup file id: ${userBackupId}`);
 
-        
         log.info(`Saving removed roles summary`);
         const userInvalidRolesSummaryId = await UserMonitoringFileResourceUtils.saveFileResource(
             rolesSummary,
             filenameUUserRolesSummary,
             this.api
         );
-        
+
         log.debug(`Users removed User Roles file id: ${userInvalidRolesSummaryId}`);
 
         const response = await this.pushReportToDhis(
@@ -124,9 +118,7 @@ export class PermissionFixerReportD2Repository implements PermissionFixerReportR
         );
     }
 
-    private async pushEmptyReportToDhis(
-        api: D2Api,
-        program: UserMonitoringProgramMetadata) {
+    private async pushEmptyReportToDhis(api: D2Api, program: UserMonitoringProgramMetadata) {
         log.info(`Create and Pushing report to DHIS2`);
         const dataValues: UserMonitoringReportValues[] = program.dataElements
             .map(item => {

@@ -12,7 +12,5 @@ export interface PermissionFixerReportRepository {
         responseRoles: PermissionFixerExtendedReport,
         rolesSummary: string
     ): Async<string>;
-    saveEmptyReport(
-        program: UserMonitoringProgramMetadata
-    ): Async<string>;
+    saveEmptyReport(program: UserMonitoringProgramMetadata): Async<string>;
 }
