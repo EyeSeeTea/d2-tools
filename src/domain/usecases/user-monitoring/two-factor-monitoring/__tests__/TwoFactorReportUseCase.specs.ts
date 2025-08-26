@@ -197,7 +197,6 @@ describe("TwoFactorReportUseCase", () => {
 
         const result = await useCase.execute(false);
 
-        expect(result.report.invalidTwoFACount).toEqual(0);
         expect(result.report.invalidTwoFAList).toEqual([]);
         expect(result.message).toEqual("OK");
     });
@@ -208,7 +207,6 @@ describe("TwoFactorReportUseCase", () => {
         const result = await useCase.execute(false);
 
         const expectedReport = { id: userWithoutTwoFA.id, name: userWithoutTwoFA.username };
-        expect(result.report.invalidTwoFACount).toEqual(1);
         expect(result.report.invalidTwoFAList).toEqual([expectedReport]);
         expect(result.message).toEqual("OK");
     });
@@ -222,7 +220,6 @@ describe("TwoFactorReportUseCase", () => {
             { id: userWithoutTwoFA.id, name: userWithoutTwoFA.username },
             { id: userWithoutTwoFA.id, name: userWithoutTwoFA.username },
         ];
-        expect(result.report.invalidTwoFACount).toEqual(2);
         expect(result.report.invalidTwoFAList).toEqual(expectedReport);
         expect(result.message).toEqual("OK");
     });
@@ -233,7 +230,6 @@ describe("TwoFactorReportUseCase", () => {
         const result = await useCase.execute(false);
 
         const expectedReport = [{ id: userWithoutTwoFA.id, name: userWithoutTwoFA.username }];
-        expect(result.report.invalidTwoFACount).toEqual(1);
         expect(result.report.invalidTwoFAList).toEqual(expectedReport);
         expect(result.message).toEqual("OK");
     });
@@ -244,7 +240,6 @@ describe("TwoFactorReportUseCase", () => {
 
         const result = await useCase.execute(true);
 
-        expect(result.report.invalidTwoFACount).toEqual(0);
         expect(result.report.invalidTwoFAList).toEqual([]);
     });
 
@@ -258,7 +253,6 @@ describe("TwoFactorReportUseCase", () => {
         const result = await useCase.execute(true);
 
         const expectedReport = [{ id: userWithoutTwoFA.id, name: userWithoutTwoFA.username }];
-        expect(result.report.invalidTwoFACount).toEqual(1);
         expect(result.report.invalidTwoFAList).toEqual(expectedReport);
         expect(result.disableUsersMessage).contain("Disabled users action is enabled and executed.");
     });
@@ -273,7 +267,6 @@ describe("TwoFactorReportUseCase", () => {
         const result = await useCase.execute(false);
 
         const expectedReport = [{ id: userWithoutTwoFA.id, name: userWithoutTwoFA.username }];
-        expect(result.report.invalidTwoFACount).toEqual(1);
         expect(result.report.invalidTwoFAList).toEqual(expectedReport);
         expect(result.disableUsersMessage).toEqual("Disabled users action is not enabled.");
     });
@@ -282,10 +275,6 @@ describe("TwoFactorReportUseCase", () => {
         const useCase = createUseCase({ users: mixedInvalidUsers, config: alternativeConfig });
 
         const result = await useCase.execute(false);
-
-        expect(result.report.invalidTwoFACount).toBe(1);
-        expect(result.report.invalidWhoCount).toBe(1);
-        expect(result.report.invalidAuthCount).toBe(1);
 
         expect(result.report.invalidTwoFAList).toEqual([
             { id: userWithoutTwoFA.id, name: userWithoutTwoFA.username },

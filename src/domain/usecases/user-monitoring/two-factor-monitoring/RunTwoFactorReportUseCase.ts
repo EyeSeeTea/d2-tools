@@ -25,11 +25,8 @@ export class RunTwoFactorReportUseCase {
 
         if (!allUsers) {
             const report: TwoFactorUserReport = {
-                invalidTwoFACount: 0,
                 invalidTwoFAList: [],
-                invalidWhoCount: 0,
                 invalidWhoList: [],
-                invalidAuthCount: 0,
                 invalidAuthList: [],
             };
             const saveResponse = await this.reportRepository.save(programMetadata, report);
@@ -79,15 +76,12 @@ export class RunTwoFactorReportUseCase {
         });
 
         const report: TwoFactorUserReport = {
-            invalidTwoFACount: invalidTwoFactorUsers.length,
             invalidTwoFAList: invalidTwoFactorUsers.map(user => {
                 return { id: user.id, name: user.username };
             }) ?? ["No users found"],
-            invalidWhoCount: whoInvalidUsers.length,
             invalidWhoList: whoInvalidUsers.map(user => {
                 return { id: user.id, name: user.username };
             }) ?? ["No users found"],
-            invalidAuthCount: allInvalidUsers.length,
             invalidAuthList: allInvalidUsers.map(user => {
                 return { id: user.id, name: user.username };
             }) ?? ["No users found"],
