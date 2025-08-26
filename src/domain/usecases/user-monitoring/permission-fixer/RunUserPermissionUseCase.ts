@@ -134,7 +134,6 @@ export class RunUserPermissionUseCase {
                 removedRolesSummary
             );
 
-
             if (_.isEmpty(removedRolesSummary)) {
                 log.info("Report: No changes.");
             } else {

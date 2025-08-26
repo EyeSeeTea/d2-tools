@@ -225,7 +225,7 @@ function givenUserGroupRepository(result: string) {
     return reportRepository;
 }
 function givenMessageRepository() {
-    const mockedRepository = mock(MessageMSTeamsRepository); 
+    const mockedRepository = mock(MessageMSTeamsRepository);
     const messageRepository = instance(mockedRepository);
     return messageRepository;
 }
