@@ -303,7 +303,7 @@ export class RunUserPermissionUseCase {
 
                 if (user.userRoles === undefined) {
                     const fixedUser = JSON.parse(JSON.stringify(user));
-                    this.setUserRoles(fixedUser, [{ id: minimalRole.id, name: "Minimal Role"}]);
+                    this.setUserRoles(fixedUser, [{ id: minimalRole.id, name: "Minimal Role" }]);
                     const userInfoRes: UserMonitoringUserResponse = {
                         user: user,
                         fixedUser: fixedUser,
@@ -378,8 +378,12 @@ export class RunUserPermissionUseCase {
 
                     //clone user
                     const fixedUser = JSON.parse(JSON.stringify(user));
-                    this.setUserRoles(fixedUser, userValidRoles.map(role => {
-                        return { id: role.id, name: role.name };}));
+                    this.setUserRoles(
+                        fixedUser,
+                        userValidRoles.map(role => {
+                            return { id: role.id, name: role.name };
+                        })
+                    );
                     const userTemplateGroupMatch = templateGroupMatch ?? undefined;
                     if (userTemplateGroupMatch == undefined) {
                         throw new UserTemplateNotFoundException(
