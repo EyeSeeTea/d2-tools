@@ -54,6 +54,9 @@ const alternativeConfig: TwoFactorUserOptions = {
     ]
 };
 
+const useCaseOptionsDisabledFalse = {shouldDisableInvalidUsers: false}
+const useCaseOptionsDisabledTrue = {shouldDisableInvalidUsers: true}
+
 
 describe("TwoFactorReportUseCase", () => {
     it("Should detects a user in 2FA group with twoFA disabled as invalidTwoFA", async () => {
@@ -65,7 +68,7 @@ describe("TwoFactorReportUseCase", () => {
 
         const useCase = createUseCase({ users: [user], config: defaultConfig });
 
-        const result = await useCase.execute(false);
+        const result = await useCase.execute({shouldDisableInvalidUsers: false});
 
         expect(result.report.invalidTwoFAList).toEqual([{ id: "u1", name: "testuser" }]);
         expect(result.report.invalidWhoList).toEqual([]);
@@ -82,7 +85,7 @@ describe("TwoFactorReportUseCase", () => {
 
         const useCase = createUseCase({ users: [user], config: defaultConfig });
 
-        const result = await useCase.execute(false);
+        const result = await useCase.execute({shouldDisableInvalidUsers: false});
 
         expect(result.report.invalidTwoFAList).toEqual([]);
         expect(result.report.invalidWhoList).toEqual([]);
@@ -97,7 +100,7 @@ describe("TwoFactorReportUseCase", () => {
         };
         const useCase = createUseCase({ users: [user], config: defaultConfig });
 
-        const result = await useCase.execute(false);
+        const result = await useCase.execute(useCaseOptionsDisabledFalse);
 
         expect(result.report.invalidTwoFAList).toEqual([]);
         expect(result.report.invalidWhoList).toEqual([{ id: "u2", name: "testuser" }]);
@@ -112,7 +115,7 @@ describe("TwoFactorReportUseCase", () => {
         };
         const useCase = createUseCase({ users: [user], config: defaultConfig });
 
-        const result = await useCase.execute(false);
+        const result = await useCase.execute(useCaseOptionsDisabledFalse);
 
         expect(result.report.invalidTwoFAList).toEqual([]);
         expect(result.report.invalidWhoList).toEqual([]);
@@ -127,7 +130,7 @@ describe("TwoFactorReportUseCase", () => {
         };
         const useCase = createUseCase({ users: [user], config: defaultConfig });
 
-        const result = await useCase.execute(false);
+        const result = await useCase.execute(useCaseOptionsDisabledFalse);
 
         expect(result.report.invalidTwoFAList).toEqual([]);
         expect(result.report.invalidWhoList).toEqual([]);
@@ -145,7 +148,7 @@ describe("TwoFactorReportUseCase", () => {
         };
         const useCase = createUseCase({ users: [user], config: defaultConfig });
 
-        const result = await useCase.execute(false);
+        const result = await useCase.execute(useCaseOptionsDisabledFalse);
 
         expect(result.report.invalidTwoFAList).toEqual([{ id: "u5", name: "testuser" }]);
         expect(result.report.invalidWhoList).toEqual([{ id: "u5", name: "testuser" }]);
@@ -164,7 +167,7 @@ describe("TwoFactorReportUseCase", () => {
         };
         const useCase = createUseCase({ users: [user], config: defaultConfig });
 
-        const result = await useCase.execute(false);
+        const result = await useCase.execute(useCaseOptionsDisabledFalse);
 
         expect(result.report.invalidTwoFAList).toEqual([]);
         expect(result.report.invalidWhoList).toEqual([{ id: "u5", name: "testuser" }]);
@@ -183,7 +186,7 @@ describe("TwoFactorReportUseCase", () => {
         };
         const useCase = createUseCase({ users: [user], config: defaultConfig });
 
-        const result = await useCase.execute(false);
+        const result = await useCase.execute(useCaseOptionsDisabledFalse);
 
         expect(result.report.invalidTwoFAList).toEqual([]);
         expect(result.report.invalidWhoList).toEqual([]);
@@ -195,7 +198,7 @@ describe("TwoFactorReportUseCase", () => {
             users: [userWithTwoFA, userWithTwoFA, userInTwoFAGroupButWithExternalAuth],
         });
 
-        const result = await useCase.execute(false);
+        const result = await useCase.execute(useCaseOptionsDisabledFalse);
 
         expect(result.report.invalidTwoFAList).toEqual([]);
         expect(result.message).toEqual("OK");
@@ -204,7 +207,7 @@ describe("TwoFactorReportUseCase", () => {
     it("Should push report 1 affected user if we provide a list with two users, and only one has two-factor authentication disabled.", async () => {
         const useCase = createUseCase({ users: listOfUsersOneValidOneInvalid });
 
-        const result = await useCase.execute(false);
+        const result = await useCase.execute(useCaseOptionsDisabledFalse);
 
         const expectedReport = { id: userWithoutTwoFA.id, name: userWithoutTwoFA.username };
         expect(result.report.invalidTwoFAList).toEqual([expectedReport]);
@@ -214,7 +217,7 @@ describe("TwoFactorReportUseCase", () => {
     it("Should push report 2 affected users and a list of 2 affected user if 2 user has two factor deactivate and 1 activated", async () => {
         const useCase = createUseCase({ users: listOfUsersWithTwoInvalid });
 
-        const result = await useCase.execute(false);
+        const result = await useCase.execute(useCaseOptionsDisabledFalse);
 
         const expectedReport = [
             { id: userWithoutTwoFA.id, name: userWithoutTwoFA.username },
@@ -227,7 +230,7 @@ describe("TwoFactorReportUseCase", () => {
     it("Should push report 1 affected users and a list of 1 affected user if 1 user has two factor deactivate and 2 activated", async () => {
         const useCase = createUseCase({ users: listOfUsersWithTwoValid });
 
-        const result = await useCase.execute(false);
+        const result = await useCase.execute(useCaseOptionsDisabledFalse);
 
         const expectedReport = [{ id: userWithoutTwoFA.id, name: userWithoutTwoFA.username }];
         expect(result.report.invalidTwoFAList).toEqual(expectedReport);
@@ -238,7 +241,7 @@ describe("TwoFactorReportUseCase", () => {
         const disabledUser = { ...userWithoutTwoFA, disabled: true };
         const useCase = createUseCase({ users: [userWithTwoFA, disabledUser], config: alternativeConfig });
 
-        const result = await useCase.execute(true);
+        const result = await useCase.execute(useCaseOptionsDisabledFalse);
 
         expect(result.report.invalidTwoFAList).toEqual([]);
     });
@@ -250,7 +253,7 @@ describe("TwoFactorReportUseCase", () => {
             config: alternativeConfig,
         });
 
-        const result = await useCase.execute(true);
+        const result = await useCase.execute(useCaseOptionsDisabledTrue);
 
         const expectedReport = [{ id: userWithoutTwoFA.id, name: userWithoutTwoFA.username }];
         expect(result.report.invalidTwoFAList).toEqual(expectedReport);
@@ -264,7 +267,7 @@ describe("TwoFactorReportUseCase", () => {
             config: alternativeConfig,
         });
 
-        const result = await useCase.execute(false);
+        const result = await useCase.execute(useCaseOptionsDisabledFalse);
 
         const expectedReport = [{ id: userWithoutTwoFA.id, name: userWithoutTwoFA.username }];
         expect(result.report.invalidTwoFAList).toEqual(expectedReport);
@@ -274,7 +277,7 @@ describe("TwoFactorReportUseCase", () => {
     it("Should classify users into correct invalid categories (2FA, WHO, AUTH)", async () => {
         const useCase = createUseCase({ users: mixedInvalidUsers, config: alternativeConfig });
 
-        const result = await useCase.execute(false);
+        const result = await useCase.execute(useCaseOptionsDisabledFalse);
 
         expect(result.report.invalidTwoFAList).toEqual([
             { id: userWithoutTwoFA.id, name: userWithoutTwoFA.username },

@@ -16,7 +16,8 @@ export class RunTwoFactorReportUseCase {
         private programRepository: UserMonitoringProgramD2Repository
     ) {}
 
-    async execute(shouldDisableInvalidUsers: boolean): Async<TwoFactorReportResponse> {
+    async execute(twoFactorUseCaseOption: TwoFactorUseCaseOptions): Async<TwoFactorReportResponse> {
+        const shouldDisableInvalidUsers = twoFactorUseCaseOption.shouldDisableInvalidUsers;
         const options = await this.configRepository.get();
         const programMetadata = await this.programRepository.get(options.pushProgram.id);
         
@@ -113,4 +114,8 @@ export class RunTwoFactorReportUseCase {
             report,
         };
     }
+}
+
+interface TwoFactorUseCaseOptions {
+  shouldDisableInvalidUsers: boolean;
 }
