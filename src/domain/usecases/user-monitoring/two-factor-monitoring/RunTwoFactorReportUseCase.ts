@@ -20,7 +20,7 @@ export class RunTwoFactorReportUseCase {
         const shouldDisableInvalidUsers = twoFactorUseCaseOption.shouldDisableInvalidUsers;
         const options = await this.configRepository.get();
         const programMetadata = await this.programRepository.get(options.pushProgram.id);
-        
+
         const excludedUserGroups = options.exceptionGroup?.map(group => group.id) ?? [];
         const allUsers = await this.userRepository.getUsersNotInGroupIds(excludedUserGroups);
 
@@ -79,13 +79,13 @@ export class RunTwoFactorReportUseCase {
         const report: TwoFactorUserReport = {
             invalidTwoFAList: invalidTwoFactorUsers.map(user => {
                 return { id: user.id, name: user.username };
-            }) ?? ["No users found"],
+            }),
             invalidWhoList: whoInvalidUsers.map(user => {
                 return { id: user.id, name: user.username };
-            }) ?? ["No users found"],
+            }),
             invalidAuthList: allInvalidUsers.map(user => {
                 return { id: user.id, name: user.username };
-            }) ?? ["No users found"],
+            }),
         };
 
         const saveResponse = await this.reportRepository.save(programMetadata, report);
@@ -117,5 +117,5 @@ export class RunTwoFactorReportUseCase {
 }
 
 interface TwoFactorUseCaseOptions {
-  shouldDisableInvalidUsers: boolean;
+    shouldDisableInvalidUsers: boolean;
 }

@@ -50,13 +50,11 @@ const alternativeConfig: TwoFactorUserOptions = {
         id: "MkELexlZOj8",
         name: "Who account usergroup",
     },
-    exceptionGroup: [
-    ]
+    exceptionGroup: [],
 };
 
-const useCaseOptionsDisabledFalse = {shouldDisableInvalidUsers: false}
-const useCaseOptionsDisabledTrue = {shouldDisableInvalidUsers: true}
-
+const useCaseOptionsDisabledFalse = { shouldDisableInvalidUsers: false };
+const useCaseOptionsDisabledTrue = { shouldDisableInvalidUsers: true };
 
 describe("TwoFactorReportUseCase", () => {
     it("Should detects a user in 2FA group with twoFA disabled as invalidTwoFA", async () => {
@@ -68,7 +66,7 @@ describe("TwoFactorReportUseCase", () => {
 
         const useCase = createUseCase({ users: [user], config: defaultConfig });
 
-        const result = await useCase.execute({shouldDisableInvalidUsers: false});
+        const result = await useCase.execute({ shouldDisableInvalidUsers: false });
 
         expect(result.report.invalidTwoFAList).toEqual([{ id: "u1", name: "testuser" }]);
         expect(result.report.invalidWhoList).toEqual([]);
@@ -85,7 +83,7 @@ describe("TwoFactorReportUseCase", () => {
 
         const useCase = createUseCase({ users: [user], config: defaultConfig });
 
-        const result = await useCase.execute({shouldDisableInvalidUsers: false});
+        const result = await useCase.execute({ shouldDisableInvalidUsers: false });
 
         expect(result.report.invalidTwoFAList).toEqual([]);
         expect(result.report.invalidWhoList).toEqual([]);
