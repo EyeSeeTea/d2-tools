@@ -77,7 +77,7 @@ const run2FAReporterCmd = command({
             userMonitoringReportRepository,
             externalConfigRepository,
             programRepository
-        ).execute(args.disableusers);
+        ).execute({ shouldDisableInvalidUsers: args.disableusers });
 
         log.info(JSON.stringify(response));
     },

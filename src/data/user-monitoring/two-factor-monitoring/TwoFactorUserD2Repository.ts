@@ -16,13 +16,14 @@ export class TwoFactorUserD2Repository implements TwoFactorUserRepository {
         //We need to check if the program metadata is valid due !in filter is not working propertly in dhis2 2.41
         const responses = await this.api
             .get<Users>(
-                `/users.json?paging=false&fields=id,username,disabled,externalAuth,userGroups,created,userCredentials[twoFa,twoFactorEnabled]&filter=userGroups.id:!in:[${excludeUserGroupIds.join(
+                `/users.json?paging=false&fields=id,username,disabled,externalAuth,userGroups,created,twoFa,twoFactorEnabled&filter=userGroups.id:!in:[${excludeUserGroupIds.join(
                     ","
                 )}]`
             )
             .getData();
+
         return responses["users"].map(user => {
-            const twoFA = user.userCredentials.twoFA || user.userCredentials.twoFactorEnabled;
+            const twoFA = user.twoFA || user.twoFactorEnabled;
             return {
                 id: user.id,
                 username: user.username,

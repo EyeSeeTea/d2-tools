@@ -1,10 +1,12 @@
 import { Id, NamedRef, StringDateTime } from "domain/entities/Base";
+import { Maybe } from "utils/ts-utils";
 
 export interface PermissionFixerUser {
     id: Id;
     lastUpdatedBy: PermissionFixerUserDetails;
     createdBy: PermissionFixerUserDetails;
-    twoFA: boolean;
+    twoFA: Maybe<boolean>;
+    twoFactorEnabled: Maybe<boolean>;
     invitation: false;
     selftRefistered: false;
     firstName: string;

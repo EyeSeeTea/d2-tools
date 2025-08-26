@@ -16,20 +16,18 @@ export class RunTwoFactorReportUseCase {
         private programRepository: UserMonitoringProgramD2Repository
     ) {}
 
-    async execute(shouldDisableInvalidUsers: boolean): Async<TwoFactorReportResponse> {
+    async execute(twoFactorUseCaseOption: TwoFactorUseCaseOptions): Async<TwoFactorReportResponse> {
+        const shouldDisableInvalidUsers = twoFactorUseCaseOption.shouldDisableInvalidUsers;
         const options = await this.configRepository.get();
         const programMetadata = await this.programRepository.get(options.pushProgram.id);
-        
+
         const excludedUserGroups = options.exceptionGroup?.map(group => group.id) ?? [];
         const allUsers = await this.userRepository.getUsersNotInGroupIds(excludedUserGroups);
 
         if (!allUsers) {
             const report: TwoFactorUserReport = {
-                invalidTwoFACount: 0,
                 invalidTwoFAList: [],
-                invalidWhoCount: 0,
                 invalidWhoList: [],
-                invalidAuthCount: 0,
                 invalidAuthList: [],
             };
             const saveResponse = await this.reportRepository.save(programMetadata, report);
@@ -79,18 +77,15 @@ export class RunTwoFactorReportUseCase {
         });
 
         const report: TwoFactorUserReport = {
-            invalidTwoFACount: invalidTwoFactorUsers.length,
             invalidTwoFAList: invalidTwoFactorUsers.map(user => {
                 return { id: user.id, name: user.username };
-            }) ?? ["No users found"],
-            invalidWhoCount: whoInvalidUsers.length,
+            }),
             invalidWhoList: whoInvalidUsers.map(user => {
                 return { id: user.id, name: user.username };
-            }) ?? ["No users found"],
-            invalidAuthCount: allInvalidUsers.length,
+            }),
             invalidAuthList: allInvalidUsers.map(user => {
                 return { id: user.id, name: user.username };
-            }) ?? ["No users found"],
+            }),
         };
 
         const saveResponse = await this.reportRepository.save(programMetadata, report);
@@ -119,4 +114,8 @@ export class RunTwoFactorReportUseCase {
             report,
         };
     }
+}
+
+interface TwoFactorUseCaseOptions {
+    shouldDisableInvalidUsers: boolean;
 }

@@ -1,6 +1,6 @@
 export const d2ToolsNamespace = "d2-tools";
 
-export type Namespace = (typeof Namespace)[keyof typeof Namespace];
+export type Namespace = typeof Namespace[keyof typeof Namespace];
 
 export const Namespace = {
     PERMISSION_FIXER: "permission-fixer",
