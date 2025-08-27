@@ -1,7 +1,9 @@
+import fs from "fs";
 import "json5/lib/register";
+import * as Codec from "purify-ts";
 import { command, subcommands, option, string, boolean, flag } from "cmd-ts";
 
-import { getD2Api } from "scripts/common";
+import { getD2ApiFromArgs } from "scripts/common";
 import log from "utils/log";
 
 import { RunTwoFactorReportUseCase } from "domain/usecases/user-monitoring/two-factor-monitoring/RunTwoFactorReportUseCase";
@@ -30,6 +32,7 @@ import { MonitorUserGroupsUseCase } from "domain/usecases/user-monitoring/user-g
 import { UserD2Repository } from "data/user-monitoring/user-templates-monitoring/UserD2Repository";
 import { UserTemplatesMonitoringConfigD2Repository } from "data/user-monitoring/user-templates-monitoring/UserTemplatesMonitoringConfigD2Repository";
 import { MonitorUserTemplatesUseCase } from "domain/usecases/user-monitoring/user-templates-monitoring/MonitorUserTemplatesUseCase";
+import { D2Api } from "types/d2-api";
 
 export function getCommand() {
     return subcommands({
@@ -54,11 +57,16 @@ const run2FAReporterCmd = command({
             long: "config-file",
             description: "Config file",
         }),
+        disableusers: flag({
+            type: boolean,
+            short: "d",
+            long: "disable-users",
+            description: "Disable invalid twoFA users.",
+        }),
     },
 
     handler: async args => {
-        const auth = getAuthFromFile(args.configFile);
-        const api = getD2Api(auth.apiurl);
+        const api = getApiFromConfigFile(args.configFile);
         const usersRepository = new TwoFactorUserD2Repository(api);
         const externalConfigRepository = new TwoFactorConfigD2Repository(api);
         const userMonitoringReportRepository = new TwoFactorReportD2Repository(api);
@@ -69,7 +77,7 @@ const run2FAReporterCmd = command({
             userMonitoringReportRepository,
             externalConfigRepository,
             programRepository
-        ).execute();
+        ).execute({ shouldDisableInvalidUsers: args.disableusers });
 
         log.info(JSON.stringify(response));
     },
@@ -88,8 +96,7 @@ const runUsersMonitoringCmd = command({
     },
 
     handler: async args => {
-        const auth = getAuthFromFile(args.configFile);
-        const api = getD2Api(auth.apiurl);
+        const api = getApiFromConfigFile(args.configFile);
         const usersRepository = new PermissionFixerUserD2Repository(api);
         const userGroupsRepository = new PermissionFixerUserGroupD2Repository(api);
         const usersTemplateRepository = new PermissionFixerTemplateD2Repository(api);
@@ -128,9 +135,8 @@ const runAuthoritiesMonitoring = command({
     },
 
     handler: async args => {
-        const auth = getAuthFromFile(args.configFile);
+        const api = getApiFromConfigFile(args.configFile);
         const webhook = getWebhookConfFromFile(args.configFile);
-        const api = getD2Api(auth.apiurl);
         const UserRolesRepository = new UserRolesD2Repository(api);
         const externalConfigRepository = new AuthoritiesMonitoringConfigD2Repository(api);
         const messageRepository = new MessageMSTeamsRepository(webhook);
@@ -164,9 +170,8 @@ const runUserGroupMonitoringCmd = command({
     },
 
     handler: async args => {
-        const auth = getAuthFromFile(args.configFile);
+        const api = getApiFromConfigFile(args.configFile);
         const webhook = getWebhookConfFromFile(args.configFile);
-        const api = getD2Api(auth.apiurl);
 
         const userGroupsRepository = new UserGroupD2Repository(api);
         const externalConfigRepository = new UserGroupsMonitoringConfigD2Repository(api);
@@ -201,9 +206,8 @@ const runUserTemplateMonitoringCmd = command({
     },
 
     handler: async args => {
-        const auth = getAuthFromFile(args.configFile);
+        const api = getApiFromConfigFile(args.configFile);
         const webhook = getWebhookConfFromFile(args.configFile);
-        const api = getD2Api(auth.apiurl);
 
         const usersRepository = new UserD2Repository(api);
         const externalConfigRepository = new UserTemplatesMonitoringConfigD2Repository(api);
@@ -218,17 +222,31 @@ const runUserTemplateMonitoringCmd = command({
     },
 });
 
-function getAuthFromFile(configFile: string): UserMonitoringAuth {
-    const fs = require("fs");
-    const configJSON = JSON.parse(fs.readFileSync("./" + configFile, "utf8"));
-    const urlprefix = configJSON["URL"]["server"].split("//")[0] + "//";
-    const urlserver = configJSON["URL"]["server"].split("//")[1];
-    const apiurl: string =
-        urlprefix + configJSON["URL"]["username"] + ":" + configJSON["URL"]["password"] + "@" + urlserver;
+const localConfigCodec = Codec.Codec.interface({
+    URL: Codec.Codec.interface({
+        username: Codec.string,
+        password: Codec.string,
+        server: Codec.string,
+    }),
+});
 
-    return {
-        apiurl: apiurl,
-    };
+function getApiFromConfigFile(configFile: string): D2Api {
+    const configUnparsed = JSON.parse(fs.readFileSync(configFile, "utf8"));
+
+    return localConfigCodec.decode(configUnparsed).caseOf({
+        Left: errors => {
+            throw new Error(`Error parsing ${configFile}: ${errors}`);
+        },
+        Right: config => {
+            return getD2ApiFromArgs({
+                url: config["URL"]["server"],
+                auth: {
+                    username: config["URL"]["username"],
+                    password: config["URL"]["password"],
+                },
+            });
+        },
+    });
 }
 
 function getWebhookConfFromFile(configFile: string): MSTeamsWebhookOptions {

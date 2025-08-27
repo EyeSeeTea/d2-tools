@@ -10,17 +10,20 @@ import { UserMonitoringUserResponse } from "domain/entities/user-monitoring/comm
 export class UserMonitoringFileResourceUtils {
     //This method only works right when you build the application using nvm use 16
     static async saveFileResource(jsonString: string, name: string, api: D2Api): Async<string> {
-        const jsonBlob = Buffer.from(jsonString, "utf-8");
-
-        const files = new Files(api);
         const uniqueFilename = this.createUniqueFilename(name);
+        log.info(`Saving file ${uniqueFilename}`);
+        const jsonBlob = Buffer.from(jsonString, "utf-8");
+        if (jsonBlob.length === 0) {
+            log.info("The file is empty.");
+            return "";
+        }
+        const files = new Files(api);
         const form: FileUploadParameters = {
             name: uniqueFilename,
             data: jsonBlob,
             ignoreDocument: true,
             domain: "DATA_VALUE",
         };
-        log.info(`Saving file ${uniqueFilename}`);
         const response = await files.saveFileResource(form).getData();
         const fileresourceId = response;
         return fileresourceId;

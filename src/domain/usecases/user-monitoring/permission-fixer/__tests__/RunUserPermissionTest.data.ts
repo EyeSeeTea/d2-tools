@@ -40,6 +40,7 @@ export const programMetadata: UserMonitoringProgramMetadata = {
 export const fakeValidUser: PermissionFixerUser = {
     id: "CHbcHcmgoZ5",
     twoFA: false,
+    twoFactorEnabled: false,
     invitation: false,
     firstName: "Fake",
     name: "Fake Dummy",
@@ -101,6 +102,7 @@ export const fakeValidUser: PermissionFixerUser = {
 export const fakeInvalidUser: PermissionFixerUser = {
     id: "CHbcHcmgoZ5",
     twoFA: false,
+    twoFactorEnabled: false,
     invitation: false,
     firstName: "Fake",
     name: "Fake Dummy",
@@ -170,6 +172,7 @@ export const fakeInvalidUser: PermissionFixerUser = {
 export const fakeUserWithoutUserGroup: PermissionFixerUser = {
     id: "CHbcHcmgoZ5",
     twoFA: false,
+    twoFactorEnabled: false,
     invitation: false,
     firstName: "Fake",
     name: "Fake Dummy",

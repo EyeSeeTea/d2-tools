@@ -280,10 +280,10 @@
     minimatch "^3.0.4"
     strip-json-comments "^3.1.1"
 
-"@eyeseetea/d2-api@1.18.0-beta.3":
-  version "1.18.0-beta.3"
-  resolved "https://registry.yarnpkg.com/@eyeseetea/d2-api/-/d2-api-1.18.0-beta.3.tgz#2f991727d8d90efb322579e07c819a2dc9f5ea9a"
-  integrity sha512-LdV8BFHrfWchKWeKL3A/saYBa4pP9e18ZiNkI6S4Kvj55cep2oVVaGocvWHTBkLupKWSV8bWSdq4pbpEXluEhg==
+"@eyeseetea/d2-api@1.18.0-beta.7":
+  version "1.18.0-beta.7"
+  resolved "https://registry.yarnpkg.com/@eyeseetea/d2-api/-/d2-api-1.18.0-beta.7.tgz#706286784eb0649ecddc2e6cf5a06928fd1a721d"
+  integrity sha512-FBXpVGvkw20MGixKRo1jkUdBc5/y1wj3nd/7sN9G7bfxu5YlE2VmD4hQ5XKgyGiATilgACx4Tz3gYMLERPaYEQ==
   dependencies:
     abort-controller "3.0.0"
     axios "1.6.4"

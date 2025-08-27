@@ -539,9 +539,17 @@ A config json file to get the user/password and server:
 
 d2-tools -> two-factor-monitoring:
 
-A push program variable with the id of the program in dhis
+A pushProgram variable with the ID of the program in DHIS2 used to track user account checks.
 
-A two factor group to filter the users that should have two factor activated
+A twoFactorGroup to filter the active users that are expected to have two-factor authentication (2FA) enabled.
+
+A whoAccountGroup to filter the users that are expected to have a valid WHO account (WIMS). Users not in this group will be flagged as having an incorrect WHO setup.
+
+An exceptionGroup list containing groups whose users should be excluded from validation checks — even if they are missing 2FA or WHO account membership.
+
+An optional --disable-users CLI flag that, when passed, will disable users identified as invalid due to missing or disabled 2FA.
+
+
 
 The datastore must contain:
 
@@ -554,9 +562,20 @@ The datastore must contain:
     "twoFactorGroup": {
         "id": "uid",
         "name": "Auth control group"
-    }
+    },
+    "whoAccountGroup": {
+    "id": "zjeqEiv9Ept",
+    "name": "WIDP Who Auth"
+    },
+    "exceptionGroup": [
+      {
+        "id": "HASUnoSNcSA",
+        "name": "user-scripts"
+      }
+    ]
 }
 ```
+
 
 #### run-users-monitoring Datastore:
 

@@ -5,9 +5,8 @@ import { UserMonitoringProgramD2Repository } from "data/user-monitoring/common/U
 import { TwoFactorReportD2Repository } from "data/user-monitoring/two-factor-monitoring/TwoFactorReportD2Repository";
 import { TwoFactorUserReport } from "domain/entities/user-monitoring/two-factor-monitoring/TwoFactorUserReport";
 import { Async } from "domain/entities/Async";
-import { NonUsersException } from "domain/entities/user-monitoring/two-factor-monitoring/exception/NonUsersException";
 
-type TwoFactorReportResponse = { message: string; report: TwoFactorUserReport };
+type TwoFactorReportResponse = { message: string; report: TwoFactorUserReport; disableUsersMessage: string };
 
 export class RunTwoFactorReportUseCase {
     constructor(
@@ -17,28 +16,106 @@ export class RunTwoFactorReportUseCase {
         private programRepository: UserMonitoringProgramD2Repository
     ) {}
 
-    async execute(): Async<TwoFactorReportResponse> {
+    async execute(twoFactorUseCaseOption: TwoFactorUseCaseOptions): Async<TwoFactorReportResponse> {
+        const shouldDisableInvalidUsers = twoFactorUseCaseOption.shouldDisableInvalidUsers;
         const options = await this.configRepository.get();
-        const twoFactorGroupUsers = await this.userRepository.getUsersByGroupId([options.twoFactorGroup.id]);
+        const programMetadata = await this.programRepository.get(options.pushProgram.id);
 
-        if (!twoFactorGroupUsers) {
-            throw new NonUsersException(
-                "Users not found in the group. Check the group id. " + options.twoFactorGroup.id
-            );
+        const excludedUserGroups = options.exceptionGroup?.map(group => group.id) ?? [];
+        const allUsers = await this.userRepository.getUsersNotInGroupIds(excludedUserGroups);
+
+        if (!allUsers) {
+            const report: TwoFactorUserReport = {
+                invalidTwoFAList: [],
+                invalidWhoList: [],
+                invalidAuthList: [],
+            };
+            const saveResponse = await this.reportRepository.save(programMetadata, report);
+            return {
+                message: saveResponse,
+                disableUsersMessage: "No users found.",
+                report,
+            };
         }
 
-        const usersWithoutTwoFactor = twoFactorGroupUsers.filter(user => {
-            return user.twoFA == false;
+        //We need to check if the program metadata is valid due !in filter is not working propertly in dhis2 2.41
+        const allUsersExceptExcluded = allUsers.filter(user => {
+            return !user.userGroups.some(group => excludedUserGroups.includes(group.id));
         });
-        const userItems = usersWithoutTwoFactor.map(user => {
-            return { id: user.id, name: user.username };
+
+        const twoFactorUsers = allUsersExceptExcluded.filter(user => {
+            return user.userGroups.some(group => options.twoFactorGroup.id === group.id);
         });
+
+        const invalidTwoFactorUsers = twoFactorUsers.filter(user => {
+            return user.externalAuth == false && user.twoFA == false && user.disabled == false;
+        });
+
+        const whoAccountUsers = allUsersExceptExcluded.filter(user => {
+            return user.userGroups.some(group => options.whoAccountGroup?.id === group.id);
+        });
+
+        const whoInvalidUsers = whoAccountUsers.filter(user => {
+            return user.disabled == false && user.externalAuth == false;
+        });
+
+        const usersNotInWhoOr2FA = allUsersExceptExcluded.filter(user => {
+            const isInWho = whoAccountUsers.includes(user);
+            const isIn2FA = twoFactorUsers.includes(user);
+            return !isInWho && !isIn2FA;
+        });
+
+        // Filter all active users with wrong configurations
+        const allInvalidUsers = allUsersExceptExcluded.filter(user => {
+            const isEnabled = user.disabled == false;
+
+            const isInWhoGroup = whoAccountUsers.some(u => u.id === user.id);
+            const isInAuthGroup = twoFactorUsers.some(u => u.id === user.id);
+            const isNotInWhoOr2FA = usersNotInWhoOr2FA.some(u => u.id === user.id);
+
+            return isEnabled && ((isInWhoGroup && isInAuthGroup) || isNotInWhoOr2FA);
+        });
+
         const report: TwoFactorUserReport = {
-            invalidUsersCount: userItems.length,
-            listOfAffectedUsers: userItems,
+            invalidTwoFAList: invalidTwoFactorUsers.map(user => {
+                return { id: user.id, name: user.username };
+            }),
+            invalidWhoList: whoInvalidUsers.map(user => {
+                return { id: user.id, name: user.username };
+            }),
+            invalidAuthList: allInvalidUsers.map(user => {
+                return { id: user.id, name: user.username };
+            }),
         };
-        const programMetadata = await this.programRepository.get(options.pushProgram.id);
+
         const saveResponse = await this.reportRepository.save(programMetadata, report);
-        return { message: saveResponse, report };
+        if (shouldDisableInvalidUsers) {
+            if (invalidTwoFactorUsers.length > 0) {
+                const disableResponse = await this.userRepository.disableUsers(
+                    invalidTwoFactorUsers.map(user => user.id)
+                );
+                return {
+                    message: saveResponse,
+                    disableUsersMessage: JSON.stringify(disableResponse),
+                    report,
+                };
+            } else {
+                return {
+                    message: saveResponse,
+                    disableUsersMessage:
+                        "Disabled users action is not executed due to no invalid users found.",
+                    report,
+                };
+            }
+        }
+        return {
+            message: saveResponse,
+            disableUsersMessage: "Disabled users action is not enabled.",
+            report,
+        };
     }
+}
+
+interface TwoFactorUseCaseOptions {
+    shouldDisableInvalidUsers: boolean;
 }
