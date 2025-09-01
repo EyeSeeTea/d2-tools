@@ -71,7 +71,7 @@ export class PermissionFixerTemplateD2Repository implements PermissionFixerTempl
                 return template.id == item.template.id;
             });
             const templateAutorities = _.compact(
-                user?.userCredentials.userRoles.flatMap(role => {
+                user?.userRoles.flatMap(role => {
                     const userRoleAuthorities = userRoles.filter(userRoleitem => {
                         return userRoleitem.id == role.id;
                     });

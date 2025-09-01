@@ -272,6 +272,13 @@ export class RunUserPermissionUseCase {
         }
     }
 
+    private setUserRoles(user: PermissionFixerUser, roles: NamedRef[]) {
+        user.userRoles = roles;
+        if ("userCredentials" in user) {
+            user.userCredentials.userRoles = roles;
+        }
+    }
+
     private processUsers(
         allUsers: PermissionFixerUser[],
         completeTemplateGroups: PermissionFixerTemplateGroupExtended[],
@@ -294,10 +301,9 @@ export class RunUserPermissionUseCase {
                     );
                 });
 
-                if (user.userCredentials.userRoles === undefined) {
+                if (user.userRoles === undefined) {
                     const fixedUser = JSON.parse(JSON.stringify(user));
-                    fixedUser.userCredentials.userRoles = [{ id: minimalRole.id }];
-                    fixedUser.userRoles = [{ id: minimalRole.id }];
+                    this.setUserRoles(fixedUser, [{ id: minimalRole.id, name: "Minimal Role" }]);
                     const userInfoRes: UserMonitoringUserResponse = {
                         user: user,
                         fixedUser: fixedUser,
@@ -360,10 +366,10 @@ export class RunUserPermissionUseCase {
                     });
 
                     // fill the valid roles in the user against all the possible valid roles
-                    const userValidRoles = user.userCredentials.userRoles.filter(userRole => {
+                    const userValidRoles = user.userRoles.filter(userRole => {
                         return allValidRolesSingleListWithExceptions.includes(userRole.id);
                     });
-                    const userInvalidRoles = user.userCredentials.userRoles.filter(userRole => {
+                    const userInvalidRoles = user.userRoles.filter(userRole => {
                         const id = userRole.id;
                         const isValid = allValidRolesSingleListWithExceptions.some(role => role === id);
                         const isInvalid = allInvalidRolesSingleListFixed.some(role => role === id);
@@ -372,8 +378,12 @@ export class RunUserPermissionUseCase {
 
                     //clone user
                     const fixedUser = JSON.parse(JSON.stringify(user));
-                    fixedUser.userCredentials.userRoles = userValidRoles;
-                    fixedUser.userRoles = userValidRoles;
+                    this.setUserRoles(
+                        fixedUser,
+                        userValidRoles.map(role => {
+                            return { id: role.id, name: role.name };
+                        })
+                    );
                     const userTemplateGroupMatch = templateGroupMatch ?? undefined;
                     if (userTemplateGroupMatch == undefined) {
                         throw new UserTemplateNotFoundException(
