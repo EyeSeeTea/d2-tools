@@ -67,7 +67,6 @@ export class RunUserPermissionUseCase {
         const allUserTemplatesId = allUserTemplates.map(templateUser => templateUser.id);
 
         const usersToProcessGroups = allUser.filter(user => {
-            log.info(user.username);
             return (
                 excludedUsersId.includes(user.id) === false && allUserTemplatesId.includes(user.id) === false
             );
@@ -84,12 +83,14 @@ export class RunUserPermissionUseCase {
             templatesWithAuthorities,
             usersToProcessGroups
         );
-
+        log.info(`UserGroups processed. Affected user count: ${responseUserGroups.invalidUsersCount}`);
+        log.info(
+            `UserGroups processed. Affected users: ${JSON.stringify(responseUserGroups.listOfAffectedUsers)}`
+        );
         log.info(`Run user Role monitoring`);
         const allUserAfterProccessGroups = await this.userRepository.getAllUsers();
 
         const usersToProcessRoles = allUserAfterProccessGroups.filter(user => {
-            log.info(JSON.stringify(allUserTemplatesId));
             return (
                 excludedUsersId.includes(user.id) === false && allUserTemplatesId.includes(user.id) === false
             );
@@ -121,10 +122,14 @@ export class RunUserPermissionUseCase {
         ) {
             log.info(`Sending user-monitoring user-permissions report results`);
 
+            const removedRolesSummary = await this.getRemovedRolesSummary(finalUserRoles.userProcessed);
+            log.info(`Removed roles summary: ${removedRolesSummary}`);
+
             const response = await this.reportRepository.save(
                 programMetadata,
                 finalUserGroup,
-                finalUserRoles
+                finalUserRoles,
+                removedRolesSummary
             );
 
             return {
@@ -137,9 +142,10 @@ export class RunUserPermissionUseCase {
                 rolesReport: finalUserRoles,
             };
         } else {
-            log.info(`Nothing to report. No invalid users found.`);
+            log.info(`No invalid users found.`);
+            const response = await this.reportRepository.saveEmptyReport(programMetadata);
             return {
-                message: "Nothing to report. No invalid users found.",
+                message: response,
                 allUsersToProcessGroups: usersToProcessGroups,
                 allUsersToProcessRoles: usersToProcessRoles,
                 excludedUsers: excludedUsers,
@@ -148,6 +154,18 @@ export class RunUserPermissionUseCase {
                 rolesReport: undefined,
             };
         }
+    }
+
+    private async getRemovedRolesSummary(users: UserMonitoringUserResponse[]): Async<string> {
+        const formattedForbiddenUserRoles = users.reduce<Record<string, string[]>>((acc, item) => {
+            const invalidRoles = item.invalidUserRoles.map(r => r.name).sort((a, b) => a.localeCompare(b));
+            if (invalidRoles.length > 0) {
+                acc[item.user.username] = invalidRoles;
+            }
+            return acc;
+        }, {});
+
+        return JSON.stringify(formattedForbiddenUserRoles, null, 2);
     }
 
     private preProcessUsers(
@@ -336,23 +354,20 @@ export class RunUserPermissionUseCase {
                         allExceptionsToBeIgnoredByUser,
                         allExceptionsToBeIgnoredByGroup
                     );
-                    //the invalid roles are the ones that are not in the valid roles
+                    // the invalid roles are the ones that are not in the valid roles
                     const allInvalidRolesSingleListFixed = allInValidRolesSingleList?.filter(item => {
-                        return allValidRolesSingleListWithExceptions.indexOf(item) == -1;
-                    });
-                    //fill the valid roles in the user  against all the possible valid roles
-                    const userValidRoles = user.userCredentials.userRoles.filter(userRole => {
-                        return (
-                            JSON.stringify(allValidRolesSingleListWithExceptions).indexOf(userRole.id) >= 0
-                        );
+                        return !allValidRolesSingleListWithExceptions.includes(item);
                     });
 
-                    //fill the invalid roles in the user against all the possible invalid roles
+                    // fill the valid roles in the user against all the possible valid roles
+                    const userValidRoles = user.userCredentials.userRoles.filter(userRole => {
+                        return allValidRolesSingleListWithExceptions.includes(userRole.id);
+                    });
                     const userInvalidRoles = user.userCredentials.userRoles.filter(userRole => {
-                        return (
-                            JSON.stringify(allValidRolesSingleListWithExceptions).indexOf(userRole.id) ==
-                                -1 && JSON.stringify(allInvalidRolesSingleListFixed).indexOf(userRole.id) >= 0
-                        );
+                        const id = userRole.id;
+                        const isValid = allValidRolesSingleListWithExceptions.some(role => role === id);
+                        const isInvalid = allInvalidRolesSingleListFixed.some(role => role === id);
+                        return !isValid && isInvalid;
                     });
 
                     //clone user

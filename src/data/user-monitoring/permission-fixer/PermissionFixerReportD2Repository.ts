@@ -22,20 +22,35 @@ const dataelement_invalid_roles_list_code = "ADMIN_invalid_users_roles_usernames
 const dataelement_users_pushed_code = "ADMIN_user_pushed_control_Events";
 const dataelement_file_invalid_users_file_code = "ADMIN_invalid_users_backup_3_Events";
 const dataelement_file_valid_users_file_code = "ADMIN_valid_users_backup_4_Events";
+const dataelement_file_invalid_user_roles_file_code = "ADMIN_invalid_userroles_summary_13_Events";
 
 const csvErrorFilename = `_users_backup`;
 const filenameErrorOnPush = `_users_push_error`;
-const filenameUsersPushed = `_users_pushed.json`;
-const filenameUserBackup = `_users_update_backup.json`;
+const filenameUsersPushed = `_users_pushed.txt`;
+const filenameUserBackup = `_users_update_backup.txt`;
+const filenameUUserRolesSummary = `_users_removed_userroles_summary.txt`;
 type ServerResponse = { status: string; typeReports: object[] };
 
 export class PermissionFixerReportD2Repository implements PermissionFixerReportRepository {
     constructor(private api: D2Api) {}
 
+    async saveEmptyReport(program: UserMonitoringProgramMetadata): Async<string> {
+        log.info(`Saving report `);
+
+        const response = await this.pushEmptyReportToDhis(this.api, program);
+
+        if (response?.status != "OK") {
+            throw new Error("Error on push report: " + JSON.stringify(response));
+        } else {
+            return response.status;
+        }
+    }
+
     async save(
         program: UserMonitoringProgramMetadata,
         responseGroups: PermissionFixerReport,
-        responseRoles: PermissionFixerExtendedReport
+        responseRoles: PermissionFixerExtendedReport,
+        rolesSummary: string
     ): Async<string> {
         log.info(`Saving report `);
 
@@ -57,6 +72,15 @@ export class PermissionFixerReportD2Repository implements PermissionFixerReportR
 
         log.debug(`Users backup file id: ${userBackupId}`);
 
+        log.info(`Saving removed roles summary`);
+        const userInvalidRolesSummaryId = await UserMonitoringFileResourceUtils.saveFileResource(
+            rolesSummary,
+            filenameUUserRolesSummary,
+            this.api
+        );
+
+        log.debug(`Users removed User Roles file id: ${userInvalidRolesSummaryId}`);
+
         const response = await this.pushReportToDhis(
             responseGroups.invalidUsersCount.toString(),
             responseGroups.listOfAffectedUsers,
@@ -65,6 +89,7 @@ export class PermissionFixerReportD2Repository implements PermissionFixerReportR
             responseRoles.response,
             userFixedId,
             userBackupId,
+            userInvalidRolesSummaryId,
             this.api,
             program
         );
@@ -93,6 +118,63 @@ export class PermissionFixerReportD2Repository implements PermissionFixerReportR
         );
     }
 
+    private async pushEmptyReportToDhis(api: D2Api, program: UserMonitoringProgramMetadata) {
+        log.info(`Create and Pushing report to DHIS2`);
+        const dataValues: UserMonitoringReportValues[] = program.dataElements
+            .map(item => {
+                switch (item.code) {
+                    case dataelement_invalid_users_groups_count_code:
+                        return { dataElement: item.id, value: 0 };
+                    case dataelement_invalid_roles_count_code:
+                        return { dataElement: item.id, value: 0 };
+                    case dataelement_users_pushed_code:
+                        return { dataElement: item.id, value: "No invalid users found." };
+                    default:
+                        return { dataElement: "", value: "" };
+                }
+            })
+            .filter(dataValue => dataValue.dataElement !== "");
+
+        if (dataValues.length == 0) {
+            log.info(`No data elements found`);
+            return;
+        }
+        log.info("Pushing report");
+
+        const response: ServerResponse = await api
+            .post<ServerResponse>(
+                "/tracker",
+                {
+                    async: false,
+                },
+                {
+                    events: [
+                        {
+                            program: program.id,
+                            programStage: program.programStageId,
+                            orgUnit: program.orgUnitId,
+                            occurredAt: new Date().toISOString(),
+                            dataValues: dataValues,
+                        },
+                    ],
+                }
+            )
+            .getData()
+            .catch(err => {
+                if (err?.response?.data) {
+                    log.error("Push ERROR ->");
+                    log.error(JSON.stringify(err.response.data));
+                    return err.response.data as ServerResponse;
+                } else {
+                    log.error("Push ERROR without any data");
+                    return { status: "ERROR", typeReports: [] };
+                }
+            });
+        log.info("Report sent status: " + response.status);
+
+        return response;
+    }
+
     private async pushReportToDhis(
         userGroupsFixedCount: string,
         usernamesGroupModified: NamedRef[],
@@ -101,6 +183,7 @@ export class PermissionFixerReportD2Repository implements PermissionFixerReportR
         status: string,
         userFixedFileResourceId: string,
         userBackupFileResourceid: string,
+        userInvalidRolesFileResourceid: string,
         api: D2Api,
         program: UserMonitoringProgramMetadata
     ) {
@@ -134,6 +217,8 @@ export class PermissionFixerReportD2Repository implements PermissionFixerReportR
                         return { dataElement: item.id, value: userFixedFileResourceId };
                     case dataelement_file_valid_users_file_code:
                         return { dataElement: item.id, value: userBackupFileResourceid };
+                    case dataelement_file_invalid_user_roles_file_code:
+                        return { dataElement: item.id, value: userInvalidRolesFileResourceid };
                     case dataelement_users_pushed_code:
                         return { dataElement: item.id, value: status };
                     default:

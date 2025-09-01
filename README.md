@@ -517,7 +517,7 @@ yarn start usermonitoring run-2fa-reporter --config-file config.json
 #### Debug:
 
 ```shell
-$ LOG_LEVEL=debug node --inspect-brk dist/index.js usermonitoring run-users-monitoring   --config-file config.json
+$ LOG_LEVEL=debug yarn tsx --inspect-brk src/index.ts usermonitoring run-permissions-fixer --config-file config.json 
 $ LOG_LEVEL=debug node --inspect-brk dist/index.js usermonitoring run-2fa-reporter   --config-file config.json
 ```
 

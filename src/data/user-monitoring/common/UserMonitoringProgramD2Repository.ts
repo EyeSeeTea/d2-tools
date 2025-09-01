@@ -58,7 +58,7 @@ export class UserMonitoringProgramD2Repository implements UserMonitoringProgramR
         //todo use d2api filters
         const responses = await api
             .get<Programs>(
-                `/programs?filter=id:eq:${programUid}&fields=id,organisationUnits[id],programStages[id,programStageDataElements[id,dataElement[id,name,code]]&paging=false.json`
+                `/programs?filter=id:eq:${programUid}&fields=id,organisationUnits[id],programStages[id,programStageDataElements[id,dataElement[id,name,code]]&paging=false`
             )
             .getData();
 

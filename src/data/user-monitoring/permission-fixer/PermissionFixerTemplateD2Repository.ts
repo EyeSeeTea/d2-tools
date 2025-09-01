@@ -38,8 +38,9 @@ export class PermissionFixerTemplateD2Repository implements PermissionFixerTempl
     private async getAllUserRoles(
         options: PermissionFixerMetadataConfig
     ): Async<PermissionFixerUserRoleAuthority[]> {
-        log.info(`Get metadata: All roles excluding ids: ${options.excludedRoles.join(", ")}`);
         const excludeRoles = options.excludedRoles;
+        const excludeRoleIds = excludeRoles.map(role => role.id);
+        log.info(`Get metadata: All roles excluding ids: ${excludeRoleIds.join(", ")}`);
         if (excludeRoles.length == 0) {
             const responses = await this.api
                 .get<UserRoleAuthorities>(`/userRoles.json?paging=false&fields=id,name,authorities`)
@@ -49,7 +50,7 @@ export class PermissionFixerTemplateD2Repository implements PermissionFixerTempl
         } else {
             const responses = await this.api
                 .get<UserRoleAuthorities>(
-                    `/userRoles.json?paging=false&fields=id,name,authorities&filter=id:!in:[${excludeRoles.join(
+                    `/userRoles.json?paging=false&fields=id,name,authorities&filter=id:!in:[${excludeRoleIds.join(
                         ","
                     )}]`
                 )

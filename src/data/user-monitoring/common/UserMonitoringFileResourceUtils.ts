@@ -13,7 +13,7 @@ export class UserMonitoringFileResourceUtils {
         const uniqueFilename = this.createUniqueFilename(name);
         log.info(`Saving file ${uniqueFilename}`);
         const jsonBlob = Buffer.from(jsonString, "utf-8");
-        if (jsonBlob.length === 0) {
+        if (jsonBlob.length <= 2) {
             log.info("The file is empty.");
             return "";
         }
@@ -68,6 +68,7 @@ export class UserMonitoringFileResourceUtils {
         });
 
         await csvWriter.writeRecords(records);
+        log.info(`CSV file saved in ${filepath}.csv`);
     }
 }
 

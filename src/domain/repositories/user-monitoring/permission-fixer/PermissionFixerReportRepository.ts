@@ -9,6 +9,8 @@ export interface PermissionFixerReportRepository {
     save(
         program: UserMonitoringProgramMetadata,
         responseGroups: PermissionFixerReport,
-        responseRoles: PermissionFixerExtendedReport
+        responseRoles: PermissionFixerExtendedReport,
+        rolesSummary: string
     ): Async<string>;
+    saveEmptyReport(program: UserMonitoringProgramMetadata): Async<string>;
 }
