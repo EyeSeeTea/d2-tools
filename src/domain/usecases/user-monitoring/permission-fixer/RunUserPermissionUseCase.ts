@@ -18,6 +18,7 @@ import { UserMonitoringProgramRepository } from "domain/repositories/user-monito
 import { PermissionFixerMetadataConfig } from "domain/entities/user-monitoring/permission-fixer/PermissionFixerConfigOptions";
 import { PermissionFixerUserRepository } from "domain/repositories/user-monitoring/permission-fixer/PermissionFixerUserRepository";
 import { PermissionFixerUser } from "domain/entities/user-monitoring/permission-fixer/PermissionFixerUser";
+import { MessageRepository } from "domain/repositories/user-monitoring/common/MessageRepository";
 import { Async } from "domain/entities/Async";
 import { UserTemplateNotFoundException } from "domain/entities/user-monitoring/two-factor-monitoring/exception/UserTemplateNotFoundException";
 import _ from "lodash";
@@ -39,7 +40,8 @@ export class RunUserPermissionUseCase {
         private templateRepository: PermissionFixerTemplateRepository,
         private userGroupRepository: PermissionFixerUserGroupRepository,
         private userRepository: PermissionFixerUserRepository,
-        private programRepository: UserMonitoringProgramRepository
+        private programRepository: UserMonitoringProgramRepository,
+        private MessageRepository: MessageRepository
     ) {}
 
     async execute(): Async<RunUserPermissionResponse> {
@@ -132,6 +134,19 @@ export class RunUserPermissionUseCase {
                 removedRolesSummary
             );
 
+            if (_.isEmpty(removedRolesSummary)) {
+                log.info("Report: No changes.");
+            } else {
+                const teamsStatus = await this.MessageRepository.sendMessage(
+                    `ACCESS-RIGHTS-ADJUSTED-FOR-${finalUserRoles.listOfAffectedUsers.length}-USERS`,
+                    removedRolesSummary
+                );
+                if (teamsStatus) {
+                    log.info(`Message sent to MSTeams`);
+                }
+
+                log.info(`Report:\n${removedRolesSummary}`);
+            }
             return {
                 message: response,
                 allUsersToProcessGroups: usersToProcessGroups,

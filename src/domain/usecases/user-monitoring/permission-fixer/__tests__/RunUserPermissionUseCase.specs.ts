@@ -20,6 +20,7 @@ import { PermissionFixerMetadataConfig } from "domain/entities/user-monitoring/p
 import { PermissionFixerTemplateGroupExtended } from "domain/entities/user-monitoring/permission-fixer/PermissionFixerTemplates";
 import { PermissionFixerUserRepository } from "domain/repositories/user-monitoring/permission-fixer/PermissionFixerUserRepository";
 import { UserMonitoringProgramMetadata } from "domain/entities/user-monitoring/common/UserMonitoringProgramMetadata";
+import { MessageMSTeamsRepository } from "data/user-monitoring/common/MessageMSTeamsRepository";
 
 let configWithUserExcluded: PermissionFixerMetadataConfig;
 let configThrowInvalidUsergroupException: PermissionFixerMetadataConfig;
@@ -194,7 +195,8 @@ function givenUseCaseCustomUsers(
         mockedTemplateRepository,
         givenUserGroupRepository("OK"),
         userRepository,
-        givenUserMonitoringProgramD2Repository(programMetadata)
+        givenUserMonitoringProgramD2Repository(programMetadata),
+        givenMessageRepository()
     );
     return useCase;
 }
@@ -221,6 +223,11 @@ function givenUserGroupRepository(result: string) {
     when(mockedRepository.save(anything(), anything())).thenReturn(Promise.resolve(result));
     const reportRepository = instance(mockedRepository);
     return reportRepository;
+}
+function givenMessageRepository() {
+    const mockedRepository = mock(MessageMSTeamsRepository);
+    const messageRepository = instance(mockedRepository);
+    return messageRepository;
 }
 
 function givenUserRepository(users: PermissionFixerUser[], usersFromApi?: PermissionFixerUser) {
