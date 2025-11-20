@@ -389,6 +389,9 @@ export class RunUserPermissionUseCase {
                     const userValidRoles = user.userRoles.filter(userRole => {
                         return allValidRolesSingleListWithExceptions.includes(userRole.id);
                     });
+                    const userExcludedRoles = user.userRoles.filter(userRole => {
+                        return allExcludedRoles.includes(userRole.id);
+                    });
                     const userInvalidRoles = user.userRoles.filter(userRole => {
                         const id = userRole.id;
                         const isValid = allValidRolesSingleListWithExceptions.some(role => role === id);
@@ -398,9 +401,14 @@ export class RunUserPermissionUseCase {
 
                     //clone user
                     const fixedUser = JSON.parse(JSON.stringify(user));
+                    const fixedUserValidRoles = _.uniqBy(
+                        [...userValidRoles, ...userExcludedRoles],
+                        role => role.id
+                    );
+
                     this.setUserRoles(
                         fixedUser,
-                        userValidRoles.map(role => {
+                        fixedUserValidRoles.map(role => {
                             return { id: role.id, name: role.name };
                         })
                     );
