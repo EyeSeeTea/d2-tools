@@ -3,8 +3,10 @@ import { RunUserPermissionUseCase } from "../RunUserPermissionUseCase";
 import {
     baseMetadataConfig,
     fakeInvalidUser,
+    fakeInvalidUserWithExcludedRoles,
     fakeUserWithoutUserGroup,
     fakeValidUser,
+    excludedRoles,
     permissionFixerTemplateGroupsExtended,
     programMetadata,
 } from "./RunUserPermissionTest.data";
@@ -28,7 +30,9 @@ let basicConfig: PermissionFixerMetadataConfig;
 let clonedFakeUserWithoutGroup: PermissionFixerUser;
 let clonedValidUser: PermissionFixerUser;
 let clonedInvalidUser: PermissionFixerUser;
+let clonedInvalidUserWithExcludedRoles: PermissionFixerUser;
 let configWithWrongMinimalGroup: PermissionFixerMetadataConfig;
+let configWithGlobalExcludedRoles: PermissionFixerMetadataConfig;
 let clonedTemplateAuthorities: PermissionFixerTemplateGroupExtended[];
 let clonedInvalidTemplateAuthorities: PermissionFixerTemplateGroupExtended[];
 
@@ -90,6 +94,26 @@ describe("RunUserPermissionUseCase", () => {
                 id: "BQEME6bsUpZ",
                 name: "Dummy authority",
             },
+        ]);
+    });
+
+    it("Should keep globally excluded roles when fixing invalid roles", async () => {
+        const useCase = givenUseCaseCustomUsers(
+            givenUserRepository([clonedInvalidUserWithExcludedRoles]),
+            givenConfigRepository(configWithGlobalExcludedRoles),
+            givenTemplateRepository(clonedTemplateAuthorities)
+        );
+
+        const result = await useCase.execute();
+
+        expect(result.rolesReport?.usersBackup[0]?.userRoles).toEqual([
+            { id: "invalidRoleId", name: "Invalid dummy role" },
+            { id: "BQEME6bsUpZ", name: "Dummy authority" },
+            ...excludedRoles,
+        ]);
+        expect(result.rolesReport?.usersFixed[0]?.userRoles).toEqual([
+            { id: "BQEME6bsUpZ", name: "Dummy authority" },
+            ...excludedRoles,
         ]);
     });
 
@@ -164,6 +188,7 @@ beforeEach(() => {
     clonedFakeUserWithoutGroup = copyObject(fakeUserWithoutUserGroup);
     clonedValidUser = copyObject(fakeValidUser);
     clonedInvalidUser = copyObject(fakeInvalidUser);
+    clonedInvalidUserWithExcludedRoles = copyObject(fakeInvalidUserWithExcludedRoles);
     clonedFakeUserWithoutGroup = copyObject(fakeUserWithoutUserGroup);
     configWithWrongMinimalGroup = copyObject(baseMetadataConfig);
     configWithWrongMinimalGroup.minimalGroup = {
@@ -176,6 +201,8 @@ beforeEach(() => {
     configWithUserExcluded = copyObject(baseMetadataConfig);
     configWithUserExcluded.excludedUsers = [copyObject(fakeValidUser)];
     configThrowInvalidUsergroupException = copyObject(baseMetadataConfig);
+    configWithGlobalExcludedRoles = copyObject(baseMetadataConfig);
+    configWithGlobalExcludedRoles.excludedRoles = copyObject(excludedRoles);
     clonedTemplateAuthorities = copyObject(permissionFixerTemplateGroupsExtended);
     const permissionFixerInvalidTemplateGroupsExtended: PermissionFixerTemplateGroupExtended = copyObject(
         permissionFixerTemplateGroupsExtended[0]

@@ -217,6 +217,7 @@ export class RunUserPermissionUseCase {
             excludedRolesByRole,
             excludedRolesByUser,
             excludedRolesByGroup,
+            excludedRoles,
         } = options;
 
         log.info("Preprocess " + allUsers.length + " users...");
@@ -234,6 +235,7 @@ export class RunUserPermissionUseCase {
             excludedRolesByRole,
             excludedRolesByGroup,
             excludedRolesByUser,
+            excludedRoles,
             minimalRole
         );
 
@@ -300,6 +302,7 @@ export class RunUserPermissionUseCase {
         excludedRolesByRole: RolesByRoles[],
         excludedRolesByGroup: RolesByGroup[],
         excludedRolesByUser: RolesByUser[],
+        excludedRoles: NamedRef[],
         minimalRole: Ref
     ): UserMonitoringUserResponse[] {
         log.info("Processing " + allUsers.length + " users...");
@@ -369,11 +372,13 @@ export class RunUserPermissionUseCase {
                             if (item.active_role.id in user.userRoles) return item.ignore_role.id;
                         })
                     );
+                    const allExcludedRoles = excludedRoles.map(role => role.id);
                     const allValidRolesSingleListWithExceptions = _.concat(
                         allValidRolesSingleList,
                         allExceptionsToBeIgnoredByRole,
                         allExceptionsToBeIgnoredByUser,
-                        allExceptionsToBeIgnoredByGroup
+                        allExceptionsToBeIgnoredByGroup,
+                        allExcludedRoles
                     );
                     // the invalid roles are the ones that are not in the valid roles
                     const allInvalidRolesSingleListFixed = allInValidRolesSingleList?.filter(item => {

@@ -3,6 +3,7 @@ import {
     PermissionFixerConfig,
     PermissionFixerMetadataConfig,
 } from "domain/entities/user-monitoring/permission-fixer/PermissionFixerConfigOptions";
+import { NamedRef } from "domain/entities/Base";
 import {
     PermissionFixerTemplateGroup,
     PermissionFixerTemplateGroupExtended,
@@ -167,6 +168,29 @@ export const fakeInvalidUser: PermissionFixerUser = {
     selftRefistered: false,
     phoneNumber: "",
     passwordLastUpdated: "",
+};
+
+export const excludedRoles: NamedRef[] = [
+    {
+        id: "y3rLgUxlsYH",
+        name: "METADATSYNC - CONF",
+    },
+    {
+        id: "OWzgCaHxaLe",
+        name: "METADATASYNC - EXECUTOR",
+    },
+];
+
+export const fakeInvalidUserWithExcludedRoles: PermissionFixerUser = {
+    ...fakeInvalidUser,
+    userCredentials: {
+        ...fakeInvalidUser.userCredentials!,
+        userRoles: [
+            ...fakeInvalidUser.userCredentials!.userRoles,
+            ...excludedRoles,
+        ],
+    },
+    userRoles: [...fakeInvalidUser.userRoles!, ...excludedRoles],
 };
 
 export const fakeUserWithoutUserGroup: PermissionFixerUser = {
