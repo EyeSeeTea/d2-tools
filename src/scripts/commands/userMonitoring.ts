@@ -32,6 +32,12 @@ import { MonitorUserGroupsUseCase } from "domain/usecases/user-monitoring/user-g
 import { UserD2Repository } from "data/user-monitoring/user-templates-monitoring/UserD2Repository";
 import { UserTemplatesMonitoringConfigD2Repository } from "data/user-monitoring/user-templates-monitoring/UserTemplatesMonitoringConfigD2Repository";
 import { MonitorUserTemplatesUseCase } from "domain/usecases/user-monitoring/user-templates-monitoring/MonitorUserTemplatesUseCase";
+
+import { UserRolesAuthoritiesD2Repository } from "data/user-monitoring/user-roles-authorities-monitoring/UserRolesAuthoritiesD2Repository";
+import { UserRolesAuthoritiesMonitoringDataD2Repository } from "data/user-monitoring/user-roles-authorities-monitoring/UserRolesAuthoritiesMonitoringDataD2Repository";
+import { AuthoritiesD2Repository } from "data/user-monitoring/user-roles-authorities-monitoring/AuthoritiesD2Repository";
+import { MonitorUserRolesAuthoritiesUseCase } from "domain/usecases/user-monitoring/user-roles-authorities-monitoring/MonitorUserRolesAuthoritiesUseCase";
+
 import { D2Api } from "types/d2-api";
 
 export function getCommand() {
@@ -43,6 +49,7 @@ export function getCommand() {
             "run-authorities-monitoring": runAuthoritiesMonitoring,
             "run-user-groups-monitoring": runUserGroupMonitoringCmd,
             "run-user-templates-monitoring": runUserTemplateMonitoringCmd,
+            "run-user-roles-authorities-monitoring": runUserRolesAuthoritiesMonitoringCmd,
         },
     });
 }
@@ -220,6 +227,43 @@ const runUserTemplateMonitoringCmd = command({
         await new MonitorUserTemplatesUseCase(
             usersRepository,
             externalConfigRepository,
+            messageRepository
+        ).execute(args.setDataStore);
+    },
+});
+
+const runUserRolesAuthoritiesMonitoringCmd = command({
+    name: "run-user-roles-authorities-monitoring",
+    description: "Run user roles authorities monitoring, a --config-file must be provided.",
+    args: {
+        configFile: option({
+            type: string,
+            long: "config-file",
+            description: "Config file",
+        }),
+        setDataStore: flag({
+            type: boolean,
+            short: "s",
+            long: "set-datastore",
+            description:
+                "Write users roles authorities to datastore, use in script setup. d2-tools/user-roles-authorities-monitoring can be empty, the script will populate it.",
+        }),
+    },
+
+    handler: async args => {
+        const api = getApiFromConfigFile(args.configFile);
+        const webhook = getWebhookConfFromFile(args.configFile);
+
+        const userRolesAuthoritiesRepository = new UserRolesAuthoritiesD2Repository(api);
+        const authoritiesRepository = new AuthoritiesD2Repository(api);
+        const monitoringDataRepository = new UserRolesAuthoritiesMonitoringDataD2Repository(api);
+        const messageRepository = new MessageMSTeamsRepository(webhook);
+
+        log.info(`Run user roles authorities monitoring`);
+        await new MonitorUserRolesAuthoritiesUseCase(
+            userRolesAuthoritiesRepository,
+            authoritiesRepository,
+            monitoringDataRepository,
             messageRepository
         ).execute(args.setDataStore);
     },
