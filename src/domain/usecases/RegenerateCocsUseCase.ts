@@ -27,21 +27,51 @@ export class RegenerateCocsUseCase {
     private generateCombinationsFromCategoryCombo(categoryCombo: CategoryCombo): {
         categoryCombo: CategoryCombo;
         categoryOptionCombos: NamedRef[];
+        missingCategoryOptionCombos: NamedRef[];
     } {
-        const allOptions = categoryCombo.categories.map(cat => cat.options);
+        const allOptions = categoryCombo.categories.map(cat => cat.categoryOptions);
 
         const combinations = this.cartesianProduct(allOptions);
 
+        const existingCategoryOptionCombosByKey = new Map<
+            string,
+            CategoryCombo["categoryOptionCombos"][number]
+        >(
+            categoryCombo.categoryOptionCombos.map(categoryOptionCombo => [
+                this.getCategoryOptionComboKey(categoryOptionCombo.categoryOptions),
+                categoryOptionCombo,
+            ])
+        );
+
         const categoryOptionCombos = combinations.map((combination): NamedRef => {
             const combinationName = combination.map(opt => opt.name).join(", ");
+            const combinationKey = this.getCategoryOptionComboKey(combination);
+            const existingCategoryOptionCombo = existingCategoryOptionCombosByKey.get(combinationKey);
+            if (existingCategoryOptionCombo) {
+                return { id: existingCategoryOptionCombo.id, name: existingCategoryOptionCombo.name };
+            }
+
             return { id: getUid(combinationName, ""), name: combinationName };
         });
+
+        const regeneratedCategoryOptionComboKeys = new Set(
+            combinations.map(combination => this.getCategoryOptionComboKey(combination))
+        );
+        const missingCategoryOptionCombos = categoryCombo.categoryOptionCombos.filter(
+            categoryOptionCombo =>
+                !regeneratedCategoryOptionComboKeys.has(
+                    this.getCategoryOptionComboKey(categoryOptionCombo.categoryOptions)
+                )
+        );
 
         logger.debug(
             `Regenerated ${categoryOptionCombos.length} combinations for categoryCombo ${categoryCombo.name} (${categoryCombo.id})`
         );
+        logger.debug(
+            `Found ${missingCategoryOptionCombos.length} missing combinations for categoryCombo ${categoryCombo.name} (${categoryCombo.id})`
+        );
 
-        return { categoryCombo, categoryOptionCombos };
+        return { categoryCombo, categoryOptionCombos, missingCategoryOptionCombos };
     }
 
     private cartesianProduct<T>(arrays: T[][]): T[][] {
@@ -53,8 +83,16 @@ export class RegenerateCocsUseCase {
             [[]]
         );
     }
+
+    private getCategoryOptionComboKey(categoryOptions: NamedRef[]): string {
+        return categoryOptions.map(categoryOption => categoryOption.id).join("|");
+    }
 }
 
 type UseCaseResult = {
-    result: Array<{ categoryCombo: CategoryCombo; categoryOptionCombos: NamedRef[] }>;
+    result: Array<{
+        categoryCombo: CategoryCombo;
+        categoryOptionCombos: NamedRef[];
+        missingCategoryOptionCombos: NamedRef[];
+    }>;
 };

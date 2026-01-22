@@ -6,8 +6,8 @@ import { ValidationError } from "./generic/ValidationError";
 export type CategoryComboAttrs = {
     id: Id;
     name: string;
-    categories: Array<{ id: Id; options: NamedRef[] }>;
-    categoryOptionCombos: NamedRef[];
+    categories: Array<{ id: Id; categoryOptions: NamedRef[] }>;
+    categoryOptionCombos: Array<{ id: Id; name: string; categoryOptions: NamedRef[] }>;
 };
 
 export type CategoryOption = {
@@ -37,7 +37,9 @@ export class CategoryCombo extends Struct<CategoryComboAttrs>() {
             : [{ property: "categories", errors: [{ code: "required" }] }];
 
         const options: ValidationError<CategoryCombo>[] = data.categories.flatMap(category =>
-            category.options.length ? [] : [{ property: "categories", errors: [{ code: "empty_options" }] }]
+            category.categoryOptions.length
+                ? []
+                : [{ property: "categories", errors: [{ code: "empty_options" }] }]
         );
 
         return [...idErrors, ...nameErrors, ...categories, ...options];
