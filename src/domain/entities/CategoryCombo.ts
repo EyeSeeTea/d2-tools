@@ -10,11 +10,6 @@ export type CategoryComboAttrs = {
     categoryOptionCombos: Array<{ id: Id; name: string; categoryOptions: NamedRef[] }>;
 };
 
-export type CategoryOption = {
-    id: Id;
-    name: string;
-};
-
 export class CategoryCombo extends Struct<CategoryComboAttrs>() {
     static build(data: CategoryComboAttrs): Either<ValidationError<CategoryCombo>[], CategoryCombo> {
         const validationErrors = this.validate(data);

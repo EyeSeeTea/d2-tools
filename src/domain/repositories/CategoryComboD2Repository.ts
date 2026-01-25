@@ -37,7 +37,6 @@ export class CategoryComboD2Repository implements CategoryComboRepository {
                     categories: { id: true, categoryOptions: { id: true, name: true } },
                     categoryOptionCombos: { id: true, name: true, categoryOptions: { id: true, name: true } },
                 },
-                filter: { id: { eq: "GmXXE8fiCK5" } },
                 page: options.page,
                 pageSize: options.pageSize,
             })
