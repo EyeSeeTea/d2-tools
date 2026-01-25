@@ -8,7 +8,7 @@ import logger from "utils/log";
 
 export const regenerateCocsCmd = command({
     name: "regenerate",
-    description: "Regenerate categoryOptionCombos for Category Combos",
+    description: "Regenerate categoryOptionCombos for categoryCombos",
     args: {
         ...getApiUrlOptions(),
         persist: flag({
