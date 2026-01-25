@@ -8,7 +8,7 @@ import {
 import { CategoryOptionCombo } from "domain/entities/CategoryOptionCombo";
 import { runMetadata } from "./dhis2-utils";
 import { Paginated } from "domain/entities/Pagination";
-import logger from "utils/log";
+import { fixCategoryOptionOrder, mapCategoryOptionIdToCategoryIndex } from "./utils/cocs";
 
 export class CategoryOptionCombosD2Repository implements CategoryOptionCombosRepository {
     constructor(private api: D2Api) {}
@@ -107,23 +107,7 @@ class D2CocOptionsOrderFixer {
         return cocs.map(coc => {
             const indexesByCategoryOptionId = this.getIndexesMapping(categoryCombosById, coc);
 
-            const categoryOptionsNotFound = _(coc.categoryOptions)
-                .filter(categoryOption => indexesByCategoryOptionId[categoryOption.id] === undefined)
-                .value();
-
-            if (!_.isEmpty(categoryOptionsNotFound)) {
-                // Return an empty array as categoryOptions to avoid unsafely relying on its order.
-                const coIds = categoryOptionsNotFound.map(getId).join(", ");
-                const msg = `[coc.id="${coc.id}"] Category options no longer in its categoryCombo: ${coIds}`;
-                logger.debug(msg);
-                return { ...coc, categoryOptions: [] };
-            } else {
-                const categoryOptionsSorted = _(coc.categoryOptions)
-                    .sortBy(categoryOption => indexesByCategoryOptionId[categoryOption.id] || 0)
-                    .value();
-
-                return { ...coc, categoryOptions: categoryOptionsSorted };
-            }
+            return fixCategoryOptionOrder(coc, indexesByCategoryOptionId);
         });
     }
 
@@ -134,14 +118,7 @@ class D2CocOptionsOrderFixer {
         const categoryCombo = categoryCombosById[coc.categoryCombo.id];
         if (!categoryCombo) throw new Error(`Category combo not found: ${coc.categoryCombo.id}`);
 
-        return _(categoryCombo.categories)
-            .flatMap((category, categoryIndex) => {
-                return category.categoryOptions.map(categoryOption => {
-                    return [categoryOption.id, categoryIndex] as [Id, number];
-                });
-            })
-            .fromPairs()
-            .value();
+        return mapCategoryOptionIdToCategoryIndex(categoryCombo);
     }
 
     private async getCategoryCombosByIdFromCocs(cocs: D2Coc[]): Promise<Record<Id, D2CategoryCombo>> {
@@ -168,7 +145,7 @@ class D2CocOptionsOrderFixer {
     }
 }
 
-type D2CategoryCombo = {
+export type D2CategoryCombo = {
     id: Id;
     categories: Array<{
         categoryOptions: { id: Id }[];

@@ -2,7 +2,7 @@ import _ from "lodash";
 import { CategoryCombo } from "domain/entities/CategoryCombo";
 import { D2Api, Id } from "../../types/d2-api";
 import { CategoryComboRepository } from "./CategoryComboRepository";
-import logger from "utils/log";
+import { fixCategoryOptionOrder, mapCategoryOptionIdToCategoryIndex } from "data/utils/cocs";
 
 export class CategoryComboD2Repository implements CategoryComboRepository {
     constructor(private api: D2Api) {}
@@ -37,6 +37,7 @@ export class CategoryComboD2Repository implements CategoryComboRepository {
                     categories: { id: true, categoryOptions: { id: true, name: true } },
                     categoryOptionCombos: { id: true, name: true, categoryOptions: { id: true, name: true } },
                 },
+                filter: { id: { eq: "GmXXE8fiCK5" } },
                 page: options.page,
                 pageSize: options.pageSize,
             })
@@ -74,43 +75,20 @@ export class CategoryComboD2Repository implements CategoryComboRepository {
         return { objects: categoryCombos, pager: response.pager };
     }
 
-    private reorderCategoryOptionCombos(catComboData: {
-        id: Id;
-        categories: Array<{ id: Id; categoryOptions: Array<{ id: Id; name: string }> }>;
-        categoryOptionCombos: Array<{
-            id: Id;
-            name: string;
-            categoryOptions: Array<{ id: Id; name: string }>;
-        }>;
-    }) {
-        const optionOrderById = new Map<Id, number>();
-        let index = 0;
-
-        catComboData.categories.forEach(category => {
-            category.categoryOptions.forEach(categoryOption => {
-                optionOrderById.set(categoryOption.id, index);
-                index += 1;
-            });
-        });
-
+    private reorderCategoryOptionCombos(catComboData: D2ApiCategoryCombo) {
         return catComboData.categoryOptionCombos.map(categoryOptionCombo => {
-            const missingOptions = categoryOptionCombo.categoryOptions.filter(
-                categoryOption => !optionOrderById.has(categoryOption.id)
-            );
-
-            if (!_.isEmpty(missingOptions)) {
-                const missingIds = missingOptions.map(categoryOption => categoryOption.id).join(", ");
-                logger.debug(
-                    `[categoryCombo.id="${catComboData.id}"][coc.id="${categoryOptionCombo.id}"] Category options not found in categoryCombo: ${missingIds}`
-                );
-                return { ...categoryOptionCombo, categoryOptions: [] };
-            }
-
-            const sortedOptions = [...categoryOptionCombo.categoryOptions].sort((left, right) => {
-                return (optionOrderById.get(left.id) ?? 0) - (optionOrderById.get(right.id) ?? 0);
-            });
-
-            return { ...categoryOptionCombo, categoryOptions: sortedOptions };
+            const indexesByCategoryOptionId = mapCategoryOptionIdToCategoryIndex(catComboData);
+            return fixCategoryOptionOrder(categoryOptionCombo, indexesByCategoryOptionId);
         });
     }
 }
+
+type D2ApiCategoryCombo = {
+    id: Id;
+    categories: Array<{ id: Id; categoryOptions: Array<{ id: Id; name: string }> }>;
+    categoryOptionCombos: Array<{
+        id: Id;
+        name: string;
+        categoryOptions: Array<{ id: Id; name: string }>;
+    }>;
+};
