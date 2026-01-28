@@ -23,7 +23,9 @@ export class RegenerateCocsUseCase {
         );
 
         await this.saveCocs(categoryComboWithGeneratedCocs, options);
-        await this.deleteCocs(categoryComboWithGeneratedCocs, options);
+        if (options.deleteCocs) {
+            await this.deleteCocs(categoryComboWithGeneratedCocs, options);
+        }
 
         return { categoryCombos: categoryComboWithGeneratedCocs };
     }
