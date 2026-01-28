@@ -1117,7 +1117,7 @@ yarn start categoryOptionCombos regenerate \
     --delete-cocs
 ```
 
-Save categoryOptionCombos and generating a sql script for deleting categoryOptionCombos.
+Save categoryOptionCombos and generating a sql script for deleting categoryOptionCombos. if you remove the `persist` flag it will only generate the sql.
 
 ```shell
 yarn start categoryOptionCombos regenerate \
