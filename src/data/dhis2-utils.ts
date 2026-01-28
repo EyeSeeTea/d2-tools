@@ -46,8 +46,22 @@ export function checkPostEventsResponse(res: EventsPostResponse): void {
     }
 }
 
-export async function getInChunks<T, U>(ids: T[], getter: (idsGroup: T[]) => Promise<U[]>): Promise<U[]> {
-    const objsCollection = await promiseMap(_.chunk(ids, 300), idsGroup => getter(idsGroup));
+export async function getInChunks<T, U>(
+    ids: T[],
+    getter: (idsGroup: T[]) => Promise<U[]>,
+    options?: { log: (processed: number, total: number) => void }
+): Promise<U[]> {
+    const total = ids.length;
+    let processed = 0;
+    const objsCollection = await promiseMap(_.chunk(ids, 300), async idsGroup => {
+        const result = await getter(idsGroup);
+
+        processed += idsGroup.length;
+
+        if (options?.log) options.log(processed, total);
+
+        return result;
+    });
     return _.flatten(objsCollection);
 }
 

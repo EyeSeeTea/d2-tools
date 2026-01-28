@@ -517,7 +517,7 @@ yarn start usermonitoring run-2fa-reporter --config-file config.json
 #### Debug:
 
 ```shell
-$ LOG_LEVEL=debug yarn tsx --inspect-brk src/index.ts usermonitoring run-permissions-fixer --config-file config.json 
+$ LOG_LEVEL=debug yarn tsx --inspect-brk src/index.ts usermonitoring run-permissions-fixer --config-file config.json
 $ LOG_LEVEL=debug node --inspect-brk dist/index.js usermonitoring run-2fa-reporter   --config-file config.json
 ```
 
@@ -549,8 +549,6 @@ An exceptionGroup list containing groups whose users should be excluded from val
 
 An optional --disable-users CLI flag that, when passed, will disable users identified as invalid due to missing or disabled 2FA.
 
-
-
 The datastore must contain:
 
 ```json
@@ -564,18 +562,17 @@ The datastore must contain:
         "name": "Auth control group"
     },
     "whoAccountGroup": {
-    "id": "zjeqEiv9Ept",
-    "name": "WIDP Who Auth"
+        "id": "zjeqEiv9Ept",
+        "name": "WIDP Who Auth"
     },
     "exceptionGroup": [
-      {
-        "id": "HASUnoSNcSA",
-        "name": "user-scripts"
-      }
+        {
+            "id": "HASUnoSNcSA",
+            "name": "user-scripts"
+        }
     ]
 }
 ```
-
 
 #### run-users-monitoring Datastore:
 
@@ -1100,4 +1097,18 @@ $ yarn start categoryOptionCombos translate \
     --auth="admin:district" \
     --category-combo-ids=v1K6CE6bmtw
     --post
+```
+
+### Regenerate
+
+Regenerate categoryOptionCombos from `categoryCombo.categories[].categoryOptions[]` for all the `categoryCombos` on the server and delete obsolete categoryOptionCombos.
+
+By default both operations (create+update and delete) are being executed using the `VALIDATE` importMode (dry run). Use the --persist flag to apply changes (create+update) and --delete-cocs to confirm the deletion of obsolete categoryOptionCombos.
+
+```shell
+yarn start categoryOptionCombos regenerate \
+    --url=https://play.im.dhis2.org/dev \
+    --auth="admin:district" \
+    --persist \
+    --delete-cocs
 ```

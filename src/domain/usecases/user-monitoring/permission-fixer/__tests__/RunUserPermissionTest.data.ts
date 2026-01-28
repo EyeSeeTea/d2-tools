@@ -184,13 +184,10 @@ export const excludedRoles: NamedRef[] = [
 export const fakeInvalidUserWithExcludedRoles: PermissionFixerUser = {
     ...fakeInvalidUser,
     userCredentials: {
-        ...fakeInvalidUser.userCredentials!,
-        userRoles: [
-            ...fakeInvalidUser.userCredentials!.userRoles,
-            ...excludedRoles,
-        ],
+        ...fakeInvalidUser.userCredentials,
+        userRoles: [...fakeInvalidUser.userCredentials.userRoles, ...excludedRoles],
     },
-    userRoles: [...fakeInvalidUser.userRoles!, ...excludedRoles],
+    userRoles: [...fakeInvalidUser.userRoles, ...excludedRoles],
 };
 
 export const fakeUserWithoutUserGroup: PermissionFixerUser = {
