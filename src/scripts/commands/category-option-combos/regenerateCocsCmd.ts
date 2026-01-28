@@ -1,6 +1,6 @@
 import { command, flag } from "cmd-ts";
 import { RegeneratedCocD2Repository } from "data/RegeneratedCocD2Repository";
-import { CategoryComboD2Repository } from "domain/repositories/CategoryComboD2Repository";
+import { CategoryComboD2Repository } from "data/CategoryComboD2Repository";
 import { RegenerateCocsUseCase, RegenerateCocsUseCaseResult } from "domain/usecases/RegenerateCocsUseCase";
 import { writeFileSync } from "fs";
 import { getApiUrlOptions, getD2ApiFromArgs } from "scripts/common";
@@ -16,7 +16,7 @@ export const regenerateCocsCmd = command({
             description: "persist the change to DHIS (default: false)",
         }),
         deleteCocs: flag({
-            long: "deleteCocs",
+            long: "delete-cocs",
             description: "delete obsolete categoryOptionCombos (default: false)",
         }),
     },

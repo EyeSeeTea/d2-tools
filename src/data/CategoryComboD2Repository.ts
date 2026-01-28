@@ -1,7 +1,7 @@
 import _ from "lodash";
 import { CategoryCombo } from "domain/entities/CategoryCombo";
-import { D2Api, Id } from "../../types/d2-api";
-import { CategoryComboRepository } from "./CategoryComboRepository";
+import { D2Api, Id } from "../types/d2-api";
+import { CategoryComboRepository } from "../domain/repositories/CategoryComboRepository";
 import { fixCategoryOptionOrder, mapCategoryOptionIdToCategoryIndex } from "data/utils/cocs";
 
 export class CategoryComboD2Repository implements CategoryComboRepository {
@@ -11,7 +11,7 @@ export class CategoryComboD2Repository implements CategoryComboRepository {
         return this.getAllByPages({ page: 1, pageSize: 100, categoryCombos: [] });
     }
 
-    async getAllByPages(options: {
+    private async getAllByPages(options: {
         page: number;
         pageSize: number;
         categoryCombos: CategoryCombo[];

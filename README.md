@@ -1103,12 +1103,12 @@ $ yarn start categoryOptionCombos translate \
 
 Regenerate categoryOptionCombos from `categoryCombo.categories[].categoryOptions[]` for all the `categoryCombos` on the server and delete obsolete categoryOptionCombos.
 
-By default both operations (create+update and delete) are being executed using the `VALIDATE` importMode (dry run). Use the --persist flag to apply changes (create+update) and --deleteCocs to confirm the deletion of obsolete categoryOptionCombos.
+By default both operations (create+update and delete) are being executed using the `VALIDATE` importMode (dry run). Use the --persist flag to apply changes (create+update) and --delete-cocs to confirm the deletion of obsolete categoryOptionCombos.
 
 ```shell
 yarn start categoryOptionCombos regenerate \
     --url=https://play.im.dhis2.org/dev \
     --auth="admin:district" \
     --persist \
-    --deleteCocs
+    --delete-cocs
 ```

@@ -61,7 +61,7 @@ export class RegeneratedCocD2Repository implements RegeneratedCocRepository {
             },
             {
                 log: (processed, total) => {
-                    logger.info(`Deleting categoryOptionCombos: ${processed}/${total}`);
+                    logger.info(`Saving categoryOptionCombos: ${processed}/${total}`);
                 },
             }
         );

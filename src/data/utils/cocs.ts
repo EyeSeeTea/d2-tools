@@ -17,7 +17,7 @@ export function mapCategoryOptionIdToCategoryIndex(categoryCombo: D2CategoryComb
 export function fixCategoryOptionOrder<T extends { id: Id; categoryOptions: Ref[] }>(
     coc: T,
     indexesByCategoryOptionId: Record<string, number>
-) {
+): T {
     const categoryOptionsNotFound = _(coc.categoryOptions)
         .filter(categoryOption => indexesByCategoryOptionId[categoryOption.id] === undefined)
         .value();
