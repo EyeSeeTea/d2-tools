@@ -370,6 +370,41 @@ $ yarn start datavalues monitoring-values \
 --send-email-after-minutes=5
 ```
 
+### Delete all data values given a data elements file
+
+Bulk delete data values that belong to the DEs in the provided CSV. This file is expected to be single column with header id, that way a CSV downloaded from DHIS2 api can be used directly (use `/api/dataElements.csv?field=id&filter=...`).
+
+Make sure to double check that the DEs will not affect values you don't intend to delete.
+
+The values to be deleted can be stored in JSON files in case a backup is needed.
+
+Given the size of the potential API error response consider storing the script output in a file:
+
+```shell
+yarn start datavalues bulk-delete --url="http://admin:district@localhost:8080" --limit=1000  deToDelete.csv &> run.log
+```
+
+Note that the dataValues will be soft deleted. You can use the "Permanently remove soft deleted data values" operation in Data Administration, but keep in mind that it will delete ALL the soft deleted values.
+
+Also, this script sends its requests with the `force=true` parameter, but the DHIS user provided to the script needs to be admin, otherwise, issues can be encountered like open periods blocking the delete.
+
+Finally if the target instance has limited resources or high usage consider lowering the limit.
+
+Script launch options:
+
+```shell
+OPTIONS:
+  --url <str>           - http://USERNAME:PASSWORD@HOST:PORT
+  --limit <number>      - Number of data values to delete in each batch (default: 30000) [optional]
+  --backup-folder <str> - Folder for backups, leave empty to disable. Will be stored as bulk-delete-backup-<batch>-<timestamp>.json
+
+ARGUMENTS:
+  <PATH_TO_CSV> - CSV file with data element IDs and id header
+
+FLAGS:
+  --help, -h    - show help
+```
+
 ## Notifications
 
 ### Send user info email
