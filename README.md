@@ -381,7 +381,7 @@ The values to be deleted can be stored in JSON files in case a backup is needed.
 Given the size of the potential API error response consider storing the script output in a file:
 
 ```shell
-yarn start datavalues bulk-delete --url="http://admin:district@localhost:8080" --limit=1000  deToDelete.csv &> run.log
+yarn start datavalues bulk-delete --url='http://admin:district@localhost:8080' --limit=1000  deToDelete.csv &> run.log
 ```
 
 Note that the dataValues will be soft deleted. You can use the "Permanently remove soft deleted data values" operation in Data Administration, but keep in mind that it will delete ALL the soft deleted values.
