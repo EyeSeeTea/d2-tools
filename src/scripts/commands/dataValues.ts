@@ -17,6 +17,8 @@ import { SettingsD2Repository } from "data/SettingsD2Repository";
 import { SettingsJsonRepository } from "data/SettingsJsonRepository";
 import { ExecutionJsonRepository } from "data/DataSetExecutionJsonRepository";
 import { TimeZoneD2Repository } from "data/TimeZoneD2Repository";
+import { BulkDeleteDEsCsvRepository } from "data/BulkDeleteDEsCsvRepository";
+import { BulkDeleteDataValuesUseCase } from "domain/usecases/BulkDeleteDataValuesUseCase";
 
 const SEND_EMAIL_AFTER_MINUTES = 5;
 
@@ -28,6 +30,7 @@ export function getCommand() {
             "get-dangling-values": getDanglingValuesCmd,
             "post-dangling-values": postDanglingValuesCmd,
             "monitoring-values": monitoringDataValues,
+            "bulk-delete": bulkDeleteDataValuesCmd,
         },
     });
 }
@@ -254,3 +257,37 @@ const monitoringDataValues = command({
         ).execute(args);
     },
 });
+
+const bulkDeleteDataValuesCmd = command({
+    name: "bulk-delete",
+    description: "Bulk delete data values based on data element CSV",
+    args: {
+        url: getApiUrlOption(),
+        limit: option({
+            type: number,
+            long: "limit",
+            description: "Number of data values to delete in each batch (default: 100000)",
+            defaultValue: () => 30000,
+        }),
+        backupFolder: option({
+            type: optional(string),
+            long: "backup-folder",
+            description: "Folder for backups, leave empty to disable. Will be stored as bulk-delete-backup-<batch>-<timestamp>.json",
+        }),
+        dataElementsFile: positional({
+            type: string,
+            displayName: "PATH_TO_CSV",
+            description: "CSV file with data element IDs and id header",
+        }),
+    },
+    handler: async args => {
+        const api = getD2Api(args.url);
+        const bulkDeleteRepository = new BulkDeleteDEsCsvRepository();
+        const orgUnitRepository = new OrgUnitD2Repository(api);
+        const dataValuesRepository = new DataValuesD2Repository(api);
+
+        new BulkDeleteDataValuesUseCase(bulkDeleteRepository, orgUnitRepository, dataValuesRepository).execute(args);
+
+    },
+});
+
