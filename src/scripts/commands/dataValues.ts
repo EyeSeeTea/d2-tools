@@ -1,7 +1,7 @@
 import _ from "lodash";
 import { command, string, subcommands, option, positional, optional, flag, number, oneOf } from "cmd-ts";
 
-import { getApiUrlOption, getD2Api, StringsSeparatedByCommas } from "scripts/common";
+import { getApiUrlOption, getApiUrlOptions, getD2Api, getD2ApiFromArgs, StringsSeparatedByCommas } from "scripts/common";
 import { DataValuesD2Repository } from "data/DataValuesD2Repository";
 import { RevertDataValuesUseCase } from "domain/usecases/RevertDataValuesUseCase";
 import { GetDanglingValuesUseCase } from "domain/usecases/GetDanglingValuesUseCase";
@@ -262,13 +262,14 @@ const bulkDeleteDataValuesCmd = command({
     name: "bulk-delete",
     description: "Bulk delete data values based on data element CSV",
     args: {
-        url: getApiUrlOption(),
+        ...getApiUrlOptions(),
         limit: option({
             type: number,
             long: "limit",
             description: "Number of data values to delete in each batch (default: 100000)",
             defaultValue: () => 30000,
         }),
+
         backupFolder: option({
             type: optional(string),
             long: "backup-folder",
@@ -281,7 +282,7 @@ const bulkDeleteDataValuesCmd = command({
         }),
     },
     handler: async args => {
-        const api = getD2Api(args.url);
+        const api = getD2ApiFromArgs(args);
         const bulkDeleteRepository = new BulkDeleteDEsCsvRepository();
         const orgUnitRepository = new OrgUnitD2Repository(api);
         const dataValuesRepository = new DataValuesD2Repository(api);
