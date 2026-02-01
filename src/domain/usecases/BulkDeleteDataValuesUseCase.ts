@@ -13,9 +13,14 @@ interface BulkDeleteDataValuesOptions {
     dataElementsFile: string;
     limit: number;
     backupFolder?: string;
+    dryRun: boolean;
 }
 
 export class BulkDeleteDataValuesUseCase {
+    private dryRun = false;
+    private backupFolder: string | undefined;
+    private deChunkSize = 200;
+
     constructor(
         private bulkDeleteRepository: BulkDeleteDEsRepository,
         private orgUnitRepository: OrgUnitRepository,
@@ -23,8 +28,11 @@ export class BulkDeleteDataValuesUseCase {
     ) {}
 
     async execute(options: BulkDeleteDataValuesOptions) {
-        const { backupFolder } = options;
+        const { backupFolder, dryRun } = options;
         if (backupFolder) this.validatePath(backupFolder);
+
+        this.dryRun = dryRun;
+        this.backupFolder = backupFolder;
 
         const dataElementIds = await this.bulkDeleteRepository.getDEsToDelete(options.dataElementsFile)
             .then(ids => {
@@ -37,14 +45,14 @@ export class BulkDeleteDataValuesUseCase {
         log.info(`Data elements to delete count: ${dataElementIds.length}`);
 
         const rootOrgUnit = await this.orgUnitRepository.getRoot();
-        const deChunks = _.chunk(dataElementIds, 200);
+        const deChunks = _.chunk(dataElementIds, this.deChunkSize);
 
         let backupIndex = 1;
         const lastIndex = deChunks.length - 1;
         for (const [index, dataElements] of deChunks.entries()) {
             log.info(`Processing data element chunk ${index + 1}/${deChunks.length} (${dataElements.length})`);
 
-            const dataValuesOptions: DataValuesDeleteOptions = {
+            const dataValuesOptions: DataValuesGetOptions = {
                 dataElements,
                 orgUnitIds: [rootOrgUnit.id],
                 children: true,
@@ -52,48 +60,51 @@ export class BulkDeleteDataValuesUseCase {
                 limit: options.limit,
             };
 
-            backupIndex = await this.deleteDataValuesRecursively(dataValuesOptions, backupFolder, backupIndex, index === lastIndex);
+
+            backupIndex = await this.deleteDataValuesRecursively(dataValuesOptions, backupIndex, index === lastIndex);
         }
     }
 
     private async deleteDataValuesRecursively(
-        dataValuesOptions: DataValuesDeleteOptions,
-        backupFolder: string | undefined,
-        batchIndex: number,
+        dataValuesOptions: DataValuesGetOptions,
+        backupIndex: number,
         lastDEsBatch = false,
     ): Promise<number> {
         const dataValues = await this.dataValuesRepository.get(dataValuesOptions);
 
         if (dataValues.length === 0) {
             if (lastDEsBatch) {
-                const message = batchIndex === 1
+                const message = backupIndex === 1
                     ? "No data values found to delete."
                     : "All data values have been deleted.";
                 log.info(message);
             }
-            return batchIndex;
+            return backupIndex;
         }
 
-        log.info(`Data values fetched for deletion in batch ${batchIndex}: ${dataValues.length}`);
-        this.backupDataValues(dataValues, batchIndex, backupFolder);
-
+        log.info(`Data values fetched for deletion in batch ${backupIndex}: ${dataValues.length}`);
+        this.backupDataValues(dataValues, backupIndex);
         try {
             await this.dataValuesRepository.delete({
                 dataValues: dataValues,
+                dryRun: this.dryRun,
             });
         } catch (error) {
-            log.error(`Error deleting data values in batch ${batchIndex}`);
+            log.error(`Error deleting data values in batch ${backupIndex}: ${(error as Error).message}`);
             process.exit(1);
         }
 
-        return await this.deleteDataValuesRecursively(dataValuesOptions, backupFolder, batchIndex + 1);
+        if (this.dryRun) {
+            log.info("Dry run mode - stopping after first batch.");
+            return backupIndex + 1;
+        }
+        return await this.deleteDataValuesRecursively(dataValuesOptions, backupIndex + 1, lastDEsBatch);
     }
 
-    private backupDataValues(dataValues: DataValue[], batch: number, backupFolder: string | undefined) {
-        if (!backupFolder) return;
-
+    private backupDataValues(dataValues: DataValue[], batch: number) {
+        if (!this.backupFolder) return;
         const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-        const backupFilePath = `${backupFolder}/bulk-delete-backup-${batch}-${timestamp}.json`;
+        const backupFilePath = `${this.backupFolder}/bulk-delete-backup-${batch}-${timestamp}.json`;
         log.info(`Backing up data values to be deleted in file: ${backupFilePath}`);
         fs.writeFileSync(backupFilePath, JSON.stringify(dataValues, null, 2));
     }
@@ -106,7 +117,7 @@ export class BulkDeleteDataValuesUseCase {
     }
 }
 
-interface DataValuesDeleteOptions {
+interface DataValuesGetOptions {
     dataElements: string[];
     orgUnitIds: string[];
     children: boolean;

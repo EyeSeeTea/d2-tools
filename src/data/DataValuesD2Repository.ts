@@ -42,11 +42,15 @@ export class DataValuesD2Repository implements DataValuesRepository {
         return res.dataValues;
     }
 
-    private async postDataValueSet(options: { dataValues: DataValueToPost[], postParams?: DataValueSetsPostParams }): Async<void> {
+    private async postDataValueSet(options: { dataValues: DataValueToPost[], postParams?: DataValueSetsPostParams, showCount?: boolean }): Async<void> {
         const { dataValues, postParams } = options;
         if (_.isEmpty(dataValues)) return;
         const res = await this.api.dataValues.postSet({ ...postParams, force: true }, { dataValues }).getData();
-        log.debug(`POST /dataValues response: ${JSON.stringify(res.importCount)}`);
+        if (options.showCount) {
+            log.info(`POST /dataValues response: ${JSON.stringify(res.importCount)}`);
+        } else {
+            log.debug(`POST /dataValues response: ${JSON.stringify(res.importCount)}`);
+        }
 
         if (res.status !== "SUCCESS") {
             throw new Error(`Error on post: ${JSON.stringify(res, null, 4)}`);
@@ -59,10 +63,11 @@ export class DataValuesD2Repository implements DataValuesRepository {
         });
     }
 
-    async delete(options: { dataValues: DataValueToPost[] }): Async<void> {
+    async delete(options: { dataValues: DataValueToPost[], dryRun: boolean }): Async<void> {
         return this.postDataValueSet({
             dataValues: options.dataValues,
-            postParams: { importStrategy: "DELETE" },
+            postParams: { importStrategy: "DELETE", dryRun: options.dryRun },
+            showCount: true,
         });
     }
 

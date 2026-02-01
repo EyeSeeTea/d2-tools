@@ -269,11 +269,14 @@ const bulkDeleteDataValuesCmd = command({
             description: "Number of data values to delete in each batch (default: 100000)",
             defaultValue: () => 30000,
         }),
-
         backupFolder: option({
             type: optional(string),
             long: "backup-folder",
             description: "Folder for backups, leave empty to disable. Will be stored as bulk-delete-backup-<batch>-<timestamp>.json",
+        }),
+        dryRun: flag({
+            long: "dry-run",
+            description: "Perform delete in dry run mode. Limit MUST be higher than the number of data values to delete per DE batch.",
         }),
         dataElementsFile: positional({
             type: string,
@@ -288,7 +291,6 @@ const bulkDeleteDataValuesCmd = command({
         const dataValuesRepository = new DataValuesD2Repository(api);
 
         new BulkDeleteDataValuesUseCase(bulkDeleteRepository, orgUnitRepository, dataValuesRepository).execute(args);
-
     },
 });
 
