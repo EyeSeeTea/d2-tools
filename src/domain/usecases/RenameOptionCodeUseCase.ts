@@ -7,6 +7,7 @@ type Options = {
     optionId: Id;
     toCode: string;
     post: boolean;
+    makeSql: boolean;
 };
 
 export class RenameOptionCodeUseCase {
@@ -20,7 +21,7 @@ export class RenameOptionCodeUseCase {
         } else {
             console.debug(`Renaming option code from ${option.code} to ${options.toCode}`);
             const optionUpdated: Option = { ...option, code: options.toCode };
-            await this.optionRepository.save(optionUpdated, { dryRun: !options.post });
+            await this.optionRepository.save(optionUpdated, { dryRun: !options.post, makeSql: options.makeSql });
         }
     }
 }

@@ -111,7 +111,7 @@ describe("ValidateOptionSetUseCase", () => {
 
         const result = await useCase.execute({ lengthToValidate: DEFAULT_VALID_LENGTH, update: true });
 
-        const saveOptions = { dryRun: false };
+        const saveOptions = { dryRun: false, makeSql: false };
 
         expect(optionRepository.save).toHaveBeenCalledTimes(2);
         expect(optionRepository.save).toHaveBeenNthCalledWith(

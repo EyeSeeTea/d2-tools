@@ -37,7 +37,7 @@ export class ValidateOptionSetsUseCase {
 
         const optionsToSave = this.fixAndGetOptions(validationResults);
         await promiseMap(optionsToSave, async option => {
-            await this.optionRepository.save(option, { dryRun: !options.update });
+            await this.optionRepository.save(option, { dryRun: !options.update, makeSql: false });
         });
     }
 

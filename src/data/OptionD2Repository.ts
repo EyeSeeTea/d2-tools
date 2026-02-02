@@ -19,7 +19,7 @@ export class OptionD2Repository implements OptionRepository {
         }
     }
 
-    async save(option: Option, options: { dryRun: boolean }): Async<void> {
+    async save(option: Option, options: { dryRun: boolean; makeSql: boolean }): Async<void> {
         const existingOption = await this.getMaybeOptionById(option.id);
         const d2Option = { ...existingOption, ...option };
         const optionCodeChanged = existingOption && existingOption.code !== option.code;
@@ -33,7 +33,10 @@ export class OptionD2Repository implements OptionRepository {
             }
         } else {
             this.saveOptionToDisk(option.id, existingOption);
-            await new D2RenameOptionCode(this.api, { dryRun: options.dryRun }).execute({
+            await new D2RenameOptionCode(this.api, {
+                dryRun: options.dryRun,
+                makeSql: options.makeSql,
+            }).execute({
                 option: existingOption,
                 toCode: option.code,
             });

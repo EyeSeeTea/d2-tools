@@ -12,6 +12,11 @@ export const renameCodeCmd = command({
         optionId: option({ type: string, long: "id", defaultValue: () => "" }),
         toCode: option({ type: string, long: "to-code", defaultValue: () => "" }),
         post: flag({ long: "post", description: "Persist changes", defaultValue: () => false }),
+        makeSql: flag({
+            long: "make-sql",
+            description: "Generate SQL statements instead of posting value changes",
+            defaultValue: () => false,
+        }),
     },
     handler: async args => {
         const api = getD2ApiFromArgs(args);
