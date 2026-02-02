@@ -3,7 +3,7 @@ import { D2Api, DataValueSetsDataValue, MetadataPick, D2TrackerEventToPost } fro
 import { Async } from "domain/entities/Async";
 import { Id } from "domain/entities/Base";
 import { promiseMap } from "./dhis2-utils";
-import { saveJsonToDisk } from "./files";
+import { saveJsonToDisk, saveSqlToDisk } from "./files";
 
 /**
  * Rename the code in DHIS2 option model and related metadata/data.
@@ -28,7 +28,7 @@ import { saveJsonToDisk } from "./files";
  */
 
 export class D2RenameOptionCode {
-    constructor(private api: D2Api, private options: { dryRun: boolean }) {}
+    constructor(private api: D2Api, private options: { dryRun: boolean; makeSql: boolean }) {}
 
     async execute(options: RecodeOptions): Async<void> {
         const { option } = options;
@@ -72,6 +72,9 @@ export class D2RenameOptionCode {
 
         // Update metadata
         await this.saveOption(options);
+
+        // Generate SQLs
+        this.generateSqlForEvents(options, events);
 
         // Update data
         await this.postDataValues(dataValues);
@@ -123,6 +126,69 @@ export class D2RenameOptionCode {
 
     private get dryRun(): boolean {
         return this.options.dryRun;
+    }
+
+    private get makeSql(): boolean {
+        return this.options.makeSql;
+    }
+
+    private generateSqlForEvents(options: OptionsWithMetadataValues, events: D2TrackerEventToPost[]) {
+        if (!this.makeSql) return;
+        if (events.length === 0) {
+            console.debug(`No events to generate SQL for option [id=${options.option.id}]`);
+            return;
+        }
+
+        const { option } = options;
+        const dataElements = options.metadata.dataElements.map(de => de.id);
+
+        const tempTableSql = this.eventUidToSqlTempTable(option, dataElements, events);
+        const updateSql = this.updateEventsDataValueSql(option, options.toCode, dataElements);
+        const fullSql = `${tempTableSql}\n${updateSql}`;
+
+        saveSqlToDisk(`update_events_option_${option.id}`, fullSql);
+    }
+
+    private eventUidToSqlTempTable(option: D2Option, dataElements: Id[], events: D2TrackerEventToPost[]): string {
+        return dataElements.map(deId => {
+            const eventsWithDe = events.filter(event => {
+                return event.dataValues.some(dv => dv.dataElement === deId);
+            });
+
+            const tableName = `tmp_event_updates_${option.id}_${deId}`;
+            console.debug(`[SQL] Created temp table: ${tableName}`);
+
+            return `
+            CREATE TEMP TABLE IF NOT EXISTS ${tableName} (event_uid TEXT PRIMARY KEY);
+            INSERT INTO ${tableName} (event_uid) VALUES
+            ${eventsWithDe.map(event => `('${event.event}')`).join(",\n")};
+            ;`;
+        }
+        ).join("\n");
+    }
+
+    private updateEventsDataValueSql(option: D2Option, toCode: string, dataElements: Id[]): string {
+        if (dataElements.length === 0) {
+            console.debug(`No data elements to update for option [id=${option.id}]`);
+            return "-- No data elements to update";
+        }
+        console.debug(`[SQL] Data elements to update for option ${option.id}: ${dataElements.join(", ")}`);
+
+        return dataElements.map(deId => {
+            return `
+            BEGIN;
+            UPDATE event psi
+            SET eventdatavalues = jsonb_set(
+                eventdatavalues,
+                '{${deId},value}',
+                ('"' || '${toCode}' || '"')::jsonb
+            )
+            FROM tmp_event_updates_${option.id}_${deId} tmp
+            WHERE psi.uid = tmp.event_uid
+            AND eventdatavalues -> '${deId}' ->> 'value' = '${option.code}';
+            COMMIT;
+            `;
+        }).join("\n\n");
     }
 
     private async saveOption(options: RecodeOptionsWithMetadata): Async<void> {
@@ -187,6 +253,8 @@ export class D2RenameOptionCode {
     }
 
     private async postDataValues(dataValues: DataValueSetsDataValue[]): Async<void> {
+        if (this.makeSql) return;
+
         console.debug(`[recodeDataValues] Data values to post: ${dataValues.length}`);
 
         if (this.dryRun) {
@@ -258,6 +326,7 @@ export class D2RenameOptionCode {
     }
 
     private async postEvents(events: D2Event[]): Async<void> {
+        if (this.makeSql) return;
         console.debug(`[recodeEvents] Events to post: ${events.length}`);
 
         if (this.dryRun) {
@@ -279,8 +348,10 @@ export class D2RenameOptionCode {
         console.debug("[rollback] Executing rollback...");
 
         await this.saveOption({ ...options, toCode: option.code, metadata });
-        await this.postDataValues(initialDataValues);
-        await this.postEvents(initialEvents);
+        if (!this.makeSql) {
+            await this.postDataValues(initialDataValues);
+            await this.postEvents(initialEvents);
+        }
 
         console.debug("[rollback] Rollback completed");
     }
