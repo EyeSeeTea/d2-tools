@@ -7,12 +7,14 @@ import { CategoryComboRepository } from "domain/repositories/CategoryComboReposi
 import { RegeneratedCoc } from "domain/entities/RegeneratedCoc";
 import { RegeneratedCocRepository } from "domain/repositories/RegeneratedCocRepository";
 import { Stats } from "domain/entities/Stats";
+import { CategoryOptionComboDeleteExporter } from "domain/repositories/CategoryOptionComboDeleteExporter";
 
 export class RegenerateCocsUseCase {
     constructor(
         private options: {
             categoryComboRepository: CategoryComboRepository;
             regeneratedCocRepository: RegeneratedCocRepository;
+            cocDeleteExporter: CategoryOptionComboDeleteExporter;
         }
     ) {}
 
@@ -23,8 +25,16 @@ export class RegenerateCocsUseCase {
         );
 
         await this.saveCocs(categoryComboWithGeneratedCocs, options);
+
         if (options.deleteCocs) {
             await this.deleteCocs(categoryComboWithGeneratedCocs);
+        }
+
+        if (options.generateSqlDeleteScript) {
+            const cocIdsToDelete = categoryComboWithGeneratedCocs.flatMap(item =>
+                item.cocsToDelete.map(coc => coc.id)
+            );
+            this.options.cocDeleteExporter.exportDeleteScript(cocIdsToDelete);
         }
 
         return { categoryCombos: categoryComboWithGeneratedCocs };
@@ -186,4 +196,4 @@ export type RegenerateCocsUseCaseResult = {
     }>;
 };
 
-type UseCaseArgs = { deleteCocs: boolean; persist: boolean };
+type UseCaseArgs = { deleteCocs: boolean; persist: boolean; generateSqlDeleteScript: boolean };
