@@ -2,7 +2,7 @@ import _ from "lodash";
 import { CategoryCombo } from "domain/entities/CategoryCombo";
 import { D2Api, Id } from "../types/d2-api";
 import { CategoryComboRepository } from "../domain/repositories/CategoryComboRepository";
-import { fixCategoryOptionOrder, mapCategoryOptionIdToCategoryIndex } from "data/utils/cocs";
+import logger from "utils/log";
 
 export class CategoryComboD2Repository implements CategoryComboRepository {
     constructor(private api: D2Api) {}
@@ -54,7 +54,7 @@ export class CategoryComboD2Repository implements CategoryComboRepository {
                             name: optData.name,
                         })),
                     })),
-                    categoryOptionCombos: this.reorderCategoryOptionCombos(catComboData),
+                    categoryOptionCombos: reorderCocsByOptionIndex(catComboData),
                 });
 
                 if (categoryCombo.isError()) {
@@ -73,16 +73,9 @@ export class CategoryComboD2Repository implements CategoryComboRepository {
 
         return { objects: categoryCombos, pager: response.pager };
     }
-
-    private reorderCategoryOptionCombos(catComboData: D2ApiCategoryCombo) {
-        return catComboData.categoryOptionCombos.map(categoryOptionCombo => {
-            const indexesByCategoryOptionId = mapCategoryOptionIdToCategoryIndex(catComboData);
-            return fixCategoryOptionOrder(categoryOptionCombo, indexesByCategoryOptionId);
-        });
-    }
 }
 
-type D2ApiCategoryCombo = {
+export type D2ApiCategoryCombo = {
     id: Id;
     categories: Array<{ id: Id; categoryOptions: Array<{ id: Id; name: string }> }>;
     categoryOptionCombos: Array<{
@@ -91,3 +84,49 @@ type D2ApiCategoryCombo = {
         categoryOptions: Array<{ id: Id; name: string }>;
     }>;
 };
+
+export function reorderCocsByOptionIndex(catComboData: D2ApiCategoryCombo) {
+    const categoryIndexesByOptionId = _(catComboData.categories)
+        .flatMap((category, categoryIndex) =>
+            category.categoryOptions.map(categoryOption => [categoryOption.id, categoryIndex] as const)
+        )
+        .groupBy(([categoryOptionId]) => categoryOptionId)
+        .mapValues(entries => entries.map(([_, categoryIndex]) => categoryIndex).sort((a, b) => a - b))
+        .value();
+
+    return catComboData.categoryOptionCombos.map(categoryOptionCombo => {
+        const hasUnknownCategoryOption = categoryOptionCombo.categoryOptions.some(
+            categoryOption => !categoryIndexesByOptionId[categoryOption.id]
+        );
+
+        if (hasUnknownCategoryOption) {
+            logger.debug("Return an empty array as categoryOptions to avoid unsafely relying on its order.");
+            return { ...categoryOptionCombo, categoryOptions: [] };
+        }
+
+        const assignmentCountByOptionId = new Map<Id, number>();
+
+        const categoryIndexByCocOptionPosition = categoryOptionCombo.categoryOptions.map(categoryOption => {
+            const categoryIndexes = categoryIndexesByOptionId[categoryOption.id] ?? [];
+            const alreadyAssignedCount = assignmentCountByOptionId.get(categoryOption.id) ?? 0;
+            assignmentCountByOptionId.set(categoryOption.id, alreadyAssignedCount + 1);
+
+            if (categoryIndexes.length === 0) return Number.MAX_SAFE_INTEGER;
+
+            return categoryIndexes[Math.min(alreadyAssignedCount, categoryIndexes.length - 1)];
+        });
+
+        return {
+            ...categoryOptionCombo,
+            categoryOptions: _(categoryOptionCombo.categoryOptions)
+                .map((categoryOption, inputPosition) => ({
+                    categoryOption,
+                    categoryIndex: categoryIndexByCocOptionPosition[inputPosition],
+                    inputPosition,
+                }))
+                .sortBy(item => [item.categoryIndex, item.inputPosition])
+                .map(item => item.categoryOption)
+                .value(),
+        };
+    });
+}

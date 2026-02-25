@@ -24,7 +24,7 @@ export class RegenerateCocsUseCase {
 
         await this.saveCocs(categoryComboWithGeneratedCocs, options);
         if (options.deleteCocs) {
-            await this.deleteCocs(categoryComboWithGeneratedCocs, options);
+            await this.deleteCocs(categoryComboWithGeneratedCocs);
         }
 
         return { categoryCombos: categoryComboWithGeneratedCocs };
@@ -34,7 +34,10 @@ export class RegenerateCocsUseCase {
         categoryComboWithGeneratedCocs: RegenerateCocsUseCaseResult["categoryCombos"],
         options: UseCaseArgs
     ): Promise<Stats> {
-        const cocsToCreate = categoryComboWithGeneratedCocs.flatMap(item => item.categoryOptionCombos);
+        const cocsToCreate = _(categoryComboWithGeneratedCocs)
+            .flatMap(item => item.categoryOptionCombos)
+            .uniqBy(coc => coc.id)
+            .value();
         logger.info(`Saving ${cocsToCreate.length} categoryOptionCombos...`);
         const saveStats = await this.options.regeneratedCocRepository.save(cocsToCreate, {
             persist: options.persist,
@@ -45,16 +48,14 @@ export class RegenerateCocsUseCase {
     }
 
     private async deleteCocs(
-        categoryComboWithGeneratedCocs: RegenerateCocsUseCaseResult["categoryCombos"],
-        options: UseCaseArgs
+        categoryComboWithGeneratedCocs: RegenerateCocsUseCaseResult["categoryCombos"]
     ): Promise<Stats> {
-        const { deleteCocs } = options;
         const cocIdsToDelete = categoryComboWithGeneratedCocs.flatMap(item =>
             item.cocsToDelete.map(coc => coc.id)
         );
         logger.info(`Deleting ${cocIdsToDelete.length} categoryOptionCombos...`);
         const deleteStats = await this.options.regeneratedCocRepository.deleteByIds(cocIdsToDelete, {
-            persist: deleteCocs,
+            persist: true,
         });
         logger.info(`Finished: ${JSON.stringify(deleteStats, null, 2)}`);
         return deleteStats;
@@ -90,8 +91,9 @@ export class RegenerateCocsUseCase {
         const categoryOptionCombos = combinations.map(
             (combination): { regeneratedCoc: RegeneratedCoc; toBeSaved: boolean } => {
                 const combinationName = combination.map(opt => opt.name).join(", ");
-
                 const combinationKey = this.getCategoryOptionComboKey(combination);
+                const categoryComboId = getUid(combinationKey, categoryCombo.id);
+
                 const existingCategoryOptionCombo = existingCategoryOptionCombosByKey.get(combinationKey);
 
                 if (existingCategoryOptionCombo) {
@@ -110,7 +112,7 @@ export class RegenerateCocsUseCase {
 
                 return {
                     regeneratedCoc: RegeneratedCoc.create({
-                        id: getUid(combinationKey, categoryCombo.id),
+                        id: categoryComboId,
                         name: combinationName,
                         categoryCombo: { id: categoryCombo.id },
                         categoryOptions: combination,
@@ -169,6 +171,7 @@ export class RegenerateCocsUseCase {
     private getCategoryOptionComboKey(categoryOptions: NamedRef[]): string {
         return _(categoryOptions)
             .map(categoryOption => categoryOption.id)
+            .sort()
             .uniq()
             .join("|");
     }
