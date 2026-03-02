@@ -32,9 +32,7 @@ export const regenerateCocsCmd = command({
         const categoryComboRepository = new CategoryComboD2Repository(api);
         const regeneratedCocRepository = new RegeneratedCocD2Repository(api);
 
-        const cocDeleteExporter = new CategoryOptionComboDeleteD2SqlExporter(
-            `delete-category-option-combos-${currentTime}.sql`
-        );
+        const cocDeleteExporter = new CategoryOptionComboDeleteD2SqlExporter();
 
         const useCase = new RegenerateCocsUseCase({
             cocDeleteExporter,
@@ -49,6 +47,12 @@ export const regenerateCocsCmd = command({
                 deleteCocs: args.deleteCocs,
             });
             generateJsonReport(response.categoryCombos);
+            if (response.sqlDeleteScript) {
+                writeSqlScriptToDisk(
+                    response.sqlDeleteScript,
+                    `delete-category-option-combos-${currentTime}.sql`
+                );
+            }
         } catch (error) {
             logger.error(`Error regenerating categoryOptionCombos: ${JSON.stringify(error, null, 2)}`);
             process.exit(1);
@@ -71,4 +75,10 @@ function generateJsonReport(categoryCombos: RegenerateCocsUseCaseResult["categor
 
     writeFileSync(fileName, JSON.stringify(jsonReport, null, 2));
     logger.info(`Report generated: ${fileName}`);
+}
+
+function writeSqlScriptToDisk(sqlScript: string, fileName: string): void {
+    writeFileSync(fileName, sqlScript);
+    logger.info(`SQL generated: ${fileName}`);
+    logger.info(`You can execute the sql with d2-docker: d2-docker run-sql ${fileName}`);
 }

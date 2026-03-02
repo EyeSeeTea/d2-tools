@@ -8,6 +8,7 @@ import { RegeneratedCoc } from "domain/entities/RegeneratedCoc";
 import { RegeneratedCocRepository } from "domain/repositories/RegeneratedCocRepository";
 import { Stats } from "domain/entities/Stats";
 import { CategoryOptionComboDeleteExporter } from "domain/repositories/CategoryOptionComboDeleteExporter";
+import { Maybe } from "utils/ts-utils";
 
 export class RegenerateCocsUseCase {
     constructor(
@@ -30,14 +31,23 @@ export class RegenerateCocsUseCase {
             await this.deleteCocs(categoryComboWithGeneratedCocs);
         }
 
-        if (options.generateSqlDeleteScript) {
-            const cocIdsToDelete = categoryComboWithGeneratedCocs.flatMap(item =>
-                item.cocsToDelete.map(coc => coc.id)
-            );
-            this.options.cocDeleteExporter.exportDeleteScript(cocIdsToDelete);
-        }
+        return {
+            categoryCombos: categoryComboWithGeneratedCocs,
+            sqlDeleteScript: this.buildSqlDeleteScript(options, categoryComboWithGeneratedCocs),
+        };
+    }
 
-        return { categoryCombos: categoryComboWithGeneratedCocs };
+    private buildSqlDeleteScript(
+        options: UseCaseArgs,
+        categoryComboWithGeneratedCocs: RegenerateCocsUseCaseResult["categoryCombos"]
+    ): Maybe<string> {
+        const { generateSqlDeleteScript } = options;
+        if (!generateSqlDeleteScript) return undefined;
+
+        const cocIdsToDelete = categoryComboWithGeneratedCocs.flatMap(item =>
+            item.cocsToDelete.map(coc => coc.id)
+        );
+        return this.options.cocDeleteExporter.exportDeleteScript(cocIdsToDelete);
     }
 
     private async saveCocs(
@@ -194,6 +204,7 @@ export type RegenerateCocsUseCaseResult = {
         allCategoryOptionCombos: RegeneratedCoc[];
         cocsToDelete: RegeneratedCoc[];
     }>;
+    sqlDeleteScript: Maybe<string>;
 };
 
 type UseCaseArgs = { deleteCocs: boolean; persist: boolean; generateSqlDeleteScript: boolean };
