@@ -124,7 +124,7 @@ export function reorderCocsByOptionIndex(catComboData: D2ApiCategoryCombo) {
                     categoryIndex: categoryIndexByCocOptionPosition[inputPosition],
                     inputPosition,
                 }))
-                .sortBy(item => [item.categoryIndex, item.inputPosition])
+                .sortBy([item => item.categoryIndex, item => item.inputPosition])
                 .map(item => item.categoryOption)
                 .value(),
         };

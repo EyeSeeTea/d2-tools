@@ -226,5 +226,32 @@ describe("CategoryComboD2Repository", () => {
                 { id: "NwnHnLEHuB7", name: "psycho-social" },
             ]);
         });
+
+        it("should sort by numeric categoryIndex and not lexicographically", () => {
+            const categoryCount = 11;
+            const categoryOptions = Array.from({ length: categoryCount }, (_, index) => ({
+                id: `opt${index}`,
+                name: `Option ${index}`,
+            }));
+
+            const catComboData: D2ApiCategoryCombo = {
+                id: "numeric-sort",
+                categories: categoryOptions.map((categoryOption, index) => ({
+                    id: `cat${index}`,
+                    categoryOptions: [categoryOption],
+                })),
+                categoryOptionCombos: [
+                    {
+                        id: "coc1",
+                        name: "numeric sort combo",
+                        categoryOptions: [...categoryOptions].reverse(),
+                    },
+                ],
+            };
+
+            const result = callReorderCategoryOptionCombos(catComboData);
+
+            expect(result[0]?.categoryOptions).toEqual(categoryOptions);
+        });
     });
 });
