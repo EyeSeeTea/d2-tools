@@ -1,9 +1,9 @@
-import { command, flag } from "cmd-ts";
+import { command, flag, option, optional } from "cmd-ts";
 import { RegeneratedCocD2Repository } from "data/RegeneratedCocD2Repository";
 import { CategoryComboD2Repository } from "data/CategoryComboD2Repository";
 import { RegenerateCocsUseCase, RegenerateCocsUseCaseResult } from "domain/usecases/RegenerateCocsUseCase";
 import { writeFileSync } from "fs";
-import { getApiUrlOptions, getD2ApiFromArgs } from "scripts/common";
+import { getApiUrlOptions, getD2ApiFromArgs, StringsSeparatedByCommas } from "scripts/common";
 import logger from "utils/log";
 import { getCurrentTime } from "utils/date";
 import { CategoryOptionComboDeleteD2SqlExporter } from "data/CategoryOptionComboDeleteD2SqlExporter";
@@ -25,6 +25,12 @@ export const regenerateCocsCmd = command({
             long: "generate-sql-delete-script",
             description: "generate a SQL script to delete obsolete categoryOptionCombos (default: false)",
         }),
+        catCombosIds: option({
+            type: optional(StringsSeparatedByCommas),
+            long: "cat-combos-ids",
+            description:
+                "comma-separated list of categoryCombo IDs. If not provided, all categoryCombos will be regenerated.",
+        }),
     },
     handler: async args => {
         const currentTime = getCurrentTime();
@@ -45,6 +51,7 @@ export const regenerateCocsCmd = command({
                 generateSqlDeleteScript: args.generateSqlDeleteScript,
                 persist: args.persist,
                 deleteCocs: args.deleteCocs,
+                catCombosIds: args.catCombosIds,
             });
             generateJsonReport(response.categoryCombos);
             if (response.sqlDeleteScript) {

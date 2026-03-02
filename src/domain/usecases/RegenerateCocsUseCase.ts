@@ -1,7 +1,7 @@
 import _ from "lodash";
 import logger from "utils/log";
 import { getUid } from "data/dhis2";
-import { NamedRef } from "domain/entities/Base";
+import { Id, NamedRef } from "domain/entities/Base";
 import { CategoryCombo } from "domain/entities/CategoryCombo";
 import { CategoryComboRepository } from "domain/repositories/CategoryComboRepository";
 import { RegeneratedCoc } from "domain/entities/RegeneratedCoc";
@@ -20,7 +20,7 @@ export class RegenerateCocsUseCase {
     ) {}
 
     async execute(options: UseCaseArgs): Promise<RegenerateCocsUseCaseResult> {
-        const categoryCombos = await this.getCategoryCombos();
+        const categoryCombos = await this.getCategoryCombos(options);
         const categoryComboWithGeneratedCocs = categoryCombos.map(categoryCombo =>
             this.generateCombinationsFromCategoryCombo(categoryCombo)
         );
@@ -81,9 +81,11 @@ export class RegenerateCocsUseCase {
         return deleteStats;
     }
 
-    private async getCategoryCombos(): Promise<CategoryCombo[]> {
+    private async getCategoryCombos(options: UseCaseArgs): Promise<CategoryCombo[]> {
         logger.info("Fetching categoryOptionCombos...");
-        const categoryCombos = await this.options.categoryComboRepository.getAll();
+        const categoryCombos = await this.options.categoryComboRepository.getAll({
+            ids: options.catCombosIds,
+        });
         logger.info(`${categoryCombos.length} categoryOptionCombos found.`);
         return categoryCombos;
     }
@@ -207,4 +209,9 @@ export type RegenerateCocsUseCaseResult = {
     sqlDeleteScript: Maybe<string>;
 };
 
-type UseCaseArgs = { deleteCocs: boolean; persist: boolean; generateSqlDeleteScript: boolean };
+type UseCaseArgs = {
+    catCombosIds: Maybe<Id[]>;
+    deleteCocs: boolean;
+    persist: boolean;
+    generateSqlDeleteScript: boolean;
+};

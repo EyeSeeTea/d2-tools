@@ -7,28 +7,29 @@ import logger from "utils/log";
 export class CategoryComboD2Repository implements CategoryComboRepository {
     constructor(private api: D2Api) {}
 
-    async getAll(): Promise<CategoryCombo[]> {
-        return this.getAllByPages({ page: 1, pageSize: 100, categoryCombos: [] });
+    async getAll(options: { ids?: Id[] }): Promise<CategoryCombo[]> {
+        return this.getAllByPages({ page: 1, pageSize: 100, categoryCombos: [], ids: options.ids });
     }
 
     private async getAllByPages(options: {
         page: number;
         pageSize: number;
         categoryCombos: CategoryCombo[];
+        ids?: Id[];
     }): Promise<CategoryCombo[]> {
-        const { page, pageSize, categoryCombos } = options;
+        const { page, pageSize, categoryCombos, ids } = options;
 
-        const response = await this.getCategoryCombos({ page, pageSize });
+        const response = await this.getCategoryCombos({ page, pageSize, ids });
         const newRecords = [...categoryCombos, ...response.objects];
         const pager = response.pager;
         if (pager.page >= pager.pageCount) {
             return newRecords;
         } else {
-            return this.getAllByPages({ page: page + 1, pageSize, categoryCombos: newRecords });
+            return this.getAllByPages({ page: page + 1, pageSize, categoryCombos: newRecords, ids });
         }
     }
 
-    private async getCategoryCombos(options: { page: number; pageSize: number }) {
+    private async getCategoryCombos(options: { page: number; pageSize: number; ids?: Id[] }) {
         const response = await this.api.models.categoryCombos
             .get({
                 fields: {
@@ -39,6 +40,8 @@ export class CategoryComboD2Repository implements CategoryComboRepository {
                 },
                 page: options.page,
                 pageSize: options.pageSize,
+                // TODO: change to request in chunks when ids are provided
+                filter: options.ids ? { id: { in: options.ids } } : undefined,
             })
             .getData();
 

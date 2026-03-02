@@ -1117,6 +1117,17 @@ yarn start categoryOptionCombos regenerate \
     --delete-cocs
 ```
 
+You can also include a comma separated list if you want to regenerate specific category Combos.
+
+```shell
+yarn start categoryOptionCombos regenerate \
+    --url=https://play.im.dhis2.org/dev \
+    --auth="admin:district" \
+    --persist \
+    --delete-cocs \
+    --cat-combos-ids=id1,id2,id3
+```
+
 Save categoryOptionCombos and generating a sql script for deleting categoryOptionCombos. if you remove the `persist` flag it will only generate the sql.
 
 ```shell
@@ -1124,7 +1135,7 @@ yarn start categoryOptionCombos regenerate \
     --url=https://play.im.dhis2.org/dev \
     --auth="admin:district" \
     --persist \
-    --generate-sql-delete-script
+    --generate-sql-delete-script \
 ```
 
 Before deleting a `categoryOptionCombo` the script checks for existing data in the `datavalue` and `datavalueaudit` tables. If you have thousands or millions of records, this process can be very slow.
