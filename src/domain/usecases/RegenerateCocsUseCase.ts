@@ -102,7 +102,7 @@ export class RegenerateCocsUseCase {
             (combination): { regeneratedCoc: RegeneratedCoc; toBeSaved: boolean } => {
                 const combinationName = combination.map(opt => opt.name).join(", ");
                 const combinationKey = this.getCategoryOptionComboKey(combination);
-                const categoryComboId = getUid(combinationKey, categoryCombo.id);
+                const categoryOptionComboId = getUid(combinationKey, categoryCombo.id);
 
                 const existingCategoryOptionCombo = existingCategoryOptionCombosByKey.get(combinationKey);
 
@@ -122,7 +122,7 @@ export class RegenerateCocsUseCase {
 
                 return {
                     regeneratedCoc: RegeneratedCoc.create({
-                        id: categoryComboId,
+                        id: categoryOptionComboId,
                         name: combinationName,
                         categoryCombo: { id: categoryCombo.id },
                         categoryOptions: combination,
