@@ -91,12 +91,13 @@ export class RunTwoFactorReportUseCase {
         const saveResponse = await this.reportRepository.save(programMetadata, report);
         if (shouldDisableInvalidUsers) {
             if (invalidTwoFactorUsers.length > 0) {
-                const disableResponse = await this.userRepository.disableUsers(
-                    invalidTwoFactorUsers.map(user => user.id)
+                const disableResponse = await this.disableUsersInBatches(
+                    invalidTwoFactorUsers.map(user => user.id),
+                    50
                 );
                 return {
                     message: saveResponse,
-                    disableUsersMessage: JSON.stringify(disableResponse),
+                    disableUsersMessage: disableResponse,
                     report,
                 };
             } else {
@@ -113,6 +114,29 @@ export class RunTwoFactorReportUseCase {
             disableUsersMessage: "Disabled users action is not enabled.",
             report,
         };
+    }
+
+    private async disableUsersInBatches(userIds: string[], batchSize: number): Async<string> {
+        const disableResults: Array<{ userId: string; status: string; response?: string; error?: unknown }> = [];
+
+        for (const userIdsBatch of _.chunk(userIds, batchSize)) {
+            try {
+                const batchResponse = await this.userRepository.disableUsers(userIdsBatch);
+                const batchResults = JSON.parse(batchResponse);
+
+                if (Array.isArray(batchResults)) {
+                    disableResults.push(...batchResults);
+                }
+            } catch {
+                disableResults.push({
+                    userId: "unknown",
+                    status: "error",
+                    error: `Invalid disable users response for batch: ${userIdsBatch.join(",")}`,
+                });
+            }
+        }
+
+        return JSON.stringify(disableResults);
     }
 }
 
