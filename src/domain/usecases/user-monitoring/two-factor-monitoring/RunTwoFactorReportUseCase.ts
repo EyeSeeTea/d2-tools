@@ -1,19 +1,22 @@
-import _ from "lodash";
-import { TwoFactorUserD2Repository } from "data/user-monitoring/two-factor-monitoring/TwoFactorUserD2Repository";
+import { DisableUserResult } from "domain/entities/user-monitoring/two-factor-monitoring/DisableUsersResult";
+import { TwoFactorUserRepository } from "domain/repositories/user-monitoring/two-factor-monitoring/TwoFactorUserRepository";
 import { TwoFactorConfigD2Repository } from "data/user-monitoring/two-factor-monitoring/TwoFactorConfigD2Repository";
 import { UserMonitoringProgramD2Repository } from "data/user-monitoring/common/UserMonitoringProgramD2Repository";
 import { TwoFactorReportD2Repository } from "data/user-monitoring/two-factor-monitoring/TwoFactorReportD2Repository";
 import { TwoFactorUserReport } from "domain/entities/user-monitoring/two-factor-monitoring/TwoFactorUserReport";
 import { Async } from "domain/entities/Async";
+import { TwoFactorReportRepository } from "domain/repositories/user-monitoring/two-factor-monitoring/TwoFactorReportRepository";
+import { TwoFactorConfigRepository } from "domain/repositories/user-monitoring/two-factor-monitoring/TwoFactorConfigRepository";
+import { UserMonitoringProgramRepository } from "domain/repositories/user-monitoring/common/UserMonitoringProgramRepository";
 
 type TwoFactorReportResponse = { message: string; report: TwoFactorUserReport; disableUsersMessage: string };
 
 export class RunTwoFactorReportUseCase {
     constructor(
-        private userRepository: TwoFactorUserD2Repository,
-        private reportRepository: TwoFactorReportD2Repository,
-        private configRepository: TwoFactorConfigD2Repository,
-        private programRepository: UserMonitoringProgramD2Repository
+        private userRepository: TwoFactorUserRepository,
+        private reportRepository: TwoFactorReportRepository,
+        private configRepository: TwoFactorConfigRepository,
+        private programRepository: UserMonitoringProgramRepository
     ) {}
 
     async execute(twoFactorUseCaseOption: TwoFactorUseCaseOptions): Async<TwoFactorReportResponse> {
@@ -91,13 +94,12 @@ export class RunTwoFactorReportUseCase {
         const saveResponse = await this.reportRepository.save(programMetadata, report);
         if (shouldDisableInvalidUsers) {
             if (invalidTwoFactorUsers.length > 0) {
-                const disableResponse = await this.disableUsersInBatches(
-                    invalidTwoFactorUsers.map(user => user.id),
-                    50
+                const disableResults = await this.userRepository.disableUsers(
+                    invalidTwoFactorUsers.map(user => user.id)
                 );
                 return {
                     message: saveResponse,
-                    disableUsersMessage: disableResponse,
+                    disableUsersMessage: this.buildDisableUsersMessage(disableResults),
                     report,
                 };
             } else {
@@ -116,25 +118,17 @@ export class RunTwoFactorReportUseCase {
         };
     }
 
-    private async disableUsersInBatches(userIds: string[], batchSize: number): Async<string> {
-        const disableResults: Array<{ userId: string; status: string; response?: string; error?: unknown }> = [];
+    private buildDisableUsersMessage(disableResults: DisableUserResult[]): string {
+        const successes = disableResults.filter(r => r.status === "success");
+        const failures = disableResults.filter(r => r.status === "error");
 
-        for (const userIdsBatch of _.chunk(userIds, batchSize)) {
-            try {
-                const batchResponse = await this.userRepository.disableUsers(userIdsBatch);
-                const batchResults = JSON.parse(batchResponse);
+        const failureDetails = failures
+            .map(f => `${f.userId}${f.error ? ` (${String(f.error)})` : ""}`)
+            .join(" | ");
 
-                disableResults.push(...batchResults);
-            } catch {
-                disableResults.push({
-                    userId: "unknown",
-                    status: "error",
-                    error: `Invalid disable users response for batch: ${userIdsBatch.join(",")}`,
-                });
-            }
-        }
-
-        return JSON.stringify(disableResults);
+        return `Disabled users action is enabled and executed. Success: ${successes.length}. Errors: ${
+            failures.length
+        }.${failureDetails ? ` Failed: ${failureDetails}` : ""}`;
     }
 }
 
