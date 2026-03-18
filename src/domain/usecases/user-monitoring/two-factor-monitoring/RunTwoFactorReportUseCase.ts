@@ -124,9 +124,7 @@ export class RunTwoFactorReportUseCase {
                 const batchResponse = await this.userRepository.disableUsers(userIdsBatch);
                 const batchResults = JSON.parse(batchResponse);
 
-                if (Array.isArray(batchResults)) {
-                    disableResults.push(...batchResults);
-                }
+                disableResults.push(...batchResults);
             } catch {
                 disableResults.push({
                     userId: "unknown",
