@@ -97,6 +97,10 @@ export class RunTwoFactorReportUseCase {
             }),
         };
 
+        const filterInfo = filteredByMonth
+            ? ` Filtered by creation date (disableAfterMonths: ${options.disableAfterMonths}).`
+            : "";
+
         const saveResponse = await this.reportRepository.save(programMetadata, report);
         if (shouldDisableInvalidUsers) {
             if (filteredInvalidTwoFactorUsers.length > 0) {
@@ -105,14 +109,14 @@ export class RunTwoFactorReportUseCase {
                 );
                 return {
                     message: saveResponse,
-                    disableUsersMessage: this.buildDisableUsersMessage(disableResults),
+                    disableUsersMessage: this.buildDisableUsersMessage(disableResults, filterInfo),
                     report,
                 };
             } else {
                 return {
                     message: saveResponse,
                     disableUsersMessage:
-                        "Disabled users action is not executed due to no invalid users found.",
+                        `Disabled users action is not executed due to no invalid users found.${filterInfo}`,
                     report,
                 };
             }
@@ -124,7 +128,7 @@ export class RunTwoFactorReportUseCase {
         };
     }
 
-    private buildDisableUsersMessage(disableResults: DisableUserResult[]): string {
+    private buildDisableUsersMessage(disableResults: DisableUserResult[], filterInfo: string): string {
         const successes = disableResults.filter(r => r.status === "success");
         const failures = disableResults.filter(r => r.status === "error");
 
@@ -132,7 +136,7 @@ export class RunTwoFactorReportUseCase {
             .map(f => `${f.userId}${f.error ? ` (${String(f.error)})` : ""}`)
             .join(" | ");
 
-        return `Disabled users action is enabled and executed. Success: ${successes.length}. Errors: ${
+        return `Disabled users action is enabled and executed.${filterInfo} Success: ${successes.length}. Errors: ${
             failures.length
         }.${failureDetails ? ` Failed: ${failureDetails}` : ""}`;
     }
