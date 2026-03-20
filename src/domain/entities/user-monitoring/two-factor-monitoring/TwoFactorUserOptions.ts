@@ -6,4 +6,5 @@ export interface TwoFactorUserOptions {
     twoFactorGroup: NamedRef;
     whoAccountGroup: Maybe<NamedRef>;
     exceptionGroup: Maybe<NamedRef[]>;
+    disableAfterMonths: Maybe<number>;
 }
