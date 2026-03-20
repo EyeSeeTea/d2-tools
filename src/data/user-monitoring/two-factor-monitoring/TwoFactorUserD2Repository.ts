@@ -4,7 +4,6 @@ import _ from "lodash";
 import { DisableUserResult } from "domain/entities/user-monitoring/two-factor-monitoring/DisableUsersResult";
 import { TwoFactorUser } from "domain/entities/user-monitoring/two-factor-monitoring/TwoFactorUser";
 import { TwoFactorUserRepository } from "domain/repositories/user-monitoring/two-factor-monitoring/TwoFactorUserRepository";
-import { PermissionFixerUser } from "domain/entities/user-monitoring/permission-fixer/PermissionFixerUser";
 import { Async } from "domain/entities/Async";
 import { Method } from "@eyeseetea/d2-api/repositories/HttpClientRepository";
 
@@ -34,6 +33,7 @@ export class TwoFactorUserD2Repository implements TwoFactorUserRepository {
                 disabled: user.disabled ?? false,
                 externalAuth: user.externalAuth ?? false,
                 userGroups: user.userGroups ?? [],
+                created: user.created,
             };
         });
     }
@@ -72,4 +72,15 @@ export class TwoFactorUserD2Repository implements TwoFactorUserRepository {
     }
 }
 
-type Users = { users: PermissionFixerUser[] };
+type D2TwoFactorUserResponse = {
+    id: string;
+    username: string;
+    disabled: boolean;
+    externalAuth: boolean;
+    userGroups: { id: string; name: string }[];
+    created?: string;
+    twoFA?: boolean;
+    twoFactorEnabled?: boolean;
+};
+
+type Users = { users: D2TwoFactorUserResponse[] };
