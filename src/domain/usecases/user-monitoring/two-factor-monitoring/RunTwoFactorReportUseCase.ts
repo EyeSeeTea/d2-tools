@@ -5,6 +5,10 @@ import { Async } from "domain/entities/Async";
 import { TwoFactorReportRepository } from "domain/repositories/user-monitoring/two-factor-monitoring/TwoFactorReportRepository";
 import { TwoFactorConfigRepository } from "domain/repositories/user-monitoring/two-factor-monitoring/TwoFactorConfigRepository";
 import { UserMonitoringProgramRepository } from "domain/repositories/user-monitoring/common/UserMonitoringProgramRepository";
+import {
+    TwoFactorUser,
+    filterByCreationDate,
+} from "domain/entities/user-monitoring/two-factor-monitoring/TwoFactorUser";
 
 type TwoFactorReportResponse = { message: string; report: TwoFactorUserReport; disableUsersMessage: string };
 
@@ -18,6 +22,7 @@ export class RunTwoFactorReportUseCase {
 
     async execute(twoFactorUseCaseOption: TwoFactorUseCaseOptions): Async<TwoFactorReportResponse> {
         const shouldDisableInvalidUsers = twoFactorUseCaseOption.shouldDisableInvalidUsers;
+        const filteredByMonth = twoFactorUseCaseOption.filteredByMonth;
         const options = await this.configRepository.get();
         const programMetadata = await this.programRepository.get(options.pushProgram.id);
 
@@ -76,8 +81,12 @@ export class RunTwoFactorReportUseCase {
             return isEnabled && ((isInWhoGroup && isInAuthGroup) || isNotInWhoOr2FA);
         });
 
+        const filteredInvalidTwoFactorUsers = filteredByMonth
+            ? filterByCreationDate(invalidTwoFactorUsers, options.disableAfterMonths)
+            : invalidTwoFactorUsers;
+
         const report: TwoFactorUserReport = {
-            invalidTwoFAList: invalidTwoFactorUsers.map(user => {
+            invalidTwoFAList: filteredInvalidTwoFactorUsers.map(user => {
                 return { id: user.id, name: user.username };
             }),
             invalidWhoList: whoInvalidUsers.map(user => {
@@ -90,9 +99,9 @@ export class RunTwoFactorReportUseCase {
 
         const saveResponse = await this.reportRepository.save(programMetadata, report);
         if (shouldDisableInvalidUsers) {
-            if (invalidTwoFactorUsers.length > 0) {
+            if (filteredInvalidTwoFactorUsers.length > 0) {
                 const disableResults = await this.userRepository.disableUsers(
-                    invalidTwoFactorUsers.map(user => user.id)
+                    filteredInvalidTwoFactorUsers.map(user => user.id)
                 );
                 return {
                     message: saveResponse,
@@ -127,8 +136,10 @@ export class RunTwoFactorReportUseCase {
             failures.length
         }.${failureDetails ? ` Failed: ${failureDetails}` : ""}`;
     }
+
 }
 
 interface TwoFactorUseCaseOptions {
     shouldDisableInvalidUsers: boolean;
+    filteredByMonth: boolean;
 }
