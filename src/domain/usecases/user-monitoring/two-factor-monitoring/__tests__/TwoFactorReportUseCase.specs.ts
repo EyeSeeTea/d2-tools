@@ -29,6 +29,7 @@ const baseUser = {
     disabled: false,
     twoFA: false,
     username: "testuser",
+    created: "2020-01-01T00:00:00.000",
 };
 
 const defaultConfig: TwoFactorUserOptions = {
@@ -36,6 +37,7 @@ const defaultConfig: TwoFactorUserOptions = {
     twoFactorGroup: { id: TWO_FACTOR_GROUP_ID, name: "2FA Group" },
     whoAccountGroup: { id: WHO_ACCOUNT_GROUP_ID, name: "WHO Group" },
     exceptionGroup: [{ id: EXCEPTION_GROUP_ID, name: "Exception Group" }],
+    disableAfterMonths: undefined,
 };
 const alternativeConfig: TwoFactorUserOptions = {
     pushProgram: {
@@ -51,10 +53,11 @@ const alternativeConfig: TwoFactorUserOptions = {
         name: "Who account usergroup",
     },
     exceptionGroup: [],
+    disableAfterMonths: undefined,
 };
 
-const useCaseOptionsDisabledFalse = { shouldDisableInvalidUsers: false };
-const useCaseOptionsDisabledTrue = { shouldDisableInvalidUsers: true };
+const useCaseOptionsDisabledFalse = { shouldDisableInvalidUsers: false, filteredByMonth: false };
+const useCaseOptionsDisabledTrue = { shouldDisableInvalidUsers: true, filteredByMonth: false };
 
 describe("TwoFactorReportUseCase", () => {
     it("Should detects a user in 2FA group with twoFA disabled as invalidTwoFA", async () => {
@@ -66,7 +69,7 @@ describe("TwoFactorReportUseCase", () => {
 
         const useCase = createUseCase({ users: [user], config: defaultConfig });
 
-        const result = await useCase.execute({ shouldDisableInvalidUsers: false });
+        const result = await useCase.execute({ shouldDisableInvalidUsers: false, filteredByMonth: false });
 
         expect(result.report.invalidTwoFAList).toEqual([{ id: "u1", name: "testuser" }]);
         expect(result.report.invalidWhoList).toEqual([]);
@@ -83,7 +86,7 @@ describe("TwoFactorReportUseCase", () => {
 
         const useCase = createUseCase({ users: [user], config: defaultConfig });
 
-        const result = await useCase.execute({ shouldDisableInvalidUsers: false });
+        const result = await useCase.execute({ shouldDisableInvalidUsers: false, filteredByMonth: false });
 
         expect(result.report.invalidTwoFAList).toEqual([]);
         expect(result.report.invalidWhoList).toEqual([]);
@@ -286,6 +289,131 @@ describe("TwoFactorReportUseCase", () => {
         expect(result.report.invalidAuthList).toEqual([
             { id: userInvalidAuth.id, name: userInvalidAuth.username },
         ]);
+    });
+
+    it("Should throw error when filteredByMonth is true but disableAfterMonths is not configured", async () => {
+        const user: TwoFactorUser = {
+            ...baseUser,
+            id: "u1",
+            userGroups: [{ id: TWO_FACTOR_GROUP_ID, name: "TwoFactorGroup" }],
+        };
+        const configWithoutMonths: TwoFactorUserOptions = {
+            ...defaultConfig,
+            disableAfterMonths: undefined,
+        };
+        const useCase = createUseCase({ users: [user], config: configWithoutMonths });
+
+        await expect(
+            useCase.execute({ shouldDisableInvalidUsers: false, filteredByMonth: true })
+        ).rejects.toThrow(
+            "filteredByMonth is enabled but disableAfterMonths is not configured in the datastore."
+        );
+    });
+
+    it("Should filter invalid users by creation date when filteredByMonth is true and disableAfterMonths is configured", async () => {
+        const now = new Date();
+        const oldDate = new Date(now.getFullYear() - 1, now.getMonth(), 1).toISOString();
+        const recentDate = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
+        const oldUser: TwoFactorUser = {
+            ...baseUser,
+            id: "old-user",
+            username: "old-user",
+            created: oldDate,
+            userGroups: [{ id: TWO_FACTOR_GROUP_ID, name: "TwoFactorGroup" }],
+        };
+        const recentUser: TwoFactorUser = {
+            ...baseUser,
+            id: "recent-user",
+            username: "recent-user",
+            created: recentDate,
+            userGroups: [{ id: TWO_FACTOR_GROUP_ID, name: "TwoFactorGroup" }],
+        };
+        const configWithMonths: TwoFactorUserOptions = {
+            ...defaultConfig,
+            disableAfterMonths: 6,
+        };
+        const useCase = createUseCase({ users: [oldUser, recentUser], config: configWithMonths });
+
+        const result = await useCase.execute({ shouldDisableInvalidUsers: false, filteredByMonth: true });
+
+        expect(result.report.invalidTwoFAList).toEqual([{ id: "old-user", name: "old-user" }]);
+    });
+
+    it("Should not filter by date when filteredByMonth is false even if disableAfterMonths is configured", async () => {
+        const now = new Date();
+        const recentDate = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
+        const recentUser: TwoFactorUser = {
+            ...baseUser,
+            id: "recent-user",
+            username: "recent-user",
+            created: recentDate,
+            userGroups: [{ id: TWO_FACTOR_GROUP_ID, name: "TwoFactorGroup" }],
+        };
+        const configWithMonths: TwoFactorUserOptions = {
+            ...defaultConfig,
+            disableAfterMonths: 6,
+        };
+        const useCase = createUseCase({ users: [recentUser], config: configWithMonths });
+
+        const result = await useCase.execute({ shouldDisableInvalidUsers: false, filteredByMonth: false });
+
+        expect(result.report.invalidTwoFAList).toEqual([{ id: "recent-user", name: "recent-user" }]);
+    });
+
+    it("Should disable only filtered users when both disableUsers and filteredByMonth are true", async () => {
+        const now = new Date();
+        const oldDate = new Date(now.getFullYear() - 1, now.getMonth(), 1).toISOString();
+        const recentDate = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
+        const oldUser: TwoFactorUser = {
+            ...baseUser,
+            id: "old-user",
+            username: "old-user",
+            created: oldDate,
+            userGroups: [{ id: TWO_FACTOR_GROUP_ID, name: "TwoFactorGroup" }],
+        };
+        const recentUser: TwoFactorUser = {
+            ...baseUser,
+            id: "recent-user",
+            username: "recent-user",
+            created: recentDate,
+            userGroups: [{ id: TWO_FACTOR_GROUP_ID, name: "TwoFactorGroup" }],
+        };
+        const configWithMonths: TwoFactorUserOptions = {
+            ...defaultConfig,
+            disableAfterMonths: 6,
+        };
+        const useCase = createUseCase({ users: [oldUser, recentUser], config: configWithMonths });
+
+        const result = await useCase.execute({ shouldDisableInvalidUsers: true, filteredByMonth: true });
+
+        expect(result.report.invalidTwoFAList).toEqual([{ id: "old-user", name: "old-user" }]);
+        expect(result.disableUsersMessage).contain("Disabled users action is enabled and executed.");
+    });
+
+    it("Should disable all invalid users when disableUsers is true and filteredByMonth is false", async () => {
+        const now = new Date();
+        const recentDate = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
+        const recentUser: TwoFactorUser = {
+            ...baseUser,
+            id: "recent-user",
+            username: "recent-user",
+            created: recentDate,
+            userGroups: [{ id: TWO_FACTOR_GROUP_ID, name: "TwoFactorGroup" }],
+        };
+        const configWithMonths: TwoFactorUserOptions = {
+            ...defaultConfig,
+            disableAfterMonths: 6,
+        };
+        const useCase = createUseCase({ users: [recentUser], config: configWithMonths });
+
+        const result = await useCase.execute({ shouldDisableInvalidUsers: true, filteredByMonth: false });
+
+        expect(result.report.invalidTwoFAList).toEqual([{ id: "recent-user", name: "recent-user" }]);
+        expect(result.disableUsersMessage).contain("Disabled users action is enabled and executed.");
     });
 });
 

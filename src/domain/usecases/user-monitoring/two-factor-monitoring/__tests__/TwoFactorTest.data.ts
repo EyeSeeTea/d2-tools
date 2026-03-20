@@ -17,6 +17,7 @@ export const userWithTwoFA: TwoFactorUser = {
             name: "dummy_group_name",
         },
     ],
+    created: "2020-01-01T00:00:00.000",
 };
 
 export const userInTwoFAGroupButWithExternalAuth: TwoFactorUser = {
@@ -31,6 +32,7 @@ export const userInTwoFAGroupButWithExternalAuth: TwoFactorUser = {
             name: "dummy_group_name",
         },
     ],
+    created: "2020-01-01T00:00:00.000",
 };
 
 export const userWithoutTwoFA: TwoFactorUser = {
@@ -45,6 +47,7 @@ export const userWithoutTwoFA: TwoFactorUser = {
             name: "dummy_group_name",
         },
     ],
+    created: "2020-01-01T00:00:00.000",
 };
 
 export const userWithTwoFAdisabled: TwoFactorUser = {
@@ -59,6 +62,7 @@ export const userWithTwoFAdisabled: TwoFactorUser = {
             name: "dummy_group_name",
         },
     ],
+    created: "2020-01-01T00:00:00.000",
 };
 export const userWithoutTwoFAdisabled: TwoFactorUser = {
     id: "userUid2",
@@ -72,6 +76,7 @@ export const userWithoutTwoFAdisabled: TwoFactorUser = {
             name: "dummy_group_name",
         },
     ],
+    created: "2020-01-01T00:00:00.000",
 };
 
 export const userWithoutExternalAuth: TwoFactorUser = {
@@ -86,6 +91,7 @@ export const userWithoutExternalAuth: TwoFactorUser = {
             name: "Who account usergroup",
         },
     ],
+    created: "2020-01-01T00:00:00.000",
 };
 
 export const userInvalidAuth: TwoFactorUser = {
@@ -95,6 +101,7 @@ export const userInvalidAuth: TwoFactorUser = {
     username: "username4",
     externalAuth: false,
     userGroups: [],
+    created: "2020-01-01T00:00:00.000",
 };
 
 export const mixedInvalidUsers: TwoFactorUser[] = [
