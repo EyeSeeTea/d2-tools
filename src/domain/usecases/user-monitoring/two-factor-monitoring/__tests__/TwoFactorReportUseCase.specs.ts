@@ -18,7 +18,7 @@ import {
 import { TwoFactorUserD2Repository } from "data/user-monitoring/two-factor-monitoring/TwoFactorUserD2Repository";
 import { TwoFactorReportD2Repository } from "data/user-monitoring/two-factor-monitoring/TwoFactorReportD2Repository";
 import { UserMonitoringProgramD2Repository } from "data/user-monitoring/common/UserMonitoringProgramD2Repository";
-import { TwoFactorUser } from "domain/entities/user-monitoring/two-factor-monitoring/TwoFactorUser";
+import { TwoFactorUser, filterByCreationDate } from "domain/entities/user-monitoring/two-factor-monitoring/TwoFactorUser";
 import { TwoFactorUserOptions } from "domain/entities/user-monitoring/two-factor-monitoring/TwoFactorUserOptions";
 const TWO_FACTOR_GROUP_ID = "2FA";
 const WHO_ACCOUNT_GROUP_ID = "WHO";
@@ -414,6 +414,47 @@ describe("TwoFactorReportUseCase", () => {
 
         expect(result.report.invalidTwoFAList).toEqual([{ id: "recent-user", name: "recent-user" }]);
         expect(result.disableUsersMessage).contain("Disabled users action is enabled and executed.");
+    });
+});
+
+describe("filterByCreationDate", () => {
+    const makeUser = (created: string): TwoFactorUser => ({
+        ...baseUser,
+        id: "u1",
+        userGroups: [{ id: TWO_FACTOR_GROUP_ID, name: "" }],
+        created,
+    });
+
+    it("Should not filter a user created just 1 day before month boundary (edge case)", () => {
+        const now = new Date();
+        // User created on the last day of the previous month — less than 1 full month ago
+        const lastDayPrevMonth = new Date(now.getFullYear(), now.getMonth(), 0).toISOString();
+        const result = filterByCreationDate([makeUser(lastDayPrevMonth)], 1);
+        expect(result).toEqual([]);
+    });
+
+    it("Should filter a user created exactly 1 month ago", () => {
+        const now = new Date();
+        // e.g. if now is 2026-03-26, this is 2026-02-26
+        const oneMonthAgo = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate()).toISOString();
+        const result = filterByCreationDate([makeUser(oneMonthAgo)], 1);
+        expect(result).toHaveLength(1);
+    });
+
+    it("Should filter a user created 7 months ago with disableAfterMonths 6", () => {
+        const now = new Date();
+        // e.g. if now is 2026-03-26, this is 2025-08-26 (7 months ago)
+        const sevenMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 7, now.getDate()).toISOString();
+        const result = filterByCreationDate([makeUser(sevenMonthsAgo)], 6);
+        expect(result).toHaveLength(1);
+    });
+
+    it("Should filter all users when disableAfterMonths is 0", () => {
+        const now = new Date();
+        // e.g. if now is 2026-03-26, this is 2026-03-01 (first day of current month, 0 months diff)
+        const recent = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+        const result = filterByCreationDate([makeUser(recent)], 0);
+        expect(result).toHaveLength(1);
     });
 });
 

@@ -1,5 +1,6 @@
 import { Id, NamedRef } from "domain/entities/Base";
 import { Timestamp } from "domain/entities/Date";
+import { getMonthsDiff } from "domain/entities/DateTime";
 
 export interface TwoFactorUser {
     id: Id;
@@ -21,12 +22,9 @@ export function filterByCreationDate(
         );
     }
 
-    const now = new Date();
+    const now = new Date().toISOString();
     return users.filter(user => {
-        const createdDate = new Date(user.created);
-        const monthsDiff =
-            (now.getFullYear() - createdDate.getFullYear()) * 12 +
-            (now.getMonth() - createdDate.getMonth());
+        const monthsDiff = getMonthsDiff(user.created, now);
         return monthsDiff >= disableAfterMonths;
     });
 }
