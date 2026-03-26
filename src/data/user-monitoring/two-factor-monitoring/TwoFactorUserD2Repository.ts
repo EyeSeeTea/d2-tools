@@ -78,7 +78,7 @@ type D2TwoFactorUserResponse = {
     disabled: boolean;
     externalAuth: boolean;
     userGroups: { id: string; name: string }[];
-    created?: string;
+    created: string;
     twoFA?: boolean;
     twoFactorEnabled?: boolean;
 };

@@ -1,5 +1,5 @@
 import { Id, NamedRef } from "domain/entities/Base";
-import { Maybe } from "utils/ts-utils";
+import { Timestamp } from "domain/entities/Date";
 
 export interface TwoFactorUser {
     id: Id;
@@ -8,7 +8,7 @@ export interface TwoFactorUser {
     disabled: boolean;
     externalAuth: boolean;
     userGroups: NamedRef[];
-    created: Maybe<string>;
+    created: Timestamp;
 }
 
 export function filterByCreationDate(
@@ -23,7 +23,6 @@ export function filterByCreationDate(
 
     const now = new Date();
     return users.filter(user => {
-        if (!user.created) return false;
         const createdDate = new Date(user.created);
         const monthsDiff =
             (now.getFullYear() - createdDate.getFullYear()) * 12 +
