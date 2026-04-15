@@ -63,6 +63,13 @@ const run2FAReporterCmd = command({
             long: "disable-users",
             description: "Disable invalid twoFA users.",
         }),
+        filteredByMonth: flag({
+            type: boolean,
+            short: "f",
+            long: "filtered-by-month",
+            description:
+                "Filter users by creation date using disableAfterMonths from datastore config.",
+        }),
     },
 
     handler: async args => {
@@ -77,7 +84,10 @@ const run2FAReporterCmd = command({
             userMonitoringReportRepository,
             externalConfigRepository,
             programRepository
-        ).execute({ shouldDisableInvalidUsers: args.disableusers });
+        ).execute({
+            shouldDisableInvalidUsers: args.disableusers,
+            filteredByMonth: args.filteredByMonth,
+        });
 
         log.info(JSON.stringify(response));
     },

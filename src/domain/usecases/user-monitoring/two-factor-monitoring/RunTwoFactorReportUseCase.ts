@@ -5,6 +5,10 @@ import { Async } from "domain/entities/Async";
 import { TwoFactorReportRepository } from "domain/repositories/user-monitoring/two-factor-monitoring/TwoFactorReportRepository";
 import { TwoFactorConfigRepository } from "domain/repositories/user-monitoring/two-factor-monitoring/TwoFactorConfigRepository";
 import { UserMonitoringProgramRepository } from "domain/repositories/user-monitoring/common/UserMonitoringProgramRepository";
+import {
+    TwoFactorUser,
+    filterByCreationDate,
+} from "domain/entities/user-monitoring/two-factor-monitoring/TwoFactorUser";
 
 type TwoFactorReportResponse = { message: string; report: TwoFactorUserReport; disableUsersMessage: string };
 
@@ -18,6 +22,7 @@ export class RunTwoFactorReportUseCase {
 
     async execute(twoFactorUseCaseOption: TwoFactorUseCaseOptions): Async<TwoFactorReportResponse> {
         const shouldDisableInvalidUsers = twoFactorUseCaseOption.shouldDisableInvalidUsers;
+        const filteredByMonth = twoFactorUseCaseOption.filteredByMonth;
         const options = await this.configRepository.get();
         const programMetadata = await this.programRepository.get(options.pushProgram.id);
 
@@ -76,8 +81,12 @@ export class RunTwoFactorReportUseCase {
             return isEnabled && ((isInWhoGroup && isInAuthGroup) || isNotInWhoOr2FA);
         });
 
+        const filteredInvalidTwoFactorUsers = filteredByMonth
+            ? filterByCreationDate(invalidTwoFactorUsers, options.disableAfterMonths)
+            : invalidTwoFactorUsers;
+
         const report: TwoFactorUserReport = {
-            invalidTwoFAList: invalidTwoFactorUsers.map(user => {
+            invalidTwoFAList: filteredInvalidTwoFactorUsers.map(user => {
                 return { id: user.id, name: user.username };
             }),
             invalidWhoList: whoInvalidUsers.map(user => {
@@ -88,22 +97,26 @@ export class RunTwoFactorReportUseCase {
             }),
         };
 
+        const filterInfo = filteredByMonth
+            ? ` Filtered by creation date (disableAfterMonths: ${options.disableAfterMonths}).`
+            : "";
+
         const saveResponse = await this.reportRepository.save(programMetadata, report);
         if (shouldDisableInvalidUsers) {
-            if (invalidTwoFactorUsers.length > 0) {
+            if (filteredInvalidTwoFactorUsers.length > 0) {
                 const disableResults = await this.userRepository.disableUsers(
-                    invalidTwoFactorUsers.map(user => user.id)
+                    filteredInvalidTwoFactorUsers.map(user => user.id)
                 );
                 return {
                     message: saveResponse,
-                    disableUsersMessage: this.buildDisableUsersMessage(disableResults),
+                    disableUsersMessage: this.buildDisableUsersMessage(disableResults, filterInfo),
                     report,
                 };
             } else {
                 return {
                     message: saveResponse,
                     disableUsersMessage:
-                        "Disabled users action is not executed due to no invalid users found.",
+                        `Disabled users action is not executed due to no invalid users found.${filterInfo}`,
                     report,
                 };
             }
@@ -115,7 +128,7 @@ export class RunTwoFactorReportUseCase {
         };
     }
 
-    private buildDisableUsersMessage(disableResults: DisableUserResult[]): string {
+    private buildDisableUsersMessage(disableResults: DisableUserResult[], filterInfo: string): string {
         const successes = disableResults.filter(r => r.status === "success");
         const failures = disableResults.filter(r => r.status === "error");
 
@@ -123,12 +136,14 @@ export class RunTwoFactorReportUseCase {
             .map(f => `${f.userId}${f.error ? ` (${String(f.error)})` : ""}`)
             .join(" | ");
 
-        return `Disabled users action is enabled and executed. Success: ${successes.length}. Errors: ${
+        return `Disabled users action is enabled and executed.${filterInfo} Success: ${successes.length}. Errors: ${
             failures.length
         }.${failureDetails ? ` Failed: ${failureDetails}` : ""}`;
     }
+
 }
 
 interface TwoFactorUseCaseOptions {
     shouldDisableInvalidUsers: boolean;
+    filteredByMonth: boolean;
 }
