@@ -42,10 +42,16 @@ export class DataValuesD2Repository implements DataValuesRepository {
         return res.dataValues;
     }
 
-    private async postDataValueSet(options: { dataValues: DataValueToPost[], postParams?: DataValueSetsPostParams, showCount?: boolean }): Async<void> {
+    private async postDataValueSet(options: {
+        dataValues: DataValueToPost[];
+        postParams?: DataValueSetsPostParams;
+        showCount?: boolean;
+    }): Async<void> {
         const { dataValues, postParams } = options;
         if (_.isEmpty(dataValues)) return;
-        const res = await this.api.dataValues.postSet({ ...postParams, force: true }, { dataValues }).getData();
+        const res = await this.api.dataValues
+            .postSet({ ...postParams, force: true }, { dataValues })
+            .getData();
         if (options.showCount) {
             log.info(`POST /dataValues response: ${JSON.stringify(res.importCount)}`);
         } else {
@@ -63,7 +69,7 @@ export class DataValuesD2Repository implements DataValuesRepository {
         });
     }
 
-    async delete(options: { dataValues: DataValueToPost[], dryRun: boolean }): Async<void> {
+    async delete(options: { dataValues: DataValueToPost[]; dryRun: boolean }): Async<void> {
         return this.postDataValueSet({
             dataValues: options.dataValues,
             postParams: { importStrategy: "DELETE", dryRun: options.dryRun },

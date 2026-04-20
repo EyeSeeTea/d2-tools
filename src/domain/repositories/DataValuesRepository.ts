@@ -6,7 +6,7 @@ import { DataValueAudit } from "domain/entities/DataValueAudit";
 export interface DataValuesRepository {
     get(options: DataValuesSelector): Async<DataValue[]>;
     post(options: { dataValues: DataValueToPost[] }): Async<void>;
-    delete(options: { dataValues: DataValueToPost[], dryRun: boolean }): Async<void>;
+    delete(options: { dataValues: DataValueToPost[]; dryRun: boolean }): Async<void>;
     getMetadata(options: { dataValues: DataValue[] }): Async<DataValuesMetadata>;
     getAudits(options: DataValueAuditsSelector): Async<DataValueAudit[]>;
     getAppUrl(): string;
