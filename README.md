@@ -381,9 +381,9 @@ The values to be deleted can be stored in JSON files in case a backup is needed.
 Given the size of the potential API error response consider storing the script output in a file:
 
 ```shell
-yarn start datavalues bulk-delete --url='http://localhost:8080' --auth='admin:district' --batch-size=1000  deToDelete.csv &> run.log
+yarn start datavalues bulk-delete --url='http://localhost:8080' --auth='admin:district' --batch-size=1000 deToDelete.csv &> run.log
 # or
-yarn start datavalues bulk-delete --url='http://localhost:8080' --auth='admin:district' --batch-size=1000  deToDelete.csv 2>&1 | tee run.log
+yarn start datavalues bulk-delete --url='http://localhost:8080' --auth='admin:district' --batch-size=1000 deToDelete.csv |& tee run.log
 ```
 
 Note that the dataValues will be soft deleted. You can use the "Permanently remove soft deleted data values" operation in Data Administration, but keep in mind that it will delete ALL the soft deleted values.
@@ -427,7 +427,7 @@ Script launch options:
 OPTIONS:
   --url <str>           - http[s]://[USERNAME:PASSWORD@]HOST:PORT
   --auth <value>        - USERNAME:PASSWORD [optional]
-  --batch-size <number>      - Number of data values to delete in each batch (default: 30000) [optional]
+  --batch-size <number> - Number of data values to delete in each batch (default: 30000) [optional]
   --backup-folder <str> - Folder for backups, leave empty to disable. Will be stored as bulk-delete-backup-<batch>-<start-timestamp>.json
 
 ARGUMENTS:
@@ -435,7 +435,7 @@ ARGUMENTS:
 
 FLAGS:
   --dry-run  - Perform delete in dry run mode. To test that all data values can be deleted, the batch-size must be higher than the number of data values to delete per DE group.
-  --help, -h    - show help
+  --help, -h - show help
 ```
 
 ## Notifications
