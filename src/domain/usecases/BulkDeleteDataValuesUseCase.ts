@@ -1,67 +1,64 @@
 import fs from "fs";
 
 import _ from "lodash";
-import log from "utils/log";
+import { Logger } from "domain/logger/Logger";
 
-import { BulkDeleteDEsRepository } from "domain/repositories/BulkDeleteDEsRepository";
 import { DataValuesRepository } from "domain/repositories/DataValuesRepository";
 import { OrgUnitRepository } from "domain/repositories/OrgUnitRepository";
 import { DataValue } from "domain/entities/DataValue";
 
-
 interface BulkDeleteDataValuesOptions {
     dataElementsFile: string;
-    limit: number;
+    batchSize: number;
     backupFolder?: string;
     dryRun: boolean;
 }
 
 export class BulkDeleteDataValuesUseCase {
-    private dryRun = false;
-    private backupFolder: string | undefined;
     private deChunkSize = 200;
+    private timestamp = new Date().toISOString().replace(/[:.]/g, "-");
 
     constructor(
-        private bulkDeleteRepository: BulkDeleteDEsRepository,
+        private logger: Logger,
         private orgUnitRepository: OrgUnitRepository,
         private dataValuesRepository: DataValuesRepository
     ) {}
 
-    async execute(options: BulkDeleteDataValuesOptions) {
+    async execute(dataElementIds: string[], options: BulkDeleteDataValuesOptions) {
         const { backupFolder, dryRun } = options;
         if (backupFolder) this.validatePath(backupFolder);
 
-        this.dryRun = dryRun;
-        this.backupFolder = backupFolder;
+        const uniqueDataElementIds = _.uniq(dataElementIds);
 
-        const dataElementIds = await this.bulkDeleteRepository.getDEsToDelete(options.dataElementsFile)
-            .then(ids => {
-                if (ids.length === 0) {
-                    log.error("CSV empty or missing headers.");
-                    process.exit(0);
-                }
-                return _.uniq(ids);
-            });
-        log.info(`Data elements to delete count: ${dataElementIds.length}`);
+        this.logger.info(`Data elements to delete count: ${uniqueDataElementIds.length}`);
 
         const rootOrgUnit = await this.orgUnitRepository.getRoot();
-        const deChunks = _.chunk(dataElementIds, this.deChunkSize);
+        const deGroups = _.chunk(uniqueDataElementIds, this.deChunkSize);
 
         let backupIndex = 1;
-        const lastIndex = deChunks.length - 1;
-        for (const [index, dataElements] of deChunks.entries()) {
-            log.info(`Processing data element chunk ${index + 1}/${deChunks.length} (${dataElements.length})`);
+        const lastIndex = deGroups.length - 1;
+        for (const [index, deIds] of deGroups.entries()) {
+            this.logger.info(
+                `Processing data element group ${index + 1} of ${deGroups.length} (group size: ${
+                    deIds.length
+                })`
+            );
 
             const dataValuesOptions: DataValuesGetOptions = {
-                dataElements,
+                dataElements: deIds,
                 orgUnitIds: [rootOrgUnit.id],
                 children: true,
                 lastUpdated: "1970-01-01",
-                limit: options.limit,
+                limit: options.batchSize,
             };
 
-
-            backupIndex = await this.deleteDataValuesRecursively(dataValuesOptions, backupIndex, index === lastIndex);
+            backupIndex = await this.deleteDataValuesRecursively(
+                dataValuesOptions,
+                backupIndex,
+                index === lastIndex,
+                dryRun,
+                backupFolder
+            );
         }
     }
 
@@ -69,50 +66,57 @@ export class BulkDeleteDataValuesUseCase {
         dataValuesOptions: DataValuesGetOptions,
         backupIndex: number,
         lastDEsBatch = false,
+        dryRun = false,
+        backupFolder?: string
     ): Promise<number> {
         const dataValues = await this.dataValuesRepository.get(dataValuesOptions);
 
         if (dataValues.length === 0) {
             if (lastDEsBatch) {
-                const message = backupIndex === 1
-                    ? "No data values found to delete."
-                    : "All data values have been deleted.";
-                log.info(message);
+                const message =
+                    backupIndex === 1
+                        ? "No data values found to delete."
+                        : "All data values have been deleted.";
+                this.logger.info(message);
             }
             return backupIndex;
         }
 
-        log.info(`Data values fetched for deletion in batch ${backupIndex}: ${dataValues.length}`);
-        this.backupDataValues(dataValues, backupIndex);
+        this.logger.info(`Data values fetched for deletion in batch ${backupIndex}: ${dataValues.length}`);
+        if (backupFolder) this.backupDataValues(backupFolder, dataValues, backupIndex);
         try {
             await this.dataValuesRepository.delete({
                 dataValues: dataValues,
-                dryRun: this.dryRun,
+                dryRun: dryRun,
             });
         } catch (error) {
-            log.error(`Error deleting data values in batch ${backupIndex}: ${(error as Error).message}`);
-            process.exit(1);
+            throw new Error(
+                `Error deleting data values in batch ${backupIndex}: ${(error as Error).message}`
+            );
         }
 
-        if (this.dryRun) {
-            log.info("Dry run mode - stopping after first batch.");
+        if (dryRun) {
+            this.logger.info("Dry run mode - stopping after first batch.");
             return backupIndex + 1;
         }
-        return await this.deleteDataValuesRecursively(dataValuesOptions, backupIndex + 1, lastDEsBatch);
+        return await this.deleteDataValuesRecursively(
+            dataValuesOptions,
+            backupIndex + 1,
+            lastDEsBatch,
+            dryRun,
+            backupFolder
+        );
     }
 
-    private backupDataValues(dataValues: DataValue[], batch: number) {
-        if (!this.backupFolder) return;
-        const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-        const backupFilePath = `${this.backupFolder}/bulk-delete-backup-${batch}-${timestamp}.json`;
-        log.info(`Backing up data values to be deleted in file: ${backupFilePath}`);
+    private backupDataValues(backupFolder: string, dataValues: DataValue[], batch: number) {
+        const backupFilePath = `${backupFolder}/bulk-delete-backup-${batch}-${this.timestamp}.json`;
+        this.logger.info(`Backing up data values to be deleted in file: ${backupFilePath}`);
         fs.writeFileSync(backupFilePath, JSON.stringify(dataValues, null, 2));
     }
 
     private validatePath(path: string) {
         if (!fs.existsSync(path) || !fs.statSync(path).isDirectory()) {
-            log.error(`Backup path invalid or not a folder: ${path}`);
-            process.exit(1);
+            throw new Error(`Backup path invalid or not a folder: ${path}`);
         }
     }
 }

@@ -1,7 +1,16 @@
+import fs from "fs";
 import _ from "lodash";
+import CsvReadableStream from "csv-reader";
 import { command, string, subcommands, option, positional, optional, flag, number, oneOf } from "cmd-ts";
+import { TerminalLogger } from "utils/TerminalLogger";
 
-import { getApiUrlOption, getApiUrlOptions, getD2Api, getD2ApiFromArgs, StringsSeparatedByCommas } from "scripts/common";
+import {
+    getApiUrlOption,
+    getApiUrlOptions,
+    getD2Api,
+    getD2ApiFromArgs,
+    StringsSeparatedByCommas,
+} from "scripts/common";
 import { DataValuesD2Repository } from "data/DataValuesD2Repository";
 import { RevertDataValuesUseCase } from "domain/usecases/RevertDataValuesUseCase";
 import { GetDanglingValuesUseCase } from "domain/usecases/GetDanglingValuesUseCase";
@@ -17,8 +26,8 @@ import { SettingsD2Repository } from "data/SettingsD2Repository";
 import { SettingsJsonRepository } from "data/SettingsJsonRepository";
 import { ExecutionJsonRepository } from "data/DataSetExecutionJsonRepository";
 import { TimeZoneD2Repository } from "data/TimeZoneD2Repository";
-import { BulkDeleteDEsCsvRepository } from "data/BulkDeleteDEsCsvRepository";
 import { BulkDeleteDataValuesUseCase } from "domain/usecases/BulkDeleteDataValuesUseCase";
+import { Ref } from "domain/entities/Base";
 
 const SEND_EMAIL_AFTER_MINUTES = 5;
 const BULK_DELETE_DEFAULT_BATCH_SIZE = 30000;
@@ -289,11 +298,49 @@ const bulkDeleteDataValuesCmd = command({
     },
     handler: async args => {
         const api = getD2ApiFromArgs(args);
-        const bulkDeleteRepository = new BulkDeleteDEsCsvRepository();
         const orgUnitRepository = new OrgUnitD2Repository(api);
         const dataValuesRepository = new DataValuesD2Repository(api);
 
-        new BulkDeleteDataValuesUseCase(bulkDeleteRepository, orgUnitRepository, dataValuesRepository).execute(args);
+        try {
+            const dataElementIds = await readDataElementsFile(args.dataElementsFile);
+
+            if (dataElementIds.length === 0) {
+                throw new Error("CSV is empty or missing headers.");
+            }
+
+            await new BulkDeleteDataValuesUseCase(
+                new TerminalLogger(),
+                orgUnitRepository,
+                dataValuesRepository
+            ).execute(dataElementIds, args);
+        } catch (error) {
+            console.error((error as Error).message);
+            process.exit(1);
+        }
     },
 });
 
+async function readDataElementsFile(csv: string): Promise<string[]> {
+    if (!fs.existsSync(csv) || !fs.statSync(csv).isFile()) {
+        throw new Error(`Cant find file: ${csv}`);
+    }
+
+    return new Promise((resolve, reject) => {
+        const dataElementIds: string[] = [];
+
+        fs.createReadStream(csv, "utf8")
+            .pipe(new CsvReadableStream({ asObject: true, trim: true }))
+            .on("data", rawRow => {
+                const row = rawRow as unknown as Ref;
+                if (row.id) {
+                    dataElementIds.push(row.id);
+                }
+            })
+            .on("error", msg => {
+                return reject(msg);
+            })
+            .on("end", () => {
+                return resolve(dataElementIds);
+            });
+    });
+}
