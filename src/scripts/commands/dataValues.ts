@@ -21,6 +21,7 @@ import { BulkDeleteDEsCsvRepository } from "data/BulkDeleteDEsCsvRepository";
 import { BulkDeleteDataValuesUseCase } from "domain/usecases/BulkDeleteDataValuesUseCase";
 
 const SEND_EMAIL_AFTER_MINUTES = 5;
+const BULK_DELETE_DEFAULT_BATCH_SIZE = 30000;
 
 export function getCommand() {
     return subcommands({
@@ -260,23 +261,25 @@ const monitoringDataValues = command({
 
 const bulkDeleteDataValuesCmd = command({
     name: "bulk-delete",
-    description: "Bulk delete data values based on data element CSV",
+    description: "Bulk delete data values based on data element CSV.",
     args: {
         ...getApiUrlOptions(),
-        limit: option({
+        batchSize: option({
             type: number,
-            long: "limit",
-            description: "Number of data values to delete in each batch (default: 100000)",
-            defaultValue: () => 30000,
+            long: "batch-size",
+            description: `Number of data values to delete in each batch (default: ${BULK_DELETE_DEFAULT_BATCH_SIZE}).`,
+            defaultValue: () => BULK_DELETE_DEFAULT_BATCH_SIZE,
         }),
         backupFolder: option({
             type: optional(string),
             long: "backup-folder",
-            description: "Folder for backups, leave empty to disable. Will be stored as bulk-delete-backup-<batch>-<timestamp>.json",
+            description:
+                "Folder for backups, leave empty to disable. Will be stored as bulk-delete-backup-<batch>-<timestamp>.json",
         }),
         dryRun: flag({
             long: "dry-run",
-            description: "Perform delete in dry run mode. Limit MUST be higher than the number of data values to delete per DE batch.",
+            description:
+                "Perform delete in dry run mode. To test that all data values can be deleted, the batch-size must be higher than the number of data values to delete per DE group.",
         }),
         dataElementsFile: positional({
             type: string,
