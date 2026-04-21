@@ -320,15 +320,15 @@ const bulkDeleteDataValuesCmd = command({
     },
 });
 
-async function readDataElementsFile(csv: string): Promise<string[]> {
-    if (!fs.existsSync(csv) || !fs.statSync(csv).isFile()) {
-        throw new Error(`Cant find file: ${csv}`);
+async function readDataElementsFile(csvPath: string): Promise<string[]> {
+    if (!fs.existsSync(csvPath) || !fs.statSync(csvPath).isFile()) {
+        throw new Error(`Can't find file: ${csvPath}`);
     }
 
     return new Promise((resolve, reject) => {
         const dataElementIds: string[] = [];
 
-        fs.createReadStream(csv, "utf8")
+        fs.createReadStream(csvPath, "utf8")
             .pipe(new CsvReadableStream({ asObject: true, trim: true }))
             .on("data", rawRow => {
                 const row = rawRow as unknown as Ref;

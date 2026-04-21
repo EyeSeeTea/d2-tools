@@ -8,7 +8,6 @@ import { OrgUnitRepository } from "domain/repositories/OrgUnitRepository";
 import { DataValue } from "domain/entities/DataValue";
 
 interface BulkDeleteDataValuesOptions {
-    dataElementsFile: string;
     batchSize: number;
     backupFolder?: string;
     dryRun: boolean;
@@ -91,7 +90,8 @@ export class BulkDeleteDataValuesUseCase {
             });
         } catch (error) {
             throw new Error(
-                `Error deleting data values in batch ${backupIndex}: ${(error as Error).message}`
+                `Error deleting data values in batch ${backupIndex}: ${(error as Error).message}`,
+                { cause: error }
             );
         }
 
