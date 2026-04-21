@@ -90,8 +90,7 @@ export class BulkDeleteDataValuesUseCase {
             });
         } catch (error) {
             throw new Error(
-                `Error deleting data values in batch ${backupIndex}: ${(error as Error).message}`,
-                { cause: error }
+                `Error deleting data values in batch ${backupIndex}: ${(error as Error).message}`
             );
         }
 
