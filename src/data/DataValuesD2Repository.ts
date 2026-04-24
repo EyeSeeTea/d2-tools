@@ -5,7 +5,7 @@ import log from "utils/log";
 import { Async } from "domain/entities/Async";
 import { DataValue, DataValuesMetadata, DataValueToPost } from "domain/entities/DataValue";
 import { DataValuesRepository, DataValuesSelector } from "domain/repositories/DataValuesRepository";
-import { D2Api } from "types/d2-api";
+import { D2Api, DataValueSetsPostParams } from "types/d2-api";
 import { getInChunks, promiseMap, runMetadata } from "./dhis2-utils";
 import { Id, indexById, NamedRef, Ref } from "domain/entities/Base";
 import logger from "utils/log";
@@ -23,6 +23,7 @@ export class DataValuesD2Repository implements DataValuesRepository {
             dataSet: options.dataSetIds || [],
             orgUnit: options.orgUnitIds || [],
             dataElementGroup: dataElementGroupsAll || options.dataElementGroupIds || [],
+            dataElement: options.dataElements || [],
             orgUnitGroup: options.orgUnitGroupIds || [],
             period: options.periods,
             children: options.children,
@@ -41,15 +42,39 @@ export class DataValuesD2Repository implements DataValuesRepository {
         return res.dataValues;
     }
 
-    async post(options: { dataValues: DataValueToPost[] }): Async<void> {
-        const { dataValues } = options;
+    private async postDataValueSet(options: {
+        dataValues: DataValueToPost[];
+        postParams?: DataValueSetsPostParams;
+        showCount?: boolean;
+    }): Async<void> {
+        const { dataValues, postParams } = options;
         if (_.isEmpty(dataValues)) return;
-        const res = await this.api.dataValues.postSet({ force: true }, { dataValues }).getData();
-        log.debug(`POST /dataValues response: ${JSON.stringify(res.importCount)}`);
+        const res = await this.api.dataValues
+            .postSet({ ...postParams, force: true }, { dataValues })
+            .getData();
+        if (options.showCount) {
+            log.info(`POST /dataValues response: ${JSON.stringify(res.importCount)}`);
+        } else {
+            log.debug(`POST /dataValues response: ${JSON.stringify(res.importCount)}`);
+        }
 
         if (res.status !== "SUCCESS") {
             throw new Error(`Error on post: ${JSON.stringify(res, null, 4)}`);
         }
+    }
+
+    async post(options: { dataValues: DataValueToPost[] }): Async<void> {
+        return this.postDataValueSet({
+            dataValues: options.dataValues,
+        });
+    }
+
+    async delete(options: { dataValues: DataValueToPost[]; dryRun: boolean }): Async<void> {
+        return this.postDataValueSet({
+            dataValues: options.dataValues,
+            postParams: { importStrategy: "DELETE", dryRun: options.dryRun },
+            showCount: true,
+        });
     }
 
     async getMetadata(options: { dataValues: DataValue[] }): Async<DataValuesMetadata> {

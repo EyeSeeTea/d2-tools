@@ -1,6 +1,6 @@
 ## Setup
 
-The required node version is v16.14.0. Alternatively, you can run:
+The required node version is v18.20.8. Alternatively, you can run:
 
 ```shell
 $ nvm use
@@ -368,6 +368,74 @@ $ yarn start datavalues monitoring-values \
 --email-ds-path-template=./dataset-email-template.json \
 --email-de-path-template=./dataelement-email-template.json \
 --send-email-after-minutes=5
+```
+
+### Delete all data values given a data elements file
+
+Bulk delete data values that belong to the DEs in the provided CSV. This file is expected to be single column with header id, that way a CSV downloaded from DHIS2 api can be used directly (use `/api/dataElements.csv?field=id&filter=...`).
+
+Make sure to double check that the DEs will not affect values you don't intend to delete.
+
+The values to be deleted can be stored in JSON files in case a backup is needed.
+
+Given the size of the potential API error response consider storing the script output in a file:
+
+```shell
+yarn start datavalues bulk-delete --url='http://localhost:8080' --auth='admin:district' --batch-size=1000 deToDelete.csv &> run.log
+# or
+yarn start datavalues bulk-delete --url='http://localhost:8080' --auth='admin:district' --batch-size=1000 deToDelete.csv |& tee run.log
+```
+
+Note that the dataValues will be soft deleted. You can use the "Permanently remove soft deleted data values" operation in Data Administration, but keep in mind that it will delete ALL the soft deleted values.
+
+Also, this script sends its requests with the `force=true` parameter, but the DHIS user provided to the script needs to be admin, otherwise, issues can be encountered like open periods blocking the delete.
+
+Finally, if the target instance has limited resources or high usage consider lowering the batch size (The default is 30000).
+
+#### Notes about DE groups and batch size
+
+-   DE groups: Given that the user can provide a high number of DEs via the CSV file, the script process them in groups of up to 200 DEs at a time.
+
+-   Batches: Within each group, data values are fetched and deleted in batches of up to `batch-size` values per API call. This repeats until there are no more values to delete for that group.
+
+Example log to illustrate how it works:
+
+```log
+[INFO TIMESTAMP] Data elements to delete count: 300
+[INFO TIMESTAMP] Processing data element group 1 of 2 (DEs: 200)
+[INFO TIMESTAMP] Data values fetched for deletion in batch 1: 30000
+[INFO TIMESTAMP] POST /dataValues response: {"imported":0,"updated":0,"ignored":0,"deleted":30000}
+[INFO TIMESTAMP] Data values fetched for deletion in batch 2: 1000
+[INFO TIMESTAMP] POST /dataValues response: {"imported":0,"updated":0,"ignored":0,"deleted":1000}
+[INFO TIMESTAMP] Processing data element group 2 of 2 (DEs: 100)
+[INFO TIMESTAMP] Data values fetched for deletion in batch 3: 20000
+[INFO TIMESTAMP] POST /dataValues response: {"imported":0,"updated":0,"ignored":0,"deleted":20000}
+[INFO TIMESTAMP] All data values have been deleted.
+Done in RUNTIME.
+```
+
+When using the `dry-run` option, the script will stop after the first batch. This is because the dataValueSets endpoint has no pagination and it always return the first N data values (N being `batch-size` here), so there is no easy way of getting the next batch.
+
+The batch number from the log will match the name of the backup file if `backup-folder` is used.
+For example: the backup for batch 3 will be named: `bulk-delete-backup-3-<start-timestamp>.json`
+
+#### Options
+
+Script launch options:
+
+```shell
+OPTIONS:
+  --url <str>           - http[s]://[USERNAME:PASSWORD@]HOST:PORT
+  --auth <value>        - USERNAME:PASSWORD [optional]
+  --batch-size <number> - Number of data values to delete in each batch (default: 30000) [optional]
+  --backup-folder <str> - Folder for backups, leave empty to disable. Will be stored as bulk-delete-backup-<batch>-<start-timestamp>.json
+
+ARGUMENTS:
+  <PATH_TO_CSV> - CSV file with data element IDs and id header
+
+FLAGS:
+  --dry-run  - Perform delete in dry run mode. To test that all data values can be deleted, the batch-size must be higher than the number of data values to delete per DE group.
+  --help, -h - show help
 ```
 
 ## Notifications
