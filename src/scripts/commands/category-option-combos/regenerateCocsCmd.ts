@@ -25,9 +25,9 @@ export const regenerateCocsCmd = command({
             long: "generate-sql-delete-script",
             description: "generate a SQL script to delete obsolete categoryOptionCombos (default: false)",
         }),
-        catCombosIds: option({
+        categoryComboIds: option({
             type: optional(StringsSeparatedByCommas),
-            long: "cat-combos-ids",
+            long: "category-combo-ids",
             description:
                 "comma-separated list of categoryCombo IDs. If not provided, all categoryCombos will be regenerated.",
         }),
@@ -51,7 +51,7 @@ export const regenerateCocsCmd = command({
                 generateSqlDeleteScript: args.generateSqlDeleteScript,
                 persist: args.persist,
                 deleteCocs: args.deleteCocs,
-                catCombosIds: args.catCombosIds,
+                catCombosIds: args.categoryComboIds,
             });
             generateJsonReport(response.categoryCombos);
             if (response.sqlDeleteScript) {
@@ -87,5 +87,5 @@ function generateJsonReport(categoryCombos: RegenerateCocsUseCaseResult["categor
 function writeSqlScriptToDisk(sqlScript: string, fileName: string): void {
     writeFileSync(fileName, sqlScript);
     logger.info(`SQL generated: ${fileName}`);
-    logger.info(`You can execute the sql with d2-docker: d2-docker run-sql ${fileName}`);
+    logger.info(`You can execute the sql with d2-docker: d2-docker run-sql -i [IMAGE_NAME] ${fileName}`);
 }

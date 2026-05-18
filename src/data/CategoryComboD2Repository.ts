@@ -1,14 +1,27 @@
 import _ from "lodash";
 import { CategoryCombo } from "domain/entities/CategoryCombo";
-import { D2Api, Id } from "../types/d2-api";
+import { D2Api, Id, MetadataPick } from "../types/d2-api";
 import { CategoryComboRepository } from "../domain/repositories/CategoryComboRepository";
 import logger from "utils/log";
+import { promiseMap } from "./dhis2-utils";
 
 export class CategoryComboD2Repository implements CategoryComboRepository {
     constructor(private api: D2Api) {}
 
-    async getAll(options: { ids?: Id[] }): Promise<CategoryCombo[]> {
-        return this.getAllByPages({ page: 1, pageSize: 100, categoryCombos: [], ids: options.ids });
+    async getAll(): Promise<CategoryCombo[]> {
+        return this.getAllByPages({ page: 1, pageSize: 100, categoryCombos: [] });
+    }
+
+    async getByIds(ids: Id[]): Promise<CategoryCombo[]> {
+        const allCombos = await promiseMap(_.chunk(ids, 100), async catComboIds => {
+            const response = await this.api.models.categoryCombos
+                .get({ fields: fields, paging: false, filter: { id: { in: catComboIds } } })
+                .getData();
+
+            return this.buildCategoryCombo(response.objects);
+        });
+
+        return allCombos.flat();
     }
 
     private async getAllByPages(options: {
@@ -31,21 +44,16 @@ export class CategoryComboD2Repository implements CategoryComboRepository {
 
     private async getCategoryCombos(options: { page: number; pageSize: number; ids?: Id[] }) {
         const response = await this.api.models.categoryCombos
-            .get({
-                fields: {
-                    id: true,
-                    name: true,
-                    categories: { id: true, categoryOptions: { id: true, name: true } },
-                    categoryOptionCombos: { id: true, name: true, categoryOptions: { id: true, name: true } },
-                },
-                page: options.page,
-                pageSize: options.pageSize,
-                // TODO: change to request in chunks when ids are provided
-                filter: options.ids ? { id: { in: options.ids } } : undefined,
-            })
+            .get({ fields: fields, page: options.page, pageSize: options.pageSize })
             .getData();
 
-        const categoryCombos = _(response.objects)
+        const categoryCombos = this.buildCategoryCombo(response.objects);
+
+        return { objects: categoryCombos, pager: response.pager };
+    }
+
+    private buildCategoryCombo(catComboData: CategoryComboFields[]): CategoryCombo[] {
+        return _(catComboData)
             .map(catComboData => {
                 const categoryCombo = CategoryCombo.build({
                     id: catComboData.id,
@@ -73,8 +81,6 @@ export class CategoryComboD2Repository implements CategoryComboRepository {
             })
             .compact()
             .value();
-
-        return { objects: categoryCombos, pager: response.pager };
     }
 }
 
@@ -133,3 +139,14 @@ export function reorderCocsByOptionIndex(catComboData: D2ApiCategoryCombo) {
         };
     });
 }
+
+const fields = {
+    id: true,
+    name: true,
+    categories: { id: true, categoryOptions: { id: true, name: true } },
+    categoryOptionCombos: { id: true, name: true, categoryOptions: { id: true, name: true } },
+} as const;
+
+type CategoryComboFields = MetadataPick<{
+    categoryCombos: { fields: typeof fields };
+}>["categoryCombos"][number];

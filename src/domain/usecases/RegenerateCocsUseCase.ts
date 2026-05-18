@@ -83,9 +83,10 @@ export class RegenerateCocsUseCase {
 
     private async getCategoryCombos(options: UseCaseArgs): Promise<CategoryCombo[]> {
         logger.info("Fetching categoryOptionCombos...");
-        const categoryCombos = await this.options.categoryComboRepository.getAll({
-            ids: options.catCombosIds,
-        });
+        const categoryCombos =
+            options.catCombosIds && options.catCombosIds.length > 0
+                ? await this.options.categoryComboRepository.getByIds(options.catCombosIds)
+                : await this.options.categoryComboRepository.getAll();
         logger.info(`${categoryCombos.length} categoryOptionCombos found.`);
         return categoryCombos;
     }
