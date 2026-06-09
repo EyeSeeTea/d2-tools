@@ -67,8 +67,7 @@ const run2FAReporterCmd = command({
             type: boolean,
             short: "f",
             long: "filtered-by-month",
-            description:
-                "Filter users by creation date using disableAfterMonths from datastore config.",
+            description: "Filter users by creation date using disableAfterMonths from datastore config.",
         }),
     },
 
