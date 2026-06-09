@@ -43,6 +43,7 @@ Available levels: 'debug' | 'info' | 'warn' | 'error'
 -   [Organisation Units](#organisation-units)
     -   [Create an SQL file to remove any orgunit below the country level](#create-an-sql-file-to-remove-any-orgunit-below-the-country-level)
     -   [Create an SQL file to remove all org subunits of Canada](#create-an-sql-file-to-remove-all-org-subunits-of-canada)
+    -   [Rename leaf org units adding their parent name](#rename-leaf-org-units-adding-their-parent-name)
     -   [Copy the organisation units from a data set to one or more datasets](#copy-the-organisation-units-from-a-data-set-to-one-or-more-datasets)
 -   [Translations](#translations)
 -   [Events](#events)
@@ -190,6 +191,29 @@ $ node dist/index.js orgunits remove \
 ```
 
 where `/H8RixfF8ugH/wP2zKq0dDpw/AJBfDthkySs` would be the dhis2 path of Canada.
+
+### Rename leaf org units adding their parent name
+
+```shell
+$ yarn start orgunits rename-from-hierarchy \
+    --url='http://USER:PASSWORD@HOST:PORT' \
+    --root-orgunit-ids=ImspTQPwCqd,O6uvpzGd5pu \
+    --parent-name-as=suffix \
+    [--post]
+```
+
+Disambiguates leaf org units that share the same name (e.g. several "Mental Health" units under
+different facilities, which are indistinguishable in the DHIS2 Android Capture app) by affixing
+their parent org unit's name. For example, a leaf `Mental Health` under `Gaza Secondary Healthcare`
+becomes `Mental Health - Gaza Secondary Healthcare`.
+
+Notes:
+
+-   `--root-orgunit-ids` accepts ids at any level; their leaf (last-level) descendants are renamed.
+-   `--parent-name-as` is `prefix` or `suffix`; the separator is `" - "`.
+-   Without `--post` the command only previews the changes (dry run).
+-   The new name is recomputed every run (the existing affix segment is stripped and the current
+    parent name re-applied), so re-runs are idempotent and parent renames propagate.
 
 ### Copy the organisation units from a data set to one or more datasets
 
