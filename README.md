@@ -1173,10 +1173,46 @@ Regenerate categoryOptionCombos from `categoryCombo.categories[].categoryOptions
 
 By default both operations (create+update and delete) are being executed using the `VALIDATE` importMode (dry run). Use the --persist flag to apply changes (create+update) and --delete-cocs to confirm the deletion of obsolete categoryOptionCombos.
 
+In some cases deleting cocs through the API could be really slow. You can pass the `--generate-sql-delete-script` to generate a sql script that you can run directly against the database.
+
+Save and delete categoryOptionCombos
+
 ```shell
 yarn start categoryOptionCombos regenerate \
     --url=https://play.im.dhis2.org/dev \
     --auth="admin:district" \
     --persist \
     --delete-cocs
+```
+
+You can also include a comma separated list if you want to regenerate specific category Combos.
+
+```shell
+yarn start categoryOptionCombos regenerate \
+    --url=https://play.im.dhis2.org/dev \
+    --auth="admin:district" \
+    --persist \
+    --delete-cocs \
+    --category-combo-ids=id1,id2,id3
+```
+
+Save categoryOptionCombos and generating a sql script for deleting categoryOptionCombos. if you remove the `persist` flag it will only generate the sql.
+
+```shell
+yarn start categoryOptionCombos regenerate \
+    --url=https://play.im.dhis2.org/dev \
+    --auth="admin:district" \
+    --persist \
+    --generate-sql-delete-script
+```
+
+Before deleting a `categoryOptionCombo` the script checks for existing data in the `datavalue` and `datavalueaudit` tables. If you have thousands or millions of records, this process can be very slow.
+
+Adding an index to these tables improves performance significantly:
+
+```sql
+CREATE INDEX CONCURRENTLY idx_datavalue_catoptcombo ON datavalue(categoryoptioncomboid);
+CREATE INDEX CONCURRENTLY idx_datavalue_attoptcombo ON datavalue(attributeoptioncomboid);
+CREATE INDEX CONCURRENTLY idx_datavalueaudit_catoptcombo ON datavalueaudit(categoryoptioncomboid);
+CREATE INDEX CONCURRENTLY idx_datavalueaudit_attoptcombo ON datavalueaudit(attributeoptioncomboid);
 ```
