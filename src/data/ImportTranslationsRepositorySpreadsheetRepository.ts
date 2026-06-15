@@ -9,6 +9,7 @@ import { SpreadsheetXlsxDataSource } from "domain/repositories/SpreadsheetXlsxRe
 import log from "utils/log";
 import { Maybe } from "utils/ts-utils";
 import { getPluralModel } from "./dhis2-utils";
+import { translationFieldToProperty } from "domain/entities/Translation";
 
 const columnsMapping = {
     id: ["id", "uid"],
@@ -96,7 +97,7 @@ export class ImportTranslationsRepositorySpreadsheetRepository implements Import
                             if (isFirstRow) warn(`Locale not found in DB: name=${localeName}`);
                             return undefined;
                         } else {
-                            const property = _.upperCase(field).replace(/\s+/, "_");
+                            const property = translationFieldToProperty(field);
                             return { property: property, locale: locale.locale, value: text };
                         }
                     });
