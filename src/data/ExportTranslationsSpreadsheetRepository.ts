@@ -31,21 +31,19 @@ export class ExportTranslationsSpreadsheetRepository implements ExportTranslatio
         const workbook = XLSX.utils.book_new();
 
         sheets.forEach(sheet => {
-            const header = this.getHeader(sheet);
-            const dataRows = includeData ? sheet.objects.map(object => this.getRow(object, sheet)) : [];
-            const worksheet = XLSX.utils.aoa_to_sheet([header, ...dataRows]);
+            const { name, header, rows } = this.buildSheet(sheet, includeData);
+            const worksheet = XLSX.utils.aoa_to_sheet([header, ...rows]);
 
-            worksheet["!cols"] = this.getColumnWidths(sheet, header, dataRows);
+            worksheet["!cols"] = this.getColumnWidths(sheet, header, rows);
             worksheet["!autofilter"] = {
                 ref: XLSX.utils.encode_range({
                     s: { r: 0, c: 0 },
-                    e: { r: dataRows.length, c: header.length - 1 },
+                    e: { r: rows.length, c: header.length - 1 },
                 }),
             };
             this.applyStyles(worksheet, this.getColumnStyles(sheet));
 
-            const sheetName = sheet.model.replace(/[^a-zA-Z0-9-_()\s]/g, "-").slice(0, 31);
-            XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
+            XLSX.utils.book_append_sheet(workbook, worksheet, name);
         });
 
         log.info(`Save file ${outputFile}`);
@@ -53,6 +51,15 @@ export class ExportTranslationsSpreadsheetRepository implements ExportTranslatio
 
         // xlsx-js-style cannot write freeze panes, so patch the file afterwards.
         this.freezePanes(outputFile, { rows: 1, columns: 3 });
+    }
+
+    /* Pure transformation of a model export into the sheet name, header row and data rows.
+       When includeData is false, no data rows are produced (a header-only template). */
+    buildSheet(sheet: ModelTranslationsExport, includeData: boolean): SheetData {
+        const header = this.getHeader(sheet);
+        const rows = includeData ? sheet.objects.map(object => this.getRow(object, sheet)) : [];
+        const name = sheet.model.replace(/[^a-zA-Z0-9-_()\s]/g, "-").slice(0, 31);
+        return { name, header, rows };
     }
 
     /* Freeze the first `rows` rows and `columns` columns on every sheet by injecting a <pane>
@@ -185,6 +192,12 @@ function getFieldValue(object: MetadataObjectWithTranslations, field: string): s
     // though the type only declares id/name/code/translations.
     const value = (object as unknown as Record<string, unknown>)[field];
     return typeof value === "string" ? value : "";
+}
+
+export interface SheetData {
+    name: string;
+    header: string[];
+    rows: string[][];
 }
 
 interface ColumnStyle {

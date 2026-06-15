@@ -111,7 +111,7 @@ function parseList(input: string): string[] {
 }
 
 /* Parse "dataElements[name,formName],indicators[name]" into [{ model, fields }, ...]. */
-function parseModels(input: string): ModelSelection[] {
+export function parseModels(input: string): ModelSelection[] {
     const regex = /([a-zA-Z][\w]*)(?:\[([^\]]*)\])?/g;
 
     return _(Array.from(input.matchAll(regex)))
@@ -128,22 +128,27 @@ function parseModels(input: string): ModelSelection[] {
         .value();
 }
 
+/* Parse and validate the --models option: every model must specify its translatable fields. */
+export function parseModelsOption(input: string): ModelSelection[] {
+    const selections = parseModels(input);
+
+    if (selections.length === 0) throw new Error("No models provided");
+
+    const withoutFields = selections.filter(selection => _.isEmpty(selection.fields));
+    if (!_.isEmpty(withoutFields)) {
+        const models = withoutFields.map(selection => selection.model).join(", ");
+        throw new Error(
+            `Missing translatable fields for: ${models}. ` +
+                `Specify them as model[field1,field2], e.g. indicators[name,shortName]`
+        );
+    }
+
+    return selections;
+}
+
 /* cmd-ts type for --models: parses the string and requires every model to specify its fields. */
 const ModelsType: Type<string, ModelSelection[]> = {
     async from(input) {
-        const selections = parseModels(input);
-
-        if (selections.length === 0) throw new Error("No models provided");
-
-        const withoutFields = selections.filter(selection => _.isEmpty(selection.fields));
-        if (!_.isEmpty(withoutFields)) {
-            const models = withoutFields.map(selection => selection.model).join(", ");
-            throw new Error(
-                `Missing translatable fields for: ${models}. ` +
-                    `Specify them as model[field1,field2], e.g. indicators[name,shortName]`
-            );
-        }
-
-        return selections;
+        return parseModelsOption(input);
     },
 };
