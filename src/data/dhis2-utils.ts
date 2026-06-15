@@ -79,3 +79,7 @@ export function promiseMap<T, S>(inputValues: T[], mapper: (value: T) => Promise
 export function getPluralModel(model: string): string {
     return model.endsWith("s") ? model : model + "s";
 }
+
+export function getSingularModel(model: string): string {
+    return model.endsWith("s") ? model.slice(0, -1) : model;
+}
