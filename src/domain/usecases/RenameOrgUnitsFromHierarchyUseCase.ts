@@ -39,7 +39,7 @@ export class RenameOrgUnitsFromHierarchyUseCase {
             const renames = leaves.map(leaf => this.getRename(leaf, parentNameAs));
             const toRename = renames.filter(rename => !rename.skipped);
 
-            this.logRenames(toRename);
+            this.logRenames(renames);
 
             summary.total += renames.length;
             summary.renamed += toRename.length;
@@ -79,7 +79,8 @@ export class RenameOrgUnitsFromHierarchyUseCase {
         renames.forEach(rename => {
             const from = rename.orgUnit.namePath;
             const to = rename.orgUnit.rename(rename.newName).namePath;
-            logger.info(`${from} -> ${to}`);
+            const suffix = from === to ? " (unchanged)" : "";
+            logger.info(`${from} -> ${to}${suffix}`);
         });
     }
 }
