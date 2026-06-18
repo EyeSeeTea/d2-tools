@@ -8,7 +8,7 @@ import { ProgramEvent } from "domain/entities/ProgramEvent";
 export class EventExportSpreadsheetRepository implements EventExportRepository {
     async saveReport(events: ProgramEvent[], options: MigrateOptions): Async<void> {
         const csvWriter = createObjectCsvWriter({
-            path: options.csvPath,
+            path: options.reportPath,
             header: [
                 {
                     id: "event",

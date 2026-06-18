@@ -2,7 +2,7 @@ import _ from "lodash";
 import { Async } from "domain/entities/Async";
 import { Id } from "domain/entities/Base";
 import { Result } from "domain/entities/Result";
-import logger from "utils/log";
+import { Logger } from "domain/logger/Logger";
 import { EventExportSpreadsheetRepository } from "data/EventExportSpreadsheetRepository";
 import { ProgramEventsRepository } from "domain/repositories/ProgramEventsRepository";
 import { ProgramEvent } from "domain/entities/ProgramEvent";
@@ -13,12 +13,13 @@ export type MigrateOptions = {
     dataElementId: Id;
     condition: string;
     newValue: string;
-    csvPath: string;
+    reportPath: string;
     post: boolean;
 };
 
 export class UpdateEventDataValueUseCase {
     constructor(
+        private logger: Logger,
         private programEventsRepository: ProgramEventsRepository,
         private eventExportSpreadsheetRepository: EventExportSpreadsheetRepository
     ) {}
@@ -32,15 +33,15 @@ export class UpdateEventDataValueUseCase {
 
         const eventsWithDvInCondition = this.getEventsInCondition(eventMetadata, options);
 
-        logger.info(`Matching events: ${eventsWithDvInCondition.length}`);
+        this.logger.info(`Matching events: ${eventsWithDvInCondition.length}`);
 
-        if (options.csvPath) {
-            logger.debug(`Generate report: ${options.csvPath}`);
+        if (options.reportPath) {
+            this.logger.debug(`Generate report: ${options.reportPath}`);
             await this.eventExportSpreadsheetRepository.saveReport(eventsWithDvInCondition, options);
         }
 
         if (options.post) {
-            logger.debug(`Events to change: ${eventsWithDvInCondition.length}`);
+            this.logger.debug(`Events to change: ${eventsWithDvInCondition.length}`);
             const result = await this.programEventsRepository.save(eventsWithDvInCondition);
             return result;
         } else {

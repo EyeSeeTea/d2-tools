@@ -270,15 +270,33 @@ $ yarn start events move-to-org-unit \
 
 ### Update events which met the condition
 
+Updates the value for a collection of events that belongs to the provided data element and satisfies the condition.
+The events must be provided as either a comma separated list (`--event-ids`) or a CSV with _id_ header (`--event-ids`).
+Use `--report-path` to generate a CSV with a report of the changes. Unless `--post` is used the changes are not saved.
+
+Using events list:
 ```shell
 $ yarn start events update-events \
 --url='http://USER:PASSWORD@HOST:PORT' \
---root-org-unit='org-unit-id'
+--root-org-unit='org-unit-id' \
 --event-ids='event_id_1,event_id_2,event_id_3' \
 --data-element-id='data_element_id' \
 --condition='true' \
 --new-value='' \
---csv-path='./events.csv' \
+--report-path='./report.csv' \
+--post
+```
+
+Using events CSV:
+```shell
+$ yarn start events update-events \
+--url='http://USER:PASSWORD@HOST:PORT' \
+--root-org-unit='org-unit-id' \
+--events-csv='./events.csv' \
+--data-element-id='data_element_id' \
+--condition='true' \
+--new-value='' \
+--report-path='./report.csv' \
 --post
 ```
 
