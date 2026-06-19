@@ -15,6 +15,7 @@ export type MigrateOptions = {
     newValue: string;
     reportPath: string;
     post: boolean;
+    updateSameValue: boolean;
 };
 
 export class UpdateEventDataValueUseCase {
@@ -31,6 +32,13 @@ export class UpdateEventDataValueUseCase {
 
         let eventMetadata: ProgramEvent[] = [];
         for (let i = 0; i < eventIdsLength; i += this.eventChunkSize) {
+            this.logger.debug(
+                `Fetching events metadata for events ${i + 1} to ${Math.min(
+                    i + this.eventChunkSize,
+                    eventIdsLength
+                )} of ${eventIdsLength}`
+            );
+
             const eventIdsChunk = options.eventIds.slice(i, i + this.eventChunkSize);
             const eventMetadataChunk = await this.programEventsRepository.get({
                 eventsIds: eventIdsChunk,
@@ -42,6 +50,14 @@ export class UpdateEventDataValueUseCase {
         }
 
         const eventsWithDvInCondition = this.getEventsInCondition(eventMetadata, options);
+
+        if (eventsWithDvInCondition.length === 0) {
+            this.logger.info("No events found with the specified condition");
+            return {
+                type: "success",
+                message: "No events found with the specified condition",
+            };
+        }
 
         this.logger.info(`Matching events: ${eventsWithDvInCondition.length}`);
 
@@ -82,7 +98,10 @@ export class UpdateEventDataValueUseCase {
             .filter(
                 event =>
                     event.dataValues.filter(
-                        dv => dv.dataElement.id === options.dataElementId && dv.value === options.newValue
+                        dv =>
+                            dv.dataElement.id === options.dataElementId &&
+                            dv.value === options.newValue &&
+                            (options.updateSameValue || dv.oldValue !== dv.value)
                     ).length > 0
             );
 

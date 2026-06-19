@@ -156,6 +156,11 @@ const updateEventsDataValues = command({
             description: "Save changes",
             defaultValue: () => false,
         }),
+        updateSameValue: flag({
+            long: "update-same-value",
+            description: "Update data values even if they are the same as the new value",
+            defaultValue: () => false,
+        }),
     },
     handler: async args => {
         try {
