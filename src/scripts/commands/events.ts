@@ -114,7 +114,7 @@ const updateEventsDataValues = command({
     name: "Update events",
     description: "Update events that meet a condition",
     args: {
-        url: getApiUrlOption(),
+        ...getApiUrlOptions(),
         eventIdsArray: option({
             type: optional(StringsSeparatedByCommas),
             long: "event-ids",
@@ -172,7 +172,7 @@ const updateEventsDataValues = command({
                 throw new Error("Either --event-ids or --events-csv must be provided");
             }
 
-            const api = getD2Api(args.url);
+            const api = getD2ApiFromArgs(args);
             const programEventsRepository = new ProgramEventsD2Repository(api);
             const eventExportSpreadsheetRepository = new EventExportSpreadsheetRepository();
             const result = await new UpdateEventDataValueUseCase(
