@@ -18,6 +18,8 @@ export type MigrateOptions = {
 };
 
 export class UpdateEventDataValueUseCase {
+    private readonly eventChunkSize = 200;
+
     constructor(
         private logger: Logger,
         private programEventsRepository: ProgramEventsRepository,
@@ -25,11 +27,19 @@ export class UpdateEventDataValueUseCase {
     ) {}
 
     async execute(options: MigrateOptions): Async<Result> {
-        const eventMetadata = await this.programEventsRepository.get({
-            eventsIds: options.eventIds,
-            orgUnitsIds: [options.rootOrgUnit],
-            orgUnitMode: "DESCENDANTS",
-        });
+        const eventIdsLength = options.eventIds.length;
+
+        let eventMetadata: ProgramEvent[] = [];
+        for (let i = 0; i < eventIdsLength; i += this.eventChunkSize) {
+            const eventIdsChunk = options.eventIds.slice(i, i + this.eventChunkSize);
+            const eventMetadataChunk = await this.programEventsRepository.get({
+                eventsIds: eventIdsChunk,
+                orgUnitsIds: [options.rootOrgUnit],
+                orgUnitMode: "DESCENDANTS",
+            });
+
+            eventMetadata = eventMetadata.concat(eventMetadataChunk);
+        }
 
         const eventsWithDvInCondition = this.getEventsInCondition(eventMetadata, options);
 
