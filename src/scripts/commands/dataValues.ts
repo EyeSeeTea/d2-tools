@@ -28,6 +28,7 @@ import { ExecutionJsonRepository } from "data/DataSetExecutionJsonRepository";
 import { TimeZoneD2Repository } from "data/TimeZoneD2Repository";
 import { BulkDeleteDataValuesUseCase } from "domain/usecases/BulkDeleteDataValuesUseCase";
 import { Ref } from "domain/entities/Base";
+import { ChangeDataValuesOrgUnitUseCase } from "domain/usecases/ChangeDataValuesOrgUnitUseCase";
 
 const SEND_EMAIL_AFTER_MINUTES = 5;
 const BULK_DELETE_DEFAULT_BATCH_SIZE = 30000;
@@ -41,6 +42,7 @@ export function getCommand() {
             "post-dangling-values": postDanglingValuesCmd,
             "monitoring-values": monitoringDataValues,
             "bulk-delete": bulkDeleteDataValuesCmd,
+            "change-orgunit": changeDataValueSetOrgUnitCmd,
         },
     });
 }
@@ -313,6 +315,73 @@ const bulkDeleteDataValuesCmd = command({
                 orgUnitRepository,
                 dataValuesRepository
             ).execute(dataElementIds, args);
+        } catch (error) {
+            console.error((error as Error).message);
+            process.exit(1);
+        }
+    },
+});
+
+const changeDataValueSetOrgUnitCmd = command({
+    name: "change-orgunit",
+    description: "Change the org unit of a data value set",
+    args: {
+        ...getApiUrlOptions(),
+        dataSetId: option({
+            type: string,
+            long: "dataset-id",
+            description: "Data set ID",
+        }),
+        sourceOrgUnitId: option({
+            type: string,
+            long: "source-orgunit-id",
+            description: "Source org unit ID",
+        }),
+        targetOrgUnitId: option({
+            type: string,
+            long: "target-orgunit-id",
+            description: "Target org unit ID",
+        }),
+        startDate: option({
+            type: optional(string),
+            long: "start-date",
+            description: "Start date (YYYY-MM-DD)",
+        }),
+        endDate: option({
+            type: optional(string),
+            long: "end-date",
+            description: "End date (YYYY-MM-DD)",
+        }),
+        deleteSourceDataValues: flag({
+            long: "delete-source",
+            description: "Delete the source data values after changing the org unit",
+        }),
+        deleteTargetDataValues: flag({
+            long: "delete-target",
+            description: "Delete the target data values before changing the org unit",
+        }),
+        dryRun: flag({
+            long: "dry-run",
+            description: "Perform the operation in dry run mode",
+        }),
+    },
+    handler: async args => {
+        try {
+            if (args.sourceOrgUnitId === args.targetOrgUnitId) {
+                throw new Error("Source and target org unit IDs are the same.");
+            }
+
+            const api = getD2ApiFromArgs(args);
+            const orgUnitRepository = new OrgUnitD2Repository(api);
+            const dataSetsRepository = new DataSetsD2Repository(api);
+            const dataValuesRepository = new DataValuesD2Repository(api);
+
+            await new ChangeDataValuesOrgUnitUseCase(
+                new TerminalLogger(),
+                orgUnitRepository,
+                dataSetsRepository,
+                dataValuesRepository
+            ).execute(args);
         } catch (error) {
             console.error((error as Error).message);
             process.exit(1);
