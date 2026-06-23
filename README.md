@@ -281,6 +281,7 @@ $ yarn start events move-to-org-unit \
 Updates the value for a collection of events that belongs to the provided data element and satisfies the condition.
 The events must be provided as either a comma separated list (`--event-ids`) or a CSV with _id_ header (`--event-ids`).
 Use `--report-path` to generate a CSV with a report of the changes. Unless `--post` is used the changes are not saved.
+To update events that already have the desired value use `--update-same-value`.
 
 Using events list:
 ```shell
