@@ -30,3 +30,8 @@ export function getMonthsDiff(startDate: string, endDate: string): number {
     const diff = end.diff(start, "months").months;
     return Math.floor(diff);
 }
+
+/* Return true if the given string is a valid ISO 8601 date/datetime (as parsed by luxon). */
+export function isValidIso8601(date: string): boolean {
+    return DateTime.fromISO(date).isValid;
+}

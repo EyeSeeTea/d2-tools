@@ -6,7 +6,8 @@ import { TwoFactorReportRepository } from "domain/repositories/user-monitoring/t
 import { TwoFactorConfigRepository } from "domain/repositories/user-monitoring/two-factor-monitoring/TwoFactorConfigRepository";
 import { UserMonitoringProgramRepository } from "domain/repositories/user-monitoring/common/UserMonitoringProgramRepository";
 import {
-    TwoFactorUser,
+    UserDateOverride,
+    applyUserDateOverrides,
     filterByCreationDate,
 } from "domain/entities/user-monitoring/two-factor-monitoring/TwoFactorUser";
 
@@ -82,7 +83,10 @@ export class RunTwoFactorReportUseCase {
         });
 
         const filteredInvalidTwoFactorUsers = filteredByMonth
-            ? filterByCreationDate(invalidTwoFactorUsers, options.disableAfterMonths)
+            ? filterByCreationDate(
+                  applyUserDateOverrides(invalidTwoFactorUsers, twoFactorUseCaseOption.userDateOverrides),
+                  options.disableAfterMonths
+              )
             : invalidTwoFactorUsers;
 
         const report: TwoFactorUserReport = {
@@ -146,4 +150,5 @@ export class RunTwoFactorReportUseCase {
 interface TwoFactorUseCaseOptions {
     shouldDisableInvalidUsers: boolean;
     filteredByMonth: boolean;
+    userDateOverrides?: UserDateOverride;
 }

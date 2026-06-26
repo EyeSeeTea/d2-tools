@@ -1,12 +1,14 @@
 import fs from "fs";
 import "json5/lib/register";
 import * as Codec from "purify-ts";
-import { command, subcommands, option, string, boolean, flag } from "cmd-ts";
+import { command, subcommands, option, string, boolean, flag, optional } from "cmd-ts";
 
 import { getD2ApiFromArgs } from "scripts/common";
 import log from "utils/log";
 
 import { RunTwoFactorReportUseCase } from "domain/usecases/user-monitoring/two-factor-monitoring/RunTwoFactorReportUseCase";
+import { UserDateOverride } from "domain/entities/user-monitoring/two-factor-monitoring/TwoFactorUser";
+import { isValidIso8601 } from "domain/entities/DateTime";
 
 import { TwoFactorConfigD2Repository } from "data/user-monitoring/two-factor-monitoring/TwoFactorConfigD2Repository";
 import { PermissionFixerConfigD2Repository } from "data/user-monitoring/permission-fixer/PermissionFixerConfigD2Repository";
@@ -70,10 +72,26 @@ const run2FAReporterCmd = command({
             description:
                 "Filter users by creation date using disableAfterMonths from datastore config.",
         }),
+        createdDateOverridesFile: option({
+            type: optional(string),
+            long: "created-date-overrides-file",
+            description:
+                "Path to a JSON file with user creation date overrides. Overrides the creation date used for the month-based filter for specific users. Only has effect when --filtered-by-month is set. Format: { \"createdDate\": \"YYYY-MM-DD\", \"users\": [{ \"id\": \"uid\", \"username\": \"name\" }] }",
+        }),
     },
 
     handler: async args => {
         const api = getApiFromConfigFile(args.configFile);
+        const userDateOverrides = args.createdDateOverridesFile
+            ? parseUserDateOverridesFile(args.createdDateOverridesFile)
+            : undefined;
+
+        if (userDateOverrides && !args.filteredByMonth) {
+            log.warn(
+                "--created-date-overrides-file has no effect without --filtered-by-month. Date overrides will be ignored."
+            );
+        }
+
         const usersRepository = new TwoFactorUserD2Repository(api);
         const externalConfigRepository = new TwoFactorConfigD2Repository(api);
         const userMonitoringReportRepository = new TwoFactorReportD2Repository(api);
@@ -87,6 +105,7 @@ const run2FAReporterCmd = command({
         ).execute({
             shouldDisableInvalidUsers: args.disableusers,
             filteredByMonth: args.filteredByMonth,
+            userDateOverrides,
         });
 
         log.info(JSON.stringify(response));
@@ -274,6 +293,26 @@ function getWebhookConfFromFile(configFile: string): MSTeamsWebhookOptions {
         proxy: proxy,
         serverName: serverName,
     };
+}
+
+export function parseUserDateOverridesFile(filePath: string): UserDateOverride {
+    let raw: UserDateOverride;
+    try {
+        raw = JSON.parse(fs.readFileSync(filePath, "utf8")) as UserDateOverride;
+    } catch {
+        throw new Error(`Could not parse ${filePath} as JSON. Make sure the file contains valid JSON.`);
+    }
+    if (typeof raw.createdDate !== "string" || !Array.isArray(raw.users)) {
+        throw new Error(
+            `Invalid format in ${filePath}: expected { "createdDate": "YYYY-MM-DD", "users": [{ "id": "uid" }] }`
+        );
+    }
+    if (!isValidIso8601(raw.createdDate)) {
+        throw new Error(
+            `Invalid createdDate "${raw.createdDate}" in ${filePath}: must be a valid ISO date (e.g. "2026-06-10").`
+        );
+    }
+    return raw;
 }
 
 export type UserMonitoringAuth = { apiurl: string };

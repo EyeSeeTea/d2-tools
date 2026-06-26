@@ -617,6 +617,22 @@ An exceptionGroup list containing groups whose users should be excluded from val
 
 An optional --disable-users CLI flag that, when passed, will disable users identified as invalid due to missing or disabled 2FA.
 
+An optional --filtered-by-month (-f) CLI flag that, when passed, restricts disable candidates to users whose account was created at least `disableAfterMonths` months ago (configured in the datastore).
+
+An optional --created-date-overrides-file CLI flag that accepts a path to a JSON file. For each user listed in the file, their real DHIS2 creation date is replaced by the `createdDate` field in the file when evaluating the month-based filter (`--filtered-by-month`). This allows treating specific users as if they were created on a given date. **Only has effect when --filtered-by-month is also set.**
+
+The overrides file format:
+
+```json
+{
+    "createdDate": "2026-06-10",
+    "users": [
+        { "id": "uid1" },
+        { "id": "uid2", "username": "pepito" }
+    ]
+}
+```
+
 The datastore must contain:
 
 ```json
