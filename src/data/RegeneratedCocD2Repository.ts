@@ -1,3 +1,4 @@
+import _ from "lodash";
 import { D2Api, MetadataResponse } from "types/d2-api";
 import { RegeneratedCoc } from "domain/entities/RegeneratedCoc";
 import { Stats } from "domain/entities/Stats";
@@ -35,7 +36,10 @@ export class RegeneratedCocD2Repository implements RegeneratedCocRepository {
                         id: cocToSave.id,
                         name: cocToSave.name,
                         categoryCombo: { id: cocToSave.categoryCombo.id },
-                        categoryOptions: cocToSave.categoryOptions.map(co => ({ id: co.id })),
+                        categoryOptions: _(cocToSave.categoryOptions)
+                            .map(co => ({ id: co.id }))
+                            .uniqBy(x => x.id)
+                            .value(),
                     };
                 });
 

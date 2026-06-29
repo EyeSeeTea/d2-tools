@@ -43,6 +43,7 @@ Available levels: 'debug' | 'info' | 'warn' | 'error'
 -   [Organisation Units](#organisation-units)
     -   [Create an SQL file to remove any orgunit below the country level](#create-an-sql-file-to-remove-any-orgunit-below-the-country-level)
     -   [Create an SQL file to remove all org subunits of Canada](#create-an-sql-file-to-remove-all-org-subunits-of-canada)
+    -   [Rename leaf org units adding their parent name](#rename-leaf-org-units-adding-their-parent-name)
     -   [Copy the organisation units from a data set to one or more datasets](#copy-the-organisation-units-from-a-data-set-to-one-or-more-datasets)
 -   [Translations](#translations)
 -   [Events](#events)
@@ -190,6 +191,29 @@ $ node dist/index.js orgunits remove \
 ```
 
 where `/H8RixfF8ugH/wP2zKq0dDpw/AJBfDthkySs` would be the dhis2 path of Canada.
+
+### Rename leaf org units adding their parent name
+
+```shell
+$ yarn start orgunits rename-from-hierarchy \
+    --url='http://USER:PASSWORD@HOST:PORT' \
+    --root-orgunit-ids=ImspTQPwCqd,O6uvpzGd5pu \
+    --parent-name-as=suffix \
+    [--post]
+```
+
+Disambiguates leaf org units that share the same name (e.g. several "Mental Health" units under
+different facilities, which are indistinguishable in the DHIS2 Android Capture app) by affixing
+their parent org unit's name. For example, a leaf `Mental Health` under `Gaza Secondary Healthcare`
+becomes `Mental Health - Gaza Secondary Healthcare`.
+
+Notes:
+
+-   `--root-orgunit-ids` accepts ids at any level; their leaf (last-level) descendants are renamed.
+-   `--parent-name-as` is `prefix` or `suffix`; the separator is `" - "`.
+-   Without `--post` the command only previews the changes (dry run).
+-   The new name is recomputed every run (the existing affix segment is stripped and the current
+    parent name re-applied), so re-runs are idempotent and parent renames propagate.
 
 ### Copy the organisation units from a data set to one or more datasets
 
@@ -867,6 +891,69 @@ A sample:
 }
 ```
 
+### User Roles Authorities Monitoring
+
+#### Execution:
+
+```shell
+$ yarn start usermonitoring run-user-roles-authorities-monitoring --config-file config.json
+
+# To get the debug logs and store them in a file use:
+$ LOG_LEVEL=debug yarn start usermonitoring run-user-roles-authorities-monitoring --config-file config.json &> roles-authorities-monitoring.log
+```
+
+#### Parameters:
+
+-   `--config-file`: Connection and webhook config file.
+-   `-s` | `--set-datastore`: Write users roles authorities to datastore, use in script setup. d2-tools/user-roles-authorities-monitoring can be empty, the script will populate it.
+
+#### Requirements:
+
+A config file with the access info of the server and the message webhook details:
+
+```json
+{
+    "URL": {
+        "username": "user",
+        "password": "passwd",
+        "server": "https://dhis.url/"
+    },
+    "WEBHOOK": {
+        "ms_url": "http://webhook.url/",
+        "proxy": "http://proxy.url/",
+        "server_name": "INSTANCE_NAME"
+    }
+}
+```
+
+This reports stores data into the `d2-tools.user-roles-authorities-monitoring` datastore.
+If some change is detected for a UserRole Authorities a message is generated with three categories: 
+- New user roles detected with its authorities
+- Deleted user roles detected with its authorities
+- Updated user roles detected with a list of added and removed authorities
+
+If a authority assigned to a UserRole is deprecated (legacy authority, missing or removed app authority, etc) its name will be set to "DEPRECATED_AUTHORITY".
+
+Example of the message:
+```
+New user roles detected:
+- NEW USER ROLE (Id: XXXXXXXXXXX) with authorities:
+	- Id: M_DHIS2_GLASS_Admin_Maintenance_Report Name: DHIS2 GLASS Admin Maintenance Report app
+
+Deleted user roles detected:
+- DELETED USER ROLE (Id: XXXXXXXXXXX) with authorities:
+	- Id: M_DHIS2_GLASS_Submission_Report-TOBEDELETED Name: DEPRECATED_AUTHORITY
+
+Updated user roles detected:
+- UPDATED USER ROLE (Id: XXXXXXXXXXX)
+	- Added authorities:
+		- Id: F_APPROVE_DATA_LOWER_LEVELS Name: Approve data at lower levels
+		- Id: F_VIEW_UNAPPROVED_DATA Name: View unapproved data
+	- Removed authorities:
+		- Id: F_DATAVALUE_ADD Name: Add/Update Data Value
+		- Id: F_RUN_VALIDATION Name: Run validation
+```
+
 ### User Groups Monitoring
 
 This script will compare the metadata of the monitored userGroups with the version stored in the datastore and generate a report of the changes. This report will be sent to the MS Teams channel set in the webhook config section. Then the new version of the metadata will be stored in the datastore.
@@ -1197,10 +1284,46 @@ Regenerate categoryOptionCombos from `categoryCombo.categories[].categoryOptions
 
 By default both operations (create+update and delete) are being executed using the `VALIDATE` importMode (dry run). Use the --persist flag to apply changes (create+update) and --delete-cocs to confirm the deletion of obsolete categoryOptionCombos.
 
+In some cases deleting cocs through the API could be really slow. You can pass the `--generate-sql-delete-script` to generate a sql script that you can run directly against the database.
+
+Save and delete categoryOptionCombos
+
 ```shell
 yarn start categoryOptionCombos regenerate \
     --url=https://play.im.dhis2.org/dev \
     --auth="admin:district" \
     --persist \
     --delete-cocs
+```
+
+You can also include a comma separated list if you want to regenerate specific category Combos.
+
+```shell
+yarn start categoryOptionCombos regenerate \
+    --url=https://play.im.dhis2.org/dev \
+    --auth="admin:district" \
+    --persist \
+    --delete-cocs \
+    --category-combo-ids=id1,id2,id3
+```
+
+Save categoryOptionCombos and generating a sql script for deleting categoryOptionCombos. if you remove the `persist` flag it will only generate the sql.
+
+```shell
+yarn start categoryOptionCombos regenerate \
+    --url=https://play.im.dhis2.org/dev \
+    --auth="admin:district" \
+    --persist \
+    --generate-sql-delete-script
+```
+
+Before deleting a `categoryOptionCombo` the script checks for existing data in the `datavalue` and `datavalueaudit` tables. If you have thousands or millions of records, this process can be very slow.
+
+Adding an index to these tables improves performance significantly:
+
+```sql
+CREATE INDEX CONCURRENTLY idx_datavalue_catoptcombo ON datavalue(categoryoptioncomboid);
+CREATE INDEX CONCURRENTLY idx_datavalue_attoptcombo ON datavalue(attributeoptioncomboid);
+CREATE INDEX CONCURRENTLY idx_datavalueaudit_catoptcombo ON datavalueaudit(categoryoptioncomboid);
+CREATE INDEX CONCURRENTLY idx_datavalueaudit_attoptcombo ON datavalueaudit(attributeoptioncomboid);
 ```

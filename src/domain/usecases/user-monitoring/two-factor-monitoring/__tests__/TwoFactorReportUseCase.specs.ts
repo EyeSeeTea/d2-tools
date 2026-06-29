@@ -18,7 +18,10 @@ import {
 import { TwoFactorUserD2Repository } from "data/user-monitoring/two-factor-monitoring/TwoFactorUserD2Repository";
 import { TwoFactorReportD2Repository } from "data/user-monitoring/two-factor-monitoring/TwoFactorReportD2Repository";
 import { UserMonitoringProgramD2Repository } from "data/user-monitoring/common/UserMonitoringProgramD2Repository";
-import { TwoFactorUser, filterByCreationDate } from "domain/entities/user-monitoring/two-factor-monitoring/TwoFactorUser";
+import {
+    TwoFactorUser,
+    filterByCreationDate,
+} from "domain/entities/user-monitoring/two-factor-monitoring/TwoFactorUser";
 import { TwoFactorUserOptions } from "domain/entities/user-monitoring/two-factor-monitoring/TwoFactorUserOptions";
 const TWO_FACTOR_GROUP_ID = "2FA";
 const WHO_ACCOUNT_GROUP_ID = "WHO";
@@ -471,15 +474,13 @@ function createUseCase({
 
     const userRepo = mock(TwoFactorUserD2Repository);
     when(userRepo.getUsersNotInGroupIds(deepEqual(excludedGroupIds))).thenResolve(users);
-    when(userRepo.disableUsers(anything())).thenResolve(
-        [
-            {
-                userId: "mock-user",
-                status: "success",
-                response: "Disabled users action is enabled and executed.",
-            },
-        ]
-    );
+    when(userRepo.disableUsers(anything())).thenResolve([
+        {
+            userId: "mock-user",
+            status: "success",
+            response: "Disabled users action is enabled and executed.",
+        },
+    ]);
 
     const reportRepo = mock(TwoFactorReportD2Repository);
     when(reportRepo.save(anything(), anything())).thenResolve("OK");

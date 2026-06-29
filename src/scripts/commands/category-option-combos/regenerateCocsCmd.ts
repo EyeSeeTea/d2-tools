@@ -1,10 +1,12 @@
-import { command, flag } from "cmd-ts";
+import { command, flag, option, optional } from "cmd-ts";
 import { RegeneratedCocD2Repository } from "data/RegeneratedCocD2Repository";
 import { CategoryComboD2Repository } from "data/CategoryComboD2Repository";
 import { RegenerateCocsUseCase, RegenerateCocsUseCaseResult } from "domain/usecases/RegenerateCocsUseCase";
 import { writeFileSync } from "fs";
-import { getApiUrlOptions, getD2ApiFromArgs } from "scripts/common";
+import { getApiUrlOptions, getD2ApiFromArgs, StringsSeparatedByCommas } from "scripts/common";
 import logger from "utils/log";
+import { getCurrentTime } from "utils/date";
+import { CategoryOptionComboDeleteD2SqlExporter } from "data/CategoryOptionComboDeleteD2SqlExporter";
 
 export const regenerateCocsCmd = command({
     name: "regenerate",
@@ -19,16 +21,45 @@ export const regenerateCocsCmd = command({
             long: "delete-cocs",
             description: "delete obsolete categoryOptionCombos (default: false)",
         }),
+        generateSqlDeleteScript: flag({
+            long: "generate-sql-delete-script",
+            description: "generate a SQL script to delete obsolete categoryOptionCombos (default: false)",
+        }),
+        categoryComboIds: option({
+            type: optional(StringsSeparatedByCommas),
+            long: "category-combo-ids",
+            description:
+                "comma-separated list of categoryCombo IDs. If not provided, all categoryCombos will be regenerated.",
+        }),
     },
     handler: async args => {
+        const currentTime = getCurrentTime();
         const api = getD2ApiFromArgs(args);
         const categoryComboRepository = new CategoryComboD2Repository(api);
         const regeneratedCocRepository = new RegeneratedCocD2Repository(api);
-        const useCase = new RegenerateCocsUseCase({ categoryComboRepository, regeneratedCocRepository });
+
+        const cocDeleteExporter = new CategoryOptionComboDeleteD2SqlExporter();
+
+        const useCase = new RegenerateCocsUseCase({
+            cocDeleteExporter,
+            categoryComboRepository,
+            regeneratedCocRepository,
+        });
 
         try {
-            const response = await useCase.execute({ persist: args.persist, deleteCocs: args.deleteCocs });
+            const response = await useCase.execute({
+                generateSqlDeleteScript: args.generateSqlDeleteScript,
+                persist: args.persist,
+                deleteCocs: args.deleteCocs,
+                catCombosIds: args.categoryComboIds,
+            });
             generateJsonReport(response.categoryCombos);
+            if (response.sqlDeleteScript) {
+                writeSqlScriptToDisk(
+                    response.sqlDeleteScript,
+                    `delete-category-option-combos-${currentTime}.sql`
+                );
+            }
         } catch (error) {
             logger.error(`Error regenerating categoryOptionCombos: ${JSON.stringify(error, null, 2)}`);
             process.exit(1);
@@ -37,7 +68,7 @@ export const regenerateCocsCmd = command({
 });
 
 function generateJsonReport(categoryCombos: RegenerateCocsUseCaseResult["categoryCombos"]): void {
-    const currentTime = new Date().toISOString().replace(/[:.]/g, "-");
+    const currentTime = getCurrentTime();
     const fileName = `regenerated-category-option-combos-${currentTime}.json`;
 
     const jsonReport = categoryCombos.map(catCombo => ({
@@ -51,4 +82,10 @@ function generateJsonReport(categoryCombos: RegenerateCocsUseCaseResult["categor
 
     writeFileSync(fileName, JSON.stringify(jsonReport, null, 2));
     logger.info(`Report generated: ${fileName}`);
+}
+
+function writeSqlScriptToDisk(sqlScript: string, fileName: string): void {
+    writeFileSync(fileName, sqlScript);
+    logger.info(`SQL generated: ${fileName}`);
+    logger.info(`You can execute the sql with d2-docker: d2-docker run-sql -i [IMAGE_NAME] ${fileName}`);
 }
