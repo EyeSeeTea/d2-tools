@@ -1,4 +1,6 @@
+import fs from "fs";
 import _ from "lodash";
+import CsvReadableStream from "csv-reader";
 import { command, string, subcommands, option, optional, flag } from "cmd-ts";
 
 import {
@@ -11,6 +13,7 @@ import {
 import { ProgramEventsD2Repository } from "data/ProgramEventsD2Repository";
 import { MoveEventsToOrgUnitUseCase } from "domain/usecases/MoveEventsToOrgUnitUseCase";
 import logger from "utils/log";
+import { TerminalLogger } from "utils/TerminalLogger";
 import { UpdateEventDataValueUseCase } from "domain/usecases/UpdateEventDataValueUseCase";
 import { EventExportSpreadsheetRepository } from "data/EventExportSpreadsheetRepository";
 import { DetectExternalOrgUnitUseCase } from "domain/usecases/ProcessEventsOutsideEnrollmentOrgUnitUseCase";
@@ -18,6 +21,7 @@ import { ProgramsD2Repository } from "data/ProgramsD2Repository";
 import { RecodeBooleanDataValuesInEventsUseCase } from "domain/usecases/RecodeBooleanDataValuesInEventsUseCase";
 import { NotificationsEmailRepository } from "data/NotificationsEmailRepository";
 import { TrackedEntityD2Repository } from "data/TrackedEntityD2Repository";
+import { Id, Ref } from "domain/entities/Base";
 
 export function getCommand() {
     return subcommands({
@@ -110,11 +114,16 @@ const updateEventsDataValues = command({
     name: "Update events",
     description: "Update events that meet a condition",
     args: {
-        url: getApiUrlOption(),
-        eventIds: option({
-            type: StringsSeparatedByCommas,
+        ...getApiUrlOptions(),
+        eventIdsArray: option({
+            type: optional(StringsSeparatedByCommas),
             long: "event-ids",
-            description: "event id's separated by commas",
+            description: "event id's separated by commas (mutually exclusive with --events-csv)",
+        }),
+        eventsCsvPath: option({
+            type: optional(string),
+            long: "events-csv",
+            description: "Path to CSV file containing event IDs (mutually exclusive with --event-ids)",
         }),
         rootOrgUnit: option({
             type: string,
@@ -136,9 +145,9 @@ const updateEventsDataValues = command({
             long: "new-value",
             description: "New value for the data element",
         }),
-        csvPath: option({
+        reportPath: option({
             type: string,
-            long: "csv-path",
+            long: "report-path",
             description: "Path for the CSV report",
             defaultValue: () => "",
         }),
@@ -147,24 +156,48 @@ const updateEventsDataValues = command({
             description: "Save changes",
             defaultValue: () => false,
         }),
+        updateSameValue: flag({
+            long: "update-same-value",
+            description: "Update data values even if they are the same as the new value",
+            defaultValue: () => false,
+        }),
     },
     handler: async args => {
-        const api = getD2Api(args.url);
-        const programEventsRepository = new ProgramEventsD2Repository(api);
-        const eventExportSpreadsheetRepository = new EventExportSpreadsheetRepository();
-        const result = await new UpdateEventDataValueUseCase(
-            programEventsRepository,
-            eventExportSpreadsheetRepository
-        ).execute(args);
+        try {
+            if (args.eventIdsArray && args.eventsCsvPath) {
+                throw new Error("Cannot use both --event-ids and --events-csv at the same time");
+            }
 
-        logger.info(`Result: ${JSON.stringify(result, null, 2)}`);
+            let eventIds: Id[] = [];
+            if (args.eventIdsArray) {
+                eventIds = args.eventIdsArray;
+            } else if (args.eventsCsvPath) {
+                eventIds = await readEventsFile(args.eventsCsvPath);
+            } else {
+                throw new Error("Either --event-ids or --events-csv must be provided");
+            }
 
-        if (!args.post) {
-            logger.info(`Add --post to save changes`);
-        }
+            const api = getD2ApiFromArgs(args);
+            const programEventsRepository = new ProgramEventsD2Repository(api);
+            const eventExportSpreadsheetRepository = new EventExportSpreadsheetRepository();
+            const result = await new UpdateEventDataValueUseCase(
+                new TerminalLogger(),
+                programEventsRepository,
+                eventExportSpreadsheetRepository
+            ).execute({ ...args, eventIds });
 
-        if (!args.csvPath) {
-            logger.info(`Add --csv-path to generate a csv report`);
+            logger.info(`Result: ${JSON.stringify(result, null, 2)}`);
+
+            if (!args.post) {
+                logger.info(`Add --post to save changes`);
+            }
+
+            if (!args.reportPath) {
+                logger.info(`Add --report-path to generate a csv report`);
+            }
+        } catch (error) {
+            console.error((error as Error).message);
+            process.exit(1);
         }
     },
 });
@@ -196,3 +229,31 @@ const recodeBooleanDataValues = command({
         return new RecodeBooleanDataValuesInEventsUseCase(api, programsRepository).execute(args);
     },
 });
+
+async function readEventsFile(csvPath: string): Promise<Id[]> {
+    if (!fs.existsSync(csvPath) || !fs.statSync(csvPath).isFile()) {
+        throw new Error(`Can't find file: ${csvPath}`);
+    }
+
+    return new Promise((resolve, reject) => {
+        const eventIds: Id[] = [];
+
+        fs.createReadStream(csvPath, "utf8")
+            .pipe(new CsvReadableStream({ asObject: true, trim: true }))
+            .on("data", rawRow => {
+                const row = rawRow as unknown as Ref;
+                if (row.id) {
+                    eventIds.push(row.id);
+                }
+            })
+            .on("error", msg => {
+                return reject(msg);
+            })
+            .on("end", () => {
+                if (eventIds.length === 0) {
+                    return reject(new Error("No event IDs found to process"));
+                }
+                return resolve(eventIds);
+            });
+    });
+}

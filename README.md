@@ -45,15 +45,19 @@ Available levels: 'debug' | 'info' | 'warn' | 'error'
     -   [Create an SQL file to remove all org subunits of Canada](#create-an-sql-file-to-remove-all-org-subunits-of-canada)
     -   [Rename leaf org units adding their parent name](#rename-leaf-org-units-adding-their-parent-name)
     -   [Copy the organisation units from a data set to one or more datasets](#copy-the-organisation-units-from-a-data-set-to-one-or-more-datasets)
+    -   [Set all DataSets `skipOffline` where last data input period year was 'year' indicated or earlier](#set-all-datasets-skipoffline-where-last-data-input-period-year-was-year-indicated-or-earlier)
 -   [Translations](#translations)
 -   [Events](#events)
+    -   [Detect events assigned to organisation units outside their enrollment](#detect-events-assigned-to-organisation-units-outside-their-enrollment)
     -   [Move events from one orgunit to another](#move-events-from-one-orgunit-to-another)
     -   [Update events which met the condition](#update-events-which-met-the-condition)
+    -   [Recode boolean to ternary optionSet values](#recode-boolean-to-ternary-optionset-values)
 -   [Data values](#data-values)
     -   [Dangling data values](#dangling-data-values)
     -   [Revert data values](#revert-data-values)
     -   [Delete duplicated event data values](#delete-duplicated-event-data-values)
     -   [Email notification for data values](#email-notification-for-data-values)
+    -   [Delete all data values given a data elements file](#delete-all-data-values-given-a-data-elements-file)
 -   [Notifications](#notifications)
     -   [Send user info email](#send-user-info-email)
 -   [Load testing](#load-testing)
@@ -74,10 +78,14 @@ Available levels: 'debug' | 'info' | 'warn' | 'error'
     -   [Transfer](#transfer)
 -   [Options](#options)
     -   [Rename](#rename)
+    -   [Analyze](#analyze)
 -   [Data](#data)
     -   [Get report](#get-report)
 -   [Enrollments](#enrollments)
     -   [Close Enrollments with Events older than a date](#close-enrollments-with-events-older-than-a-date)
+-   [Category option combos](#category-option-combos)
+    -   [Translations](#translations-1)
+    -   [Regenerate](#regenerate)
 
 ## Execute Program Rules
 
@@ -318,15 +326,34 @@ $ yarn start events move-to-org-unit \
 
 ### Update events which met the condition
 
+Updates the value for a collection of events that belongs to the provided data element and satisfies the condition.
+The events must be provided as either a comma separated list (`--event-ids`) or a CSV with _id_ header (`--event-ids`).
+Use `--report-path` to generate a CSV with a report of the changes. Unless `--post` is used the changes are not saved.
+To update events that already have the desired value use `--update-same-value`.
+
+Using events list:
 ```shell
 $ yarn start events update-events \
 --url='http://USER:PASSWORD@HOST:PORT' \
---root-org-unit='org-unit-id'
+--root-org-unit='org-unit-id' \
 --event-ids='event_id_1,event_id_2,event_id_3' \
 --data-element-id='data_element_id' \
 --condition='true' \
 --new-value='' \
---csv-path='./events.csv' \
+--report-path='./report.csv' \
+--post
+```
+
+Using events CSV:
+```shell
+$ yarn start events update-events \
+--url='http://USER:PASSWORD@HOST:PORT' \
+--root-org-unit='org-unit-id' \
+--events-csv='./events.csv' \
+--data-element-id='data_element_id' \
+--condition='true' \
+--new-value='' \
+--report-path='./report.csv' \
 --post
 ```
 
