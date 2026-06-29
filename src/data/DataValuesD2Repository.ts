@@ -63,9 +63,10 @@ export class DataValuesD2Repository implements DataValuesRepository {
         }
     }
 
-    async post(options: { dataValues: DataValueToPost[] }): Async<void> {
+    async post(options: { dataValues: DataValueToPost[]; dryRun?: boolean }): Async<void> {
         return this.postDataValueSet({
             dataValues: options.dataValues,
+            postParams: { dryRun: options.dryRun },
         });
     }
 

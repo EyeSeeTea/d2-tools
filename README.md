@@ -54,6 +54,7 @@ Available levels: 'debug' | 'info' | 'warn' | 'error'
     -   [Revert data values](#revert-data-values)
     -   [Delete duplicated event data values](#delete-duplicated-event-data-values)
     -   [Email notification for data values](#email-notification-for-data-values)
+    -   [Move data value set to a new org unit](#move-data-value-set-to-a-new-org-unit)
 -   [Notifications](#notifications)
     -   [Send user info email](#send-user-info-email)
 -   [Load testing](#load-testing)
@@ -484,6 +485,38 @@ ARGUMENTS:
 FLAGS:
   --dry-run  - Perform delete in dry run mode. To test that all data values can be deleted, the batch-size must be higher than the number of data values to delete per DE group.
   --help, -h - show help
+```
+
+
+### Move data value set to a new org unit
+
+Move a data set values from a source org unit to a target org unit. 
+The values can be limited to a date range via the start/end date option. If no start date is provided the script uses _1970-01-01_. If no end date is provided the script uses either the last day of the current year or the last day of the year of start date if its in the future.
+Its possible to delete the values in the target org unit before moving the values and to delete the values in the source org unit after moving the values.
+
+Usage example:
+```shell
+$ yarn start datavalues change-orgunit \
+    --url "http://localhost:8080" --auth "USER:PASSWORD" \
+    --dataset-id='Tu81BTLUuCT' --source-orgunit-id='XKKI1hhyFxk' --target-orgunit-id='XKKI1hhyFxK' --start-date='2026-01-01' --end-date='2026-01-31' --delete-target --delete-source --dry-run
+```
+
+#### Options
+```shell
+OPTIONS:
+  --url <str>               - http[s]://[USERNAME:PASSWORD@]HOST:PORT
+  --auth <value>            - USERNAME:PASSWORD [optional]
+  --dataset-id <str>        - Data set ID
+  --source-orgunit-id <str> - Source org unit ID
+  --target-orgunit-id <str> - Target org unit ID
+  --start-date <str>        - Start date (YYYY-MM-DD) [optional]
+  --end-date <str>          - End date (YYYY-MM-DD) [optional]
+
+FLAGS:
+  --delete-source - Delete the source data values after changing the org unit
+  --delete-target - Delete the target data values before changing the org unit
+  --dry-run       - Perform the operation in dry run mode
+  --help, -h      - show help
 ```
 
 ## Notifications
