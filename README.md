@@ -250,6 +250,8 @@ Notes:
 
 ## Translations
 
+### From spreadsheet
+
 Update objects from spreadsheet. Update any type of DHIS2 metadata object using a xlsx spreadsheet as a data source:
 
 ```shell
@@ -266,6 +268,28 @@ Expected format of `xlsx` file:
 -   A Column named `type`/`kind` specifies the DHIS2 entity type (singular). Example: `dataElement`, `dataSet`.
 -   Columns named `id`/`name`/`code` will be used to match the existing object in the database. No need to specify all of them.
 -   Translation columns should have the format: `field:localeName`. A DHIS2 Locale with that name should exist in the database. Example: `formName:French`.
+
+### To spreadsheet
+
+Generate a translations spreadsheet from the metadata objects of a DHIS2 instance. The output is re-importable by `from-spreadsheet`:
+
+```shell
+$ yarn start translations to-spreadsheet \
+  --url='http://USER:PASSWORD@HOST:PORT' \
+  --models='dataElements[name,formName],indicators[name]' \
+  --locales='Spanish,French' \
+  --include-data \
+  translations.xlsx
+```
+
+Notes:
+
+-   `--models`: comma-separated list of models to export. Each model must specify its translatable fields with `[field1,field2]` (e.g. `indicators[name,shortName]`); a model without fields raises an error.
+-   `--locales`: comma-separated list of locale names to include as columns, in the order given. The match ignores any ` (...)` suffix, so `Spanish` matches a `Spanish (Spain)` locale.
+-   `--include-data`: write one row per object with the source values and the existing translations. When omitted, only the header row is written (a column template).
+-   One sheet (tab) is generated per model type.
+-   Columns: `Type`, `UID`, then a group per field: the base source column `<field>` followed by one `<field>: <LocaleName>` column per selected locale.
+-   Each field group is color-coded (bold colored header, source column highlighted, translation cells lightly tinted) so the grid is easy to scan. The header row and the first three columns (`Type`, `UID` and the first source column) are frozen, and columns within a field group share the same width.
 
 ## Events
 
