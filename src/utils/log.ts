@@ -6,7 +6,8 @@ export type LogLevel = UnionFromValues<typeof logLevels>;
 // data layer -> domain layer
 const levelFromEnv = process.env["LOG_LEVEL"] || "";
 const level = isElementOfUnion(levelFromEnv, logLevels) ? levelFromEnv : "info";
-const levelIndex = logLevels.indexOf(level);
+// LOG_LEVEL=silent disables all output (used e.g. in tests). Any index above the levels works.
+const levelIndex = levelFromEnv === "silent" ? logLevels.length : logLevels.indexOf(level);
 
 function getLogger(logLevelIndex: number, level: LogLevel) {
     return function writer(message: string) {
