@@ -96,7 +96,7 @@ export class ImportTranslationsRepositorySpreadsheetRepository implements Import
                             if (isFirstRow) warn(`Locale not found in DB: name=${localeName}`);
                             return undefined;
                         } else {
-                            const property = _.upperCase(field).replace(/\s+/, "_");
+                            const property = _.upperCase(field).replace(/\s+/g, "_");
                             return { property: property, locale: locale.locale, value: text };
                         }
                     });
