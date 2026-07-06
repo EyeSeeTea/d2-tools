@@ -40,9 +40,27 @@ describe("ExportTranslationsUseCase", () => {
             includeData: true,
         });
 
-        expect(metadata.getAllWithTranslations).toHaveBeenCalledWith(["dataElements"]);
+        expect(metadata.getAllWithTranslations).toHaveBeenCalledWith(["dataElements"], {
+            programId: undefined,
+        });
         const { sheets } = exportTranslations.save.mock.calls[0][0];
         expect(sheets[0].model).toBe("dataElements");
+    });
+
+    test("scopes the fetch to the given program when programId is set", async () => {
+        const { useCase, metadata } = buildUseCase();
+
+        await useCase.execute({
+            outputFile: "out.xlsx",
+            models: [{ model: "dataElement", fields: ["name"] }],
+            locales: ["French"],
+            includeData: true,
+            programId: "PROG123",
+        });
+
+        expect(metadata.getAllWithTranslations).toHaveBeenCalledWith(["dataElements"], {
+            programId: "PROG123",
+        });
     });
 
     test("builds one sheet per model and passes outputFile/includeData through", async () => {

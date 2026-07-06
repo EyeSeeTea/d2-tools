@@ -18,6 +18,7 @@ interface Options {
     models: ModelSelection[];
     locales: string[]; // locale names, e.g. ["Spanish", "French"]
     includeData: boolean;
+    programId?: string; // when set, scope the export to this program's metadata dependency export
 }
 
 export class ExportTranslationsUseCase {
@@ -30,14 +31,16 @@ export class ExportTranslationsUseCase {
     ) {}
 
     async execute(options: Options): Async<void> {
-        const { outputFile, models, includeData } = options;
+        const { outputFile, models, includeData, programId } = options;
         const allLocales = await this.repositories.locales.get();
         const locales = this.resolveLocales(allLocales, options.locales);
 
         const sheets = await Promise.all(
             models.map(async (selection): Promise<ModelTranslationsExport> => {
                 const model = getPluralModel(selection.model);
-                const objects = await this.repositories.metadata.getAllWithTranslations([model]);
+                const objects = await this.repositories.metadata.getAllWithTranslations([model], {
+                    programId,
+                });
 
                 log.info(`${model}: ${objects.length} objects`);
 

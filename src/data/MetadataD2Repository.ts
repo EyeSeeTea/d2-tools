@@ -2,7 +2,12 @@ import _ from "lodash";
 import { D2Api } from "@eyeseetea/d2-api/2.36";
 import { Async } from "domain/entities/Async";
 import { Id } from "domain/entities/Base";
-import { MetadataRepository, Payload, SaveOptions } from "domain/repositories/MetadataRepository";
+import {
+    GetTranslationsOptions,
+    MetadataRepository,
+    Payload,
+    SaveOptions,
+} from "domain/repositories/MetadataRepository";
 import { getPluralModel, runMetadata } from "./dhis2-utils";
 import log from "utils/log";
 import {
@@ -18,8 +23,13 @@ import { Paginated } from "domain/entities/Pagination";
 export class MetadataD2Repository implements MetadataRepository {
     constructor(private api: D2Api) {}
 
-    async getAllWithTranslations(models: string[]): Async<MetadataObjectWithTranslations[]> {
-        return this.getMetadataObjects(models);
+    async getAllWithTranslations(
+        models: string[],
+        options?: GetTranslationsOptions
+    ): Async<MetadataObjectWithTranslations[]> {
+        return options?.programId
+            ? this.getProgramMetadataObjects(models, options.programId)
+            : this.getMetadataObjects(models);
     }
 
     async save(objects: MetadataObject[], options: SaveOptions): Async<{ payload: Payload; stats: object }> {
@@ -131,7 +141,26 @@ export class MetadataD2Repository implements MetadataRepository {
 
     private async getMetadataObjects(models: string[]): Async<MetadataObjectWithTranslations[]> {
         const metadata = await this.getD2Metadata(models);
+        return this.mapMetadataObjects(metadata);
+    }
 
+    /* Get objects from a program's metadata dependency export, keeping only the requested models.
+       The export groups objects by plural model name (plus non-array keys like "system", which
+       _.pick drops since they are not among the requested models). */
+    private async getProgramMetadataObjects(
+        models: string[],
+        programId: Id
+    ): Async<MetadataObjectWithTranslations[]> {
+        log.debug(`GET program metadata: ${programId}`);
+        const metadata = await this.api
+            .get<Metadata>(`/programs/${programId}/metadata.json`)
+            .getData();
+
+        const requestedModels = models.map(getPluralModel);
+        return this.mapMetadataObjects(_.pick(metadata, requestedModels));
+    }
+
+    private mapMetadataObjects(metadata: Metadata): MetadataObjectWithTranslations[] {
         return _(metadata)
             .toPairs()
             .flatMap(([modelPlural, d2Objects]) => {
