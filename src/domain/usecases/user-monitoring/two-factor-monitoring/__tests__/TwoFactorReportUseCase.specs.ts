@@ -624,15 +624,13 @@ function createUseCase({
 
     const userRepo = mock(TwoFactorUserD2Repository);
     when(userRepo.getUsersNotInGroupIds(deepEqual(excludedGroupIds))).thenResolve(users);
-    when(userRepo.disableUsers(anything())).thenResolve(
-        [
-            {
-                userId: "mock-user",
-                status: "success",
-                response: "Disabled users action is enabled and executed.",
-            },
-        ]
-    );
+    when(userRepo.disableUsers(anything())).thenResolve([
+        {
+            userId: "mock-user",
+            status: "success",
+            response: "Disabled users action is enabled and executed.",
+        },
+    ]);
 
     const reportRepo = mock(TwoFactorReportD2Repository);
     when(reportRepo.save(anything(), anything())).thenResolve("OK");

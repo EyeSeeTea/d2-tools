@@ -134,3 +134,4 @@ capture-core*
 /.env.*
 !/.env.template
 /src/dev-scripts/
+/src/scripts/dev/

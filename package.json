@@ -14,6 +14,7 @@
         "test": "yarn test-unit",
         "test-unit": "vitest run --reporter=basic",
         "test-unit-watch": "vitest watch",
+        "typecheck": "tsc --noEmit",
         "prettify": "prettier \"./**/*.{js,jsx,json,css,ts,tsx}\" --write",
         "release": "standard-version"
     },
@@ -27,6 +28,7 @@
         "csv-reader": "^1.0.8",
         "csv-writer": "^1.6.0",
         "d2-utilizr": "^0.2.16",
+        "fflate": "^0.8.3",
         "file-system-cache": "^2.0.0",
         "json-diff": "^0.7.3",
         "jsonfile": "^6.1.0",
@@ -40,7 +42,8 @@
         "random-seed": "^0.3.0",
         "simple-node-logger": "^21.8.12",
         "socks-proxy-agent": "^8.0.3",
-        "xlsx": "^0.18.5"
+        "xlsx": "^0.18.5",
+        "xlsx-js-style": "^1.2.0"
     },
     "devDependencies": {
         "@types/har-format": "^1.2.13",

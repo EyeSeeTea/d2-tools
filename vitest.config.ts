@@ -5,6 +5,8 @@ import { configDefaults } from "vitest/config";
 export default defineConfig({
     plugins: [tsconfigPaths()],
     test: {
+        // Silence the app logger (writes to stderr) during tests
+        env: { LOG_LEVEL: "silent" },
         // Added to fix the error: "ReferenceError: window is not defined"
         environment: "jsdom",
         // Added to ignore the *.data.ts files

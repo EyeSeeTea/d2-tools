@@ -1,6 +1,5 @@
 import { Id } from "./Base";
 import { Email } from "./Notification";
-import { OrgUnit } from "./OrgUnit";
 
 export type User = {
     id: Id;
@@ -11,6 +10,12 @@ export type User = {
     surname?: string;
     orgUnits?: OrgUnit[];
     code?: string;
+};
+
+type OrgUnit = {
+    id: Id;
+    name: string;
+    code: string;
 };
 
 export type UserAttribute = Pick<User, "email" | "username">;
