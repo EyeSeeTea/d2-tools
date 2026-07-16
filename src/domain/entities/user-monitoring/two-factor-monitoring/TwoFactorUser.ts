@@ -12,6 +12,11 @@ export interface TwoFactorUser {
     created: Timestamp;
 }
 
+export interface UserDateOverride {
+    createdDate: string;
+    users: Array<{ id: string; username?: string }>;
+}
+
 export function filterByCreationDate(
     users: TwoFactorUser[],
     disableAfterMonths: number | undefined
@@ -27,4 +32,15 @@ export function filterByCreationDate(
         const monthsDiff = getMonthsDiff(user.created, now);
         return monthsDiff >= disableAfterMonths;
     });
+}
+
+export function applyUserDateOverrides(
+    users: TwoFactorUser[],
+    overrides: UserDateOverride | undefined
+): TwoFactorUser[] {
+    if (!overrides) return users;
+    const overrideIds = new Set(overrides.users.map(u => u.id));
+    return users.map(user =>
+        overrideIds.has(user.id) ? { ...user, created: overrides.createdDate } : user
+    );
 }
