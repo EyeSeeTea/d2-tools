@@ -88,15 +88,17 @@ const run2FAReporterCmd = command({
 
     handler: async args => {
         const api = getApiFromConfigFile(args.configFile);
-        const userDateOverrides = args.createdDateOverridesFile
-            ? parseUserDateOverridesFile(args.createdDateOverridesFile)
-            : undefined;
 
-        if (userDateOverrides && !args.filteredByMonth) {
+        if (args.createdDateOverridesFile && !args.filteredByMonth) {
             log.warn(
                 "--created-date-overrides-file has no effect without --filtered-by-month. Date overrides will be ignored."
             );
         }
+
+        const userDateOverrides =
+            args.filteredByMonth && args.createdDateOverridesFile
+                ? parseUserDateOverridesFile(args.createdDateOverridesFile)
+                : undefined;
 
         const usersRepository = new TwoFactorUserD2Repository(api);
         const externalConfigRepository = new TwoFactorConfigD2Repository(api);
@@ -305,6 +307,16 @@ const localConfigCodec = Codec.Codec.interface({
     }),
 });
 
+const userDateOverrideCodec = Codec.Codec.interface({
+    createdDate: Codec.string,
+    users: Codec.array(
+        Codec.Codec.interface({
+            id: Codec.string,
+            username: Codec.optional(Codec.string),
+        })
+    ),
+});
+
 function getApiFromConfigFile(configFile: string): D2Api {
     const configUnparsed = JSON.parse(fs.readFileSync(configFile, "utf8"));
 
@@ -339,23 +351,28 @@ function getWebhookConfFromFile(configFile: string): MSTeamsWebhookOptions {
 }
 
 export function parseUserDateOverridesFile(filePath: string): UserDateOverride {
-    let raw: UserDateOverride;
+    let rawJson: unknown;
     try {
-        raw = JSON.parse(fs.readFileSync(filePath, "utf8")) as UserDateOverride;
+        rawJson = JSON.parse(fs.readFileSync(filePath, "utf8"));
     } catch {
         throw new Error(`Could not parse ${filePath} as JSON. Make sure the file contains valid JSON.`);
     }
-    if (typeof raw.createdDate !== "string" || !Array.isArray(raw.users)) {
-        throw new Error(
-            `Invalid format in ${filePath}: expected { "createdDate": "YYYY-MM-DD", "users": [{ "id": "uid" }] }`
-        );
-    }
-    if (!isValidIso8601(raw.createdDate)) {
-        throw new Error(
-            `Invalid createdDate "${raw.createdDate}" in ${filePath}: must be a valid ISO date (e.g. "2026-06-10").`
-        );
-    }
-    return raw;
+
+    return userDateOverrideCodec.decode(rawJson).caseOf({
+        Left: errors => {
+            throw new Error(
+                `Invalid format in ${filePath}: ${errors}. Expected { "createdDate": "YYYY-MM-DD", "users": [{ "id": "uid" }] }`
+            );
+        },
+        Right: override => {
+            if (!isValidIso8601(override.createdDate)) {
+                throw new Error(
+                    `Invalid createdDate "${override.createdDate}" in ${filePath}: must be a valid ISO date (e.g. "2026-06-10").`
+                );
+            }
+            return override;
+        },
+    });
 }
 
 export type UserMonitoringAuth = { apiurl: string };
