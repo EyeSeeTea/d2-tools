@@ -77,7 +77,9 @@ export class ExportTranslationsSpreadsheetRepository implements ExportTranslatio
 
         _.forEach(files, (content, name) => {
             if (!/^xl\/worksheets\/sheet\d+\.xml$/.test(name)) return;
-            const xml = decoder.decode(content).replace(/<sheetView ([^>]*?)\/>/, `<sheetView $1>${pane}</sheetView>`);
+            const xml = decoder
+                .decode(content)
+                .replace(/<sheetView ([^>]*?)\/>/, `<sheetView $1>${pane}</sheetView>`);
             files[name] = encoder.encode(xml);
         });
 
@@ -139,26 +141,37 @@ export class ExportTranslationsSpreadsheetRepository implements ExportTranslatio
             ...sheet.locales.map(locale => this.getTranslationColumn(field, locale)),
         ]);
 
-        return ["Type", "UID", ...fieldColumns];
+        return ["Type", "UID", "Name", ...fieldColumns];
     }
 
     /* Per-column color descriptors, aligned with getHeader. */
     private getColumnStyles(sheet: ModelTranslationsExport): ColumnStyle[] {
-        const meta: ColumnStyle = { kind: "meta", headerColor: metaColor.header, bodyColor: metaColor.body };
+        const meta: ColumnStyle = {
+            kind: "meta",
+            headerColor: metaColor.header,
+            bodyColor: metaColor.body,
+        };
 
         const fieldColumns = sheet.fields.flatMap((_field, index): ColumnStyle[] => {
             const palette = fieldPalette[index % fieldPalette.length];
             if (!palette) return [];
-            const base: ColumnStyle = { kind: "base", headerColor: palette.header, bodyColor: palette.base };
-            const locales = sheet.locales.map((): ColumnStyle => ({
-                kind: "locale",
+
+            const base: ColumnStyle = {
+                kind: "base",
                 headerColor: palette.header,
-                bodyColor: palette.locale,
-            }));
+                bodyColor: palette.base,
+            };
+            const locales = sheet.locales.map(
+                (): ColumnStyle => ({
+                    kind: "locale",
+                    headerColor: palette.header,
+                    bodyColor: palette.locale,
+                })
+            );
             return [base, ...locales];
         });
 
-        return [meta, meta, ...fieldColumns];
+        return [meta, meta, meta, ...fieldColumns];
     }
 
     private getRow(object: MetadataObjectWithTranslations, sheet: ModelTranslationsExport): string[] {
@@ -167,7 +180,7 @@ export class ExportTranslationsSpreadsheetRepository implements ExportTranslatio
             ...sheet.locales.map(locale => this.getTranslationValue(object, field, locale)),
         ]);
 
-        return [getSingularModel(sheet.model), object.id, ...fieldCells];
+        return [getSingularModel(sheet.model), object.id, object.name, ...fieldCells];
     }
 
     private getTranslationColumn(field: string, locale: Locale): string {
