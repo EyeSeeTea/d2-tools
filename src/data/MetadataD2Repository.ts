@@ -198,7 +198,8 @@ type D2Object = D2ObjectBase & {
 };
 
 function buildObject(object: MetadataObject): Partial<D2Object> {
-    return object;
+    // `model` is an internal-only field used for grouping; it must not leak into the metadata payload.
+    return _.omit(object, ["model"]);
 }
 
 interface BasicD2Object {
