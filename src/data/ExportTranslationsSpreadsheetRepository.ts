@@ -77,7 +77,9 @@ export class ExportTranslationsSpreadsheetRepository implements ExportTranslatio
 
         _.forEach(files, (content, name) => {
             if (!/^xl\/worksheets\/sheet\d+\.xml$/.test(name)) return;
-            const xml = decoder.decode(content).replace(/<sheetView ([^>]*?)\/>/, `<sheetView $1>${pane}</sheetView>`);
+            const xml = decoder
+                .decode(content)
+                .replace(/<sheetView ([^>]*?)\/>/, `<sheetView $1>${pane}</sheetView>`);
             files[name] = encoder.encode(xml);
         });
 
@@ -150,11 +152,13 @@ export class ExportTranslationsSpreadsheetRepository implements ExportTranslatio
             const palette = fieldPalette[index % fieldPalette.length];
             if (!palette) return [];
             const base: ColumnStyle = { kind: "base", headerColor: palette.header, bodyColor: palette.base };
-            const locales = sheet.locales.map((): ColumnStyle => ({
-                kind: "locale",
-                headerColor: palette.header,
-                bodyColor: palette.locale,
-            }));
+            const locales = sheet.locales.map(
+                (): ColumnStyle => ({
+                    kind: "locale",
+                    headerColor: palette.header,
+                    bodyColor: palette.locale,
+                })
+            );
             return [base, ...locales];
         });
 

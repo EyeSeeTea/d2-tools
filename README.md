@@ -935,14 +935,16 @@ A config file with the access info of the server and the message webhook details
 ```
 
 This reports stores data into the `d2-tools.user-roles-authorities-monitoring` datastore.
-If some change is detected for a UserRole Authorities a message is generated with three categories: 
-- New user roles detected with its authorities
-- Deleted user roles detected with its authorities
-- Updated user roles detected with a list of added and removed authorities
+If some change is detected for a UserRole Authorities a message is generated with three categories:
+
+-   New user roles detected with its authorities
+-   Deleted user roles detected with its authorities
+-   Updated user roles detected with a list of added and removed authorities
 
 If a authority assigned to a UserRole is deprecated (legacy authority, missing or removed app authority, etc) its name will be set to "DEPRECATED_AUTHORITY".
 
 Example of the message:
+
 ```
 New user roles detected:
 - NEW USER ROLE (Id: XXXXXXXXXXX) with authorities:
