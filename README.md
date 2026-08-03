@@ -259,6 +259,7 @@ $ yarn start translations from-spreadsheet \
   --url='http://USER:PASSWORD@HOST:PORT' \
   --save-payload=payload.json \
   --default-locale=en \
+  --bump-versions \
   --post \
   translations.xlsx
 ```
@@ -274,6 +275,7 @@ Notes:
 
 -   `--default-locale`: locale code of the default (DB) language, `en` for example. Its columns update the object field itself (`formName: English` writes `formName`) on top of creating the translation, so both stay in sync. The match uses only the language part, so `en` also matches a locale `en_GB`.
 -   A warning is shown for columns whose field the instance does not consider translatable (DHIS2 ignores unknown properties, so those columns would silently do nothing), and when `--default-locale` writes a unique field such as `name` or `shortName`, since duplicated values make the whole import fail.
+-   `--bump-versions`: increment the `version` of every data set and program using an updated data element. Apps typically cache the metadata, so without this the new translations keep showing as the old ones.
 
 ### To spreadsheet
 
