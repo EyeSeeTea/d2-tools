@@ -88,12 +88,39 @@ Both cases are warnings, not errors: the operator reviews them in the dry run be
   `fromName`) as translatable for that model
 - **THEN** a warning naming the model and field is logged once, and the run continues
 
+### Requirement: Refresh the Capture apps cache with --bump-versions
+
+The Capture apps cache the metadata of each data set and program, and refresh it only when that
+object's `version` changes, so an imported translation stays invisible in the app until the owning
+objects are bumped.
+
+The command SHALL provide a `--bump-versions` option that increments the `version` of every data
+set and program referencing a data element whose translations changed. The scope is deliberately
+data elements only: translating an option set, a tracked entity attribute or a program stage does
+not bump anything, even though those are cached too.
+
+The bump SHALL be opt-in, because it writes objects the operator never listed in the spreadsheet.
+It SHALL be skipped entirely, with no lookup request, when no object changed.
+
+#### Scenario: Only the owners of a changed data element are bumped
+
+- **WHEN** a data element's translations changed and the command runs with `--bump-versions --post`
+- **THEN** the data sets and programs referencing that data element are saved with their version
+  incremented by one (starting at 1 when unset), and the ones referencing only other data elements
+  are left untouched
+
+#### Scenario: Dry run reports the bumps without writing
+
+- **WHEN** the command runs with `--bump-versions` but without `--post`
+- **THEN** the intended bumps are logged and no data set or program is written
+
 ### Requirement: Dry-run by default, apply with --post
 
 The command SHALL only persist changes when `--post` is given; otherwise it SHALL validate the
 payload against the instance (`importMode=VALIDATE`) and report what would change. The
 `--save-payload` option SHALL write the computed metadata payload to a JSON file in either mode,
-so it can be reviewed or replayed.
+so it can be reviewed or replayed. The version bumps of `--bump-versions` are posted separately and
+are therefore not part of that payload.
 
 #### Scenario: Dry run reports without writing
 
