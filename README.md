@@ -258,6 +258,8 @@ Update objects from spreadsheet. Update any type of DHIS2 metadata object using 
 $ yarn start translations from-spreadsheet \
   --url='http://USER:PASSWORD@HOST:PORT' \
   --save-payload=payload.json \
+  --default-locale=en \
+  --bump-versions \
   --post \
   translations.xlsx
 ```
@@ -268,6 +270,12 @@ Expected format of `xlsx` file:
 -   A Column named `type`/`kind` specifies the DHIS2 entity type (singular). Example: `dataElement`, `dataSet`.
 -   Columns named `id`/`name`/`code` will be used to match the existing object in the database. No need to specify all of them.
 -   Translation columns should have the format: `field:localeName`. A DHIS2 Locale with that name should exist in the database. Example: `formName:French`.
+
+Notes:
+
+-   `--default-locale`: locale code of the default (DB) language, `en` for example. Its columns update the object field itself (`formName: English` writes `formName`) on top of creating the translation, so both stay in sync. The match uses only the language part, so `en` also matches a locale `en_GB`.
+-   A warning is shown for columns whose field the instance does not consider translatable (DHIS2 ignores unknown properties, so those columns would silently do nothing), and when `--default-locale` writes a unique field such as `name` or `shortName`, since duplicated values make the whole import fail.
+-   `--bump-versions`: increment the `version` of every data set and program using an updated data element. Apps typically cache the metadata, so without this the new translations keep showing as the old ones.
 
 ### To spreadsheet
 
@@ -927,14 +935,16 @@ A config file with the access info of the server and the message webhook details
 ```
 
 This reports stores data into the `d2-tools.user-roles-authorities-monitoring` datastore.
-If some change is detected for a UserRole Authorities a message is generated with three categories: 
-- New user roles detected with its authorities
-- Deleted user roles detected with its authorities
-- Updated user roles detected with a list of added and removed authorities
+If some change is detected for a UserRole Authorities a message is generated with three categories:
+
+-   New user roles detected with its authorities
+-   Deleted user roles detected with its authorities
+-   Updated user roles detected with a list of added and removed authorities
 
 If a authority assigned to a UserRole is deprecated (legacy authority, missing or removed app authority, etc) its name will be set to "DEPRECATED_AUTHORITY".
 
 Example of the message:
+
 ```
 New user roles detected:
 - NEW USER ROLE (Id: XXXXXXXXXXX) with authorities:

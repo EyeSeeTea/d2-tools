@@ -109,6 +109,7 @@ const fields = {
     id: true,
     name: true,
     code: true,
+    version: true,
     categoryCombo: { id: true, categoryOptionCombos: { id: true, name: true } },
     dataSetElements: {
         dataElement: {

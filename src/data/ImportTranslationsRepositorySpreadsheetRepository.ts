@@ -1,6 +1,6 @@
 import _ from "lodash";
 import { Async } from "domain/entities/Async";
-import { FieldTranslation, FieldTranslations } from "domain/entities/FieldTranslations";
+import { FieldTranslation, FieldTranslations, FieldValues } from "domain/entities/FieldTranslations";
 import {
     ImportTranslationsRepository,
     GetFieldTranslationsOptions,
@@ -9,7 +9,8 @@ import { SpreadsheetXlsxDataSource } from "domain/repositories/SpreadsheetXlsxRe
 import log from "utils/log";
 import { Maybe } from "utils/ts-utils";
 import { getPluralModel } from "./dhis2-utils";
-import { translationFieldToProperty } from "domain/entities/Translation";
+import { Translation, translationFieldToProperty } from "domain/entities/Translation";
+import { getLocaleInfo, LocaleCode } from "domain/entities/Locale";
 
 const columnsMapping = {
     id: ["id", "uid"],
@@ -29,6 +30,9 @@ const columnsMapping = {
     - ...
 
     Spreadsheets starting with '!' will be skipped.
+
+    Columns of the default locale (option --default-locale) also update the object field itself,
+    on top of its translation.
 */
 export class ImportTranslationsRepositorySpreadsheetRepository implements ImportTranslationsRepository {
     async get(options: GetFieldTranslationsOptions): Async<FieldTranslations> {
@@ -38,11 +42,14 @@ export class ImportTranslationsRepositorySpreadsheetRepository implements Import
         return _(spreadsheet.sheets)
             .reject(sheet => sheet.name.startsWith("!"))
             .flatMap((sheet): FieldTranslations => {
-                return _(sheet.rows)
+                const fieldTranslations = _(sheet.rows)
                     .map((row, rowIndex) => this.fromRow(row, rowIndex, `${sheet.name}:${rowIndex}`, options))
                     .compact()
                     .value();
+                log.info(`Sheet '${sheet.name}': ${fieldTranslations.length} rows parsed`);
+                return fieldTranslations;
             })
+
             .value();
     }
 
@@ -79,14 +86,14 @@ export class ImportTranslationsRepositorySpreadsheetRepository implements Import
             .filter(column => column.includes(":"))
             .value();
 
-        const translations = _(translationColumns)
+        const entries = _(translationColumns)
             .flatMap(translationColumn => {
                 const [fields = "", localeName] = translationColumn.split(":").map(s => s.trim());
 
                 return fields
                     .split(",")
                     .map(s => s.trim())
-                    .map(field => {
+                    .map((field): Maybe<ColumnEntry> => {
                         const locale = localeName ? localesByName[localeName] : undefined;
                         const text = row[translationColumn];
 
@@ -98,14 +105,22 @@ export class ImportTranslationsRepositorySpreadsheetRepository implements Import
                             return undefined;
                         } else {
                             const property = translationFieldToProperty(field);
-                            return { property: property, locale: locale.locale, value: text };
+                            const translation = { property: property, locale: locale.locale, value: text };
+                            // A default-locale column also updates the object field itself, so both
+                            // the field and its translation stay in sync.
+                            const isDefault = isDefaultLocale(locale.locale, options.defaultLocale);
+                            const fieldValue = isDefault ? { [_.camelCase(field)]: text } : undefined;
+                            return { translation, fieldValue };
                         }
                     });
             })
             .compact()
             .value();
 
-        return { model: getPluralModel(model), identifier: identifier, translations };
+        const translations = entries.map(entry => entry.translation);
+        const fieldValues: FieldValues = Object.assign({}, ...entries.map(entry => entry.fieldValue));
+
+        return { model: getPluralModel(model), identifier: identifier, translations, fields: fieldValues };
     }
 
     private getHeaderValue(row: Row, column: ColumnsMappingKey): Maybe<string> {
@@ -121,3 +136,15 @@ export class ImportTranslationsRepositorySpreadsheetRepository implements Import
 type Row = Record<string, string>;
 
 type ColumnsMappingKey = keyof typeof columnsMapping;
+
+interface ColumnEntry {
+    translation: Translation;
+    fieldValue: Maybe<FieldValues>;
+}
+
+/* Locales may be LANGUAGE or LANGUAGE_COUNTRY: compare only the language part, so a
+   --default-locale=en also matches a column mapped to en_GB. */
+function isDefaultLocale(locale: LocaleCode, defaultLocale: Maybe<LocaleCode>): boolean {
+    if (!defaultLocale) return false;
+    return getLocaleInfo(locale).language === getLocaleInfo(defaultLocale).language;
+}

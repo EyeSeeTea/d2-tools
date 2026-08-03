@@ -1,6 +1,6 @@
 import _ from "lodash";
 import { Async } from "domain/entities/Async";
-import { Id } from "domain/entities/Base";
+import { getId, Id } from "domain/entities/Base";
 import { ProgramExport } from "domain/entities/ProgramExport";
 import { ProgramsRepository, RunRulesOptions } from "domain/repositories/ProgramsRepository";
 import {
@@ -32,6 +32,7 @@ export class ProgramsD2Repository implements ProgramsRepository {
                         id: true,
                         name: true,
                         programType: true,
+                        version: true,
                         programStages: {
                             id: true,
                             name: true,
@@ -57,6 +58,24 @@ export class ProgramsD2Repository implements ProgramsRepository {
             .getData();
 
         return programs;
+    }
+
+    async save(programs: Program[]): Async<void> {
+        // The Program entity is a partial view of the D2 model, so the changed fields must be
+        // merged over the stored object: the metadata import uses mergeMode=REPLACE and would
+        // drop everything missing from the payload.
+        const { programs: programsExisting } = await this.api.metadata
+            .get({
+                programs: {
+                    fields: { $owner: true },
+                    filter: { id: { in: programs.map(getId) } },
+                },
+            })
+            .getData();
+
+        const payload: object = { programs: mergeProgramsWithExisting(programsExisting, programs) };
+        const res = await runMetadata(this.api.metadata.post(payload));
+        log.info(`Save programs (${programs.length}): ${res.status}`);
     }
 
     async export(options: { ids: Id[]; orgUnitIds: Id[] | undefined }): Async<ProgramExport> {
@@ -136,6 +155,33 @@ export class ProgramsD2Repository implements ProgramsRepository {
         const d2ProgramRules = new D2ProgramRules(this.api);
         return d2ProgramRules.run(options);
     }
+}
+
+/* Fields the Program entity owns and may write back. Everything else in the payload (including
+   the nested collections, which the entity holds only as a partial view) comes from the stored
+   object, as returned by the :owner preset. */
+const programWritableFields = ["name", "programType", "version"] as const;
+
+export function mergeProgramsWithExisting(programsExisting: D2ProgramOwner[], programs: Program[]): object[] {
+    const existingById = _.keyBy(programsExisting, program => program.id);
+
+    return _(programs)
+        .map(program => {
+            const programExisting = existingById[program.id];
+
+            if (!programExisting) {
+                log.warn(`Cannot find program: ${program.id}`);
+                return undefined;
+            } else {
+                return { ...programExisting, ..._.pick(program, programWritableFields) };
+            }
+        })
+        .compact()
+        .value();
+}
+
+export interface D2ProgramOwner {
+    id: Id;
 }
 
 interface D2ProgramExport {
