@@ -8,6 +8,7 @@ import { LocalesD2Repository } from "data/LocalesD2Repository";
 import { ImportTranslationsRepositorySpreadsheetRepository } from "data/ImportTranslationsRepositorySpreadsheetRepository";
 import { ExportTranslationsSpreadsheetRepository } from "data/ExportTranslationsSpreadsheetRepository";
 import { MetadataD2Repository } from "data/MetadataD2Repository";
+import { SchemasD2Repository } from "data/SchemasD2Repository";
 
 export function getCommand() {
     const translateFromSpreadsheetCmd = command({
@@ -24,6 +25,14 @@ export function getCommand() {
                 long: "save-payload",
                 description: "Save JSON payload to file",
             }),
+            defaultLocale: option({
+                type: optional(string),
+                long: "default-locale",
+                description:
+                    "Locale code of the default (DB) language. Its columns update the object field " +
+                    "itself, on top of its translation. Matched by language, so 'en' also matches " +
+                    "a locale en_GB. Example: en",
+            }),
             inputFile: positional({
                 type: string,
                 displayName: "INPUT_XLSX_PATH",
@@ -36,6 +45,7 @@ export function getCommand() {
             const repositories = {
                 metadata: new MetadataD2Repository(api),
                 locales: new LocalesD2Repository(api),
+                schemas: new SchemasD2Repository(api),
                 importTranslations: new ImportTranslationsRepositorySpreadsheetRepository(),
             };
             await new TranslateMetadataUseCase(repositories).execute(args);

@@ -3,18 +3,21 @@ import fs from "fs";
 import { Async } from "domain/entities/Async";
 import { MetadataRepository } from "domain/repositories/MetadataRepository";
 import { ImportTranslationsRepository } from "domain/repositories/ImportTranslationsRepository";
-import { Translation } from "domain/entities/Translation";
+import { TranslatableField, Translation, uniqueTranslatableFields } from "domain/entities/Translation";
 import log from "utils/log";
 import { FieldTranslations } from "domain/entities/FieldTranslations";
 import { LocalesRepository } from "domain/repositories/LocalesRepository";
+import { SchemasRepository } from "domain/repositories/SchemasRepository";
 import { MetadataObjectWithTranslations } from "domain/entities/MetadataObject";
 import { Maybe } from "utils/ts-utils";
 import { getId } from "domain/entities/Base";
+import { LocaleCode } from "domain/entities/Locale";
 
 interface Options {
     inputFile: string;
     savePayload?: string;
     post: boolean;
+    defaultLocale: Maybe<LocaleCode>;
 }
 
 export class TranslateMetadataUseCase {
@@ -22,6 +25,7 @@ export class TranslateMetadataUseCase {
         private repositories: {
             metadata: MetadataRepository;
             locales: LocalesRepository;
+            schemas: SchemasRepository;
             importTranslations: ImportTranslationsRepository;
         }
     ) {}
@@ -29,7 +33,7 @@ export class TranslateMetadataUseCase {
     async execute(options: Options): Async<void> {
         const { savePayload: saveToFile } = options;
         const objectsToPost = await this.getObjectsToPost(options);
-        log.info(`Payload: ${objectsToPost.length} objects`);
+        log.info(`Objects with changes: ${objectsToPost.length}`);
         const dryRun = !options.post;
 
         const { stats, payload } = await this.repositories.metadata.save(objectsToPost, { dryRun });
@@ -49,7 +53,10 @@ export class TranslateMetadataUseCase {
         const fieldTranslations = await this.repositories.importTranslations.get({
             inputFile: options.inputFile,
             locales: locales,
+            defaultLocale: options.defaultLocale,
         });
+
+        await this.validateFields(fieldTranslations);
 
         const models = _(fieldTranslations)
             .map(o => o.model)
@@ -59,8 +66,44 @@ export class TranslateMetadataUseCase {
         const objects = await this.repositories.metadata.getAllWithTranslations(models);
         const objectsWithTranslations = this.addTranslations(objects, fieldTranslations);
         const objectsWithChanges = _.differenceWith(objectsWithTranslations, objects, _.isEqual);
+        log.info(`Objects with translations: ${objectsWithTranslations.length}`);
 
         return objectsWithChanges;
+    }
+
+    /* Warn about columns whose field the instance does not consider translatable (DHIS2 ignores
+       unknown properties, so those columns would silently do nothing) and about default-locale
+       columns writing unique-constrained fields. One warning per model/field, not per row. */
+    private async validateFields(fieldTranslations: FieldTranslations): Async<void> {
+        const translatableFieldsByModel = await this.repositories.schemas.getTranslatableFields();
+
+        const usages = _(fieldTranslations)
+            .flatMap(({ model, fields, translations }) => {
+                const fromFields = _.keys(fields).map(field => ({ model, field, isFieldValue: true }));
+                // "FORM_NAME" -> "formName", back to the field the column refers to.
+                const fromTranslations = translations.map(translation => ({
+                    model: model,
+                    field: _.camelCase(translation.property),
+                    isFieldValue: false,
+                }));
+                return [...fromFields, ...fromTranslations];
+            })
+            .uniqBy(usage => [usage.model, usage.field, usage.isFieldValue].join("."))
+            .value();
+
+        usages.forEach(({ model, field, isFieldValue }) => {
+            // An unknown model is already reported by the object lookup, don't warn twice.
+            const translatableFields: Maybe<TranslatableField[]> = translatableFieldsByModel[model];
+
+            if (translatableFields && !translatableFields.includes(field)) {
+                log.warn(`Field not translatable, column ignored: ${model}.${field}`);
+            } else if (isFieldValue && uniqueTranslatableFields.includes(field)) {
+                log.warn(
+                    `Default locale writes the unique field ${model}.${field}: ` +
+                        `duplicated values will make the import fail`
+                );
+            }
+        });
     }
 
     private addTranslations(
@@ -89,6 +132,7 @@ export class TranslateMetadataUseCase {
                 } else {
                     return {
                         ...object,
+                        ...fieldTranslation.fields,
                         translations: this.mergeTranslations(
                             object.translations,
                             fieldTranslation.translations
