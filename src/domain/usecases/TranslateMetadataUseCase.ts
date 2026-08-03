@@ -8,9 +8,11 @@ import log from "utils/log";
 import { FieldTranslations } from "domain/entities/FieldTranslations";
 import { LocalesRepository } from "domain/repositories/LocalesRepository";
 import { SchemasRepository } from "domain/repositories/SchemasRepository";
+import { DataSetsRepository } from "domain/repositories/DataSetsRepository";
+import { ProgramsRepository } from "domain/repositories/ProgramsRepository";
 import { MetadataObjectWithTranslations } from "domain/entities/MetadataObject";
 import { Maybe } from "utils/ts-utils";
-import { getId } from "domain/entities/Base";
+import { getId, Id } from "domain/entities/Base";
 import { LocaleCode } from "domain/entities/Locale";
 
 interface Options {
@@ -18,6 +20,7 @@ interface Options {
     savePayload?: string;
     post: boolean;
     defaultLocale: Maybe<LocaleCode>;
+    bumpVersions: boolean;
 }
 
 export class TranslateMetadataUseCase {
@@ -27,6 +30,8 @@ export class TranslateMetadataUseCase {
             locales: LocalesRepository;
             schemas: SchemasRepository;
             importTranslations: ImportTranslationsRepository;
+            dataSets: DataSetsRepository;
+            programs: ProgramsRepository;
         }
     ) {}
 
@@ -44,6 +49,51 @@ export class TranslateMetadataUseCase {
             log.info(`Payload saved: ${saveToFile}`);
             const contents = JSON.stringify(payload, null, 4);
             fs.writeFileSync(saveToFile, contents);
+        }
+
+        if (options.bumpVersions) await this.bumpVersions(objectsToPost, options);
+    }
+
+    /* The Capture apps cache the metadata of each data set/program and refresh it only when its
+       version changes, so a translation update stays invisible until the data sets/programs using
+       the changed data elements are bumped. Posted separately, so --save-payload does not show it. */
+    private async bumpVersions(objects: MetadataObjectWithTranslations[], options: Options): Async<void> {
+        const dataElementIds = new Set(objects.filter(object => object.model === "dataElements").map(getId));
+
+        if (_.isEmpty(dataElementIds)) return;
+
+        const [dataSets, programs] = await Promise.all([
+            this.repositories.dataSets.getAll(),
+            this.repositories.programs.get({}),
+        ]);
+
+        const dataSetsToBump = dataSets.filter(dataSet =>
+            dataSet.dataSetElements.some(({ dataElement }) => dataElementIds.has(dataElement.id))
+        );
+
+        const programsToBump = programs.filter(program =>
+            program.programStages.some(programStage =>
+                programStage.programStageDataElements.some(({ dataElement }) =>
+                    dataElementIds.has(dataElement.id)
+                )
+            )
+        );
+
+        const dataSetsBumped = dataSetsToBump.map(dataSet => bumpVersion(dataSet, "dataSets"));
+        const programsBumped = programsToBump.map(program => bumpVersion(program, "programs"));
+
+        if (!options.post) {
+            log.info(`Versions not bumped (dryRun=true). Add option --post to persist`);
+            return;
+        }
+
+        if (!_.isEmpty(dataSetsBumped)) {
+            const result = await this.repositories.dataSets.post({ dataSets: dataSetsBumped });
+            if (result === "ERROR") throw new Error("Error while posting the dataSets");
+        }
+
+        if (!_.isEmpty(programsBumped)) {
+            await this.repositories.programs.save(programsBumped);
         }
     }
 
@@ -160,4 +210,15 @@ export class TranslateMetadataUseCase {
             .uniqBy(translation => [translation.locale, translation.property].join("."))
             .value();
     }
+}
+
+/* Objects never versioned have no version, start them at 1. */
+function bumpVersion<Obj extends { id: Id; name: string; version: Maybe<number> }>(
+    object: Obj,
+    model: string
+): Obj {
+    const version = (object.version ?? 0) + 1;
+    log.info(`Bump version ${model}:${object.id} (${object.name}): ${object.version ?? "-"} -> ${version}`);
+
+    return { ...object, version };
 }

@@ -9,6 +9,8 @@ import { ImportTranslationsRepositorySpreadsheetRepository } from "data/ImportTr
 import { ExportTranslationsSpreadsheetRepository } from "data/ExportTranslationsSpreadsheetRepository";
 import { MetadataD2Repository } from "data/MetadataD2Repository";
 import { SchemasD2Repository } from "data/SchemasD2Repository";
+import { DataSetsD2Repository } from "data/DataSetsD2Repository";
+import { ProgramsD2Repository } from "data/ProgramsD2Repository";
 
 export function getCommand() {
     const translateFromSpreadsheetCmd = command({
@@ -33,6 +35,12 @@ export function getCommand() {
                     "itself, on top of its translation. Matched by language, so 'en' also matches " +
                     "a locale en_GB. Example: en",
             }),
+            bumpVersions: flag({
+                long: "bump-versions",
+                description:
+                    "Increment the version of the data sets/programs using the updated data " +
+                    "elements, so the Capture apps refresh their cached metadata",
+            }),
             inputFile: positional({
                 type: string,
                 displayName: "INPUT_XLSX_PATH",
@@ -47,6 +55,8 @@ export function getCommand() {
                 locales: new LocalesD2Repository(api),
                 schemas: new SchemasD2Repository(api),
                 importTranslations: new ImportTranslationsRepositorySpreadsheetRepository(),
+                dataSets: new DataSetsD2Repository(api),
+                programs: new ProgramsD2Repository(api),
             };
             await new TranslateMetadataUseCase(repositories).execute(args);
 
