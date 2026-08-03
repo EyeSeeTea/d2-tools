@@ -152,9 +152,7 @@ export class MetadataD2Repository implements MetadataRepository {
         programId: Id
     ): Async<MetadataObjectWithTranslations[]> {
         log.debug(`GET program metadata: ${programId}`);
-        const metadata = await this.api
-            .get<Metadata>(`/programs/${programId}/metadata.json`)
-            .getData();
+        const metadata = await this.api.get<Metadata>(`/programs/${programId}/metadata.json`).getData();
 
         const requestedModels = models.map(getPluralModel);
         return this.mapMetadataObjects(_.pick(metadata, requestedModels));
