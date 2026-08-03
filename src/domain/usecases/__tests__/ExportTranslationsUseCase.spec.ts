@@ -30,6 +30,40 @@ describe("ExportTranslationsUseCase", () => {
         expect(warn).toHaveBeenCalledWith(expect.stringContaining("Klingon"));
     });
 
+    test("resolves a short reference by substring and strips the suffix from the column name", async () => {
+        const { useCase, exportTranslations } = buildUseCase([
+            { id: "1", name: "Southern Sotho (Lesotho)", locale: "st" },
+            { id: "2", name: "Thai (Thailand)", locale: "th" },
+        ]);
+
+        await useCase.execute({
+            outputFile: "out.xlsx",
+            models: [{ model: "dataElement", fields: ["name"] }],
+            locales: ["Sotho", "Thai"],
+            includeData: false,
+        });
+
+        const { sheets } = exportTranslations.save.mock.calls[0][0];
+        expect(sheets[0].locales.map((l: Locale) => l.locale)).toEqual(["st", "th"]);
+        expect(sheets[0].locales.map((l: Locale) => l.name)).toEqual(["Southern Sotho", "Thai"]);
+    });
+
+    test("throws when a reference is ambiguous (matches more than one locale)", async () => {
+        const { useCase } = buildUseCase([
+            { id: "1", name: "Norwegian Bokmål (Norway)", locale: "nb" },
+            { id: "2", name: "Norwegian Nynorsk (Norway)", locale: "nn" },
+        ]);
+
+        await expect(
+            useCase.execute({
+                outputFile: "out.xlsx",
+                models: [{ model: "dataElement", fields: ["name"] }],
+                locales: ["Norwegian"],
+                includeData: false,
+            })
+        ).rejects.toThrow(/Ambiguous locale "Norwegian"/);
+    });
+
     test("pluralizes the requested model for both the fetch and the sheet", async () => {
         const { useCase, metadata, exportTranslations } = buildUseCase();
 
@@ -40,9 +74,27 @@ describe("ExportTranslationsUseCase", () => {
             includeData: true,
         });
 
-        expect(metadata.getAllWithTranslations).toHaveBeenCalledWith(["dataElements"]);
+        expect(metadata.getAllWithTranslations).toHaveBeenCalledWith(["dataElements"], {
+            programId: undefined,
+        });
         const { sheets } = exportTranslations.save.mock.calls[0][0];
         expect(sheets[0].model).toBe("dataElements");
+    });
+
+    test("scopes the fetch to the given program when programId is set", async () => {
+        const { useCase, metadata } = buildUseCase();
+
+        await useCase.execute({
+            outputFile: "out.xlsx",
+            models: [{ model: "dataElement", fields: ["name"] }],
+            locales: ["French"],
+            includeData: true,
+            programId: "PROG123",
+        });
+
+        expect(metadata.getAllWithTranslations).toHaveBeenCalledWith(["dataElements"], {
+            programId: "PROG123",
+        });
     });
 
     test("builds one sheet per model and passes outputFile/includeData through", async () => {
@@ -61,15 +113,12 @@ describe("ExportTranslationsUseCase", () => {
         const options = exportTranslations.save.mock.calls[0][0];
         expect(options.outputFile).toBe("translations.xlsx");
         expect(options.includeData).toBe(true);
-        expect(options.sheets.map((s: { model: string }) => s.model)).toEqual([
-            "dataElements",
-            "indicators",
-        ]);
+        expect(options.sheets.map((s: { model: string }) => s.model)).toEqual(["dataElements", "indicators"]);
         expect(options.sheets[0].fields).toEqual(["name", "formName"]);
     });
 });
 
-function buildUseCase() {
+function buildUseCase(localesList: Locale[] = locales) {
     const object: MetadataObjectWithTranslations = {
         model: "dataElements",
         id: "abc",
@@ -84,7 +133,7 @@ function buildUseCase() {
         save: vi.fn(),
     } as unknown as MetadataRepository;
 
-    const localesRepo: LocalesRepository = { get: vi.fn().mockResolvedValue(locales) };
+    const localesRepo: LocalesRepository = { get: vi.fn().mockResolvedValue(localesList) };
     const exportTranslations = { save: vi.fn().mockResolvedValue(undefined) };
 
     const useCase = new ExportTranslationsUseCase({

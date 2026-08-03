@@ -6,6 +6,7 @@ import { LocalesRepository } from "domain/repositories/LocalesRepository";
 import { ExportTranslationsRepository } from "domain/repositories/ExportTranslationsRepository";
 import { ModelTranslationsExport } from "domain/entities/ModelTranslationsExport";
 import { getPluralModel } from "data/dhis2-utils";
+import { Maybe } from "utils/ts-utils";
 import log from "utils/log";
 
 export interface ModelSelection {
@@ -18,6 +19,7 @@ interface Options {
     models: ModelSelection[];
     locales: string[]; // locale names, e.g. ["Spanish", "French"]
     includeData: boolean;
+    programId?: string; // when set, scope the export to this program's metadata dependency export
 }
 
 export class ExportTranslationsUseCase {
@@ -30,14 +32,16 @@ export class ExportTranslationsUseCase {
     ) {}
 
     async execute(options: Options): Async<void> {
-        const { outputFile, models, includeData } = options;
+        const { outputFile, models, includeData, programId } = options;
         const allLocales = await this.repositories.locales.get();
         const locales = this.resolveLocales(allLocales, options.locales);
 
         const sheets = await Promise.all(
             models.map(async (selection): Promise<ModelTranslationsExport> => {
                 const model = getPluralModel(selection.model);
-                const objects = await this.repositories.metadata.getAllWithTranslations([model]);
+                const objects = await this.repositories.metadata.getAllWithTranslations([model], {
+                    programId,
+                });
 
                 log.info(`${model}: ${objects.length} objects`);
 
@@ -48,23 +52,48 @@ export class ExportTranslationsUseCase {
         await this.repositories.exportTranslations.save({ outputFile, sheets, includeData });
     }
 
-    /* Match requested locale names against DB locales, ignoring any " (...)" suffix and case
-       (mirrors the import matching). Example: "Spanish" matches "Spanish (Spain)". */
+    /* Resolve each requested name to a DB locale, allowing short references. The resolved locale's
+       name is stripped of its " (...)" suffix so the column header round-trips with the import
+       (which matches headers against suffix-stripped DB names). */
     private resolveLocales(dbLocales: Locale[], requestedNames: string[]): Locale[] {
-        const stripName = (name: string) =>
-            name
-                .replace(/\s*\(.*\)$/, "")
-                .trim()
-                .toLowerCase();
-        const localesByName = _.keyBy(dbLocales, locale => stripName(locale.name));
-
         return _(requestedNames)
-            .map(name => {
-                const locale = localesByName[stripName(name)];
-                if (!locale) log.warn(`Locale not found in DB: ${name}`);
-                return locale;
-            })
+            .map(name => this.resolveLocale(dbLocales, name))
             .compact()
             .value();
     }
+
+    /* Match one requested name against DB locales, ignoring case and any " (...)" suffix. An exact
+       base-name match wins; otherwise fall back to a substring match, so "Sotho" resolves to
+       "Southern Sotho (Lesotho)". A substring matching more than one locale is ambiguous and errors;
+       no match warns and is skipped. Example: "Spanish" matches "Spanish (Spain)". */
+    private resolveLocale(dbLocales: Locale[], requestedName: string): Maybe<Locale> {
+        const target = normalizeLocaleName(requestedName);
+        if (!target) return undefined;
+
+        const exact = dbLocales.filter(locale => normalizeLocaleName(locale.name) === target);
+        const matches =
+            exact.length > 0
+                ? exact
+                : dbLocales.filter(locale => normalizeLocaleName(locale.name).includes(target));
+
+        if (matches.length === 0) {
+            log.warn(`Locale not found in DB: ${requestedName}`);
+            return undefined;
+        } else if (matches.length > 1) {
+            const names = matches.map(locale => locale.name).join(", ");
+            throw new Error(`Ambiguous locale "${requestedName}", matches ${matches.length}: ${names}`);
+        }
+
+        const locale = matches[0]!;
+        return { ...locale, name: stripLocaleSuffix(locale.name) };
+    }
+}
+
+/* Drop a trailing " (...)" country/variant qualifier, keeping the original case. */
+function stripLocaleSuffix(name: string): string {
+    return name.replace(/\s*\(.*\)$/, "").trim();
+}
+
+function normalizeLocaleName(name: string): string {
+    return stripLocaleSuffix(name).toLowerCase();
 }
