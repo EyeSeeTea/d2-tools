@@ -42,7 +42,7 @@ export class MetadataD2Repository implements MetadataRepository {
             const pageSize = 100_000;
 
             const res$ = this.api.get<{ pager: Pager } & { [K in string]: D2User[] }>(`/${options.model}`, {
-                fields: "id,name,userCredentials[username]",
+                fields: "id,name,userCredentials[username],*",
                 pageSize: pageSize,
                 page: options.page,
             });
@@ -54,6 +54,7 @@ export class MetadataD2Repository implements MetadataRepository {
                         ...user,
                         model: options.model,
                         code: user.userCredentials.username,
+                        additionalFields: { ...user },
                     })
                 )
                 .value();
@@ -65,7 +66,7 @@ export class MetadataD2Repository implements MetadataRepository {
             const res$ = this.api.get<{ pager: Pager } & { [K in string]: BasicD2Object[] }>(
                 `/${getPluralModel(options.model)}`,
                 {
-                    fields: "id,name,code",
+                    fields: "id,name,code,*",
                     pageSize: pageSize,
                     page: options.page,
                 }
@@ -73,7 +74,9 @@ export class MetadataD2Repository implements MetadataRepository {
             const res = await res$.getData();
 
             const objects = _(res[options.model])
-                .map((obj): MetadataObject => ({ ...obj, model: options.model }))
+                .map(
+                    (obj): MetadataObject => ({ ...obj, model: options.model, additionalFields: { ...obj } })
+                )
                 .value();
 
             return { objects: objects, pager: res.pager };
