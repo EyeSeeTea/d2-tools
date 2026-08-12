@@ -45,16 +45,38 @@ const programIdsOptions = option({
     description: "List of program (comma-separated)",
 });
 
+const startDateArg = option({
+    type: optional(string),
+    long: "start-date",
+    description: "Start date",
+});
+
+const endDateArg = option({
+    type: optional(string),
+    long: "end-date",
+    description: "End date",
+});
+
 const exportCmd = command({
     name: "export",
     description: "Export program metadata and data (events, enrollments, TEIs)",
     args: {
-        url: getApiUrlOption(),
+        ...getApiUrlOptions(),
         programIds: programIdsOptions,
         orgUnitIds: option({
             type: optional(StringsSeparatedByCommas),
             long: "orgunits-ids",
             description: "List of organisation units (comma-separated)",
+        }),
+        startDate: startDateArg,
+        endDate: endDateArg,
+        descendants: flag({
+            long: "descendants",
+            description: "Include descendants of the specified organisation units",
+        }),
+        skipMetadata: flag({
+            long: "skip-metadata",
+            description: "Skip metadata export",
         }),
         outputFile: positional({
             type: string,
@@ -63,7 +85,7 @@ const exportCmd = command({
     },
     handler: async args => {
         if (_.isEmpty(args.programIds)) throw new Error("Missing program IDs");
-        const api = getD2Api(args.url);
+        const api = getD2ApiFromArgs(args);
         const programsRepository = new ProgramsD2Repository(api);
 
         new ExportProgramsUseCase(programsRepository).execute({
@@ -77,14 +99,14 @@ const importCmd = command({
     name: "import",
     description: "Import program metadata and data (events, enrollments, TEIs)",
     args: {
-        url: getApiUrlOption(),
+        ...getApiUrlOptions(),
         inputFile: positional({
             type: string,
             description: "Input file (JSON)",
         }),
     },
     handler: async args => {
-        const api = getD2Api(args.url);
+        const api = getD2ApiFromArgs(args);
         const programsRepository = new ProgramsD2Repository(api);
         new ImportProgramsUseCase(programsRepository).execute({
             inputFile: args.inputFile,
@@ -310,18 +332,6 @@ const orgUnitModeArg = option({
     type: optional(choiceOf(orgUnitModes)),
     long: "org-unit-mode",
     description: `Orgunit mode: ${orgUnitModes.join(", ")}`,
-});
-
-const startDateArg = option({
-    type: optional(string),
-    long: "start-date",
-    description: "Start date",
-});
-
-const endDateArg = option({
-    type: optional(string),
-    long: "end-date",
-    description: "End date",
 });
 
 const dataElementIdsInclude = option({
