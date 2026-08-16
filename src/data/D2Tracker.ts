@@ -98,6 +98,7 @@ export class D2Tracker {
                 const apiOptions = {
                     page: page,
                     pageSize: pageSize,
+                    // NOTE: For 2.41+ ouMode is orgUnitMode
                     ouMode: ouMode as typeof ouMode,
                     orgUnit: orgUnitIds?.join(";"),
                     fields: { $all: true } as const,

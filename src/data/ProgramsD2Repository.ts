@@ -148,7 +148,7 @@ export class ProgramsD2Repository implements ProgramsRepository {
 }
 
 interface D2ProgramExport {
-    metadata: object;
+    metadata?: object;
     data: D2ProgramData;
 }
 
