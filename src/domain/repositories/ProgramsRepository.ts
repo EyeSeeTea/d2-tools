@@ -6,7 +6,7 @@ import { ProgramExport } from "domain/entities/ProgramExport";
 
 export interface ProgramsRepository {
     get(options: { ids?: Id[]; programTypes?: ProgramType[] }): Async<Program[]>;
-    export(options: { ids: Id[] }): Async<ProgramExport>;
+    export(options: ExportOptions): Async<ProgramExport>;
     import(programExport: ProgramExport): Async<void>;
     runRules(options: RunRulesOptions): Async<void>;
     getAppUrl(options: { programId: Id; orgUnitId: Id }): string;
@@ -24,4 +24,13 @@ export interface RunRulesOptions {
     post: boolean;
     payloadPath?: string;
     backup: boolean;
+}
+
+export interface ExportOptions {
+    ids: Id[];
+    orgUnitIds?: Id[];
+    startDate?: Timestamp;
+    endDate?: Timestamp;
+    descendants?: boolean;
+    skipMetadata?: boolean;
 }

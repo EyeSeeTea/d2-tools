@@ -76,12 +76,14 @@ export class D2Tracker {
             orgUnitIds: string[] | undefined;
             trackedEntity?: string | undefined;
             children?: boolean;
+            startDate?: string;
+            endDate?: string;
         }
     ): Promise<Array<Mapping[Key][number]>> {
         type Output = Array<Mapping[Key][number]>;
 
         const output: Output = [];
-        const { programIds, orgUnitIds, trackedEntity } = options;
+        const { programIds, orgUnitIds, trackedEntity, startDate, endDate } = options;
 
         for (const programId of programIds) {
             let page = 1;
@@ -96,11 +98,14 @@ export class D2Tracker {
                 const apiOptions = {
                     page: page,
                     pageSize: pageSize,
+                    // NOTE: For 2.41+ ouMode is orgUnitMode
                     ouMode: ouMode as typeof ouMode,
                     orgUnit: orgUnitIds?.join(";"),
                     fields: { $all: true } as const,
                     program: programId,
                     trackedEntity,
+                    updatedAfter: startDate,
+                    updatedBefore: endDate,
                 };
 
                 const { tracker } = this.api;

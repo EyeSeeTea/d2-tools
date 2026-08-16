@@ -1,6 +1,7 @@
 import fs from "fs";
 import { Async } from "domain/entities/Async";
 import { Id } from "domain/entities/Base";
+import { Timestamp } from "domain/entities/Date";
 import { ProgramsRepository } from "domain/repositories/ProgramsRepository";
 import log from "utils/log";
 
@@ -20,4 +21,8 @@ interface ExportProgramsOptions {
     ids: Id[];
     outputFile: string;
     orgUnitIds?: Id[];
+    startDate?: Timestamp;
+    endDate?: Timestamp;
+    descendants?: boolean;
+    skipMetadata?: boolean;
 }

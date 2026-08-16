@@ -2,7 +2,7 @@ import _ from "lodash";
 import { Async } from "domain/entities/Async";
 import { Id } from "domain/entities/Base";
 import { ProgramExport } from "domain/entities/ProgramExport";
-import { ProgramsRepository, RunRulesOptions } from "domain/repositories/ProgramsRepository";
+import { ProgramsRepository, RunRulesOptions, ExportOptions } from "domain/repositories/ProgramsRepository";
 import {
     D2Api,
     D2TrackedEntityInstanceToPost,
@@ -59,11 +59,18 @@ export class ProgramsD2Repository implements ProgramsRepository {
         return programs;
     }
 
-    async export(options: { ids: Id[]; orgUnitIds: Id[] | undefined }): Async<ProgramExport> {
-        const { ids: programIds, orgUnitIds } = options;
-        const metadata = await this.getMetadata(programIds);
+    async export(options: ExportOptions): Async<ProgramExport> {
+        const {
+            ids: programIds,
+            orgUnitIds,
+            descendants: children,
+            skipMetadata,
+            startDate,
+            endDate,
+        } = options;
+        const metadata = skipMetadata ? undefined : await this.getMetadata(programIds);
 
-        const getOptions = { programIds, orgUnitIds };
+        const getOptions = { programIds, orgUnitIds, children, startDate, endDate };
         const events = await this.d2Tracker.getFromTracker("events", getOptions);
         const enrollments = await this.d2Tracker.getFromTracker("enrollments", getOptions);
         const trackedEntities = await this.d2Tracker.getFromTracker("trackedEntities", getOptions);
@@ -75,7 +82,7 @@ export class ProgramsD2Repository implements ProgramsRepository {
         }));
 
         return {
-            metadata,
+            metadata: metadata,
             data: {
                 events: events,
                 enrollments: enrollments,
@@ -114,8 +121,10 @@ export class ProgramsD2Repository implements ProgramsRepository {
     }
 
     async import(programExport: D2ProgramExport): Async<void> {
-        const metadataRes = await runMetadata(this.api.metadata.post(programExport.metadata));
-        log.info(`Metadata import status: ${metadataRes.status}`);
+        if (programExport.metadata) {
+            const metadataRes = await runMetadata(this.api.metadata.post(programExport.metadata));
+            log.info(`Metadata import status: ${metadataRes.status}`);
+        }
 
         const { events, enrollments, trackedEntities } = programExport.data;
         const teisById = _.keyBy(trackedEntities, tei => tei.trackedEntity);
@@ -139,7 +148,7 @@ export class ProgramsD2Repository implements ProgramsRepository {
 }
 
 interface D2ProgramExport {
-    metadata: object;
+    metadata?: object;
     data: D2ProgramData;
 }
 

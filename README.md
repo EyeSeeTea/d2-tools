@@ -109,6 +109,15 @@ Notes:
 
 Export a program with all its associated metadata and data (events, enrollments, tracked entities).
 
+The data can be filtered by:
+- Organization Unit via the `--orgunits-ids` option. If `--descendants` is used, the included orgUnits will be the specified and its descendants. Note that if no `--orgunits-ids` is provided the `ouMode` will be `ALL` and the `--descendants` option will be redundant.
+- The `lastUpdated` property using the `--start-date` and/or `--end-date` options.
+
+The metadata export can be skipped via the `--skip-metadata` option.
+
+The login details can be either provided as `--url='http://USER:PASSWORD@HOST:PORT'` or `--url='http://HOST:PORT' --auth='USER:PASSWORD'`. The `--auth` option is useful with complex passwords that can cause errors when used in the `--url` only approach.
+
+
 ```shell
 $ yarn start programs export --url='http://USER:PASSWORD@HOST:PORT' \
   --programs-ids=kX2GpLIa75l,kpNc7KvydVz programs.json
