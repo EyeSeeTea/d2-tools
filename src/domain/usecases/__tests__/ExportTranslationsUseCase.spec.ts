@@ -1,10 +1,14 @@
-import { describe, expect, test, vi } from "vitest";
+import { describe, expect, Mock, test, vi } from "vitest";
 import { ExportTranslationsUseCase } from "../ExportTranslationsUseCase";
 import { Locale } from "domain/entities/Locale";
 import { MetadataObjectWithTranslations } from "domain/entities/MetadataObject";
+import { ModelTranslationsExport } from "domain/entities/ModelTranslationsExport";
 import { MetadataRepository } from "domain/repositories/MetadataRepository";
 import { LocalesRepository } from "domain/repositories/LocalesRepository";
-import { ExportTranslationsRepository } from "domain/repositories/ExportTranslationsRepository";
+import {
+    ExportTranslationsOptions,
+    ExportTranslationsRepository,
+} from "domain/repositories/ExportTranslationsRepository";
 import log from "utils/log";
 
 const locales: Locale[] = [
@@ -25,8 +29,8 @@ describe("ExportTranslationsUseCase", () => {
             includeData: false,
         });
 
-        const { sheets } = exportTranslations.save.mock.calls[0][0];
-        expect(sheets[0].locales.map((l: Locale) => l.locale)).toEqual(["fr", "es"]);
+        const { sheets } = firstSaveOptions(exportTranslations);
+        expect(firstSheet(sheets).locales.map(l => l.locale)).toEqual(["fr", "es"]);
         expect(warn).toHaveBeenCalledWith(expect.stringContaining("Klingon"));
     });
 
@@ -41,8 +45,8 @@ describe("ExportTranslationsUseCase", () => {
         });
 
         expect(metadata.getAllWithTranslations).toHaveBeenCalledWith(["dataElements"]);
-        const { sheets } = exportTranslations.save.mock.calls[0][0];
-        expect(sheets[0].model).toBe("dataElements");
+        const { sheets } = firstSaveOptions(exportTranslations);
+        expect(firstSheet(sheets).model).toBe("dataElements");
     });
 
     test("builds one sheet per model and passes outputFile/includeData through", async () => {
@@ -58,14 +62,11 @@ describe("ExportTranslationsUseCase", () => {
             includeData: true,
         });
 
-        const options = exportTranslations.save.mock.calls[0][0];
+        const options = firstSaveOptions(exportTranslations);
         expect(options.outputFile).toBe("translations.xlsx");
         expect(options.includeData).toBe(true);
-        expect(options.sheets.map((s: { model: string }) => s.model)).toEqual([
-            "dataElements",
-            "indicators",
-        ]);
-        expect(options.sheets[0].fields).toEqual(["name", "formName"]);
+        expect(options.sheets.map(s => s.model)).toEqual(["dataElements", "indicators"]);
+        expect(firstSheet(options.sheets).fields).toEqual(["name", "formName"]);
     });
 });
 
@@ -85,13 +86,31 @@ function buildUseCase() {
     } as unknown as MetadataRepository;
 
     const localesRepo: LocalesRepository = { get: vi.fn().mockResolvedValue(locales) };
-    const exportTranslations = { save: vi.fn().mockResolvedValue(undefined) };
+    const exportTranslations: MockedExportTranslations = {
+        save: vi.fn<(options: ExportTranslationsOptions) => Promise<void>>().mockResolvedValue(),
+    };
 
     const useCase = new ExportTranslationsUseCase({
         metadata,
         locales: localesRepo,
-        exportTranslations: exportTranslations as unknown as ExportTranslationsRepository,
+        exportTranslations,
     });
 
     return { useCase, metadata, localesRepo, exportTranslations };
+}
+
+type MockedExportTranslations = ExportTranslationsRepository & {
+    save: Mock<(options: ExportTranslationsOptions) => Promise<void>>;
+};
+
+function firstSaveOptions(exportTranslations: MockedExportTranslations): ExportTranslationsOptions {
+    const [firstCall] = exportTranslations.save.mock.calls;
+    if (!firstCall) throw new Error("Expected exportTranslations.save to have been called");
+    return firstCall[0];
+}
+
+function firstSheet(sheets: ModelTranslationsExport[]): ModelTranslationsExport {
+    const [sheet] = sheets;
+    if (!sheet) throw new Error("Expected at least one sheet");
+    return sheet;
 }

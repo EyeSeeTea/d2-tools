@@ -126,7 +126,7 @@ describe("RunUserPermissionUseCase", () => {
 
         const result = useCase.execute();
 
-        expect(result).rejects.toThrowError("User: userusername don't have valid groups");
+        await expect(result).rejects.toThrowError("User: userusername don't have valid groups");
     });
 
     it("Should fix add minimal group if a user dont have any control template user group", async () => {
