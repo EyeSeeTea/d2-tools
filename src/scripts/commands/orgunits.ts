@@ -7,6 +7,7 @@ import { HierarchyLevel, OrgUnitPath } from "scripts/common";
 import { GenerateDeleteOrgUnitsActionUseCase } from "domain/usecases/GenerateDeleteOrgUnitsActionUseCase";
 import { OrgUnitActionSqlRepository } from "data/OrgUnitActionSqlRepository";
 import { OrgUnitAction } from "domain/OrgUnitAction";
+import { renameFromHierarchyCmd } from "./orgunits/renameFromHierarchyCmd";
 
 export function getCommand() {
     const removeCommand = command({
@@ -51,6 +52,7 @@ export function getCommand() {
         name: "orgunits",
         cmds: {
             remove: removeCommand,
+            "rename-from-hierarchy": renameFromHierarchyCmd,
         },
     });
 }

@@ -5,10 +5,7 @@ import { Async } from "domain/entities/Async";
 import { TwoFactorReportRepository } from "domain/repositories/user-monitoring/two-factor-monitoring/TwoFactorReportRepository";
 import { TwoFactorConfigRepository } from "domain/repositories/user-monitoring/two-factor-monitoring/TwoFactorConfigRepository";
 import { UserMonitoringProgramRepository } from "domain/repositories/user-monitoring/common/UserMonitoringProgramRepository";
-import {
-    TwoFactorUser,
-    filterByCreationDate,
-} from "domain/entities/user-monitoring/two-factor-monitoring/TwoFactorUser";
+import { filterByCreationDate } from "domain/entities/user-monitoring/two-factor-monitoring/TwoFactorUser";
 
 type TwoFactorReportResponse = { message: string; report: TwoFactorUserReport; disableUsersMessage: string };
 
@@ -115,8 +112,7 @@ export class RunTwoFactorReportUseCase {
             } else {
                 return {
                     message: saveResponse,
-                    disableUsersMessage:
-                        `Disabled users action is not executed due to no invalid users found.${filterInfo}`,
+                    disableUsersMessage: `Disabled users action is not executed due to no invalid users found.${filterInfo}`,
                     report,
                 };
             }
@@ -136,11 +132,10 @@ export class RunTwoFactorReportUseCase {
             .map(f => `${f.userId}${f.error ? ` (${String(f.error)})` : ""}`)
             .join(" | ");
 
-        return `Disabled users action is enabled and executed.${filterInfo} Success: ${successes.length}. Errors: ${
-            failures.length
-        }.${failureDetails ? ` Failed: ${failureDetails}` : ""}`;
+        return `Disabled users action is enabled and executed.${filterInfo} Success: ${
+            successes.length
+        }. Errors: ${failures.length}.${failureDetails ? ` Failed: ${failureDetails}` : ""}`;
     }
-
 }
 
 interface TwoFactorUseCaseOptions {

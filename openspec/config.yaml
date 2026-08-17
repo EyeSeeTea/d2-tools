@@ -1,0 +1,31 @@
+schema: spec-driven
+
+context: |
+    Read ./SPECS.md in the project root for full project context: what the project is, tech stack,
+    architecture and directory layout, canonical commands, code conventions, testing strategy, and
+    git workflow. Read it before producing any artifact and follow it.
+
+    Note: SPECS.md is the project overview (for humans and agents); it is distinct from the
+    behavioral capability specs under openspec/specs/.
+
+rules:
+    project:
+        - "Specs first: before modifying any behavior, check openspec/specs/ for existing specs. If behavior is unclear, read the spec. If no spec exists, propose one under changes/."
+        - Follow code conventions as defined in the project context above.
+
+    proposal:
+        - Typical sections to include (skip when non-relevant to the specific task): Goals, Non-goals, User impact, Compatibility, and Rollback plan.
+        - If changing public interfaces, explicitly list old vs new.
+
+    design:
+        - Must describe the data flow through the architecture layers.
+        - Note known constraints when relevant.
+
+    tasks:
+        - Include at least one task for tests when behavior changes.
+        - Include a task to update specs/ when behavior changes.
+
+    specs:
+        - "Tests are the behavioral source of truth. Specs provide design context that tests cannot express (goals, non-goals, design decisions, rationale)."
+        - "Specs and tests are complementary: specs capture the 'why', tests capture the 'what'."
+        - "Keep specs lean: avoid duplicating in markdown what is already asserted by well-named tests."

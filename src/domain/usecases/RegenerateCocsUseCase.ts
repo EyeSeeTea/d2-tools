@@ -1,38 +1,63 @@
 import _ from "lodash";
 import logger from "utils/log";
 import { getUid } from "data/dhis2";
-import { NamedRef } from "domain/entities/Base";
+import { Id, NamedRef } from "domain/entities/Base";
 import { CategoryCombo } from "domain/entities/CategoryCombo";
 import { CategoryComboRepository } from "domain/repositories/CategoryComboRepository";
 import { RegeneratedCoc } from "domain/entities/RegeneratedCoc";
 import { RegeneratedCocRepository } from "domain/repositories/RegeneratedCocRepository";
 import { Stats } from "domain/entities/Stats";
+import { CategoryOptionComboDeleteExporter } from "domain/repositories/CategoryOptionComboDeleteExporter";
+import { Maybe } from "utils/ts-utils";
 
 export class RegenerateCocsUseCase {
     constructor(
         private options: {
             categoryComboRepository: CategoryComboRepository;
             regeneratedCocRepository: RegeneratedCocRepository;
+            cocDeleteExporter: CategoryOptionComboDeleteExporter;
         }
     ) {}
 
     async execute(options: UseCaseArgs): Promise<RegenerateCocsUseCaseResult> {
-        const categoryCombos = await this.getCategoryCombos();
+        const categoryCombos = await this.getCategoryCombos(options);
         const categoryComboWithGeneratedCocs = categoryCombos.map(categoryCombo =>
             this.generateCombinationsFromCategoryCombo(categoryCombo)
         );
 
         await this.saveCocs(categoryComboWithGeneratedCocs, options);
-        await this.deleteCocs(categoryComboWithGeneratedCocs, options);
 
-        return { categoryCombos: categoryComboWithGeneratedCocs };
+        if (options.deleteCocs) {
+            await this.deleteCocs(categoryComboWithGeneratedCocs);
+        }
+
+        return {
+            categoryCombos: categoryComboWithGeneratedCocs,
+            sqlDeleteScript: this.buildSqlDeleteScript(options, categoryComboWithGeneratedCocs),
+        };
+    }
+
+    private buildSqlDeleteScript(
+        options: UseCaseArgs,
+        categoryComboWithGeneratedCocs: RegenerateCocsUseCaseResult["categoryCombos"]
+    ): Maybe<string> {
+        const { generateSqlDeleteScript } = options;
+        if (!generateSqlDeleteScript) return undefined;
+
+        const cocIdsToDelete = categoryComboWithGeneratedCocs.flatMap(item =>
+            item.cocsToDelete.map(coc => coc.id)
+        );
+        return this.options.cocDeleteExporter.exportDeleteScript(cocIdsToDelete);
     }
 
     private async saveCocs(
         categoryComboWithGeneratedCocs: RegenerateCocsUseCaseResult["categoryCombos"],
         options: UseCaseArgs
     ): Promise<Stats> {
-        const cocsToCreate = categoryComboWithGeneratedCocs.flatMap(item => item.categoryOptionCombos);
+        const cocsToCreate = _(categoryComboWithGeneratedCocs)
+            .flatMap(item => item.categoryOptionCombos)
+            .uniqBy(coc => coc.id)
+            .value();
         logger.info(`Saving ${cocsToCreate.length} categoryOptionCombos...`);
         const saveStats = await this.options.regeneratedCocRepository.save(cocsToCreate, {
             persist: options.persist,
@@ -43,24 +68,25 @@ export class RegenerateCocsUseCase {
     }
 
     private async deleteCocs(
-        categoryComboWithGeneratedCocs: RegenerateCocsUseCaseResult["categoryCombos"],
-        options: UseCaseArgs
+        categoryComboWithGeneratedCocs: RegenerateCocsUseCaseResult["categoryCombos"]
     ): Promise<Stats> {
-        const { deleteCocs } = options;
         const cocIdsToDelete = categoryComboWithGeneratedCocs.flatMap(item =>
             item.cocsToDelete.map(coc => coc.id)
         );
         logger.info(`Deleting ${cocIdsToDelete.length} categoryOptionCombos...`);
         const deleteStats = await this.options.regeneratedCocRepository.deleteByIds(cocIdsToDelete, {
-            persist: deleteCocs,
+            persist: true,
         });
         logger.info(`Finished: ${JSON.stringify(deleteStats, null, 2)}`);
         return deleteStats;
     }
 
-    private async getCategoryCombos(): Promise<CategoryCombo[]> {
+    private async getCategoryCombos(options: UseCaseArgs): Promise<CategoryCombo[]> {
         logger.info("Fetching categoryOptionCombos...");
-        const categoryCombos = await this.options.categoryComboRepository.getAll();
+        const categoryCombos =
+            options.catCombosIds && options.catCombosIds.length > 0
+                ? await this.options.categoryComboRepository.getByIds(options.catCombosIds)
+                : await this.options.categoryComboRepository.getAll();
         logger.info(`${categoryCombos.length} categoryOptionCombos found.`);
         return categoryCombos;
     }
@@ -88,8 +114,9 @@ export class RegenerateCocsUseCase {
         const categoryOptionCombos = combinations.map(
             (combination): { regeneratedCoc: RegeneratedCoc; toBeSaved: boolean } => {
                 const combinationName = combination.map(opt => opt.name).join(", ");
-
                 const combinationKey = this.getCategoryOptionComboKey(combination);
+                const categoryOptionComboId = getUid(combinationKey, categoryCombo.id);
+
                 const existingCategoryOptionCombo = existingCategoryOptionCombosByKey.get(combinationKey);
 
                 if (existingCategoryOptionCombo) {
@@ -108,7 +135,7 @@ export class RegenerateCocsUseCase {
 
                 return {
                     regeneratedCoc: RegeneratedCoc.create({
-                        id: getUid(combinationKey, categoryCombo.id),
+                        id: categoryOptionComboId,
                         name: combinationName,
                         categoryCombo: { id: categoryCombo.id },
                         categoryOptions: combination,
@@ -167,6 +194,7 @@ export class RegenerateCocsUseCase {
     private getCategoryOptionComboKey(categoryOptions: NamedRef[]): string {
         return _(categoryOptions)
             .map(categoryOption => categoryOption.id)
+            .sort()
             .uniq()
             .join("|");
     }
@@ -179,6 +207,12 @@ export type RegenerateCocsUseCaseResult = {
         allCategoryOptionCombos: RegeneratedCoc[];
         cocsToDelete: RegeneratedCoc[];
     }>;
+    sqlDeleteScript: Maybe<string>;
 };
 
-type UseCaseArgs = { deleteCocs: boolean; persist: boolean };
+type UseCaseArgs = {
+    catCombosIds: Maybe<Id[]>;
+    deleteCocs: boolean;
+    persist: boolean;
+    generateSqlDeleteScript: boolean;
+};
