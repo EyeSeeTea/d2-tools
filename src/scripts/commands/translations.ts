@@ -63,6 +63,20 @@ export function getCommand() {
                 long: "locales",
                 description: "Locales to include as columns, comma-separated. Example: Spanish,French",
             }),
+            programId: option({
+                type: optional(string),
+                long: "program-id",
+                description:
+                    "Scope the export to a program's metadata dependency export " +
+                    "(/api/programs/{id}/metadata) instead of the whole instance",
+            }),
+            dataSetId: option({
+                type: optional(string),
+                long: "data-set-id",
+                description:
+                    "Scope the export to a data set's metadata dependency export " +
+                    "(/api/dataSets/{id}/metadata) instead of the whole instance",
+            }),
             includeData: flag({
                 long: "include-data",
                 description:
@@ -89,6 +103,8 @@ export function getCommand() {
                 models: args.models,
                 locales: parseList(args.locales),
                 includeData: args.includeData,
+                programId: args.programId,
+                dataSetId: args.dataSetId,
             });
         },
     });

@@ -20,6 +20,7 @@ describe("ExportTranslationsSpreadsheetRepository.buildSheet", () => {
         expect(header).toEqual([
             "Type",
             "UID",
+            "Name",
             "name",
             "name: French",
             "name: Spanish",
@@ -41,7 +42,8 @@ describe("ExportTranslationsSpreadsheetRepository.buildSheet", () => {
         expect(rows[0]).toEqual([
             "dataElement",
             "id1",
-            "Hello",
+            "Hello", // Name (object.name)
+            "Hello", // name source value
             "Bonjour", // NAME / fr
             "", // NAME / es (missing)
             "HelloForm", // formName source value
@@ -50,7 +52,7 @@ describe("ExportTranslationsSpreadsheetRepository.buildSheet", () => {
         ]);
 
         // Second object has no formName field at all -> base column blank.
-        expect(rows[1]).toEqual(["dataElement", "id2", "Second", "", "", "", "", ""]);
+        expect(rows[1]).toEqual(["dataElement", "id2", "Second", "Second", "", "", "", "", ""]);
     });
 });
 
@@ -71,7 +73,7 @@ describe("ExportTranslationsSpreadsheetRepository.save (file round-trip)", () =>
         const rows = XLSX.utils.sheet_to_json<string[]>(worksheet, { header: 1, defval: "" });
         expect(rows[0]?.[0]).toBe("Type");
         expect(rows).toHaveLength(3); // header + 2 objects
-        expect(worksheet["!autofilter"]?.ref).toBe("A1:H3");
+        expect(worksheet["!autofilter"]?.ref).toBe("A1:I3");
     });
 
     test("with includeData=false the sheet has only the header row", async () => {
@@ -81,7 +83,7 @@ describe("ExportTranslationsSpreadsheetRepository.save (file round-trip)", () =>
         const worksheet = getSheet(workbook, "dataElements");
         const rows = XLSX.utils.sheet_to_json<string[]>(worksheet, { header: 1, defval: "" });
         expect(rows).toHaveLength(1);
-        expect(worksheet["!autofilter"]?.ref).toBe("A1:H1");
+        expect(worksheet["!autofilter"]?.ref).toBe("A1:I1");
     });
 });
 

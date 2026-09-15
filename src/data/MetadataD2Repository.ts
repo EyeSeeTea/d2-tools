@@ -2,7 +2,12 @@ import _ from "lodash";
 import { D2Api } from "@eyeseetea/d2-api/2.36";
 import { Async } from "domain/entities/Async";
 import { Id } from "domain/entities/Base";
-import { MetadataRepository, Payload, SaveOptions } from "domain/repositories/MetadataRepository";
+import {
+    GetTranslationsOptions,
+    MetadataRepository,
+    Payload,
+    SaveOptions,
+} from "domain/repositories/MetadataRepository";
 import { getPluralModel, runMetadata } from "./dhis2-utils";
 import log from "utils/log";
 import {
@@ -18,8 +23,17 @@ import { Paginated } from "domain/entities/Pagination";
 export class MetadataD2Repository implements MetadataRepository {
     constructor(private api: D2Api) {}
 
-    async getAllWithTranslations(models: string[]): Async<MetadataObjectWithTranslations[]> {
-        return this.getMetadataObjects(models);
+    async getAllWithTranslations(
+        models: string[],
+        options?: GetTranslationsOptions
+    ): Async<MetadataObjectWithTranslations[]> {
+        if (options?.programId) {
+            return this.getDependencyMetadataObjects(models, "programs", options.programId);
+        } else if (options?.dataSetId) {
+            return this.getDependencyMetadataObjects(models, "dataSets", options.dataSetId);
+        } else {
+            return this.getMetadataObjects(models);
+        }
     }
 
     async save(objects: MetadataObject[], options: SaveOptions): Async<{ payload: Payload; stats: object }> {
@@ -131,7 +145,25 @@ export class MetadataD2Repository implements MetadataRepository {
 
     private async getMetadataObjects(models: string[]): Async<MetadataObjectWithTranslations[]> {
         const metadata = await this.getD2Metadata(models);
+        return this.mapMetadataObjects(metadata);
+    }
 
+    /* Get objects from a program/dataSet metadata dependency export, keeping only the requested
+       models. The export groups objects by plural model name (plus non-array keys like "system",
+       which _.pick drops since they are not among the requested models). */
+    private async getDependencyMetadataObjects(
+        models: string[],
+        parentModel: "programs" | "dataSets",
+        parentId: Id
+    ): Async<MetadataObjectWithTranslations[]> {
+        log.debug(`GET ${parentModel} metadata: ${parentId}`);
+        const metadata = await this.api.get<Metadata>(`/${parentModel}/${parentId}/metadata.json`).getData();
+
+        const requestedModels = models.map(getPluralModel);
+        return this.mapMetadataObjects(_.pick(metadata, requestedModels));
+    }
+
+    private mapMetadataObjects(metadata: Metadata): MetadataObjectWithTranslations[] {
         return _(metadata)
             .toPairs()
             .flatMap(([modelPlural, d2Objects]) => {
@@ -169,7 +201,8 @@ type D2Object = D2ObjectBase & {
 };
 
 function buildObject(object: MetadataObject): Partial<D2Object> {
-    return object;
+    // `model` is an internal-only field used for grouping; it must not leak into the metadata payload.
+    return _.omit(object, ["model"]);
 }
 
 interface BasicD2Object {
