@@ -287,6 +287,7 @@ Notes:
 -   `--models`: comma-separated list of models to export. Each model must specify its translatable fields with `[field1,field2]` (e.g. `indicators[name,shortName]`); a model without fields raises an error.
 -   `--locales`: comma-separated list of locale names to include as columns, in the order given. The match ignores any ` (...)` suffix, so `Spanish` matches a `Spanish (Spain)` locale.
 -   `--include-data`: write one row per object with the source values and the existing translations. When omitted, only the header row is written (a column template).
+-   `--program-id=ID` / `--data-set-id=ID` (exclusive): scope the export to the objects in that program's or data set's metadata dependency export (`/api/programs/{id}/metadata`, `/api/dataSets/{id}/metadata`) instead of the whole instance. Only the requested `--models` are kept from the export.
 -   One sheet (tab) is generated per model type.
 -   Columns: `Type`, `UID`, then a group per field: the base source column `<field>` followed by one `<field>: <LocaleName>` column per selected locale.
 -   Each field group is color-coded (bold colored header, source column highlighted, translation cells lightly tinted) so the grid is easy to scan. The header row and the first three columns (`Type`, `UID` and the first source column) are frozen, and columns within a field group share the same width.

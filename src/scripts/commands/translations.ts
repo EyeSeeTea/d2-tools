@@ -70,6 +70,13 @@ export function getCommand() {
                     "Scope the export to a program's metadata dependency export " +
                     "(/api/programs/{id}/metadata) instead of the whole instance",
             }),
+            dataSetId: option({
+                type: optional(string),
+                long: "data-set-id",
+                description:
+                    "Scope the export to a data set's metadata dependency export " +
+                    "(/api/dataSets/{id}/metadata) instead of the whole instance",
+            }),
             includeData: flag({
                 long: "include-data",
                 description:
@@ -97,6 +104,7 @@ export function getCommand() {
                 locales: parseList(args.locales),
                 includeData: args.includeData,
                 programId: args.programId,
+                dataSetId: args.dataSetId,
             });
         },
     });

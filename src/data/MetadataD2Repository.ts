@@ -27,9 +27,13 @@ export class MetadataD2Repository implements MetadataRepository {
         models: string[],
         options?: GetTranslationsOptions
     ): Async<MetadataObjectWithTranslations[]> {
-        return options?.programId
-            ? this.getProgramMetadataObjects(models, options.programId)
-            : this.getMetadataObjects(models);
+        if (options?.programId) {
+            return this.getDependencyMetadataObjects(models, "programs", options.programId);
+        } else if (options?.dataSetId) {
+            return this.getDependencyMetadataObjects(models, "dataSets", options.dataSetId);
+        } else {
+            return this.getMetadataObjects(models);
+        }
     }
 
     async save(objects: MetadataObject[], options: SaveOptions): Async<{ payload: Payload; stats: object }> {
@@ -144,15 +148,16 @@ export class MetadataD2Repository implements MetadataRepository {
         return this.mapMetadataObjects(metadata);
     }
 
-    /* Get objects from a program's metadata dependency export, keeping only the requested models.
-       The export groups objects by plural model name (plus non-array keys like "system", which
-       _.pick drops since they are not among the requested models). */
-    private async getProgramMetadataObjects(
+    /* Get objects from a program/dataSet metadata dependency export, keeping only the requested
+       models. The export groups objects by plural model name (plus non-array keys like "system",
+       which _.pick drops since they are not among the requested models). */
+    private async getDependencyMetadataObjects(
         models: string[],
-        programId: Id
+        parentModel: "programs" | "dataSets",
+        parentId: Id
     ): Async<MetadataObjectWithTranslations[]> {
-        log.debug(`GET program metadata: ${programId}`);
-        const metadata = await this.api.get<Metadata>(`/programs/${programId}/metadata.json`).getData();
+        log.debug(`GET ${parentModel} metadata: ${parentId}`);
+        const metadata = await this.api.get<Metadata>(`/${parentModel}/${parentId}/metadata.json`).getData();
 
         const requestedModels = models.map(getPluralModel);
         return this.mapMetadataObjects(_.pick(metadata, requestedModels));

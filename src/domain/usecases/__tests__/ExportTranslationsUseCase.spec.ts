@@ -76,6 +76,7 @@ describe("ExportTranslationsUseCase", () => {
 
         expect(metadata.getAllWithTranslations).toHaveBeenCalledWith(["dataElements"], {
             programId: undefined,
+            dataSetId: undefined,
         });
         const { sheets } = exportTranslations.save.mock.calls[0][0];
         expect(sheets[0].model).toBe("dataElements");
@@ -94,7 +95,40 @@ describe("ExportTranslationsUseCase", () => {
 
         expect(metadata.getAllWithTranslations).toHaveBeenCalledWith(["dataElements"], {
             programId: "PROG123",
+            dataSetId: undefined,
         });
+    });
+
+    test("scopes the fetch to the given data set when dataSetId is set", async () => {
+        const { useCase, metadata } = buildUseCase();
+
+        await useCase.execute({
+            outputFile: "out.xlsx",
+            models: [{ model: "dataElement", fields: ["formName"] }],
+            locales: ["French"],
+            includeData: true,
+            dataSetId: "DS123",
+        });
+
+        expect(metadata.getAllWithTranslations).toHaveBeenCalledWith(["dataElements"], {
+            programId: undefined,
+            dataSetId: "DS123",
+        });
+    });
+
+    test("rejects programId and dataSetId set at the same time", async () => {
+        const { useCase } = buildUseCase();
+
+        await expect(
+            useCase.execute({
+                outputFile: "out.xlsx",
+                models: [{ model: "dataElement", fields: ["name"] }],
+                locales: ["French"],
+                includeData: true,
+                programId: "PROG123",
+                dataSetId: "DS123",
+            })
+        ).rejects.toThrow(/exclusive/);
     });
 
     test("builds one sheet per model and passes outputFile/includeData through", async () => {

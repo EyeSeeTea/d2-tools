@@ -20,6 +20,7 @@ interface Options {
     locales: string[]; // locale names, e.g. ["Spanish", "French"]
     includeData: boolean;
     programId?: string; // when set, scope the export to this program's metadata dependency export
+    dataSetId?: string; // when set, scope the export to this data set's metadata dependency export
 }
 
 export class ExportTranslationsUseCase {
@@ -32,7 +33,8 @@ export class ExportTranslationsUseCase {
     ) {}
 
     async execute(options: Options): Async<void> {
-        const { outputFile, models, includeData, programId } = options;
+        const { outputFile, models, includeData, programId, dataSetId } = options;
+        if (programId && dataSetId) throw new Error("Options programId and dataSetId are exclusive");
         const allLocales = await this.repositories.locales.get();
         const locales = this.resolveLocales(allLocales, options.locales);
 
@@ -41,6 +43,7 @@ export class ExportTranslationsUseCase {
                 const model = getPluralModel(selection.model);
                 const objects = await this.repositories.metadata.getAllWithTranslations([model], {
                     programId,
+                    dataSetId,
                 });
 
                 log.info(`${model}: ${objects.length} objects`);

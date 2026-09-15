@@ -19,10 +19,12 @@ export interface MetadataRepository {
     ): Async<{ payload: Payload; stats: object }>;
 }
 
-/* When programId is set, objects are taken from that program's metadata dependency export
-   (/api/programs/{id}/metadata) instead of the whole instance. */
+/* When programId/dataSetId is set, objects are taken from that program's/data set's metadata
+   dependency export (/api/programs/{id}/metadata, /api/dataSets/{id}/metadata) instead of the
+   whole instance. */
 export interface GetTranslationsOptions {
     programId?: Id;
+    dataSetId?: Id;
 }
 
 export type Payload = Record<MetadataModel, object[]>;
