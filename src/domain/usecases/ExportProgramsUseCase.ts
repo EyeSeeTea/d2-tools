@@ -21,8 +21,8 @@ interface ExportProgramsOptions {
     ids: Id[];
     outputFile: string;
     orgUnitIds?: Id[];
-    startDate?: Timestamp;
-    endDate?: Timestamp;
+    updatedStartDate?: Timestamp;
+    updatedEndDate?: Timestamp;
     descendants?: boolean;
     skipMetadata?: boolean;
 }

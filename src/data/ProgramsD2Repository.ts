@@ -65,12 +65,12 @@ export class ProgramsD2Repository implements ProgramsRepository {
             orgUnitIds,
             descendants: children,
             skipMetadata,
-            startDate,
-            endDate,
+            updatedStartDate,
+            updatedEndDate,
         } = options;
         const metadata = skipMetadata ? undefined : await this.getMetadata(programIds);
 
-        const getOptions = { programIds, orgUnitIds, children, startDate, endDate };
+        const getOptions = { programIds, orgUnitIds, children, updatedStartDate, updatedEndDate };
         const events = await this.d2Tracker.getFromTracker("events", getOptions);
         const enrollments = await this.d2Tracker.getFromTracker("enrollments", getOptions);
         const trackedEntities = await this.d2Tracker.getFromTracker("trackedEntities", getOptions);

@@ -76,14 +76,14 @@ export class D2Tracker {
             orgUnitIds: string[] | undefined;
             trackedEntity?: string | undefined;
             children?: boolean;
-            startDate?: string;
-            endDate?: string;
+            updatedStartDate?: string;
+            updatedEndDate?: string;
         }
     ): Promise<Array<Mapping[Key][number]>> {
         type Output = Array<Mapping[Key][number]>;
 
         const output: Output = [];
-        const { programIds, orgUnitIds, trackedEntity, startDate, endDate } = options;
+        const { programIds, orgUnitIds, trackedEntity, updatedStartDate, updatedEndDate } = options;
 
         for (const programId of programIds) {
             let page = 1;
@@ -104,16 +104,16 @@ export class D2Tracker {
                     fields: { $all: true } as const,
                     program: programId,
                     trackedEntity,
-                    updatedAfter: startDate,
-                    updatedBefore: endDate,
+                    updatedAfter: updatedStartDate,
                 };
 
                 const { tracker } = this.api;
 
                 const endpoint = {
-                    trackedEntities: () => tracker.trackedEntities.get(apiOptions),
+                    trackedEntities: () =>
+                        tracker.trackedEntities.get({ ...apiOptions, updatedBefore: updatedEndDate }),
                     enrollments: () => tracker.enrollments.get(apiOptions),
-                    events: () => tracker.events.get(apiOptions),
+                    events: () => tracker.events.get({ ...apiOptions, updatedBefore: updatedEndDate }),
                 };
 
                 const res = await endpoint[model]().getData();
@@ -122,7 +122,7 @@ export class D2Tracker {
                 if (instances.length === 0) {
                     dataRemaining = false;
                 } else {
-                    output.push(...instances);
+                    output.push(...this.filterByUpdatedEndDate(model, instances, updatedEndDate));
                     page++;
                 }
             }
@@ -130,6 +130,21 @@ export class D2Tracker {
         log.info(`GET ${model} -> Total: ${output.length}`);
 
         return output;
+    }
+
+    // NOTE: the enrollments endpoint has no updatedBefore param
+    private filterByUpdatedEndDate<Key extends TrackerDataKey>(
+        model: Key,
+        instances: Array<Mapping[Key][number]>,
+        updatedEndDate: string | undefined
+    ): Array<Mapping[Key][number]> {
+        if (!updatedEndDate || model !== "enrollments") return instances;
+
+        const endDate = new Date(updatedEndDate).getTime();
+
+        return (instances as Mapping["enrollments"]).filter(
+            enrollment => new Date(enrollment.updatedAt).getTime() < endDate
+        ) as Array<Mapping[Key][number]>;
     }
 }
 

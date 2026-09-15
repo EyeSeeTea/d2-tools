@@ -29,8 +29,8 @@ export interface RunRulesOptions {
 export interface ExportOptions {
     ids: Id[];
     orgUnitIds?: Id[];
-    startDate?: Timestamp;
-    endDate?: Timestamp;
+    updatedStartDate?: Timestamp;
+    updatedEndDate?: Timestamp;
     descendants?: boolean;
     skipMetadata?: boolean;
 }

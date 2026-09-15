@@ -1,5 +1,15 @@
 import _ from "lodash";
-import { command, string, subcommands, option, positional, optional, flag, restPositionals } from "cmd-ts";
+import {
+    command,
+    string,
+    subcommands,
+    option,
+    positional,
+    optional,
+    flag,
+    restPositionals,
+    Type,
+} from "cmd-ts";
 
 import {
     choiceOf,
@@ -45,16 +55,36 @@ const programIdsOptions = option({
     description: "List of program (comma-separated)",
 });
 
-const startDateArg = option({
-    type: optional(string),
-    long: "start-date",
-    description: "Start date",
+function trackerUpdatedDate(boundary: "start" | "end"): Type<string, string> {
+    return {
+        async from(str) {
+            const match = str.match(/^(\d{4}-\d{2}-\d{2})(?:T(\d{2}):(\d{2})(?::(\d{2})\.(\d{1,3}))?)?$/);
+            if (!match) {
+                throw new Error(
+                    `Invalid date: ${str} (expected YYYY-MM-DD, YYYY-MM-DDTHH:mm or YYYY-MM-DDTHH:mm:ss.sss)`
+                );
+            }
+            const [, date, hour, minute, second, milliseconds] = match;
+            if (hour === undefined) {
+                return `${date}T${boundary === "end" ? "23:59:59.999" : "00:00:00.000"}`;
+            }
+            return `${date}T${hour}:${minute}:${second ?? "00"}.${(milliseconds ?? "000").padEnd(3, "0")}`;
+        },
+    };
+}
+
+const updatedStartDateArg = option({
+    type: optional(trackerUpdatedDate("start")),
+    long: "updated-start-date",
+    description:
+        "Updated Start date: YYYY-MM-DD, YYYY-MM-DDTHH:mm or YYYY-MM-DDTHH:mm:ss.sss. A bare date defaults to the start of that day. Includes updatedAt equal or greater.",
 });
 
-const endDateArg = option({
-    type: optional(string),
-    long: "end-date",
-    description: "End date",
+const updatedEndDateArg = option({
+    type: optional(trackerUpdatedDate("end")),
+    long: "updated-end-date",
+    description:
+        "Updated End date: YYYY-MM-DD, YYYY-MM-DDTHH:mm or YYYY-MM-DDTHH:mm:ss.sss. A bare date defaults to the end of that day. Includes updatedAt strictly lesser.",
 });
 
 const exportCmd = command({
@@ -68,8 +98,8 @@ const exportCmd = command({
             long: "orgunits-ids",
             description: "List of organisation units (comma-separated)",
         }),
-        startDate: startDateArg,
-        endDate: endDateArg,
+        updatedStartDate: updatedStartDateArg,
+        updatedEndDate: updatedEndDateArg,
         descendants: flag({
             long: "descendants",
             description: "Include descendants of the specified organisation units",
@@ -80,6 +110,7 @@ const exportCmd = command({
         }),
         outputFile: positional({
             type: string,
+            displayName: "outputFile",
             description: "Output file (JSON)",
         }),
     },
@@ -332,6 +363,18 @@ const orgUnitModeArg = option({
     type: optional(choiceOf(orgUnitModes)),
     long: "org-unit-mode",
     description: `Orgunit mode: ${orgUnitModes.join(", ")}`,
+});
+
+const startDateArg = option({
+    type: optional(string),
+    long: "start-date",
+    description: "Start date",
+});
+
+const endDateArg = option({
+    type: optional(string),
+    long: "end-date",
+    description: "End date",
 });
 
 const dataElementIdsInclude = option({
