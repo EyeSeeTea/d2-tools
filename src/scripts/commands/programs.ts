@@ -1,15 +1,5 @@
 import _ from "lodash";
-import {
-    command,
-    string,
-    subcommands,
-    option,
-    positional,
-    optional,
-    flag,
-    restPositionals,
-    Type,
-} from "cmd-ts";
+import { command, string, subcommands, option, positional, optional, flag, restPositionals } from "cmd-ts";
 
 import {
     choiceOf,
@@ -19,6 +9,7 @@ import {
     getD2ApiFromArgs,
     StringPairSeparatedByDash,
     StringsSeparatedByCommas,
+    trackerUpdatedDate,
 } from "scripts/common";
 import { ProgramsD2Repository } from "data/ProgramsD2Repository";
 import { ExportProgramsUseCase } from "domain/usecases/ExportProgramsUseCase";
@@ -54,24 +45,6 @@ const programIdsOptions = option({
     long: "programs-ids",
     description: "List of program (comma-separated)",
 });
-
-function trackerUpdatedDate(boundary: "start" | "end"): Type<string, string> {
-    return {
-        async from(str) {
-            const match = str.match(/^(\d{4}-\d{2}-\d{2})(?:T(\d{2}):(\d{2})(?::(\d{2})\.(\d{1,3}))?)?$/);
-            if (!match) {
-                throw new Error(
-                    `Invalid date: ${str} (expected YYYY-MM-DD, YYYY-MM-DDTHH:mm or YYYY-MM-DDTHH:mm:ss.sss)`
-                );
-            }
-            const [, date, hour, minute, second, milliseconds] = match;
-            if (hour === undefined) {
-                return `${date}T${boundary === "end" ? "23:59:59.999" : "00:00:00.000"}`;
-            }
-            return `${date}T${hour}:${minute}:${second ?? "00"}.${(milliseconds ?? "000").padEnd(3, "0")}`;
-        },
-    };
-}
 
 const updatedStartDateArg = option({
     type: optional(trackerUpdatedDate("start")),
