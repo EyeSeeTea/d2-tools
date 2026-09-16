@@ -109,6 +109,16 @@ Notes:
 
 Export a program with all its associated metadata and data (events, enrollments, tracked entities).
 
+The data can be filtered by:
+-   Organization Unit via the `--orgunits-ids` option. If `--descendants` is used, the included orgUnits will be the specified and its descendants. Note that if no `--orgunits-ids` is provided the `ouMode` will be `ALL` and the `--descendants` option will be redundant.
+-   The `lastUpdated` property using the `--updated-start-date` and/or `--updated-end-date` options. These options accept one of `YYYY-MM-DD`, `YYYY-MM-DDTHH:mm` or `YYYY-MM-DDTHH:mm:ss.sss`. A date (`YYYY-MM-DD`) defaults to the start of that day for `--updated-start-date` and the end of that day for `--updated-end-date` (e.g. `--updated-end-date=2026-01-01` is treated as `2026-01-01T23:59:59.999`). If a time is given, missing seconds/milliseconds default to zero, e.g. `2026-01-01T06:00` is treated as `2026-01-01T06:00:00.000` for both. These options apply the following criteria: `--updated-start-date` will include elements with `updatedAt` equal or greater, `--updated-end-date` will include elements with `updatedAt` strictly lesser than it.
+
+**Please note that the updated date options are applied independently to the three metadata types (events, enrollments, tracked entities). This can lead to the export referencing elements that are not in the export. For example events whose parent enrollment and/or TEI has an `updatedAt` date that falls outside of the date window**
+
+The metadata export can be skipped via the `--skip-metadata` option.
+
+The login details can be either provided as `--url='http://USER:PASSWORD@HOST:PORT'` or `--url='http://HOST:PORT' --auth='USER:PASSWORD'`. The `--auth` option is useful with complex passwords that can cause errors when used in the `--url` only approach.
+
 ```shell
 $ yarn start programs export --url='http://USER:PASSWORD@HOST:PORT' \
   --programs-ids=kX2GpLIa75l,kpNc7KvydVz programs.json

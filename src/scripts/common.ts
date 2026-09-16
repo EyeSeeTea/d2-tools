@@ -181,9 +181,38 @@ export const FilePath: Type<string, string> = {
     },
 };
 
+function isValidCalendarDateTime(
+    year: number,
+    month: number,
+    day: number,
+    hour: number,
+    minute: number,
+    second: number
+): boolean {
+    const date = new Date(Date.UTC(year, month - 1, day, hour, minute, second));
+    return (
+        date.getUTCFullYear() === year &&
+        date.getUTCMonth() === month - 1 &&
+        date.getUTCDate() === day &&
+        date.getUTCHours() === hour &&
+        date.getUTCMinutes() === minute &&
+        date.getUTCSeconds() === second
+    );
+}
+
 function isValidDate(str: string): boolean {
-    const dateTimeRegex = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d{3})?)?$/;
-    return dateTimeRegex.test(str);
+    const match = str.match(/^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}):(\d{2})(?:\.\d{3})?)?$/);
+    if (!match) return false;
+
+    const [, year, month, day, hour = "0", minute = "0", second = "0"] = match;
+    return isValidCalendarDateTime(
+        Number(year),
+        Number(month),
+        Number(day),
+        Number(hour),
+        Number(minute),
+        Number(second)
+    );
 }
 
 export const MetadataDate: Type<string, string> = {
@@ -197,3 +226,38 @@ export const MetadataDate: Type<string, string> = {
         }
     },
 };
+
+export function trackerUpdatedDate(boundary: "start" | "end"): Type<string, string> {
+    return {
+        async from(str) {
+            const match = str.match(/^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2})(?::(\d{2})\.(\d{1,3}))?)?$/);
+            const invalidError = () =>
+                new Error(
+                    `Invalid date: ${str} (expected YYYY-MM-DD, YYYY-MM-DDTHH:mm or YYYY-MM-DDTHH:mm:ss.sss)`
+                );
+            if (!match) throw invalidError();
+
+            const [, year, month, day, hour, minute, second, milliseconds] = match;
+
+            if (
+                !isValidCalendarDateTime(
+                    Number(year),
+                    Number(month),
+                    Number(day),
+                    Number(hour ?? "0"),
+                    Number(minute ?? "0"),
+                    Number(second ?? "0")
+                )
+            ) {
+                throw invalidError();
+            }
+
+            if (hour === undefined) {
+                return `${year}-${month}-${day}T${boundary === "end" ? "23:59:59.999" : "00:00:00.000"}`;
+            }
+            return `${year}-${month}-${day}T${hour}:${minute}:${second ?? "00"}.${(
+                milliseconds ?? "000"
+            ).padEnd(3, "0")}`;
+        },
+    };
+}

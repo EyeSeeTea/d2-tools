@@ -9,6 +9,7 @@ import {
     getD2ApiFromArgs,
     StringPairSeparatedByDash,
     StringsSeparatedByCommas,
+    trackerUpdatedDate,
 } from "scripts/common";
 import { ProgramsD2Repository } from "data/ProgramsD2Repository";
 import { ExportProgramsUseCase } from "domain/usecases/ExportProgramsUseCase";
@@ -45,25 +46,50 @@ const programIdsOptions = option({
     description: "List of program (comma-separated)",
 });
 
+const updatedStartDateArg = option({
+    type: optional(trackerUpdatedDate("start")),
+    long: "updated-start-date",
+    description:
+        "Updated Start date: YYYY-MM-DD, YYYY-MM-DDTHH:mm or YYYY-MM-DDTHH:mm:ss.sss. A bare date defaults to the start of that day. Includes updatedAt equal or greater.",
+});
+
+const updatedEndDateArg = option({
+    type: optional(trackerUpdatedDate("end")),
+    long: "updated-end-date",
+    description:
+        "Updated End date: YYYY-MM-DD, YYYY-MM-DDTHH:mm or YYYY-MM-DDTHH:mm:ss.sss. A bare date defaults to the end of that day. Includes updatedAt strictly lesser.",
+});
+
 const exportCmd = command({
     name: "export",
     description: "Export program metadata and data (events, enrollments, TEIs)",
     args: {
-        url: getApiUrlOption(),
+        ...getApiUrlOptions(),
         programIds: programIdsOptions,
         orgUnitIds: option({
             type: optional(StringsSeparatedByCommas),
             long: "orgunits-ids",
             description: "List of organisation units (comma-separated)",
         }),
+        updatedStartDate: updatedStartDateArg,
+        updatedEndDate: updatedEndDateArg,
+        descendants: flag({
+            long: "descendants",
+            description: "Include descendants of the specified organisation units",
+        }),
+        skipMetadata: flag({
+            long: "skip-metadata",
+            description: "Skip metadata export",
+        }),
         outputFile: positional({
             type: string,
+            displayName: "outputFile",
             description: "Output file (JSON)",
         }),
     },
     handler: async args => {
         if (_.isEmpty(args.programIds)) throw new Error("Missing program IDs");
-        const api = getD2Api(args.url);
+        const api = getD2ApiFromArgs(args);
         const programsRepository = new ProgramsD2Repository(api);
 
         new ExportProgramsUseCase(programsRepository).execute({
@@ -77,14 +103,14 @@ const importCmd = command({
     name: "import",
     description: "Import program metadata and data (events, enrollments, TEIs)",
     args: {
-        url: getApiUrlOption(),
+        ...getApiUrlOptions(),
         inputFile: positional({
             type: string,
             description: "Input file (JSON)",
         }),
     },
     handler: async args => {
-        const api = getD2Api(args.url);
+        const api = getD2ApiFromArgs(args);
         const programsRepository = new ProgramsD2Repository(api);
         new ImportProgramsUseCase(programsRepository).execute({
             inputFile: args.inputFile,

@@ -1,5 +1,5 @@
 export interface ProgramExport {
-    metadata: object;
+    metadata?: object;
     data: ProgramData;
 }
 
