@@ -6,6 +6,7 @@ import { ProgramExport } from "domain/entities/ProgramExport";
 
 export interface ProgramsRepository {
     get(options: { ids?: Id[]; programTypes?: ProgramType[] }): Async<Program[]>;
+    save(programs: Program[]): Async<void>;
     export(options: { ids: Id[] }): Async<ProgramExport>;
     import(programExport: ProgramExport): Async<void>;
     runRules(options: RunRulesOptions): Async<void>;

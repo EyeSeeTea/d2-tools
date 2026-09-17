@@ -61,10 +61,7 @@ describe("ExportTranslationsUseCase", () => {
         const options = exportTranslations.save.mock.calls[0][0];
         expect(options.outputFile).toBe("translations.xlsx");
         expect(options.includeData).toBe(true);
-        expect(options.sheets.map((s: { model: string }) => s.model)).toEqual([
-            "dataElements",
-            "indicators",
-        ]);
+        expect(options.sheets.map((s: { model: string }) => s.model)).toEqual(["dataElements", "indicators"]);
         expect(options.sheets[0].fields).toEqual(["name", "formName"]);
     });
 });

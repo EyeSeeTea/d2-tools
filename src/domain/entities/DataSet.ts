@@ -1,3 +1,4 @@
+import { Maybe } from "utils/ts-utils";
 import { Id, NamedRef, Ref } from "./Base";
 
 export interface DataSetToCompare {
@@ -47,6 +48,8 @@ export interface DataSet {
     id: Id;
     name: string;
     code: string;
+    // The Capture apps cache the data set metadata and refresh it only when the version changes.
+    version: Maybe<number>;
     skipOffline: boolean;
     categoryCombo: CategoryCombo;
     dataSetElements: Array<{

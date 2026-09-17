@@ -7,6 +7,8 @@ export interface Program {
     id: Id;
     name: string;
     programType: ProgramType;
+    // The Capture apps cache the program metadata and refresh it only when the version changes.
+    version: Maybe<number>;
     programStages: ProgramStage[];
 }
 
