@@ -63,6 +63,27 @@ describe("TranslateMetadataUseCase", () => {
         );
     });
 
+    test("passes the translatable fields of the instance to the spreadsheet reader", async () => {
+        const { useCase, importTranslations } = buildUseCase();
+
+        await execute(useCase, { post: false, bumpVersions: false });
+
+        expect(importTranslations.get).toHaveBeenCalledWith(
+            expect.objectContaining({
+                translatableFields: { dataElements: expect.arrayContaining(["name"]) },
+            })
+        );
+    });
+
+    test("logs a summary of the fields updated per model", async () => {
+        const { useCase } = buildUseCase();
+        vi.spyOn(log, "info").mockImplementation(() => undefined);
+
+        await execute(useCase, { post: false, bumpVersions: false });
+
+        expect(log.info).toHaveBeenCalledWith("dataElements: 1 rows update fields [formName]");
+    });
+
     test("writes the default-locale fields on the object, on top of the translations", async () => {
         const { useCase, metadata } = buildUseCase();
 
@@ -98,7 +119,7 @@ describe("TranslateMetadataUseCase", () => {
         expect(log.warn).toHaveBeenCalledWith(expect.stringContaining("dataElements.fromName"));
     });
 
-    test("warns when the default locale writes a unique field", async () => {
+    test("warns when a column writes a unique field", async () => {
         const { useCase } = buildUseCase({
             fieldTranslations: [
                 { ...fieldTranslation, translations: [], fields: { name: "Malaria cases (new)" } },

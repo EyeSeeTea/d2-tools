@@ -52,6 +52,30 @@ the current one SHALL be posted.
 - **WHEN** an object has a French `FORM_NAME` translation and the sheet only carries a Spanish one
 - **THEN** the posted object keeps the French translation and gains the Spanish one
 
+### Requirement: Bare field columns update the object field
+
+A column headed exactly as a translatable field of the row's model, with no locale (`formName`,
+`shortName`), SHALL write that field on the object. This is the layout `to-spreadsheet` generates
+(source column followed by its locale columns), so an unedited export round-trips as a no-op and
+edited source cells are posted without any option. Columns matching no translatable field of the
+model SHALL be ignored with a warning once per sheet. Empty cells SHALL not blank the field.
+
+`name` doubles as a lookup key: it SHALL be written only when the row also carries an `id` or
+`code`, otherwise a case-insensitive name match would rename the object to the sheet's spelling.
+The run SHALL log, per model, how many rows update which fields, so field changes are visible in
+the dry run alongside the translations.
+
+#### Scenario: Edited source column is posted
+
+- **WHEN** a row has `id`, `name` and `name: French` columns and the `name` cell differs from the
+  object's current name
+- **THEN** the posted object has the new `name` and the French `NAME` translation
+
+#### Scenario: Name-only rows are not renamed
+
+- **WHEN** a row identifies the object only by `name`
+- **THEN** the name is used to find the object and is not written back as a field
+
 ### Requirement: Default-locale columns also update the object field
 
 The command SHALL provide a `--default-locale` option taking the locale code of the instance's
@@ -77,8 +101,8 @@ declares in `/api/schemas`, and SHALL warn once per model/field (not per row) wh
 not translatable there — DHIS2 ignores unknown properties, so such a column would post
 successfully while changing nothing.
 
-It SHALL also warn when `--default-locale` writes a unique-constrained field (`name`,
-`shortName`), because a duplicated value makes the whole metadata payload fail to validate.
+It SHALL also warn when a column writes a unique-constrained field (`name`, `shortName`),
+because a duplicated value makes the whole metadata payload fail to validate.
 
 Both cases are warnings, not errors: the operator reviews them in the dry run before posting.
 

@@ -10,7 +10,7 @@ import { LocalesRepository } from "domain/repositories/LocalesRepository";
 import { SchemasRepository } from "domain/repositories/SchemasRepository";
 import { DataSetsRepository } from "domain/repositories/DataSetsRepository";
 import { ProgramsRepository } from "domain/repositories/ProgramsRepository";
-import { MetadataObjectWithTranslations } from "domain/entities/MetadataObject";
+import { MetadataModel, MetadataObjectWithTranslations } from "domain/entities/MetadataObject";
 import { Maybe } from "utils/ts-utils";
 import { getId, Id } from "domain/entities/Base";
 import { LocaleCode } from "domain/entities/Locale";
@@ -98,15 +98,20 @@ export class TranslateMetadataUseCase {
     }
 
     private async getObjectsToPost(options: Options) {
-        const locales = await this.repositories.locales.get();
+        const [locales, translatableFieldsByModel] = await Promise.all([
+            this.repositories.locales.get(),
+            this.repositories.schemas.getTranslatableFields(),
+        ]);
 
         const fieldTranslations = await this.repositories.importTranslations.get({
             inputFile: options.inputFile,
             locales: locales,
             defaultLocale: options.defaultLocale,
+            translatableFields: translatableFieldsByModel,
         });
 
-        await this.validateFields(fieldTranslations);
+        this.validateFields(fieldTranslations, translatableFieldsByModel);
+        this.logFieldUpdates(fieldTranslations);
 
         const models = _(fieldTranslations)
             .map(o => o.model)
@@ -122,11 +127,12 @@ export class TranslateMetadataUseCase {
     }
 
     /* Warn about columns whose field the instance does not consider translatable (DHIS2 ignores
-       unknown properties, so those columns would silently do nothing) and about default-locale
-       columns writing unique-constrained fields. One warning per model/field, not per row. */
-    private async validateFields(fieldTranslations: FieldTranslations): Async<void> {
-        const translatableFieldsByModel = await this.repositories.schemas.getTranslatableFields();
-
+       unknown properties, so those columns would silently do nothing) and about columns writing
+       unique-constrained fields. One warning per model/field, not per row. */
+    private validateFields(
+        fieldTranslations: FieldTranslations,
+        translatableFieldsByModel: Record<MetadataModel, TranslatableField[]>
+    ): void {
         const usages = _(fieldTranslations)
             .flatMap(({ model, fields, translations }) => {
                 const fromFields = _.keys(fields).map(field => ({ model, field, isFieldValue: true }));
@@ -149,11 +155,26 @@ export class TranslateMetadataUseCase {
                 log.warn(`Field not translatable, column ignored: ${model}.${field}`);
             } else if (isFieldValue && uniqueTranslatableFields.includes(field)) {
                 log.warn(
-                    `Default locale writes the unique field ${model}.${field}: ` +
+                    `Writing the unique field ${model}.${field}: ` +
                         `duplicated values will make the import fail`
                 );
             }
         });
+    }
+
+    /* Field updates go beyond translations, make them visible in the (dry) run output. */
+    private logFieldUpdates(fieldTranslations: FieldTranslations): void {
+        _(fieldTranslations)
+            .filter(({ fields }) => !_.isEmpty(fields))
+            .groupBy(({ model }) => model)
+            .forEach((group, model) => {
+                const fields = _(group)
+                    .flatMap(({ fields }) => _.keys(fields))
+                    .uniq()
+                    .sort()
+                    .join(", ");
+                log.info(`${model}: ${group.length} rows update fields [${fields}]`);
+            });
     }
 
     private addTranslations(

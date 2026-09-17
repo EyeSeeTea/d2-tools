@@ -6,8 +6,8 @@ export interface FieldTranslation {
     model: string; // plural
     identifier: Partial<{ id: string; name: string; code: string }>;
     translations: Translation[];
-    /* Values to write on the object itself, not as a translation. Filled from the columns whose
-       locale is the default locale (see option --default-locale). */
+    /* Values to write on the object itself, not as a translation. Filled from the bare field
+       columns (no locale) and from the columns of the default locale (option --default-locale). */
     fields: FieldValues;
 }
 

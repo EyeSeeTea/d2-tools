@@ -25,7 +25,8 @@ const columnsMapping = {
     - id/uid
     - code
     - name
-    - FIELD1: LANGUAGE_NAME1
+    - FIELD1 -> updates the object field itself (example: formName)
+    - FIELD1: LANGUAGE_NAME1 -> updates the translation
     - FIELD2: LANGUAGE_NAME2
     - ...
 
@@ -118,9 +119,41 @@ export class ImportTranslationsRepositorySpreadsheetRepository implements Import
             .value();
 
         const translations = entries.map(entry => entry.translation);
-        const fieldValues: FieldValues = Object.assign({}, ...entries.map(entry => entry.fieldValue));
+        const pluralModel = getPluralModel(model);
+        const bareFieldValues = this.getBareFieldValues(row, pluralModel, identifier, options);
 
-        return { model: getPluralModel(model), identifier: identifier, translations, fields: fieldValues };
+        // An explicit default-locale column wins over the bare column of the same field.
+        const fieldValues: FieldValues = Object.assign(
+            {},
+            bareFieldValues,
+            ...entries.map(entry => entry.fieldValue)
+        );
+
+        return { model: pluralModel, identifier: identifier, translations, fields: fieldValues };
+    }
+
+    /* A bare column (no locale) named exactly as a translatable field of the model writes that
+       field. The name column doubles as the lookup key: it's written only when the row also has
+       an id or code, otherwise a case-insensitive lookup match would rename the object. */
+    private getBareFieldValues(
+        row: Row,
+        model: string,
+        identifier: Identifier,
+        options: GetFieldTranslationsOptions
+    ): FieldValues {
+        const translatableFields = options.translatableFields[model] ?? [];
+        const identifierColumns = _.flatMap(columnsMapping);
+        const hasIdOrCode = Boolean(identifier.id || identifier.code);
+
+        return _(row)
+            .toPairs()
+            .reject(([column]) => column.includes(":"))
+            .reject(([column]) =>
+                column === "name" ? !hasIdOrCode : identifierColumns.includes(column.toLowerCase())
+            )
+            .filter(([column, text]) => (translatableFields.includes(column) ? Boolean(text) : false))
+            .fromPairs()
+            .value();
     }
 
     private getHeaderValue(row: Row, column: ColumnsMappingKey): Maybe<string> {
@@ -134,6 +167,8 @@ export class ImportTranslationsRepositorySpreadsheetRepository implements Import
 }
 
 type Row = Record<string, string>;
+
+type Identifier = FieldTranslation["identifier"];
 
 type ColumnsMappingKey = keyof typeof columnsMapping;
 
