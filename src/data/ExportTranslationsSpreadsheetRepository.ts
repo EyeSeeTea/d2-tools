@@ -4,9 +4,12 @@ import XLSX from "xlsx-js-style";
 import { unzipSync, zipSync } from "fflate";
 import { Async } from "domain/entities/Async";
 import { Locale } from "domain/entities/Locale";
-import { MetadataObjectWithTranslations } from "domain/entities/MetadataObject";
+import {
+    getMetadataObjectField,
+    getMetadataObjectTranslation,
+    MetadataObjectWithTranslations,
+} from "domain/entities/MetadataObject";
 import { ModelTranslationsExport } from "domain/entities/ModelTranslationsExport";
-import { translationFieldToProperty } from "domain/entities/Translation";
 import {
     ExportTranslationsOptions,
     ExportTranslationsRepository,
@@ -176,7 +179,7 @@ export class ExportTranslationsSpreadsheetRepository implements ExportTranslatio
 
     private getRow(object: MetadataObjectWithTranslations, sheet: ModelTranslationsExport): string[] {
         const fieldCells = sheet.fields.flatMap(field => [
-            getFieldValue(object, field),
+            getMetadataObjectField(object, field),
             ...sheet.locales.map(locale => this.getTranslationValue(object, field, locale)),
         ]);
 
@@ -192,19 +195,8 @@ export class ExportTranslationsSpreadsheetRepository implements ExportTranslatio
         field: string,
         locale: Locale
     ): string {
-        const property = translationFieldToProperty(field);
-        const translation = object.translations.find(
-            t => t.property === property && t.locale === locale.locale
-        );
-        return translation?.value ?? "";
+        return getMetadataObjectTranslation(object, field, locale.locale) ?? "";
     }
-}
-
-function getFieldValue(object: MetadataObjectWithTranslations, field: string): string {
-    // Objects are fetched with `:owner`, so they carry all owner fields at runtime even
-    // though the type only declares id/name/code/translations.
-    const value = (object as unknown as Record<string, unknown>)[field];
-    return typeof value === "string" ? value : "";
 }
 
 export interface SheetData {
