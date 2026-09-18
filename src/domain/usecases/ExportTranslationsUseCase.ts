@@ -1,10 +1,17 @@
 import _ from "lodash";
 import { Async } from "domain/entities/Async";
-import { Locale } from "domain/entities/Locale";
+import { Id } from "domain/entities/Base";
+import { Locale, LocaleCode } from "domain/entities/Locale";
 import { MetadataRepository } from "domain/repositories/MetadataRepository";
+import { MetadataSourceRepository } from "domain/repositories/MetadataSourceRepository";
 import { LocalesRepository } from "domain/repositories/LocalesRepository";
 import { ExportTranslationsRepository } from "domain/repositories/ExportTranslationsRepository";
 import { ModelTranslationsExport } from "domain/entities/ModelTranslationsExport";
+import {
+    getMetadataObjectField,
+    getMetadataObjectTranslation,
+    MetadataObjectWithTranslations,
+} from "domain/entities/MetadataObject";
 import { getPluralModel } from "data/dhis2-utils";
 import { Maybe } from "utils/ts-utils";
 import log from "utils/log";
@@ -19,40 +26,69 @@ interface Options {
     models: ModelSelection[];
     locales: string[]; // locale names, e.g. ["Spanish", "French"]
     includeData: boolean;
-    programId?: string; // when set, scope the export to this program's metadata dependency export
-    dataSetId?: string; // when set, scope the export to this data set's metadata dependency export
+    programIds?: Id[]; // when set, scope the export to these programs' objects
+    dataSetIds?: Id[]; // when set, scope the export to these data sets' objects
+    onlyChanged?: boolean; // keep only objects new or changed with respect to the instance
+    defaultLocale?: LocaleCode; // onlyChanged also compares this locale's translations (ex: "en")
+    excludeNames?: RegExp; // drop objects whose name matches (ex: /^\[DEPRECATED\]/)
 }
 
 export class ExportTranslationsUseCase {
     constructor(
         private repositories: {
-            metadata: MetadataRepository;
+            metadata: MetadataRepository; // the instance: locales and reference for onlyChanged
+            metadataSource?: MetadataSourceRepository; // objects to export (default: the instance)
             locales: LocalesRepository;
             exportTranslations: ExportTranslationsRepository;
         }
     ) {}
 
     async execute(options: Options): Async<void> {
-        const { outputFile, models, includeData, programId, dataSetId } = options;
-        if (programId && dataSetId) throw new Error("Options programId and dataSetId are exclusive");
+        const { outputFile, models, includeData, programIds, dataSetIds } = options;
+        if (!_.isEmpty(programIds) && !_.isEmpty(dataSetIds))
+            throw new Error("Options programIds and dataSetIds are exclusive");
         const allLocales = await this.repositories.locales.get();
         const locales = this.resolveLocales(allLocales, options.locales);
 
         const sheets = await Promise.all(
             models.map(async (selection): Promise<ModelTranslationsExport> => {
                 const model = getPluralModel(selection.model);
-                const objects = await this.repositories.metadata.getAllWithTranslations([model], {
-                    programId,
-                    dataSetId,
-                });
-
-                log.info(`${model}: ${objects.length} objects`);
+                const objects = await this.getObjects(model, selection.fields, options);
 
                 return { model, fields: selection.fields, locales, objects };
             })
         );
 
         await this.repositories.exportTranslations.save({ outputFile, sheets, includeData });
+    }
+
+    private async getObjects(
+        model: string,
+        fields: string[],
+        options: Options
+    ): Async<MetadataObjectWithTranslations[]> {
+        const { programIds, dataSetIds, excludeNames } = options;
+        const source = this.repositories.metadataSource ?? this.repositories.metadata;
+        const allObjects = await source.getAllWithTranslations([model], { programIds, dataSetIds });
+        const objects = excludeNames
+            ? allObjects.filter(object => !excludeNames.test(object.name))
+            : allObjects;
+
+        if (!options.onlyChanged) {
+            log.info(`${model}: ${objects.length} objects`);
+            return objects;
+        } else {
+            const ids = objects.map(object => object.id);
+            const referenceObjects = await this.repositories.metadata.getByIdsWithTranslations(model, ids);
+            const referenceById = _.keyBy(referenceObjects, object => object.id);
+
+            const changed = objects.filter(object =>
+                isChanged(object, referenceById[object.id], fields, options.defaultLocale)
+            );
+
+            log.info(`${model}: ${objects.length} objects, ${changed.length} new or changed`);
+            return changed;
+        }
     }
 
     /* Resolve each requested name to a DB locale, allowing short references. The resolved locale's
@@ -90,6 +126,29 @@ export class ExportTranslationsUseCase {
         const locale = matches[0]!;
         return { ...locale, name: stripLocaleSuffix(locale.name) };
     }
+}
+
+/* An object needs (re)translation when it does not exist in the reference, or when any of the
+   selected fields differs, or when the default-locale translation of a selected field differs
+   (the label users see may be changed only through that translation). */
+export function isChanged(
+    object: MetadataObjectWithTranslations,
+    reference: Maybe<MetadataObjectWithTranslations>,
+    fields: string[],
+    defaultLocale: Maybe<LocaleCode>
+): boolean {
+    if (!reference) return true;
+
+    const fieldValue = (obj: MetadataObjectWithTranslations, field: string) =>
+        getMetadataObjectField(obj, field).trim();
+    const defaultTranslation = (obj: MetadataObjectWithTranslations, field: string) =>
+        defaultLocale ? getMetadataObjectTranslation(obj, field, defaultLocale)?.trim() ?? "" : "";
+
+    return fields.some(
+        field =>
+            fieldValue(object, field) !== fieldValue(reference, field) ||
+            defaultTranslation(object, field) !== defaultTranslation(reference, field)
+    );
 }
 
 /* Drop a trailing " (...)" country/variant qualifier, keeping the original case. */

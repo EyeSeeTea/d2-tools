@@ -282,12 +282,32 @@ $ yarn start translations to-spreadsheet \
   translations.xlsx
 ```
 
+Export only the objects of a metadata package that are new or renamed with respect to the instance, restricted to a translated data set (the typical "what do translators need for this feature" sheet):
+
+```shell
+$ yarn start translations to-spreadsheet \
+  --url='http://USER:PASSWORD@HOST:PORT' \
+  --metadata-file=feature-metadata.json \
+  --only-changed \
+  --default-locale=en \
+  --exclude-names='^\[DEPRECATED\]' \
+  --data-set-ids=NQOwInnRDNL \
+  --models='dataElements[formName],indicators[name]' \
+  --locales='Spanish,French' \
+  --include-data \
+  translations.xlsx
+```
+
 Notes:
 
 -   `--models`: comma-separated list of models to export. Each model must specify its translatable fields with `[field1,field2]` (e.g. `indicators[name,shortName]`); a model without fields raises an error.
 -   `--locales`: comma-separated list of locale names to include as columns, in the order given. The match ignores any ` (...)` suffix, so `Spanish` matches a `Spanish (Spain)` locale.
 -   `--include-data`: write one row per object with the source values and the existing translations. When omitted, only the header row is written (a column template).
--   `--program-id=ID` / `--data-set-id=ID` (exclusive): scope the export to the objects in that program's or data set's metadata dependency export (`/api/programs/{id}/metadata`, `/api/dataSets/{id}/metadata`) instead of the whole instance. Only the requested `--models` are kept from the export.
+-   `--program-ids=ID1,ID2` / `--data-set-ids=ID1,ID2` (exclusive): scope the export to the objects in those programs' or data sets' metadata dependency exports (`/api/programs/{id}/metadata`, `/api/dataSets/{id}/metadata`) instead of the whole instance. Only the requested `--models` are kept from the exports; an object shared by several parents appears once. With `--metadata-file`, `--data-set-ids` keeps the objects of the file belonging to those data sets (their data elements, indicators, sections and the options of those data elements).
+-   `--metadata-file`: read the objects from a DHIS2 metadata JSON export (`{"dataElements": [...], ...}`) instead of the instance. Useful when the metadata to translate is not yet deployed to a trusted instance. `--url` is still used to get the locales and as the reference for `--only-changed`.
+-   `--only-changed`: export only the objects of `--metadata-file` that need (re)translation: those not existing in the instance, or whose selected fields differ, or whose `--default-locale` translation of a selected field differs (a label can be changed only through that translation). Unselected fields (like a `name` prefix) are ignored.
+-   `--default-locale`: locale code of the default (DB) language, e.g. `en`. Matched by language, so `en` also matches `en_GB`.
+-   `--exclude-names`: regex; objects whose `name` matches are skipped. Example: `'^\[DEPRECATED\]'`.
 -   One sheet (tab) is generated per model type.
 -   Columns: `Type`, `UID`, then a group per field: the base source column `<field>` followed by one `<field>: <LocaleName>` column per selected locale.
 -   Each field group is color-coded (bold colored header, source column highlighted, translation cells lightly tinted) so the grid is easy to scan. The header row and the first three columns (`Type`, `UID` and the first source column) are frozen, and columns within a field group share the same width.

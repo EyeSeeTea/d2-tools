@@ -8,7 +8,7 @@ import {
     Payload,
     SaveOptions,
 } from "domain/repositories/MetadataRepository";
-import { getPluralModel, runMetadata } from "./dhis2-utils";
+import { getPluralModel, promiseMap, runMetadata } from "./dhis2-utils";
 import log from "utils/log";
 import {
     MetadataModel,
@@ -27,13 +27,21 @@ export class MetadataD2Repository implements MetadataRepository {
         models: string[],
         options?: GetTranslationsOptions
     ): Async<MetadataObjectWithTranslations[]> {
-        if (options?.programId) {
-            return this.getDependencyMetadataObjects(models, "programs", options.programId);
-        } else if (options?.dataSetId) {
-            return this.getDependencyMetadataObjects(models, "dataSets", options.dataSetId);
+        if (!_.isEmpty(options?.programIds)) {
+            return this.getDependencyMetadataObjects(models, "programs", options?.programIds ?? []);
+        } else if (!_.isEmpty(options?.dataSetIds)) {
+            return this.getDependencyMetadataObjects(models, "dataSets", options?.dataSetIds ?? []);
         } else {
             return this.getMetadataObjects(models);
         }
+    }
+
+    async getByIdsWithTranslations(model: string, ids: Id[]): Async<MetadataObjectWithTranslations[]> {
+        // Filter by id in chunks to keep the request URL within limits.
+        const objectsByChunk = await promiseMap(_.chunk(ids, 100), idsChunk =>
+            this.getMetadataObjects([model], { filter: `id:in:[${idsChunk.join(",")}]` })
+        );
+        return _.flatten(objectsByChunk);
     }
 
     async save(objects: MetadataObject[], options: SaveOptions): Async<{ payload: Payload; stats: object }> {
@@ -125,9 +133,15 @@ export class MetadataD2Repository implements MetadataRepository {
         return metadataToPost;
     }
 
-    private async getD2Metadata(models: string[]): Async<Metadata> {
+    private async getD2Metadata(models: string[], options: GetOptions = {}): Async<Metadata> {
         const params = _(models)
-            .map(model => [`${getPluralModel(model)}:fields`, ":owner"] as [string, string])
+            .flatMap((model): Array<[string, string]> => {
+                const modelPlural = getPluralModel(model);
+                return _.compact([
+                    [`${modelPlural}:fields`, ":owner"],
+                    options.filter ? [`${modelPlural}:filter`, options.filter] : undefined,
+                ]);
+            })
             .fromPairs()
             .value();
 
@@ -143,24 +157,37 @@ export class MetadataD2Repository implements MetadataRepository {
         return _(metadata).values().flatten().value();
     }
 
-    private async getMetadataObjects(models: string[]): Async<MetadataObjectWithTranslations[]> {
-        const metadata = await this.getD2Metadata(models);
+    private async getMetadataObjects(
+        models: string[],
+        options: GetOptions = {}
+    ): Async<MetadataObjectWithTranslations[]> {
+        const metadata = await this.getD2Metadata(models, options);
         return this.mapMetadataObjects(metadata);
     }
 
-    /* Get objects from a program/dataSet metadata dependency export, keeping only the requested
-       models. The export groups objects by plural model name (plus non-array keys like "system",
-       which _.pick drops since they are not among the requested models). */
+    /* Get objects from the programs/dataSets metadata dependency exports, keeping only the
+       requested models. The export groups objects by plural model name (plus non-array keys like
+       "system", which _.pick drops since they are not among the requested models). An object
+       shared by several parents is returned once. */
     private async getDependencyMetadataObjects(
         models: string[],
         parentModel: "programs" | "dataSets",
-        parentId: Id
+        parentIds: Id[]
     ): Async<MetadataObjectWithTranslations[]> {
-        log.debug(`GET ${parentModel} metadata: ${parentId}`);
-        const metadata = await this.api.get<Metadata>(`/${parentModel}/${parentId}/metadata.json`).getData();
-
         const requestedModels = models.map(getPluralModel);
-        return this.mapMetadataObjects(_.pick(metadata, requestedModels));
+
+        const objectsByParent = await promiseMap(parentIds, async parentId => {
+            log.debug(`GET ${parentModel} metadata: ${parentId}`);
+            const metadata = await this.api
+                .get<Metadata>(`/${parentModel}/${parentId}/metadata.json`)
+                .getData();
+            return this.mapMetadataObjects(_.pick(metadata, requestedModels));
+        });
+
+        return _(objectsByParent)
+            .flatten()
+            .uniqBy(object => `${object.model}:${object.id}`)
+            .value();
     }
 
     private mapMetadataObjects(metadata: Metadata): MetadataObjectWithTranslations[] {
@@ -188,6 +215,10 @@ export class MetadataD2Repository implements MetadataRepository {
 type Model = string;
 
 type Metadata = Record<Model, Array<D2Object>>;
+
+interface GetOptions {
+    filter?: string; // DHIS2 filter expression, e.g. "id:in:[ID1,ID2]"
+}
 
 interface D2ObjectBase {
     id: Id;

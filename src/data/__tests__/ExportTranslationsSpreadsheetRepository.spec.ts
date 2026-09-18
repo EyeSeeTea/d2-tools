@@ -54,6 +54,26 @@ describe("ExportTranslationsSpreadsheetRepository.buildSheet", () => {
         // Second object has no formName field at all -> base column blank.
         expect(rows[1]).toEqual(["dataElement", "id2", "Second", "Second", "", "", "", "", ""]);
     });
+
+    test("matches translations stored with a Java legacy locale code (Indonesian in/id)", () => {
+        const indonesian: Locale = { id: "3", name: "Indonesian", locale: "id" };
+        const object: MetadataObjectWithTranslations = {
+            model: "dataElements",
+            id: "id1",
+            name: "Hello",
+            code: undefined,
+            translations: [{ property: "NAME", locale: "in", value: "Halo" }],
+        };
+        const sheet: ModelTranslationsExport = {
+            model: "dataElements",
+            fields: ["name"],
+            locales: [indonesian],
+            objects: [object],
+        };
+
+        const { rows } = repository.buildSheet(sheet, true);
+        expect(rows[0]).toEqual(["dataElement", "id1", "Hello", "Hello", "Halo"]);
+    });
 });
 
 describe("ExportTranslationsSpreadsheetRepository.save (file round-trip)", () => {
