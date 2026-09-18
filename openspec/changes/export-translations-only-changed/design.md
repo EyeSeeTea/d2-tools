@@ -35,14 +35,15 @@ label separate from the short `formName`.
 
 ### Decision: Data set scope of a file resolved by membership
 
-`--data-set-id` is one option with one meaning ("the objects of this data set") and two
-implementations behind `MetadataSourceRepository.getAllWithTranslations(models, { dataSetId })`:
-the instance uses the dependency export (#106); the file, which has no such export, builds a
-`DataSetScope` (domain entity) from its own data sets and data elements: `dataSetElements` give
+`--data-set-ids` is one option with one meaning ("the objects of these data sets") and two
+implementations behind `MetadataSourceRepository.getAllWithTranslations(models, { dataSetIds })`:
+the instance merges the dependency exports of each id (#106, generalized to a list, deduplicated
+by model+id); the file, which has no such export, builds a `DataSetScope` (domain entity) from
+its own data sets and data elements: `dataSetElements` give
 the data elements, the data set `indicators` give the indicators, the scoped data elements'
 `optionSet` refs give the option sets; sections match through their `dataSet` ref.
 `isInDataSetScope` dispatches on the object's model and rejects models with no data set relation,
-so a wrong `--models` fails fast. `--program-id` with a file is rejected.
+so a wrong `--models` fails fast. `--program-ids` with a file is rejected.
 
 ### Decision: Java legacy locale codes
 
@@ -53,7 +54,7 @@ match translations through it, so existing Indonesian translations appear in the
 
 ## Data flow
 
-CLI args → `MetadataJsonFileRepository` (file, scoped by `dataSetId`) + `MetadataD2Repository`/
+CLI args → `MetadataJsonFileRepository` (file, scoped by `dataSetIds`) + `MetadataD2Repository`/
 `LocalesD2Repository` (instance) → `ExportTranslationsUseCase.getObjects` (exclude by name →
 fetch reference by ids → `isChanged`) → `ModelTranslationsExport[]` →
 `ExportTranslationsSpreadsheetRepository.save`.

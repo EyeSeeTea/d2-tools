@@ -1,7 +1,7 @@
 import _ from "lodash";
 import log from "utils/log";
 import { command, string, subcommands, positional, flag, option, optional, Type } from "cmd-ts";
-import { getApiUrlOptions, getD2ApiFromArgs } from "scripts/common";
+import { getApiUrlOptions, getD2ApiFromArgs, IdsSeparatedByCommas } from "scripts/common";
 import { TranslateMetadataUseCase } from "domain/usecases/TranslateMetadataUseCase";
 import { ExportTranslationsUseCase, ModelSelection } from "domain/usecases/ExportTranslationsUseCase";
 import { LocalesD2Repository } from "data/LocalesD2Repository";
@@ -64,20 +64,20 @@ export function getCommand() {
                 long: "locales",
                 description: "Locales to include as columns, comma-separated. Example: Spanish,French",
             }),
-            programId: option({
-                type: optional(string),
-                long: "program-id",
+            programIds: option({
+                type: optional(IdsSeparatedByCommas),
+                long: "program-ids",
                 description:
-                    "Scope the export to a program's metadata dependency export " +
-                    "(/api/programs/{id}/metadata) instead of the whole instance",
+                    "Scope the export to the metadata dependency export of these programs " +
+                    "(/api/programs/{id}/metadata, comma-separated IDs) instead of the whole instance",
             }),
-            dataSetId: option({
-                type: optional(string),
-                long: "data-set-id",
+            dataSetIds: option({
+                type: optional(IdsSeparatedByCommas),
+                long: "data-set-ids",
                 description:
-                    "Scope the export to a data set's metadata dependency export " +
-                    "(/api/dataSets/{id}/metadata) instead of the whole instance. With " +
-                    "--metadata-file, to the objects of the file belonging to that data set",
+                    "Scope the export to the metadata dependency export of these data sets " +
+                    "(/api/dataSets/{id}/metadata, comma-separated IDs) instead of the whole " +
+                    "instance. With --metadata-file, to the objects of the file belonging to them",
             }),
             includeData: flag({
                 long: "include-data",
@@ -136,8 +136,8 @@ export function getCommand() {
                 models: args.models,
                 locales: parseList(args.locales),
                 includeData: args.includeData,
-                programId: args.programId,
-                dataSetId: args.dataSetId,
+                programIds: args.programIds,
+                dataSetIds: args.dataSetIds,
                 onlyChanged: args.onlyChanged,
                 defaultLocale: args.defaultLocale,
                 excludeNames: args.excludeNames,

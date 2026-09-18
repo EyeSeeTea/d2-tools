@@ -15,7 +15,7 @@ yarn start translations to-spreadsheet \
   --only-changed \
   --default-locale=en \
   --exclude-names='^\[DEPRECATED\]' \
-  --data-set-id=DS1 \
+  --data-set-ids=DS1,DS2 \
   --models='dataElements[formName],indicators[name]' \
   --locales=... --include-data out.xlsx
 ```
@@ -28,15 +28,20 @@ yarn start translations to-spreadsheet \
     `--metadata-file`.
 -   `--default-locale=CODE`: language matched (`en` ~ `en_GB`), same semantics as the import side.
 -   `--exclude-names=REGEX`: skip objects whose `name` matches.
--   `--data-set-id` (from #106) also applies to `--metadata-file`: the file's objects are kept by
-    membership (data elements, indicators, sections, and the options of the data elements' option
-    sets), since a file has no dependency export. `--program-id` is not supported for a file.
+-   `--program-id`/`--data-set-id` (from #106) become `--program-ids`/`--data-set-ids`, taking
+    comma-separated IDs (plural naming as in the other commands); the dependency exports of all
+    the IDs are merged. `--data-set-ids` also applies to `--metadata-file`: the file's objects are
+    kept by membership (data elements, indicators, sections, and the options of the data
+    elements' option sets), since a file has no dependency export. `--program-ids` is not
+    supported for a file.
 -   Translations stored with a Java legacy language code (`in` for Indonesian) are now matched to
     the DB locale (`id`) when filling the existing-translation columns.
 
 Existing invocations are unaffected: without the new options the behavior is unchanged.
 
-Builds on #106 (`--program-id`/`--data-set-id`, short locale references, `Name` column).
+Builds on #106 (`--program-id`/`--data-set-id`, short locale references, `Name` column). Old vs
+new interface: `--program-id=ID` → `--program-ids=ID1,ID2`, `--data-set-id=ID` →
+`--data-set-ids=ID1,ID2` (#106 is unmerged, so no released interface changes).
 
 ## Non-goals
 

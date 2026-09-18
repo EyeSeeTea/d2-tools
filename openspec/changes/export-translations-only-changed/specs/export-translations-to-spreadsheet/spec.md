@@ -48,18 +48,30 @@ before change detection.
 - **THEN** indicators whose name starts with `[DEPRECATED]` are not in the sheet even though their
   `name` changed
 
+### Requirement: Scope options take several ids
+
+`--program-ids` and `--data-set-ids` SHALL accept comma-separated ids. Against an instance, the
+metadata dependency exports of every id SHALL be merged, and an object present in several of
+them SHALL appear once.
+
+#### Scenario: Two data sets sharing a data element
+
+- **WHEN** the command runs with `--data-set-ids=DS1,DS2` and both data sets contain data
+  element A
+- **THEN** A appears once in the `dataElements` sheet
+
 ### Requirement: Data set scope applies to a metadata file
 
-With `--metadata-file`, `--data-set-id=ID` SHALL keep only the file objects belonging to that
-data set: data elements listed in its `dataSetElements`, indicators listed in the data set,
-sections whose `dataSet` is it, and options of the option sets used by those data elements. A
-data set id not found in the file, a requested model with no data set relation, or
-`--program-id` with a file SHALL abort with an error.
+With `--metadata-file`, `--data-set-ids=ID1,ID2` SHALL keep only the file objects belonging to
+those data sets: data elements listed in their `dataSetElements`, indicators listed in the data
+sets, sections whose `dataSet` is one of them, and options of the option sets used by those data
+elements. A data set id not found in the file, a requested model with no data set relation, or
+`--program-ids` with a file SHALL abort with an error.
 
 #### Scenario: Data element of another form is not exported
 
-- **WHEN** the file has a new data element that belongs only to a data set other than
-  `--data-set-id`
+- **WHEN** the file has a new data element that belongs only to a data set not in
+  `--data-set-ids`
 - **THEN** it is not in the sheet, even though it is new
 
 #### Scenario: Options follow their data element

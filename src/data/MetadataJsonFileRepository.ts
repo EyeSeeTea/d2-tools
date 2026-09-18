@@ -19,20 +19,27 @@ export class MetadataJsonFileRepository implements MetadataSourceRepository {
         models: MetadataModel[],
         options: GetTranslationsOptions = {}
     ): Async<MetadataObjectWithTranslations[]> {
-        if (options.programId) throw new Error("programId is not supported for a metadata file");
+        if (!_.isEmpty(options.programIds))
+            throw new Error("programIds is not supported for a metadata file");
 
         const metadata = this.read();
         const objects = this.getObjects(metadata, models);
+        const dataSetIds = options.dataSetIds ?? [];
 
-        if (!options.dataSetId) {
+        if (_.isEmpty(dataSetIds)) {
             return objects;
         } else {
             // A file has no dependency export: scope by membership, using its data sets.
             const dataSets = this.getObjects(metadata, ["dataSets"]);
             const dataElements = this.getObjects(metadata, ["dataElements"]);
-            const scope = buildDataSetScope([options.dataSetId], dataSets, dataElements);
-            if (!dataSets.some(dataSet => dataSet.id === options.dataSetId))
-                throw new Error(`Data set not found in ${this.path}: ${options.dataSetId}`);
+            const scope = buildDataSetScope(dataSetIds, dataSets, dataElements);
+
+            const missingIds = _.difference(
+                dataSetIds,
+                dataSets.map(dataSet => dataSet.id)
+            );
+            if (!_.isEmpty(missingIds))
+                throw new Error(`Data sets not found in ${this.path}: ${missingIds.join(", ")}`);
 
             return objects.filter(object => isInDataSetScope(object, scope));
         }

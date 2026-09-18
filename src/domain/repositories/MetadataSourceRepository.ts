@@ -11,10 +11,10 @@ export interface MetadataSourceRepository {
     ): Async<MetadataObjectWithTranslations[]>;
 }
 
-/* When programId/dataSetId is set, only the objects belonging to that program/data set are
-   returned: from its metadata dependency export (/api/programs/{id}/metadata,
+/* When programIds/dataSetIds is set, only the objects belonging to those programs/data sets are
+   returned: from their metadata dependency exports (/api/programs/{id}/metadata,
    /api/dataSets/{id}/metadata) for an instance, by membership for a metadata file. */
 export interface GetTranslationsOptions {
-    programId?: Id;
-    dataSetId?: Id;
+    programIds?: Id[];
+    dataSetIds?: Id[];
 }

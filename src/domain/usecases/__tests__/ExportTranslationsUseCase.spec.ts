@@ -83,14 +83,14 @@ describe("ExportTranslationsUseCase", () => {
         });
 
         expect(metadata.getAllWithTranslations).toHaveBeenCalledWith(["dataElements"], {
-            programId: undefined,
-            dataSetId: undefined,
+            programIds: undefined,
+            dataSetIds: undefined,
         });
         const { sheets } = exportTranslations.save.mock.calls[0][0];
         expect(sheets[0].model).toBe("dataElements");
     });
 
-    test("scopes the fetch to the given program when programId is set", async () => {
+    test("scopes the fetch to the given program when programIds is set", async () => {
         const { useCase, metadata } = buildUseCase();
 
         await useCase.execute({
@@ -98,16 +98,16 @@ describe("ExportTranslationsUseCase", () => {
             models: [{ model: "dataElement", fields: ["name"] }],
             locales: ["French"],
             includeData: true,
-            programId: "PROG123",
+            programIds: ["PROG123"],
         });
 
         expect(metadata.getAllWithTranslations).toHaveBeenCalledWith(["dataElements"], {
-            programId: "PROG123",
-            dataSetId: undefined,
+            programIds: ["PROG123"],
+            dataSetIds: undefined,
         });
     });
 
-    test("scopes the fetch to the given data set when dataSetId is set", async () => {
+    test("scopes the fetch to the given data set when dataSetIds is set", async () => {
         const { useCase, metadata } = buildUseCase();
 
         await useCase.execute({
@@ -115,16 +115,16 @@ describe("ExportTranslationsUseCase", () => {
             models: [{ model: "dataElement", fields: ["formName"] }],
             locales: ["French"],
             includeData: true,
-            dataSetId: "DS123",
+            dataSetIds: ["DS123"],
         });
 
         expect(metadata.getAllWithTranslations).toHaveBeenCalledWith(["dataElements"], {
-            programId: undefined,
-            dataSetId: "DS123",
+            programIds: undefined,
+            dataSetIds: ["DS123"],
         });
     });
 
-    test("rejects programId and dataSetId set at the same time", async () => {
+    test("rejects programIds and dataSetIds set at the same time", async () => {
         const { useCase } = buildUseCase();
 
         await expect(
@@ -133,8 +133,8 @@ describe("ExportTranslationsUseCase", () => {
                 models: [{ model: "dataElement", fields: ["name"] }],
                 locales: ["French"],
                 includeData: true,
-                programId: "PROG123",
-                dataSetId: "DS123",
+                programIds: ["PROG123"],
+                dataSetIds: ["DS123"],
             })
         ).rejects.toThrow(/exclusive/);
     });
@@ -149,12 +149,12 @@ describe("ExportTranslationsUseCase", () => {
             models: [{ model: "dataElements", fields: ["name"] }],
             locales: ["French"],
             includeData: true,
-            dataSetId: "ds1",
+            dataSetIds: ["ds1"],
         });
 
         expect(metadataSource.getAllWithTranslations).toHaveBeenCalledWith(["dataElements"], {
-            programId: undefined,
-            dataSetId: "ds1",
+            programIds: undefined,
+            dataSetIds: ["ds1"],
         });
         expect(metadata.getAllWithTranslations).not.toHaveBeenCalled();
         expect(getExportedObjects(exportTranslations)).toEqual([fileObject]);

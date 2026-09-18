@@ -1,5 +1,6 @@
 import _ from "lodash";
 import { Async } from "domain/entities/Async";
+import { Id } from "domain/entities/Base";
 import { Locale, LocaleCode } from "domain/entities/Locale";
 import { MetadataRepository } from "domain/repositories/MetadataRepository";
 import { MetadataSourceRepository } from "domain/repositories/MetadataSourceRepository";
@@ -25,8 +26,8 @@ interface Options {
     models: ModelSelection[];
     locales: string[]; // locale names, e.g. ["Spanish", "French"]
     includeData: boolean;
-    programId?: string; // when set, scope the export to this program's objects
-    dataSetId?: string; // when set, scope the export to this data set's objects
+    programIds?: Id[]; // when set, scope the export to these programs' objects
+    dataSetIds?: Id[]; // when set, scope the export to these data sets' objects
     onlyChanged?: boolean; // keep only objects new or changed with respect to the instance
     defaultLocale?: LocaleCode; // onlyChanged also compares this locale's translations (ex: "en")
     excludeNames?: RegExp; // drop objects whose name matches (ex: /^\[DEPRECATED\]/)
@@ -43,8 +44,9 @@ export class ExportTranslationsUseCase {
     ) {}
 
     async execute(options: Options): Async<void> {
-        const { outputFile, models, includeData, programId, dataSetId } = options;
-        if (programId && dataSetId) throw new Error("Options programId and dataSetId are exclusive");
+        const { outputFile, models, includeData, programIds, dataSetIds } = options;
+        if (!_.isEmpty(programIds) && !_.isEmpty(dataSetIds))
+            throw new Error("Options programIds and dataSetIds are exclusive");
         const allLocales = await this.repositories.locales.get();
         const locales = this.resolveLocales(allLocales, options.locales);
 
@@ -65,9 +67,9 @@ export class ExportTranslationsUseCase {
         fields: string[],
         options: Options
     ): Async<MetadataObjectWithTranslations[]> {
-        const { programId, dataSetId, excludeNames } = options;
+        const { programIds, dataSetIds, excludeNames } = options;
         const source = this.repositories.metadataSource ?? this.repositories.metadata;
-        const allObjects = await source.getAllWithTranslations([model], { programId, dataSetId });
+        const allObjects = await source.getAllWithTranslations([model], { programIds, dataSetIds });
         const objects = excludeNames
             ? allObjects.filter(object => !excludeNames.test(object.name))
             : allObjects;

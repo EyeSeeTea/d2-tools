@@ -48,22 +48,22 @@ describe("MetadataJsonFileRepository", () => {
         expect(objects[1]).toMatchObject({ formName: "Form 1" });
     });
 
-    test("with dataSetId returns only the objects belonging to that data set", async () => {
+    test("with dataSetIds returns only the objects belonging to those data sets", async () => {
         const repository = new MetadataJsonFileRepository(file);
 
-        const objects = await repository.getAllWithTranslations(["dataElements"], { dataSetId: "ds1" });
+        const objects = await repository.getAllWithTranslations(["dataElements"], { dataSetIds: ["ds1"] });
         expect(objects.map(o => o.id)).toEqual(["de1"]);
 
         await expect(
-            repository.getAllWithTranslations(["dataElements"], { dataSetId: "missing" })
-        ).rejects.toThrow("Data set not found");
+            repository.getAllWithTranslations(["dataElements"], { dataSetIds: ["ds1", "missing"] })
+        ).rejects.toThrow("Data sets not found");
     });
 
-    test("with programId fails: a file has no dependency export", async () => {
+    test("with programIds fails: a file has no dependency export", async () => {
         const repository = new MetadataJsonFileRepository(file);
         await expect(
-            repository.getAllWithTranslations(["dataElements"], { programId: "p1" })
-        ).rejects.toThrow("programId");
+            repository.getAllWithTranslations(["dataElements"], { programIds: ["p1"] })
+        ).rejects.toThrow("programIds");
     });
 
     test("returns no objects for models absent from the file", async () => {

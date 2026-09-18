@@ -11,8 +11,9 @@
 
 ## 2. Data layer
 
--   [x] `MetadataJsonFileRepository` reading a DHIS2 metadata JSON export, `dataSetId` scope by
+-   [x] `MetadataJsonFileRepository` reading a DHIS2 metadata JSON export, `dataSetIds` scope by
         membership
+-   [x] `MetadataD2Repository`: merge the dependency exports of several program/data set ids
 -   [x] `MetadataD2Repository.getByIdsWithTranslations` with chunked `id:in` filter
 -   [x] `ExportTranslationsSpreadsheetRepository` matches locales through `isSameLocale`
 
@@ -20,6 +21,7 @@
 
 -   [x] `--metadata-file`, `--only-changed`, `--default-locale`, `--exclude-names` on
         `translations to-spreadsheet`; reject `--only-changed` without `--metadata-file`
+-   [x] `--program-id`/`--data-set-id` → `--program-ids`/`--data-set-ids` (comma-separated)
 
 ## 4. Testing
 
