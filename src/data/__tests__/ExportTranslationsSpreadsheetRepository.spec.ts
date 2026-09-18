@@ -72,7 +72,7 @@ describe("ExportTranslationsSpreadsheetRepository.buildSheet", () => {
         };
 
         const { rows } = repository.buildSheet(sheet, true);
-        expect(rows[0]).toEqual(["dataElement", "id1", "Hello", "Halo"]);
+        expect(rows[0]).toEqual(["dataElement", "id1", "Hello", "Hello", "Halo"]);
     });
 });
 

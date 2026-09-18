@@ -8,7 +8,7 @@ import {
     Payload,
     SaveOptions,
 } from "domain/repositories/MetadataRepository";
-import { getPluralModel, runMetadata } from "./dhis2-utils";
+import { getPluralModel, promiseMap, runMetadata } from "./dhis2-utils";
 import log from "utils/log";
 import {
     MetadataModel,
@@ -34,6 +34,14 @@ export class MetadataD2Repository implements MetadataRepository {
         } else {
             return this.getMetadataObjects(models);
         }
+    }
+
+    async getByIdsWithTranslations(model: string, ids: Id[]): Async<MetadataObjectWithTranslations[]> {
+        // Filter by id in chunks to keep the request URL within limits.
+        const objectsByChunk = await promiseMap(_.chunk(ids, 100), idsChunk =>
+            this.getMetadataObjects([model], { filter: `id:in:[${idsChunk.join(",")}]` })
+        );
+        return _.flatten(objectsByChunk);
     }
 
     async save(objects: MetadataObject[], options: SaveOptions): Async<{ payload: Payload; stats: object }> {
@@ -125,9 +133,15 @@ export class MetadataD2Repository implements MetadataRepository {
         return metadataToPost;
     }
 
-    private async getD2Metadata(models: string[]): Async<Metadata> {
+    private async getD2Metadata(models: string[], options: GetOptions = {}): Async<Metadata> {
         const params = _(models)
-            .map(model => [`${getPluralModel(model)}:fields`, ":owner"] as [string, string])
+            .flatMap((model): Array<[string, string]> => {
+                const modelPlural = getPluralModel(model);
+                return _.compact([
+                    [`${modelPlural}:fields`, ":owner"],
+                    options.filter ? [`${modelPlural}:filter`, options.filter] : undefined,
+                ]);
+            })
             .fromPairs()
             .value();
 
@@ -143,8 +157,11 @@ export class MetadataD2Repository implements MetadataRepository {
         return _(metadata).values().flatten().value();
     }
 
-    private async getMetadataObjects(models: string[]): Async<MetadataObjectWithTranslations[]> {
-        const metadata = await this.getD2Metadata(models);
+    private async getMetadataObjects(
+        models: string[],
+        options: GetOptions = {}
+    ): Async<MetadataObjectWithTranslations[]> {
+        const metadata = await this.getD2Metadata(models, options);
         return this.mapMetadataObjects(metadata);
     }
 
@@ -188,6 +205,10 @@ export class MetadataD2Repository implements MetadataRepository {
 type Model = string;
 
 type Metadata = Record<Model, Array<D2Object>>;
+
+interface GetOptions {
+    filter?: string; // DHIS2 filter expression, e.g. "id:in:[ID1,ID2]"
+}
 
 interface D2ObjectBase {
     id: Id;

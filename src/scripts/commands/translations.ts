@@ -8,6 +8,7 @@ import { LocalesD2Repository } from "data/LocalesD2Repository";
 import { ImportTranslationsRepositorySpreadsheetRepository } from "data/ImportTranslationsRepositorySpreadsheetRepository";
 import { ExportTranslationsSpreadsheetRepository } from "data/ExportTranslationsSpreadsheetRepository";
 import { MetadataD2Repository } from "data/MetadataD2Repository";
+import { MetadataJsonFileRepository } from "data/MetadataJsonFileRepository";
 
 export function getCommand() {
     const translateFromSpreadsheetCmd = command({
@@ -75,13 +76,39 @@ export function getCommand() {
                 long: "data-set-id",
                 description:
                     "Scope the export to a data set's metadata dependency export " +
-                    "(/api/dataSets/{id}/metadata) instead of the whole instance",
+                    "(/api/dataSets/{id}/metadata) instead of the whole instance. With " +
+                    "--metadata-file, to the objects of the file belonging to that data set",
             }),
             includeData: flag({
                 long: "include-data",
                 description:
                     "Write one row per object with source values and existing translations. " +
                     "When omitted, only the header row is written (a column template).",
+            }),
+            metadataFile: option({
+                type: optional(string),
+                long: "metadata-file",
+                description:
+                    "Read the objects from a DHIS2 metadata JSON export instead of the instance " +
+                    "(--url is still used for the locales and as reference for --only-changed)",
+            }),
+            onlyChanged: flag({
+                long: "only-changed",
+                description:
+                    "Export only the objects of --metadata-file that do not exist in the instance " +
+                    "or whose selected fields (or their --default-locale translation) differ",
+            }),
+            defaultLocale: option({
+                type: optional(string),
+                long: "default-locale",
+                description:
+                    "Locale code of the default (DB) language, used by --only-changed to also " +
+                    "detect changes in its translations. Matched by language. Example: en",
+            }),
+            excludeNames: option({
+                type: optional(RegExpType),
+                long: "exclude-names",
+                description: "Skip objects whose name matches this regex. Example: '^\\[DEPRECATED\\]'",
             }),
             outputFile: positional({
                 type: string,
@@ -92,8 +119,14 @@ export function getCommand() {
         handler: async args => {
             const api = getD2ApiFromArgs(args);
 
+            if (args.onlyChanged && !args.metadataFile)
+                throw new Error("--only-changed requires --metadata-file");
+
             const repositories = {
                 metadata: new MetadataD2Repository(api),
+                metadataSource: args.metadataFile
+                    ? new MetadataJsonFileRepository(args.metadataFile)
+                    : undefined,
                 locales: new LocalesD2Repository(api),
                 exportTranslations: new ExportTranslationsSpreadsheetRepository(),
             };
@@ -105,6 +138,9 @@ export function getCommand() {
                 includeData: args.includeData,
                 programId: args.programId,
                 dataSetId: args.dataSetId,
+                onlyChanged: args.onlyChanged,
+                defaultLocale: args.defaultLocale,
+                excludeNames: args.excludeNames,
             });
         },
     });
@@ -161,6 +197,13 @@ export function parseModelsOption(input: string): ModelSelection[] {
 
     return selections;
 }
+
+/* cmd-ts type for regex options. */
+const RegExpType: Type<string, RegExp> = {
+    async from(input) {
+        return new RegExp(input);
+    },
+};
 
 /* cmd-ts type for --models: parses the string and requires every model to specify its fields. */
 const ModelsType: Type<string, ModelSelection[]> = {
