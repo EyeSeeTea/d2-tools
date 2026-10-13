@@ -122,7 +122,11 @@ export class D2Tracker {
                 if (instances.length === 0) {
                     dataRemaining = false;
                 } else {
-                    output.push(...this.filterByUpdatedEndDate(model, instances, updatedEndDate));
+                    const filtered =
+                        model === "enrollments"
+                            ? this.filterByUpdatedEndDate(instances, updatedEndDate)
+                            : instances;
+                    output.push(...filtered);
                     page++;
                 }
             }
@@ -133,18 +137,13 @@ export class D2Tracker {
     }
 
     // NOTE: the enrollments endpoint has no updatedBefore param
-    private filterByUpdatedEndDate<Key extends TrackerDataKey>(
-        model: Key,
-        instances: Array<Mapping[Key][number]>,
+    private filterByUpdatedEndDate<T extends { updatedAt: string }>(
+        instances: T[],
         updatedEndDate: string | undefined
-    ): Array<Mapping[Key][number]> {
-        if (!updatedEndDate || model !== "enrollments") return instances;
-
+    ): T[] {
+        if (!updatedEndDate) return instances;
         const endDate = new Date(updatedEndDate).getTime();
-
-        return (instances as Mapping["enrollments"]).filter(
-            enrollment => new Date(enrollment.updatedAt).getTime() < endDate
-        ) as Array<Mapping[Key][number]>;
+        return instances.filter(instance => new Date(instance.updatedAt).getTime() < endDate);
     }
 }
 
