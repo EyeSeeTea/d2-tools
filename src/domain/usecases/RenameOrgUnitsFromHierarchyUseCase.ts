@@ -30,6 +30,7 @@ export class RenameOrgUnitsFromHierarchyUseCase {
         );
 
         const summary: RenameSummary = { total: 0, renamed: 0, skipped: 0, excluded: 0 };
+        const warnedParentIds = new Set<Id>();
         let page = 1;
 
         // eslint-disable-next-line no-constant-condition
@@ -43,6 +44,7 @@ export class RenameOrgUnitsFromHierarchyUseCase {
             const toRename = renames.filter(rename => !rename.skipped);
             const excluded = renames.filter(rename => rename.excluded);
 
+            this.warnUntrimmedParents(leaves, warnedParentIds);
             this.logRenames(renames);
 
             summary.total += renames.length;
@@ -81,11 +83,23 @@ export class RenameOrgUnitsFromHierarchyUseCase {
             return { ...keep(leaf.name), excluded: true };
         }
 
-        const base = stripOneSegment(leaf.name, position);
-        const newName =
-            position === "suffix" ? base + separator + parent.name : parent.name + separator + base;
+        const parentName = parent.name.trim();
+        const base = stripAffix(leaf.name.trim(), parentName, position).trim();
+        const newName = position === "suffix" ? base + separator + parentName : parentName + separator + base;
 
         return { orgUnit: leaf, oldName: leaf.name, newName: newName, skipped: newName === leaf.name };
+    }
+
+    /* Names are trimmed when building the new name; warn (once per parent) so the source data can be fixed. */
+    private warnUntrimmedParents(leaves: OrgUnit[], warnedParentIds: Set<Id>): void {
+        leaves.forEach(leaf => {
+            const parent = leaf.parent;
+            if (!parent || warnedParentIds.has(parent.id) || parent.name === parent.name.trim()) return;
+            warnedParentIds.add(parent.id);
+            logger.warn(
+                `Parent org unit name has leading/trailing whitespace: "${parent.name}" (${parent.id})`
+            );
+        });
     }
 
     private logRenames(renames: Rename[]): void {
@@ -106,8 +120,21 @@ type Rename = {
     excluded?: boolean;
 };
 
-/* Recover the base name by removing one affix segment: the last segment for suffix, the first for
-   prefix. A name with no separator is returned unchanged (no affix yet). */
+/* Recover the base name by removing the existing affix. If the name already carries the current
+   parent name as affix, remove exactly that (safe when the parent name itself contains the
+   separator). Otherwise fall back to removing one segment, so parent renames propagate. */
+function stripAffix(name: string, parentName: string, position: ParentNamePosition): string {
+    if (position === "suffix") {
+        const affix = separator + parentName;
+        return name.endsWith(affix) ? name.slice(0, -affix.length) : stripOneSegment(name, position);
+    } else {
+        const affix = parentName + separator;
+        return name.startsWith(affix) ? name.slice(affix.length) : stripOneSegment(name, position);
+    }
+}
+
+/* Remove one affix segment: the last segment for suffix, the first for prefix. A name with no
+   separator is returned unchanged (no affix yet). */
 function stripOneSegment(name: string, position: ParentNamePosition): string {
     if (position === "suffix") {
         const index = name.lastIndexOf(separator);

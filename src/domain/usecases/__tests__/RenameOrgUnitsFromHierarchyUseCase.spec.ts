@@ -55,6 +55,35 @@ describe("RenameOrgUnitsFromHierarchyUseCase", () => {
         ]);
     });
 
+    test("trims leading/trailing whitespace from the parent and leaf names", async () => {
+        const untrimmedParent: NamedRef = { id: parent.id, name: " Hpakant - PHC Clinic 2 " };
+        const { useCase, repository } = setup([leaf("SRH ", untrimmedParent)]);
+
+        await useCase.execute(options({ parentNameAs: "prefix" }));
+
+        expect(repository.saved.map(ou => ou.name)).toEqual(["Hpakant - PHC Clinic 2 - SRH"]);
+    });
+
+    test("is idempotent when the parent name contains the separator (prefix)", async () => {
+        const dashedParent: NamedRef = { id: parent.id, name: "Hpakant - PHC Clinic 2" };
+        const { useCase, repository } = setup([leaf("Hpakant - PHC Clinic 2 - SRH", dashedParent)]);
+
+        const summary = await useCase.execute(options({ parentNameAs: "prefix" }));
+
+        expect(summary).toEqual({ total: 1, renamed: 0, skipped: 1, excluded: 0 });
+        expect(repository.saved).toEqual([]);
+    });
+
+    test("is idempotent when the parent name contains the separator (suffix)", async () => {
+        const dashedParent: NamedRef = { id: parent.id, name: "Hpakant - PHC Clinic 2" };
+        const { useCase, repository } = setup([leaf("SRH - Hpakant - PHC Clinic 2", dashedParent)]);
+
+        const summary = await useCase.execute(options({ parentNameAs: "suffix" }));
+
+        expect(summary).toEqual({ total: 1, renamed: 0, skipped: 1, excluded: 0 });
+        expect(repository.saved).toEqual([]);
+    });
+
     test("known limitation: a base name containing the separator is mis-split on first run", async () => {
         const { useCase, repository } = setup([leaf("Mental Health - Adults")]);
 
