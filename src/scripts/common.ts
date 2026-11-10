@@ -130,8 +130,12 @@ export const IdsSeparatedByCommas: Type<string, string[]> = {
 
 export const AuthString: Type<string, Auth> = {
     async from(str) {
-        const [username, password] = str.split(":");
-        if (!username || !password) throw new Error(`Invalid pair: ${str} (expected USERNAME:PASSWORD)`);
+        // Split on the first colon only: the password may contain colons.
+        const index = str.indexOf(":");
+        const username = index === -1 ? "" : str.slice(0, index);
+        const password = index === -1 ? "" : str.slice(index + 1);
+        // Do not include the value in the error, it contains the password.
+        if (!username || !password) throw new Error("Invalid auth (expected USERNAME:PASSWORD)");
         return { username, password };
     },
 };
